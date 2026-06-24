@@ -4,3 +4,4 @@
 - [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — single-stage api image keeps pnpm symlinks (Prisma resolution); entrypoint `db push` auto-creates tables; nginx proxies /api + /socket.io; build frontend with BASE_PATH=/.
 - [AlfathPOS frontend UI conventions](alfath-pos-ui.md) — fragile dark-mode override palette, alert()->toast (confirm() native), opt-in .mobile-cards for list tables only, ImageMagick not sharp.
 - [AlfathPOS dark-mode styling](alfathpos-dark-mode-styling.md) — restyle dark panels with the app standard LIGHT utility classes; dark-mode CSS overrides only match exact class names (opacity/hover variants need explicit dark:).
+- [AlfathPOS product naming](alfathpos-product-naming.md) — add-product name is built per-category by buildProductName(); Parfum aroma/size live only inside the name string, not DB columns.

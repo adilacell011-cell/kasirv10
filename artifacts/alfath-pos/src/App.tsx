@@ -763,6 +763,7 @@ export default function App() {
   const [prodMinStock, setProdMinStock] = useState("0");
   const [prodCommission, setProdCommission] = useState("0");
   const [prodMasterSN, setProdMasterSN] = useState("");
+  const [prodSize, setProdSize] = useState("");
   const [prodVisibleBranchIds, setProdVisibleBranchIds] = useState<string>("*");
 
   const PRODUCT_HIERARCHY = {
@@ -841,6 +842,15 @@ export default function App() {
     "Flashdisk",
   ];
 
+  const PARFUM_TYPES = [
+    "EDP",
+    "EDT",
+    "EDC",
+    "Body Mist",
+    "Parfum Refill",
+    "Bibit Parfum",
+  ];
+
   // Dynamic Suggestion Lists for Product Form
   const dynamicCategories = useMemo(() => {
     const existing = products.map((p) => p.category).filter(Boolean);
@@ -860,6 +870,9 @@ export default function App() {
   const dynamicSubCategories = useMemo(() => {
     if (prodCategory === "Aksesoris") {
       return PRODUCT_HIERARCHY["Aksesoris"].models;
+    }
+    if (prodCategory === "Parfum") {
+      return PARFUM_TYPES;
     }
     if (prodCategory === "Handphone" && prodBrand && PRODUCT_HIERARCHY["Handphone"].brands[prodBrand]) {
       return PRODUCT_HIERARCHY["Handphone"].brands[prodBrand];
@@ -1428,6 +1441,61 @@ export default function App() {
     }
   };
 
+  // Reset all product-form fields to a clean default (for a fresh "Tambah" form / on close).
+  const resetProductForm = () => {
+    setEditingProduct(null);
+    setProdCategory("Aksesoris");
+    setProdSubCategory("Kabel Data");
+    setProdBrand("Robot");
+    setProdProvider("Telkomsel");
+    setProdType("");
+    setProdDesc("");
+    setProdCapital("");
+    setProdSell("");
+    setProdDiscount("");
+    setProdBarcode("");
+    setProdMasterSN("");
+    setProdExpiredAt("");
+    setProdMinStock("0");
+    setProdCommission("0");
+    setProdSize("");
+    setProdVisibleBranchIds("*");
+  };
+
+  // Build a clean, consistent product name per category.
+  // Empty slots are skipped so there are no double spaces or dangling " - ".
+  const buildProductName = () => {
+    const clean = (s?: string) => (s || "").replace(/\s+/g, " ").trim();
+    const join = (parts: (string | undefined)[]) =>
+      parts.map(clean).filter(Boolean).join(" - ");
+    const head = (parts: (string | undefined)[]) =>
+      parts.map(clean).filter(Boolean).join(" ");
+
+    switch (prodCategory) {
+      case "Aksesoris":
+        // Merek - Tipe/Model - Varian
+        return join([prodBrand, prodSubCategory, prodType]);
+      case "Voucher":
+        // Voucher Provider - Nominal/Kuota
+        return join([head(["Voucher", prodProvider]), prodType]);
+      case "Kartu Perdana Kuota":
+        return join([head(["Perdana Kuota", prodProvider]), prodType]);
+      case "Kartu Perdana Biasa":
+        return join([head(["Perdana", prodProvider]), prodType]);
+      case "Handphone":
+        // Merek Model - Varian (RAM/Storage/Warna)
+        return join([head([prodBrand, prodSubCategory]), prodType]);
+      case "Parfum":
+        // Parfum Merek - Jenis - Aroma - Ukuran
+        return join([head(["Parfum", prodBrand]), prodSubCategory, prodType, prodSize]);
+      default: {
+        // Kategori bebas / Lain-lain: [Kategori] - Merek - Nama
+        const cat = prodCategory === "Lain-lain" ? "" : prodCategory;
+        return join([cat, prodBrand, prodType]) || clean(prodType);
+      }
+    }
+  };
+
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1442,13 +1510,10 @@ export default function App() {
       return;
     }
 
-    let generatedName = prodType;
-    if (prodCategory === "Aksesoris") {
-      generatedName = `${prodBrand} - ${prodSubCategory} - ${prodType}`;
-    } else if (prodCategory === "Voucher") {
-      generatedName = `Voucher ${prodProvider} - ${prodType}`;
-    } else {
-      generatedName = `${prodCategory} ${prodProvider} - ${prodType}`;
+    const generatedName = buildProductName();
+    if (!generatedName.trim()) {
+      alert("Nama produk tidak boleh kosong. Lengkapi minimal Varian/Nama produk.");
+      return;
     }
 
     try {
@@ -1509,6 +1574,7 @@ export default function App() {
       setProdExpiredAt("");
       setProdMinStock("0");
       setProdCommission("0");
+      setProdSize("");
     } catch (err) {
       console.error(err);
       alert("Gagal menyimpan produk.");
@@ -1535,10 +1601,21 @@ export default function App() {
   const startEditing = (p: any) => {
     setEditingProduct(p);
     setProdCategory(p.category || "Aksesoris");
-    setProdSubCategory(p.subCategory || "Kabel Data");
-    setProdBrand(p.brand || "Robot");
-    setProdProvider(p.provider || "Telkomsel");
-    setProdType(p.name.split(" - ").pop() || ""); // Guessing type from generated name
+    setProdSubCategory(p.subCategory || "");
+    setProdBrand(p.brand || "");
+    setProdProvider(p.provider || "");
+    // Recover Varian (and Parfum size) from the generated name
+    {
+      const segs = (p.name || "").split(" - ").map((s: string) => s.trim()).filter(Boolean);
+      let baseType = segs[segs.length - 1] || "";
+      let size = "";
+      if ((p.category || "") === "Parfum" && /\d\s*ml\b/i.test(baseType)) {
+        size = baseType;
+        baseType = segs[segs.length - 2] || "";
+      }
+      setProdType(baseType);
+      setProdSize(size);
+    }
     setProdDesc(p.description || "");
     setProdCapital(p.purchasePrice?.toString() || "");
     setProdSell(p.sellingPrice?.toString() || "");
@@ -3815,7 +3892,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             setShowProductForm(false);
-                            setEditingProduct(null);
+                            resetProductForm();
                           }}
                           className="text-slate-400 hover:text-red-500"
                         >
@@ -3881,20 +3958,38 @@ export default function App() {
                                   )}
                                   </div>
                                 </div>
-                                { (prodCategory === "Aksesoris" || prodCategory === "Handphone") && (
+                                { (prodCategory === "Aksesoris" || prodCategory === "Handphone" || prodCategory === "Parfum") && (
                                   <div>
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                                      Model / Sub-Kategori
+                                      {prodCategory === "Parfum"
+                                        ? "Jenis Parfum"
+                                        : prodCategory === "Handphone"
+                                          ? "Tipe / Model HP"
+                                          : "Model / Sub-Kategori"}
                                     </label>
                                     <div className="relative">
                                     <CustomSelect 
-                                      label="Model / Sub-Kategori"
+                                      label={prodCategory === "Parfum" ? "Jenis Parfum" : "Model / Sub-Kategori"}
                                       value={prodSubCategory}
                                       onChange={setProdSubCategory}
                                       options={dynamicSubCategories}
-                                      placeholder="Ketik Model..."
+                                      placeholder={prodCategory === "Parfum" ? "Pilih jenis (EDP/EDT...)" : "Ketik Model..."}
                                     />
                                     </div>
+                                  </div>
+                                )}
+                                { prodCategory === "Parfum" && (
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                                      Ukuran / Volume
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={prodSize}
+                                      onChange={(e) => setProdSize(e.target.value)}
+                                      placeholder="Cth: 30ml / 100ml"
+                                      className="w-full border border-slate-300 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold transition-all shadow-sm"
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -3950,19 +4045,48 @@ export default function App() {
                           <div className="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                                Varian / Nama Produk{" "}
+                                {prodCategory === "Voucher" || prodCategory?.includes("Perdana")
+                                  ? "Nominal / Kuota"
+                                  : prodCategory === "Handphone"
+                                    ? "Varian (RAM / Storage / Warna)"
+                                    : prodCategory === "Parfum"
+                                      ? "Aroma / Varian"
+                                      : prodCategory === "Aksesoris"
+                                        ? "Varian / Tipe"
+                                        : "Nama Produk"}{" "}
                                 <span className="text-red-500 font-black">
                                   *
                                 </span>
                               </label>
                               <input
                                 type="text"
-                                placeholder="Cth: Type-C 2A Putih / Perdana 10GB"
+                                placeholder={
+                                  prodCategory === "Voucher" || prodCategory?.includes("Perdana")
+                                    ? "Cth: 10GB 30 Hari / 25.000"
+                                    : prodCategory === "Handphone"
+                                      ? "Cth: 8/256 Hitam"
+                                      : prodCategory === "Parfum"
+                                        ? "Cth: Farhampton"
+                                        : prodCategory === "Aksesoris"
+                                          ? "Cth: Type-C 2A Putih"
+                                          : "Cth: nama / varian produk"
+                                }
                                 value={prodType}
                                 onChange={(e) => setProdType(e.target.value)}
                                 className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                                 required
                               />
+                              <div className="mt-2 flex items-start gap-2 rounded-2xl bg-blue-50/70 border border-blue-100 px-3 py-2">
+                                <Sparkles className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-[8px] font-black text-blue-500 uppercase tracking-widest leading-none">
+                                    Nama Produk Tersimpan
+                                  </p>
+                                  <p className="text-[11px] font-black text-slate-700 mt-1 break-words leading-snug">
+                                    {buildProductName() || "—"}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
                             <div>
                               <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1.5 flex justify-between">
@@ -4180,7 +4304,10 @@ export default function App() {
                       />
                     </div>
                     <button
-                      onClick={() => setShowProductForm(true)}
+                      onClick={() => {
+                        resetProductForm();
+                        setShowProductForm(true);
+                      }}
                       className="bg-blue-600 shadow-md text-white px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 shrink-0 w-full sm:w-auto self-end sm:self-center"
                     >
                       <Plus className="w-3 h-3 inline mr-1" /> Tambah Master
