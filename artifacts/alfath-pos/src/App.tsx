@@ -1028,7 +1028,10 @@ export default function App() {
 
   // --- REAL-TIME SYNC ---
   useEffect(() => {
-    const socket = io();
+    // Connect only when authenticated; the server derives branch scoping from the JWT.
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const socket = io({ auth: { token } });
 
     socket.on("saleProcessed", (data: { items: any[] }) => {
       // Update local products state with new stock values
@@ -1055,7 +1058,7 @@ export default function App() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [profile?.role, profile?.branchId]);
 
   // --- AUTH HANDLERS ---
   const handleLoginSubmit = async (credentials: any) => {
@@ -1204,8 +1207,10 @@ export default function App() {
 
     loadData();
 
-    // Setup Sockets for real-time updates
-    const socket = io();
+    // Setup Sockets for real-time updates (server scopes events by the JWT's branch)
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const socket = io({ auth: { token } });
     socket.on("saleProcessed", () => loadData());
     socket.on("productUpdated", () => loadData());
     socket.on("stockUpdated", () => loadData());

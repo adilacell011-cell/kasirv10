@@ -32,6 +32,8 @@ An Indonesian point-of-sale and stock/transaction management system for a multi-
 - Kept Prisma (not converted to Drizzle) to preserve original behavior and reduce migration risk.
 - Frontend and backend are separate artifacts; the frontend connects socket.io same-origin via `io()`, so `/socket.io` is routed to the api-server in its `artifact.toml` paths.
 - Backend serves API only; static frontend serving and Vite middleware from the original single-server setup were removed.
+- Realtime is scoped per branch: socket.io clients authenticate via the bearer JWT (`io.use`), and room membership is derived from the verified token claims only (never client-sent role/branch). ADMIN/AUDIT join a `global` room (all branches); CASHIER joins `branch:<id>`. Branch-scoped events (`saleProcessed`, `stockUpdated`, `saleUpdated`) emit via `emitBranch()` to the branch room + global room; catalog-wide product events stay global.
+- Stock can never go negative: sale and transfer decrements use a conditional `updateMany({ where: { ..., qty: { gte: n } } })` inside the transaction and abort if no row matched, preventing oversell under concurrency.
 
 ## User preferences
 

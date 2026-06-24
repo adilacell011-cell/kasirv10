@@ -20,6 +20,16 @@ const io = new Server(httpServer, {
   }
 });
 
+// Emit an event to the given branch's room plus the global (admin/audit) room.
+// When branchId is missing we fall back to a global broadcast so nothing is lost.
+function emitBranch(branchId: string | null | undefined, event: string, payload: any) {
+  if (branchId) {
+    io.to("global").to(`branch:${branchId}`).emit(event, payload);
+  } else {
+    io.emit(event, payload);
+  }
+}
+
 const PORT = Number(process.env.PORT) || 8080;
 
 // Resolve the JWT signing secret WITHOUT a hardcoded fallback.
@@ -46,6 +56,30 @@ function resolveJwtSecret(): string {
 }
 
 const JWT_SECRET = resolveJwtSecret();
+
+// Real-time scoping with VERIFIED identity. Room membership must NOT trust
+// client-sent role/branch (a client could spoof role:"ADMIN" to read every branch).
+// Instead we authenticate the socket handshake with the same signed JWT used for the
+// REST API and derive rooms from the trusted token claims only. Admins/Audit join
+// "global" (all branches); a cashier joins only their own "branch:<id>" room.
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error("Unauthorized"));
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) return next(new Error("Invalid or expired token"));
+    socket.data.user = user;
+    next();
+  });
+});
+
+io.on("connection", (socket) => {
+  const user = (socket.data.user || {}) as { role?: string; branchId?: string };
+  if (user.role === "ADMIN" || user.role === "AUDIT") {
+    socket.join("global");
+  } else if (user.branchId) {
+    socket.join(`branch:${user.branchId}`);
+  }
+});
 
 app.use(cors());
 app.use(helmet({
@@ -374,6 +408,7 @@ app.post("/api/transactions", authenticateToken, async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       let finalTotalProfit = 0;
       const saleItemsData = [];
+      const productNames: Record<string, string> = {};
 
       // 1. Validate All Stocks and Collect Cost Prices First
       for (const item of items) {
@@ -384,6 +419,8 @@ app.post("/api/transactions", authenticateToken, async (req, res) => {
 
         if (!product) throw new Error(`Produk dengan ID ${item.productId} tidak ditemukan.`);
         
+        productNames[item.productId] = product.name;
+
         const currentStock = product.stocks[0]?.qty || 0;
         if (currentStock < item.qty) {
           throw new Error(`Stok tidak cukup untuk ${product.name}. Tersedia: ${currentStock}, Diminta: ${item.qty}`);
@@ -422,17 +459,22 @@ app.post("/api/transactions", authenticateToken, async (req, res) => {
 
       // 3. Update Stocks & Commissions
       for (const item of saleItemsData) {
-        await tx.productStock.update({
+        // Atomic guard against overselling: only decrement when enough stock still
+        // exists at this exact moment. If two cashiers sell the last unit at the same
+        // time, the second UPDATE matches 0 rows and we abort instead of going negative.
+        const decremented = await tx.productStock.updateMany({
           where: {
-            productId_branchId: {
-              productId: item.productId,
-              branchId: actualBranchId
-            }
+            productId: item.productId,
+            branchId: actualBranchId,
+            qty: { gte: item.qty }
           },
           data: {
             qty: { decrement: item.qty }
           }
         });
+        if (decremented.count === 0) {
+          throw new Error(`Stok tidak cukup untuk ${productNames[item.productId] || item.productId}. Stok mungkin baru saja terjual.`);
+        }
 
         if (item.productId && (req.body.items.find((i:any) => i.productId === item.productId)?.commission || 0) > 0) {
           const commAmt = req.body.items.find((i:any) => i.productId === item.productId).commission;
@@ -462,8 +504,8 @@ app.post("/api/transactions", authenticateToken, async (req, res) => {
       return sale;
     });
 
-    // CRITICAL: Emit real-time stock update notification
-    io.emit("saleProcessed", {
+    // CRITICAL: Emit real-time stock update notification (scoped to this branch + admins)
+    emitBranch(actualBranchId, "saleProcessed", {
       saleId: result.id,
       items: items.map((i: any) => ({ productId: i.productId, branchId: actualBranchId, qty: i.qty }))
     });
@@ -656,7 +698,7 @@ app.post("/api/stocks/adjust", authenticateToken, async (req, res) => {
       return stock;
     });
 
-    io.emit("stockUpdated", { productId, branchId, qty: result.qty });
+    emitBranch(branchId, "stockUpdated", { productId, branchId, qty: result.qty });
     res.json(result);
   } catch (error) {
     console.error("Stock Adjust Error:", error);
@@ -668,14 +710,18 @@ app.post("/api/stocks/transfer", authenticateToken, async (req, res) => {
   const { productId, qty, targetBranchId, sourceBranchId } = req.body;
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Kurangi dari asal
-      const sourceStock = await tx.productStock.update({
-        where: { productId_branchId: { productId, branchId: sourceBranchId } },
+      // 1. Kurangi dari asal — guard atomik agar stok asal tidak bisa minus walau
+      // ada transfer/penjualan bersamaan. UPDATE hanya jalan bila stok masih cukup.
+      const decremented = await tx.productStock.updateMany({
+        where: { productId, branchId: sourceBranchId, qty: { gte: qty } },
         data: { qty: { decrement: qty } }
       });
-      if (sourceStock.qty < 0) {
+      if (decremented.count === 0) {
         throw new Error("Stok cabang asal tidak mencukupi");
       }
+      const sourceStock = await tx.productStock.findUnique({
+        where: { productId_branchId: { productId, branchId: sourceBranchId } }
+      });
 
       // 2. Tambah ke tujuan
       const targetStock = await tx.productStock.upsert({
@@ -709,8 +755,8 @@ app.post("/api/stocks/transfer", authenticateToken, async (req, res) => {
       return { sourceStock, targetStock };
     });
 
-    io.emit("stockUpdated", { productId, branchId: sourceBranchId, qty: result.sourceStock.qty });
-    io.emit("stockUpdated", { productId, branchId: targetBranchId, qty: result.targetStock.qty });
+    emitBranch(sourceBranchId, "stockUpdated", { productId, branchId: sourceBranchId, qty: result.sourceStock?.qty ?? 0 });
+    emitBranch(targetBranchId, "stockUpdated", { productId, branchId: targetBranchId, qty: result.targetStock.qty });
     res.json({ success: true });
   } catch (error: any) {
     console.error("Stock Transfer Error:", error);
@@ -752,7 +798,7 @@ app.post("/api/voucher-sns/bulk", authenticateToken, async (req, res) => {
       return stock;
     });
 
-    io.emit("stockUpdated", { productId, branchId, qty: result.qty });
+    emitBranch(branchId, "stockUpdated", { productId, branchId, qty: result.qty });
     res.json({ success: true, count: sns.length });
   } catch (error) {
     console.error("Voucher SN Bulk Error:", error);
@@ -852,7 +898,7 @@ app.post("/api/transactions/:id/refund", authenticateToken, async (req, res) => 
       return updatedSale;
     });
 
-    io.emit("saleUpdated", result);
+    emitBranch((result as any).branchId, "saleUpdated", result);
     res.json(result);
   } catch (error: any) {
     console.error("Refund Sale Error:", error);
