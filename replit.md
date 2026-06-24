@@ -1,45 +1,48 @@
-# [Project name]
+# Alfath Pulsa Manajemen (AlfathPOS)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An Indonesian point-of-sale and stock/transaction management system for a multi-branch pulsa (mobile credit) business. Migrated from a Vercel/v0 import into Replit's pnpm multi-artifact workspace.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Workflows (not root `pnpm dev`) run the apps:
+  - `artifacts/alfath-pos: web` — Vite + React frontend (served at `/`)
+  - `artifacts/api-server: API Server` — Express backend (served at `/api` and `/socket.io`)
+- `pnpm --filter @workspace/api-server run db:push` — push Prisma schema to the database (dev only)
+- `pnpm --filter @workspace/api-server run db:studio` — open Prisma Studio
+- Required env: `DATABASE_URL` (Postgres). Optional: `JWT_SECRET` (falls back to a default dev secret).
+- Seeded login credentials (created on server startup): `admin` / `admin123` (ADMIN), `cashier` / `cashier123` (CASHIER). Default branch: "Cabang Utama".
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspaces, Node.js, TypeScript
+- Frontend: Vite 7 + React 19, Tailwind v4, vite-plugin-pwa, lucide-react, recharts, html5-qrcode, firebase (Firestore + Google sign-in), socket.io-client
+- Backend: Express 4, Prisma 5 + PostgreSQL, socket.io, firebase-admin, JWT (jsonwebtoken), bcryptjs, helmet, morgan
+- Backend build: esbuild bundle (CJS deps bundled; `@prisma/client`, `firebase-admin` externalized)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- Frontend app: `artifacts/alfath-pos/` — giant single-file UI in `src/App.tsx`; API client in `src/services/api.ts` (BASE_URL `/api`, bearer token in localStorage); Firebase in `src/lib/firebase.ts` (reads `firebase-applet-config.json`).
+- Backend: `artifacts/api-server/src/index.ts` — all Express routes, auth middleware, socket.io, startup seed.
+- DB schema (source of truth): `artifacts/api-server/prisma/schema.prisma`.
+- Backend Firebase config: `artifacts/api-server/src/firebaseConfig.ts`.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Hybrid data layer: the frontend reads some collections (products, sales, shoppingPlans) directly from Firebase Firestore AND uses the Express/Prisma API. Login and the primary flows go through the Express API (`/api/auth/login`, `/api/products`, etc.).
+- Kept Prisma (not converted to Drizzle) to preserve original behavior and reduce migration risk.
+- Frontend and backend are separate artifacts; the frontend connects socket.io same-origin via `io()`, so `/socket.io` is routed to the api-server in its `artifact.toml` paths.
+- Backend serves API only; static frontend serving and Vite middleware from the original single-server setup were removed.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_Populate as you build._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Prisma resolves `./schema.prisma` over `./prisma/schema.prisma` if both exist — keep only `prisma/schema.prisma`.
+- Per the migration task: strict typecheck is out of scope (copied code contains `// @ts-ignore` and `any`); fixing pre-existing bugs is out of scope.
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See the `artifacts` skill for editing `artifact.toml` (use `verifyAndReplaceArtifactToml`, never edit directly)

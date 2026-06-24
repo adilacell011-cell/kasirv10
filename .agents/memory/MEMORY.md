@@ -1,0 +1,2 @@
+- [Multi-artifact socket.io routing](multi-artifact-socketio.md) — same-origin `io()` needs `/socket.io` added to the api artifact.toml `paths`, else the proxy sends it to the frontend.
+- [Prisma dual-schema pitfall](prisma-dual-schema.md) — Prisma prefers `./schema.prisma` over `./prisma/schema.prisma`; a stray root copy silently overrides edits.
