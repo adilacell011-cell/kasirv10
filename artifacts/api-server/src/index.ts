@@ -632,15 +632,6 @@ app.get("/api/adjustments", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/adjustments/cleanup", authenticateToken, async (req, res) => {
-  try {
-    await prisma.adjustment.deleteMany({});
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to cleanup adjustments" });
-  }
-});
-
 app.post("/api/stocks/adjust", authenticateToken, async (req, res) => {
   const { productId, branchId, qty, type, reason, oldQty, newQty } = req.body;
   try {
@@ -770,6 +761,9 @@ app.post("/api/voucher-sns/bulk", authenticateToken, async (req, res) => {
 });
 
 app.patch("/api/users/:id", authenticateToken, async (req, res) => {
+  // Security: only admins may modify users (role/branch/status/password). Without this
+  // check any authenticated user could escalate their own role to ADMIN.
+  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
   const { role, branchId, status, name, alternativeNames, password } = req.body;
   try {
     const updateData: any = {};
