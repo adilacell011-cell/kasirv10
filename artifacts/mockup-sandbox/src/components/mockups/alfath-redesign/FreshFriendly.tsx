@@ -10,8 +10,6 @@ export function FreshFriendly() {
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
-        
         .variant-fresh {
           --bg-base: #FBF9F6;
           --bg-card: #FFFFFF;
@@ -24,22 +22,49 @@ export function FreshFriendly() {
           --text-muted: #7D8F8A;
           --success-bg: #E8F5E9;
           --success-text: #2E7D32;
-          --warning-bg: #FFF3E0; /* Wait, warning should be yellow/orange */
           --warning-bg-real: #FFF8E1;
           --warning-text: #F57C00;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          letter-spacing: -0.012em;
         }
 
-        .variant-fresh .font-serif {
-          font-family: 'Fraunces', serif;
-        }
+        /* Pakai font sistem iOS (San Francisco) untuk semua teks */
+        .variant-fresh .font-serif,
         .variant-fresh .font-sans {
-          font-family: 'Nunito', sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
-        
+        .variant-fresh h1,
+        .variant-fresh h2,
+        .variant-fresh h3 {
+          letter-spacing: -0.022em;
+        }
+
         .variant-fresh .shadow-soft {
-          box-shadow: 0 8px 30px -6px rgba(45, 138, 120, 0.06);
+          box-shadow: 0 6px 22px -8px rgba(45, 138, 120, 0.10), 0 1px 2px rgba(45, 58, 55, 0.04);
         }
-        
+
+        /* Polesan halus di tiap komponen: transisi lembut + efek tekan ala iOS */
+        .variant-fresh .shadow-soft {
+          transition: transform .3s cubic-bezier(.34,1.4,.64,1), box-shadow .3s ease;
+        }
+        .variant-fresh .shadow-soft:hover {
+          box-shadow: 0 18px 36px -14px rgba(45, 138, 120, 0.18), 0 2px 4px rgba(45, 58, 55, 0.04);
+        }
+        .variant-fresh button,
+        .variant-fresh a {
+          transition: transform .18s cubic-bezier(.34,1.45,.64,1), box-shadow .25s ease, background-color .2s ease, filter .2s ease, color .2s ease;
+        }
+        .variant-fresh button:active,
+        .variant-fresh a:active {
+          transform: scale(.96);
+        }
+        .variant-fresh input,
+        .variant-fresh select {
+          transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+
         /* Custom scrollbar for friendly look */
         .variant-fresh ::-webkit-scrollbar {
           width: 6px;
@@ -65,7 +90,7 @@ export function FreshFriendly() {
             <div className="w-10 h-10 rounded-2xl bg-[var(--accent-light)] flex items-center justify-center text-[var(--accent-primary)]">
               <Smartphone className="w-6 h-6" />
             </div>
-            <h1 className="font-serif text-2xl font-bold text-[var(--text-main)] tracking-tight">Alfath Pulsa</h1>
+            <h1 className="font-serif text-xl font-bold text-[var(--text-main)] tracking-tight">Alfath Pulsa</h1>
           </div>
 
           <div className="flex-1 px-4 overflow-y-auto space-y-1 mt-2">
@@ -132,7 +157,7 @@ export function FreshFriendly() {
           {/* Topbar */}
           <header className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10 sticky top-0 bg-[var(--bg-base)]/80 backdrop-blur-md">
             <div>
-              <h2 className="font-serif text-3xl font-bold text-[var(--text-main)]">Dashboard</h2>
+              <h2 className="font-serif text-2xl font-bold text-[var(--text-main)]">Dashboard</h2>
               <p className="text-[var(--text-muted)] font-medium mt-1">Selamat datang kembali! Ini ringkasan hari ini.</p>
             </div>
 
@@ -170,7 +195,7 @@ export function FreshFriendly() {
                 <div className="flex justify-between items-start relative z-10">
                   <div>
                     <p className="text-[var(--text-muted)] font-bold text-sm mb-1">Omset Hari Ini</p>
-                    <h3 className="font-serif text-2xl lg:text-3xl font-bold text-[var(--text-main)] tracking-tight">Rp 4.250.000</h3>
+                    <h3 className="font-serif text-xl lg:text-2xl font-bold text-[var(--text-main)] tracking-tight">Rp 4.250.000</h3>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-[var(--accent-primary)] flex items-center justify-center text-white shadow-md shadow-[var(--accent-primary)]/30">
                     <Wallet className="w-6 h-6" />
@@ -190,7 +215,7 @@ export function FreshFriendly() {
                 <div className="flex justify-between items-start relative z-10">
                   <div>
                     <p className="text-[var(--text-muted)] font-bold text-sm mb-1">Laba Bersih</p>
-                    <h3 className="font-serif text-2xl lg:text-3xl font-bold text-[var(--text-main)] tracking-tight">Rp 612.000</h3>
+                    <h3 className="font-serif text-xl lg:text-2xl font-bold text-[var(--text-main)] tracking-tight">Rp 612.000</h3>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-sky-500 flex items-center justify-center text-white shadow-md shadow-sky-500/30">
                     <DollarSign className="w-6 h-6" />
@@ -210,7 +235,7 @@ export function FreshFriendly() {
                 <div className="flex justify-between items-start relative z-10">
                   <div>
                     <p className="text-[var(--text-muted)] font-bold text-sm mb-1">Total Transaksi</p>
-                    <h3 className="font-serif text-2xl lg:text-3xl font-bold text-[var(--text-main)] tracking-tight">87</h3>
+                    <h3 className="font-serif text-xl lg:text-2xl font-bold text-[var(--text-main)] tracking-tight">87</h3>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/30">
                     <ArrowRightLeft className="w-6 h-6" />
@@ -231,7 +256,7 @@ export function FreshFriendly() {
                 <div className="flex justify-between items-start relative z-10">
                   <div>
                     <p className="text-[var(--text-muted)] font-bold text-sm mb-1">Stok Menipis</p>
-                    <h3 className="font-serif text-2xl lg:text-3xl font-bold text-amber-600 tracking-tight">5 produk</h3>
+                    <h3 className="font-serif text-xl lg:text-2xl font-bold text-amber-600 tracking-tight">5 produk</h3>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-md shadow-amber-500/30">
                     <AlertCircle className="w-6 h-6" />
@@ -250,7 +275,7 @@ export function FreshFriendly() {
               <div className="lg:col-span-1 bg-[var(--bg-card)] rounded-[32px] border border-[var(--border-color)] shadow-soft p-6 md:p-8">
                 <div className="flex justify-between items-center mb-8">
                   <div>
-                    <h3 className="font-serif text-xl font-bold text-[var(--text-main)]">Tren Penjualan</h3>
+                    <h3 className="font-serif text-lg font-bold text-[var(--text-main)]">Tren Penjualan</h3>
                     <p className="text-sm font-medium text-[var(--text-muted)] mt-1">7 Hari Terakhir</p>
                   </div>
                   <button className="p-2 bg-[var(--bg-base)] rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)]">
@@ -289,7 +314,7 @@ export function FreshFriendly() {
               <div className="lg:col-span-2 bg-[var(--bg-card)] rounded-[32px] border border-[var(--border-color)] shadow-soft p-6 md:p-8 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="font-serif text-xl font-bold text-[var(--text-main)]">Transaksi Terbaru</h3>
+                    <h3 className="font-serif text-lg font-bold text-[var(--text-main)]">Transaksi Terbaru</h3>
                     <p className="text-sm font-medium text-[var(--text-muted)] mt-1">Hari ini</p>
                   </div>
                   <button className="text-sm font-bold text-[var(--accent-primary)] bg-[var(--accent-light)] px-4 py-2 rounded-xl hover:brightness-95 transition-all">
@@ -364,7 +389,7 @@ export function FreshFriendly() {
               <div className="w-16 h-16 rounded-3xl bg-[var(--accent-light)] mx-auto flex items-center justify-center text-[var(--accent-primary)] mb-5 shadow-sm transform -rotate-6">
                 <Package className="w-8 h-8 transform rotate-6" />
               </div>
-              <h3 className="font-serif text-2xl font-bold text-[var(--text-main)]">Tambah Produk Baru</h3>
+              <h3 className="font-serif text-xl font-bold text-[var(--text-main)]">Tambah Produk Baru</h3>
               <p className="text-[var(--text-muted)] font-medium text-sm mt-2">Silakan isi detail produk untuk menambahkannya ke sistem.</p>
             </div>
             
