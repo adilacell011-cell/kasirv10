@@ -16,6 +16,7 @@ RUN pnpm install --frozen-lockfile
 ENV NODE_ENV=production
 ENV BASE_PATH=/
 ENV PORT=8080
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm --filter @workspace/alfath-pos run build
 
 # --- Runtime stage ---
