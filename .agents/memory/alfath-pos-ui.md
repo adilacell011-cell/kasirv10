@@ -84,6 +84,17 @@ would otherwise leave the field with NO visible focus indicator.
 **How to apply:** exclude `[type=checkbox/radio/range/file/submit/button]`; give `.dark` its own
 border/shadow (no white inset highlight). The premium-field block is self-contained & reversible.
 
+## Restyling card/panel shadows app-wide — override `--tw-shadow`, NOT `box-shadow`
+This is Tailwind v4 (4.x). To make all cards/panels/modals feel premium without editing JSX,
+override the shadow scale centrally. CRITICAL: override the `--tw-shadow` custom property on
+`.shadow-sm/.shadow-md/.shadow-lg/.shadow-xl/.shadow-2xl` (with `!important`), do NOT force
+`box-shadow` directly. v4 composes `box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)` — forcing `box-shadow`
+wipes the ring layers and kills focus rings on elements that have BOTH `shadow-*` and `ring-*`.
+Setting only `--tw-shadow` keeps ring composition intact. Give `.dark .shadow-*` deeper/darker
+values (rgba black) since light layered shadows vanish on dark surfaces.
+**Why:** an architect review caught the box-shadow!important version suppressing focus indicators.
+
 ## Tooling
 Two icon libs are installed: `lucide-react` (the app default, outline) AND `react-icons`.
 For a "premium / Android" look, use Material **filled** icons from `react-icons/md` (e.g.

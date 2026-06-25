@@ -639,3 +639,64 @@ textarea:focus-visible {
     0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent),
     0 2px 8px rgba(0, 0, 0, 0.35) !important;
 }
+
+/* ============================================================
+   KARTU & PANEL PREMIUM — bayangan berlapis yang lembut & mewah
+   agar semua kartu, panel, dan modal terasa berdimensi dan serasi
+   dengan kolom premium. Kita override variabel `--tw-shadow` milik
+   Tailwind (BUKAN `box-shadow` langsung) supaya cincin fokus
+   (`ring`) tetap ikut tersusun dengan benar.
+   Reversibel: hapus blok ini untuk kembali ke gaya semula.
+   ============================================================ */
+.shadow-sm {
+  --tw-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+.shadow-md {
+  --tw-shadow:
+    0 2px 5px rgba(15, 23, 42, 0.05),
+    0 6px 16px rgba(15, 23, 42, 0.06) !important;
+}
+.shadow-lg {
+  --tw-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.06),
+    0 12px 28px rgba(15, 23, 42, 0.08) !important;
+}
+.shadow-xl {
+  --tw-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.08),
+    0 20px 44px rgba(15, 23, 42, 0.10) !important;
+}
+.shadow-2xl {
+  --tw-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.12),
+    0 32px 70px rgba(15, 23, 42, 0.16) !important;
+}
+
+/* Mode gelap: bayangan lebih dalam & pekat agar kedalaman tetap terbaca */
+.dark .shadow-sm {
+  --tw-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.30),
+    0 1px 3px rgba(0, 0, 0, 0.24) !important;
+}
+.dark .shadow-md {
+  --tw-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.38),
+    0 6px 16px rgba(0, 0, 0, 0.34) !important;
+}
+.dark .shadow-lg {
+  --tw-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.42),
+    0 14px 32px rgba(0, 0, 0, 0.40) !important;
+}
+.dark .shadow-xl {
+  --tw-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.48),
+    0 22px 48px rgba(0, 0, 0, 0.44) !important;
+}
+.dark .shadow-2xl {
+  --tw-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.55),
+    0 36px 76px rgba(0, 0, 0, 0.50) !important;
+}
