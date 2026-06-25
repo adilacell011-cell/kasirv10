@@ -1969,8 +1969,8 @@ export default function App() {
       return visibleIds === "*" || visibleIds.split(",").map((id: string) => id.trim()).includes(branchId);
     });
 
-    // 2. Filter by category
-    if (posSelectedCategory && posSelectedCategory !== "Semua") {
+    // 2. Filter by category (skip while searching so a keyword spans all categories)
+    if (!searchTerm && posSelectedCategory && posSelectedCategory !== "Semua") {
       list = list.filter(p => p.category === posSelectedCategory);
     }
 
@@ -1999,7 +1999,11 @@ export default function App() {
       });
     }
 
-    return list;
+    // 4. Sort cheapest -> most expensive (using discount price when set)
+    return [...list].sort((a, b) => {
+      const getPrice = (p: any) => (p.discountPrice > 0 ? p.discountPrice : p.sellingPrice);
+      return getPrice(a) - getPrice(b);
+    });
   }, [products, posSelectedCategory, searchTerm, profile?.branchId]);
 
   useEffect(() => {
@@ -6832,7 +6836,7 @@ export default function App() {
                         </div>
 
                         {/* 1.5 PANEL PRODUK TERLARIS */}
-                        {bestSellers.length > 0 && (
+                        {bestSellers.length > 0 && !searchTerm && (
                           <div className="bg-white p-3 border-b border-slate-150">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Produk Terlaris (Klik untuk Tambah)</p>
                             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
