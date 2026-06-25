@@ -8661,7 +8661,7 @@ export default function App() {
                               }))
                               .sort((a, b) => b.revenue - a.revenue);
                             const hasData = chartData.some((d) => d.revenue > 0);
-                            const palette = ["#2d8a78", "#0d9488", "#0891b2", "#7c3aed", "#236b5d", "#db2777"];
+                            const palette = ["#2563eb", "#3b82f6", "#0ea5e9", "#6366f1", "#1d4ed8", "#8b5cf6"];
                             const fmtShort = (v: number) =>
                               v >= 1_000_000
                                 ? `${(v / 1_000_000).toFixed(1)}jt`
@@ -8682,32 +8682,32 @@ export default function App() {
                               <div className="h-[260px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                   <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#ebe7e0" vertical={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                                     <XAxis
                                       dataKey="name"
-                                      tick={{ fontSize: 10, fontWeight: 700, fill: "#6b766f" }}
+                                      tick={{ fontSize: 10, fontWeight: 700, fill: "#64748b" }}
                                       tickLine={false}
-                                      axisLine={{ stroke: "#ebe7e0" }}
+                                      axisLine={{ stroke: "#e2e8f0" }}
                                       interval={0}
                                     />
                                     <YAxis
                                       tickFormatter={fmtShort}
-                                      tick={{ fontSize: 10, fontWeight: 700, fill: "#9b9c92" }}
+                                      tick={{ fontSize: 10, fontWeight: 700, fill: "#94a3b8" }}
                                       tickLine={false}
                                       axisLine={false}
                                       width={44}
                                     />
                                     <RechartsTooltip
-                                      cursor={{ fill: "rgba(45,138,120,0.08)" }}
+                                      cursor={{ fill: "rgba(37,99,235,0.06)" }}
                                       formatter={(value: any) => [`Rp ${Number(value).toLocaleString("id-ID")}`, "Omset"]}
                                       contentStyle={{
                                         borderRadius: 14,
-                                        border: "1px solid #ebe7e0",
+                                        border: "1px solid #e2e8f0",
                                         boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
                                         fontSize: 11,
                                         fontWeight: 700,
                                       }}
-                                      labelStyle={{ fontWeight: 800, color: "#2d3a37" }}
+                                      labelStyle={{ fontWeight: 800, color: "#0f172a" }}
                                     />
                                     <Bar dataKey="revenue" radius={[8, 8, 0, 0]} maxBarSize={56}>
                                       {chartData.map((_, i) => (

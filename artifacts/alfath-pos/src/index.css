@@ -7,48 +7,48 @@
   --font-serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --animate-marquee: marquee 15s linear infinite;
 
-  /* "Fresh & Friendly" accent: remap the blue AND indigo ramps to a calm teal.
-     Centralized token refinement — every blue and indigo utility (bg, text,
-     border, ring, gradient) shifts cohesively without touching the JSX.
-     Revert by restoring the previous indigo values. Dark-mode accent is
-     harmonized to teal in the override block at the end of this file. */
-  --color-blue-50: #e6f3f0;
-  --color-blue-100: #cce7e1;
-  --color-blue-200: #a6d6cb;
-  --color-blue-300: #74bdae;
-  --color-blue-400: #45a492;
-  --color-blue-500: #2d8a78;
-  --color-blue-600: #236b5d;
-  --color-blue-700: #1a6355;
-  --color-blue-800: #154f44;
-  --color-blue-900: #103b33;
+  /* "Premium Blue" accent: a refined, confident azure-royal blue applied to
+     both the blue AND indigo ramps so every accent utility (bg, text, border,
+     ring, gradient) reads as one cohesive premium blue without touching JSX.
+     Revert by restoring the previous values. */
+  --color-blue-50: #eff5ff;
+  --color-blue-100: #dbe8fe;
+  --color-blue-200: #bdd5fd;
+  --color-blue-300: #90b8fb;
+  --color-blue-400: #5d91f7;
+  --color-blue-500: #2f6cef;
+  --color-blue-600: #1d52da;
+  --color-blue-700: #1a42b8;
+  --color-blue-800: #1b3a93;
+  --color-blue-900: #1c3675;
+  --color-blue-950: #131f46;
 
-  --color-indigo-50: #e6f3f0;
-  --color-indigo-100: #cce7e1;
-  --color-indigo-200: #a6d6cb;
-  --color-indigo-300: #74bdae;
-  --color-indigo-400: #45a492;
-  --color-indigo-500: #2d8a78;
-  --color-indigo-600: #236b5d;
-  --color-indigo-700: #1a6355;
-  --color-indigo-800: #154f44;
-  --color-indigo-900: #103b33;
+  --color-indigo-50: #eff5ff;
+  --color-indigo-100: #dbe8fe;
+  --color-indigo-200: #bdd5fd;
+  --color-indigo-300: #90b8fb;
+  --color-indigo-400: #5d91f7;
+  --color-indigo-500: #2f6cef;
+  --color-indigo-600: #1d52da;
+  --color-indigo-700: #1a42b8;
+  --color-indigo-800: #1b3a93;
+  --color-indigo-900: #1c3675;
+  --color-indigo-950: #131f46;
 
-  /* "Fresh & Friendly" warm neutral ramp: warms every slate-* utility from a
-     cool blue-gray into a soft warm greige to match the mockup. Luminance is
-     kept close to default slate so text/border contrast is preserved.
+  /* "Clean white" neutral ramp: a crisp, cool blue-gray (standard slate) for a
+     bright, premium white-forward UI. Every slate-* utility uses these.
      Revert by deleting this slate block. */
-  --color-slate-50: #fbf9f6;
-  --color-slate-100: #f3f0eb;
-  --color-slate-200: #ebe7e0;
-  --color-slate-300: #d7d1c7;
-  --color-slate-400: #9b9c92;
-  --color-slate-500: #6b766f;
-  --color-slate-600: #56604f;
-  --color-slate-700: #3d453a;
-  --color-slate-800: #2d3a37;
-  --color-slate-900: #222e29;
-  --color-slate-950: #161e1b;
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
 
   @keyframes marquee {
     0% {
@@ -63,21 +63,21 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --canvas-bg: #fbf9f6;
+  --canvas-bg: #f6f8fc;
   --card-bg: #ffffff;
-  --text-main: #2d3a37;
-  --text-mute: #66726d;
-  --border-color: #ebe7e0;
-  --input-bg: #fbf9f6;
+  --text-main: #0f172a;
+  --text-mute: #5b6878;
+  --border-color: #e6ebf3;
+  --input-bg: #f8fafc;
 }
 
 .dark {
-  --canvas-bg: #0e1311;
-  --card-bg: #18211d;
-  --text-main: #f4f6f3;
-  --text-mute: #9ca89f;
-  --border-color: #25302b;
-  --input-bg: #1b2520;
+  --canvas-bg: #0a0f1c;
+  --card-bg: #111a2e;
+  --text-main: #f8fafc;
+  --text-mute: #94a3b8;
+  --border-color: #1e293b;
+  --input-bg: #0f172a;
 }
 
 body {
@@ -154,7 +154,7 @@ body {
 }
 
 .dark .text-slate-400 {
-  color: #64748b !important;
+  color: #94a3b8 !important;
 }
 
 .dark input,
@@ -181,7 +181,7 @@ body {
 .dark table thead th,
 .dark table thead tr th {
   color: var(--text-main) !important;
-  background-color: #1f2a25 !important;
+  background-color: #16213a !important;
   border-color: var(--border-color) !important;
 }
 
@@ -192,14 +192,14 @@ body {
 .dark .hover\:bg-slate-100:hover,
 .dark div.hover\:bg-slate-50:hover,
 .dark .group:hover .group-hover\:bg-white {
-  background-color: #232f29 !important;
+  background-color: #1b2942 !important;
 }
 
 /* Category header dividers in the tables */
 .dark tr.bg-slate-50,
 .dark tr.bg-slate-50\/50,
 .dark td.bg-slate-50 {
-  background-color: #1f2a25 !important;
+  background-color: #16213a !important;
   color: var(--text-main) !important;
 }
 
@@ -207,17 +207,17 @@ body {
 .dark .bg-blue-50,
 .dark .bg-blue-50\/50,
 .dark tr.bg-blue-50\/50 {
-  background-color: rgba(45, 138, 120, 0.22) !important;
-  color: #5eead4 !important;
-  border-color: rgba(45, 138, 120, 0.45) !important;
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  color: #93c5fd !important;
+  border-color: rgba(37, 99, 235, 0.45) !important;
 }
 
 .dark .text-blue-900 {
-  color: #5eead4 !important;
+  color: #93c5fd !important;
 }
 
 .dark td.border-b-2 {
-  border-color: rgba(45, 138, 120, 0.5) !important;
+  border-color: rgba(37, 99, 235, 0.5) !important;
 }
 
 /* Badge tags & custom pill colors in dark mode */
@@ -232,9 +232,9 @@ body {
 .dark span.bg-blue-50,
 .dark div.bg-blue-50,
 .dark p.bg-blue-50 {
-  background-color: rgba(45, 138, 120, 0.22) !important;
-  border-color: rgba(45, 138, 120, 0.4) !important;
-  color: #5eead4 !important;
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  color: #93c5fd !important;
 }
 
 .dark span.bg-emerald-50,
@@ -270,9 +270,9 @@ body {
 .dark div.bg-indigo-50,
 .dark p.bg-indigo-50,
 .dark .bg-indigo-50 {
-  background-color: rgba(45, 138, 120, 0.22) !important;
-  border-color: rgba(45, 138, 120, 0.4) !important;
-  color: #5eead4 !important;
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  color: #93c5fd !important;
 }
 
 .dark span.bg-purple-50,
@@ -308,9 +308,9 @@ body {
 .dark div.bg-blue-50,
 .dark p.bg-blue-50,
 .dark .bg-blue-50 {
-  background-color: rgba(45, 138, 120, 0.22) !important;
-  border-color: rgba(45, 138, 120, 0.4) !important;
-  color: #5eead4 !important;
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  color: #93c5fd !important;
 }
 
 .dark p.text-slate-400,
@@ -322,7 +322,7 @@ body {
 .dark .text-blue-700,
 .dark .text-blue-800,
 .dark .text-blue-900 {
-  color: #34c9ae !important;
+  color: #60a5fa !important;
 }
 
 .dark .text-emerald-600,
@@ -357,7 +357,7 @@ body {
 .dark .text-indigo-700,
 .dark .text-indigo-800,
 .dark .text-indigo-900 {
-  color: #34c9ae !important;
+  color: #60a5fa !important;
 }
 
 .dark .bg-slate-100 {
@@ -485,10 +485,10 @@ body {
    Semua reversible: hapus blok ini untuk kembali. */
 
 :root {
-  --accent: #2d8a78;
+  --accent: #1d52da;
 }
 .dark {
-  --accent: #34c9ae;
+  --accent: #60a5fa;
 }
 
 /* Transisi mulus & konsisten pada elemen interaktif */
@@ -539,11 +539,11 @@ button:not(:disabled):active {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: #d7d1c7;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #b3b5ab;
+  background: #94a3b8;
 }
 
 /* Blur halus pada latar modal di mode terang (mode gelap punya blur lebih kuat) */
