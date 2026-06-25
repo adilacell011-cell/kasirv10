@@ -71,6 +71,13 @@ these — extend this block. Keep press-scale + `user-select:none` on real `butt
 clickable `role="button"` cards stay text-selectable.
 
 ## Tooling
+Two icon libs are installed: `lucide-react` (the app default, outline) AND `react-icons`.
+For a "premium / Android" look, use Material **filled** icons from `react-icons/md` (e.g.
+`MdSpaceDashboard`, `MdPointOfSale`, `MdStorefront`). Both render as React components taking
+`className`, so Tailwind `w-N/h-N` sizing + `text-*`/`fill-current` color work identically —
+they drop into `MenuItem`/mobile-nav with no API change. The nav (sidebar MenuItem + the
+`getMobileNav()` array + the two header brand marks) uses react-icons/md; page-body icons
+stay lucide. Don't blanket-swap the lucide import — only the menu/nav references were changed.
 ImageMagick is available as `magick`/`convert` (NOT `sharp`) for icon cropping/resizing.
 Frontend uses a base path: reference public assets in React via `import.meta.env.BASE_URL`
 and use relative (no leading slash) paths in the PWA manifest / index.html icon links.

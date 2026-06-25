@@ -71,6 +71,19 @@ import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api } from "./services/api";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
+import {
+  MdSpaceDashboard,
+  MdInsights,
+  MdInventory2,
+  MdWarehouse,
+  MdAutoAwesome,
+  MdFactCheck,
+  MdGroups,
+  MdStorefront,
+  MdPointOfSale,
+  MdSchedule,
+  MdAddBox,
+} from "react-icons/md";
 
 import { ProductTable } from "./components/ProductTable";
 import { CustomSelect } from "./components/CustomSelect";
@@ -2478,27 +2491,27 @@ export default function App() {
   const getMobileNav = () => {
     const items = [];
     if (profile?.role === "ADMIN") {
-      items.push({ id: "dashboard", icon: LayoutDashboard, label: "Dash" });
-      items.push({ id: "reports", icon: TrendingUp, label: "Laporan" });
-      items.push({ id: "inventory", icon: Boxes, label: "Barang" });
-      items.push({ id: "branch_stocks", icon: Database, label: "Stok" });
-      items.push({ id: "incentive", icon: Sparkles, label: "Bonus" });
-      items.push({ id: "audit", icon: ClipboardCheck, label: "Opname" });
-      items.push({ id: "employees", icon: Users, label: "Karyawan" });
-      items.push({ id: "settings", icon: Settings, label: "Cabang" });
+      items.push({ id: "dashboard", icon: MdSpaceDashboard, label: "Dash" });
+      items.push({ id: "reports", icon: MdInsights, label: "Laporan" });
+      items.push({ id: "inventory", icon: MdInventory2, label: "Barang" });
+      items.push({ id: "branch_stocks", icon: MdWarehouse, label: "Stok" });
+      items.push({ id: "incentive", icon: MdAutoAwesome, label: "Bonus" });
+      items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
+      items.push({ id: "employees", icon: MdGroups, label: "Karyawan" });
+      items.push({ id: "settings", icon: MdStorefront, label: "Cabang" });
     } else if (profile?.role === "CASHIER") {
-      items.push({ id: "pos", icon: Calculator, label: "POS" });
-      items.push({ id: "shift", icon: Clock, label: "Shift" });
-      items.push({ id: "incentive", icon: Sparkles, label: "Bonus" });
+      items.push({ id: "pos", icon: MdPointOfSale, label: "POS" });
+      items.push({ id: "shift", icon: MdSchedule, label: "Shift" });
+      items.push({ id: "incentive", icon: MdAutoAwesome, label: "Bonus" });
       items.push({
         id: "cashier_stock",
-        icon: PackagePlus,
+        icon: MdAddBox,
         label: "Stok",
         locked: !appConfig.allowCashierStockInput,
       });
     } else if (profile?.role === "AUDIT") {
-      items.push({ id: "audit", icon: ClipboardCheck, label: "Opname" });
-      items.push({ id: "reports", icon: TrendingUp, label: "Laporan" });
+      items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
+      items.push({ id: "reports", icon: MdInsights, label: "Laporan" });
     }
     return items;
   };
@@ -2700,7 +2713,7 @@ export default function App() {
         )}
         <aside className={`${isSidebarOpen ? 'flex w-64' : 'hidden'} fixed md:static inset-y-0 left-0 bg-slate-900 border-r border-slate-800 flex-col shrink-0 z-50 h-[100dvh] shadow-xl md:shadow-none`}>
           <div className="h-16 flex items-center px-4 md:px-6 border-b border-slate-800 bg-slate-950/50 shrink-0">
-            <Store className="w-6 h-6 text-blue-500 mr-3 shrink-0" />
+            <MdStorefront className="w-6 h-6 text-blue-500 mr-3 shrink-0" />
             <div className="truncate text-left">
               <h1 className="font-bold text-white tracking-tight leading-tight truncate">
                 ALFATH PULSA
@@ -2720,50 +2733,50 @@ export default function App() {
               <>
                 <MenuCategory title="Pusat Komando" />
                 <MenuItem
-                  icon={LayoutDashboard}
+                  icon={MdSpaceDashboard}
                   label="Dashboard Pusat"
                   active={activeMenu === "dashboard"}
                   onClick={() => setActiveMenu("dashboard")}
                 />
                 <MenuItem
-                  icon={TrendingUp}
+                  icon={MdInsights}
                   label="Shift & Pendapatan"
                   active={activeMenu === "reports"}
                   onClick={() => setActiveMenu("reports")}
                 />
                 <MenuItem
-                  icon={Sparkles}
+                  icon={MdAutoAwesome}
                   label="Bonus & Insentif"
                   active={activeMenu === "incentive"}
                   onClick={() => setActiveMenu("incentive")}
                 />
                 <MenuItem
-                  icon={Users}
+                  icon={MdGroups}
                   label="Atur Akses Karyawan"
                   active={activeMenu === "employees"}
                   onClick={() => setActiveMenu("employees")}
                 />
                 <MenuItem
-                  icon={Settings}
+                  icon={MdStorefront}
                   label="Cabang & Lokasi"
                   active={activeMenu === "settings"}
                   onClick={() => setActiveMenu("settings")}
                 />
                 <MenuCategory title="Data Master" />
                 <MenuItem
-                  icon={Boxes}
+                  icon={MdInventory2}
                   label="Inventori Global"
                   active={activeMenu === "inventory"}
                   onClick={() => setActiveMenu("inventory")}
                 />
                 <MenuItem
-                  icon={ClipboardCheck}
+                  icon={MdFactCheck}
                   label="Opname Cabang"
                   active={activeMenu === "audit"}
                   onClick={() => setActiveMenu("audit")}
                 />
                 <MenuItem
-                  icon={Database}
+                  icon={MdWarehouse}
                   label="Stok per Cabang"
                   active={activeMenu === "branch_stocks"}
                   onClick={() => setActiveMenu("branch_stocks")}
@@ -2775,25 +2788,25 @@ export default function App() {
               <>
                 <MenuCategory title="Stasiun Transaksi" />
                 <MenuItem
-                  icon={Calculator}
+                  icon={MdPointOfSale}
                   label="Kasir (POS)"
                   active={activeMenu === "pos"}
                   onClick={() => setActiveMenu("pos")}
                 />
                 <MenuItem
-                  icon={Clock}
+                  icon={MdSchedule}
                   label="Manajemen Shift"
                   active={activeMenu === "shift"}
                   onClick={() => setActiveMenu("shift")}
                 />
                 <MenuItem
-                  icon={Sparkles}
+                  icon={MdAutoAwesome}
                   label="Bonus Saya"
                   active={activeMenu === "incentive"}
                   onClick={() => setActiveMenu("incentive")}
                 />
                 <MenuItem
-                  icon={PackagePlus}
+                  icon={MdAddBox}
                   label="Input Stok Cabang"
                   active={activeMenu === "cashier_stock"}
                   onClick={() => setActiveMenu("cashier_stock")}
@@ -2810,13 +2823,13 @@ export default function App() {
               <>
                 <MenuCategory title="Gudang & Logistik" />
                 <MenuItem
-                  icon={ClipboardCheck}
+                  icon={MdFactCheck}
                   label="Opname Cabang"
                   active={activeMenu === "audit"}
                   onClick={() => setActiveMenu("audit")}
                 />
                 <MenuItem
-                  icon={TrendingUp}
+                  icon={MdInsights}
                   label="Shift & Pendapatan"
                   active={activeMenu === "reports"}
                   onClick={() => setActiveMenu("reports")}
@@ -2867,7 +2880,7 @@ export default function App() {
               <button className="p-2 -ml-2 text-slate-600" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <Menu className="w-6 h-6" />
               </button>
-              <Store className="w-6 h-6 text-blue-600 md:hidden shrink-0" />
+              <MdStorefront className="w-6 h-6 text-blue-600 md:hidden shrink-0" />
               <div className="flex flex-col justify-center">
                 <h2 className="text-sm md:text-md font-extrabold uppercase tracking-tight text-slate-800 truncate leading-tight">
                   {getPageTitle()}
