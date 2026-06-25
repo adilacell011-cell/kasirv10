@@ -567,3 +567,75 @@ button:not(:disabled):active {
     transform: none !important;
   }
 }
+
+/* ============================================================
+   KOLOM PREMIUM — tampilan field (input/select/textarea) yang
+   lebih mewah, berdimensi, dan nyaman dipandang.
+   Reversibel: hapus blok ini untuk kembali ke gaya semula.
+   ============================================================ */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+select,
+textarea {
+  border-radius: 12px !important;
+  border-width: 1px !important;
+  border-color: #dbe4f0 !important;
+  background-clip: padding-box;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 1px 1px rgba(15, 23, 42, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75) !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):hover,
+select:hover,
+textarea:hover {
+  border-color: #c2cfe2 !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow:
+    0 0 0 3px rgba(29, 82, 218, 0.16),
+    0 2px 6px rgba(15, 23, 42, 0.07) !important;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent),
+    0 2px 6px rgba(15, 23, 42, 0.07) !important;
+}
+
+/* Glow box-shadow sudah menjadi indikator fokus yang jelas — hilangkan
+   outline ganda khusus pada field agar tampak lebih bersih & mewah. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none !important;
+}
+
+/* Mode gelap: tanpa highlight putih, kedalaman lembut yang mewah */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+.dark select,
+.dark textarea {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):hover,
+.dark select:hover,
+.dark textarea:hover {
+  border-color: rgba(148, 163, 184, 0.32) !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow:
+    0 0 0 3px rgba(96, 165, 250, 0.24),
+    0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent),
+    0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}

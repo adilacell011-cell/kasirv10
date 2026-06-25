@@ -70,6 +70,20 @@ and modal blur (8px `!important`) still WIN by specificity.
 these — extend this block. Keep press-scale + `user-select:none` on real `button` only so
 clickable `role="button"` cards stay text-selectable.
 
+## Restyling form fields app-wide (kolom) — element selector + !important
+To change input/select/textarea appearance globally WITHOUT editing the 9k-line App.tsx,
+add a block at the END of index.css targeting `input/select/textarea`. You MUST use
+`!important`: Tailwind utility classes (`rounded-*`, `border-slate-*`, `focus:ring-*`,
+`shadow-sm`) sit inline on every field and outrank bare element selectors, so non-!important
+element rules silently lose. The app uses ONLY native `<select>` (no Radix `components/ui/select`),
+so a native-element rule reliably reaches every dropdown.
+**color-mix focus-ring gotcha:** if you build the focus glow with `color-mix(... var(--accent) ...)`
+AND remove the outline on `:focus-visible` for fields, declare a plain `rgba()` box-shadow line
+FIRST, then the color-mix line — old Android WebViews drop the color-mix declaration entirely and
+would otherwise leave the field with NO visible focus indicator.
+**How to apply:** exclude `[type=checkbox/radio/range/file/submit/button]`; give `.dark` its own
+border/shadow (no white inset highlight). The premium-field block is self-contained & reversible.
+
 ## Tooling
 Two icon libs are installed: `lucide-react` (the app default, outline) AND `react-icons`.
 For a "premium / Android" look, use Material **filled** icons from `react-icons/md` (e.g.
