@@ -30,3 +30,24 @@ ledger. Real-time sync uses a `commissionsUpdated` socket event emitted on withd
 refund; the frontend `socket.on("commissionsUpdated", loadData)` re-fetches the summary.
 Cashier "Saldo Bonus Saya" reads `commissionsSummary.totalEarned` (branch earned total),
 NOT `profile.bonusBalance`.
+
+## Bonus/income are never destroyed by deletion or archival
+Owner rule: "bonus tidak boleh berkurang kecuali refund atau dicairkan" — bonus only
+decreases via a refund (earned→refunded) or a withdrawal (earned→withdrawn). NOTHING else
+may delete or reduce Commission rows.
+- **Product "delete" = SOFT delete (archive).** `DELETE /api/products/:id` sets
+  `status="ARCHIVED"`; it must NEVER cascade-delete commissions/saleItems/sales. `GET
+  /api/products` filters `status:"ACTIVE"` so archived products vanish from the catalog,
+  while transaction/commission GETs include the `product` relation so names still resolve
+  for archived products (relation fetch ignores the ACTIVE filter).
+- **Auto-archive of old sales** (`autoArchiveOldSales`, age-based >30d, runs on boot +
+  every 12h) aggregates into `DailyIncomeSummary`, then deletes `Sale`/`SaleItem`. It must
+  UNLINK ALL commissions (`saleId=null`) and delete NONE — do not re-add a deleteMany for
+  withdrawn/refunded rows "to keep DB lean"; that silently shrinks bonus history.
+- **Branch delete** (`DELETE /api/branches/:id`) wipes commissions, so it is guarded:
+  blocked (400) if the branch has ANY sales/shifts/adjustments OR `commission.count>0`
+  (the commission guard matters because archived commissions keep `branchId` after
+  `saleId` is nulled). Income stays synced because the income report merges
+  `DailyIncomeSummary` + remaining active sales.
+**Why:** product/branch/transaction deletion previously hard-deleted Commission rows,
+violating the owner rule and desyncing daily/weekly/historical bonus & income reports.

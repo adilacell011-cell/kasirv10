@@ -1601,17 +1601,17 @@ export default function App() {
   const handleDeleteProduct = async (id: string, name: string) => {
     if (
       !(await triggerConfirm(
-        `Hapus master produk "${name}"? Tindakan ini tidak dapat dibatalkan.`,
+        `Arsipkan produk "${name}"? Produk akan hilang dari daftar jualan, tetapi seluruh riwayat penjualan, bonus, dan penghasilan tetap tersimpan.`,
       ))
     )
       return;
     try {
       await api.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
-      alert("Produk berhasil dihapus!");
+      alert("Produk berhasil diarsipkan. Riwayat & bonus tetap tersimpan.");
     } catch (err) {
       console.error(err);
-      alert("Gagal menghapus produk.");
+      alert("Gagal mengarsipkan produk.");
     }
   };
 

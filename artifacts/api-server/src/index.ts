@@ -307,22 +307,21 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
 app.delete("/api/products/:id", authenticateToken, requireRole("ADMIN"), async (req, res) => {
   const productId = req.params.id;
   try {
-    await prisma.$transaction(async (tx) => {
-        // Hard delete all related records
-        await tx.stockSnapshot.deleteMany({ where: { productId } });
-        await tx.commission.deleteMany({ where: { productId } });
-        await tx.saleItem.deleteMany({ where: { productId } });
-        await tx.productStock.deleteMany({ where: { productId } });
-        await tx.voucherSN.deleteMany({ where: { productId } });
-        await tx.adjustment.deleteMany({ where: { productId } });
-        await tx.product.delete({ where: { id: productId } });
+    // Soft delete: ARCHIVE the product instead of removing it. This keeps every related
+    // record intact — sales history, bonus (Commission) rows, and owner income — so
+    // nothing is lost when a product is "deleted". GET /api/products only returns status
+    // "ACTIVE", so the archived product disappears from the catalog and POS, while reports
+    // still resolve its name through the preserved product relation.
+    await prisma.product.update({
+      where: { id: productId },
+      data: { status: "ARCHIVED" }
     });
-    
+
     io.emit("productDeleted", { id: productId });
     res.json({ success: true });
   } catch (error: any) {
-    console.error("Delete Product Error:", error);
-    res.status(500).json({ error: "Gagal menghapus produk: " + (error.message || "Pastikan tidak ada riwayat transaksi terjual.") });
+    console.error("Archive Product Error:", error);
+    res.status(500).json({ error: "Gagal mengarsipkan produk: " + (error.message || "Coba lagi.") });
   }
 });
 
@@ -368,10 +367,14 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
     const salesCount = await prisma.sale.count({ where: { branchId } });
     const shiftsCount = await prisma.shift.count({ where: { branchId } });
     const adjustmentsCount = await prisma.adjustment.count({ where: { branchId } });
+    // Bonus must never be destroyed by deleting a branch. After old sales are archived,
+    // commissions stay (saleId = null) but keep their branchId, so check them explicitly
+    // — otherwise an archived branch could pass the guard above and lose bonus history.
+    const commissionsCount = await prisma.commission.count({ where: { branchId } });
 
-    if (salesCount > 0 || shiftsCount > 0 || adjustmentsCount > 0) {
+    if (salesCount > 0 || shiftsCount > 0 || adjustmentsCount > 0 || commissionsCount > 0) {
       return res.status(400).json({ 
-        error: "Cabang tidak dapat dihapus karena sudah memiliki transaksi operasional (penjualan, shift, atau adjustment)." 
+        error: "Cabang tidak dapat dihapus karena masih memiliki riwayat operasional atau bonus (penjualan, shift, adjustment, atau komisi)." 
       });
     }
 
@@ -1344,24 +1347,19 @@ async function autoArchiveOldSales() {
 
       const oldSaleIds = oldSales.map(s => s.id);
       
-      // 1. Unlink commissions that are still "earned" so they don't get deleted
+      // Preserve the FULL bonus history when archiving old sales: unlink ALL commissions
+      // (set saleId = null) instead of deleting any. Bonus must never decrease except via a
+      // refund or a withdrawal, so every earned/withdrawn/refunded record is kept and the
+      // daily/weekly/historical bonus reports stay in sync after a sale is archived.
       await tx.commission.updateMany({
         where: {
-          saleId: { in: oldSaleIds },
-          status: "earned"
+          saleId: { in: oldSaleIds }
         },
         data: {
           saleId: null
         }
       });
 
-      // 2. Delete commissions that are already withdrawn or refunded to keep DB lean
-      await tx.commission.deleteMany({
-        where: {
-          saleId: { in: oldSaleIds }
-        }
-      });
-      
       await tx.saleItem.deleteMany({
         where: { saleId: { in: oldSaleIds } }
       });
