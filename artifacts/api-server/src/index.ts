@@ -128,6 +128,27 @@ const stripPw = (u: any) => {
   return rest;
 };
 
+// --- Input validation helpers -------------------------------------------------
+// Coerce to a finite number; returns null for missing / NaN / Infinity so callers
+// can reject bad input instead of writing corrupt values (NaN totals, etc.) to the DB.
+const toFiniteNumber = (v: any): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+// Coerce to a strictly-positive integer (for qty). Returns null when invalid.
+const toPositiveInt = (v: any): number | null => {
+  const n = toFiniteNumber(v);
+  if (n === null || !Number.isInteger(n) || n <= 0) return null;
+  return n;
+};
+// Coerce to a number >= 0 (for money fields). Returns null when invalid.
+const toNonNegativeNumber = (v: any): number | null => {
+  const n = toFiniteNumber(v);
+  if (n === null || n < 0) return null;
+  return n;
+};
+
 // API Routes
 app.get("/api/health", async (req, res) => {
   try {
@@ -260,6 +281,13 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
   const { id, purchasePrice, ...data } = req.body;
   if (purchasePrice !== undefined) {
     (data as any).buyingPrice = purchasePrice;
+  }
+  // Guard money fields so a bad value can't be persisted (NaN/negative prices).
+  for (const f of ["sellingPrice", "discountPrice", "commissionAmount", "buyingPrice"]) {
+    const val = (data as any)[f];
+    if (val !== undefined && val !== null && val !== "" && toNonNegativeNumber(val) === null) {
+      return res.status(400).json({ error: `Nilai ${f} harus angka >= 0.` });
+    }
   }
   try {
     const product = id 
@@ -430,6 +458,30 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
   const actualBranchId = requester.role === "CASHIER" ? requester.branchId : (branchId || requester.branchId);
   if (!actualBranchId) return res.status(400).json({ error: "Cabang tidak ditentukan untuk transaksi ini." });
 
+  // Validate payload before touching the DB so a malformed request can never write
+  // NaN/negative totals or iterate over a non-array (which would crash or corrupt data).
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Item transaksi tidak valid atau kosong." });
+  }
+  for (const it of items) {
+    if (!it || !it.productId) return res.status(400).json({ error: "Item transaksi tidak valid (produk tidak ada)." });
+    if (toPositiveInt(it.qty) === null) return res.status(400).json({ error: "Jumlah (qty) setiap item harus bilangan bulat positif." });
+    if (toFiniteNumber(it.price) === null) return res.status(400).json({ error: "Harga item tidak valid." });
+  }
+  const safeTotal = toFiniteNumber(total);
+  if (safeTotal === null) return res.status(400).json({ error: "Total transaksi tidak valid." });
+  const safeCommission = toFiniteNumber(totalCommission) ?? 0;
+  // Normalize numeric fields up-front so downstream math and Prisma int columns always
+  // receive real numbers (a legitimate "2" string is accepted, not rejected at the DB layer).
+  const normItems = items.map((it: any) => ({
+    productId: it.productId,
+    qty: toPositiveInt(it.qty) as number,
+    price: toFiniteNumber(it.price) as number,
+    commission: toFiniteNumber(it.commission) ?? 0,
+    subtotal: toFiniteNumber(it.subtotal) ?? ((toFiniteNumber(it.price) as number) * (toPositiveInt(it.qty) as number)),
+    sn: it.sn,
+  }));
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       let finalTotalProfit = 0;
@@ -437,7 +489,7 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       const productNames: Record<string, string> = {};
 
       // 1. Validate All Stocks and Collect Cost Prices First
-      for (const item of items) {
+      for (const item of normItems) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
           include: { stocks: { where: { branchId: actualBranchId } } }
@@ -472,8 +524,8 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
           branchId: actualBranchId,
           cashierId: actualCashierId,
           customerName,
-          total,
-          totalCommission,
+          total: safeTotal,
+          totalCommission: safeCommission,
           totalProfit: finalTotalProfit,
           status: "success",
           items: {
@@ -502,8 +554,8 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
           throw new Error(`Stok tidak cukup untuk ${productNames[item.productId] || item.productId}. Stok mungkin baru saja terjual.`);
         }
 
-        if (item.productId && (req.body.items.find((i:any) => i.productId === item.productId)?.commission || 0) > 0) {
-          const commAmt = req.body.items.find((i:any) => i.productId === item.productId).commission;
+        if (item.productId && (normItems.find((i) => i.productId === item.productId)?.commission || 0) > 0) {
+          const commAmt = normItems.find((i) => i.productId === item.productId)!.commission;
           await tx.commission.create({
             data: {
               saleId: sale.id,
@@ -520,10 +572,10 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       }
 
       // 4. Update User Bonus Balance
-      if (totalCommission > 0) {
+      if (safeCommission > 0) {
         await tx.user.update({
           where: { id: actualCashierId },
-          data: { bonusBalance: { increment: totalCommission } }
+          data: { bonusBalance: { increment: safeCommission } }
         });
       }
 
@@ -533,7 +585,7 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
     // CRITICAL: Emit real-time stock update notification (scoped to this branch + admins)
     emitBranch(actualBranchId, "saleProcessed", {
       saleId: result.id,
-      items: items.map((i: any) => ({ productId: i.productId, branchId: actualBranchId, qty: i.qty }))
+      items: normItems.map((i) => ({ productId: i.productId, branchId: actualBranchId, qty: i.qty }))
     });
 
     res.json(result);
@@ -644,12 +696,15 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
   // Cashiers may only open shifts for their own branch and under their own identity.
   const shiftBranchId = requester.role === "CASHIER" ? requester.branchId : branchId;
   const shiftCashierId = requester.role === "CASHIER" ? requester.userId : cashierId;
+  if (!shiftBranchId) return res.status(400).json({ error: "Cabang shift tidak ditentukan." });
+  const safeInitialCash = toNonNegativeNumber(initialCash);
+  if (safeInitialCash === null) return res.status(400).json({ error: "Modal awal (initialCash) harus angka >= 0." });
   try {
     const shift = await prisma.shift.create({
       data: {
         branchId: shiftBranchId,
         cashierId: shiftCashierId,
-        initialCash,
+        initialCash: safeInitialCash,
         shiftDate,
         shiftType,
         status: "open",
@@ -665,6 +720,19 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
 app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
   const { actualCash, totalSales, difference, status } = req.body;
   const requester = (req as any).user;
+  // Reject non-numeric money fields so a typo can't poison the shift report, and
+  // normalize provided values to real numbers before writing them.
+  const shiftData: any = {
+    status: status || "closed",
+    closeTime: status === "closed" ? new Date() : undefined,
+  };
+  for (const [label, val] of [["actualCash", actualCash], ["totalSales", totalSales], ["difference", difference]] as const) {
+    if (val !== undefined && val !== null) {
+      const n = toFiniteNumber(val);
+      if (n === null) return res.status(400).json({ error: `Nilai ${label} tidak valid.` });
+      shiftData[label] = n;
+    }
+  }
   try {
     if (requester.role === "CASHIER") {
       const existing = await prisma.shift.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
@@ -675,13 +743,7 @@ app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"),
     }
     const shift = await prisma.shift.update({
       where: { id: req.params.id },
-      data: {
-        actualCash,
-        totalSales,
-        difference,
-        status: status || "closed",
-        closeTime: status === "closed" ? new Date() : undefined
-      }
+      data: shiftData
     });
     res.json(shift);
   } catch (error) {
@@ -739,13 +801,25 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
       return res.status(403).json({ error: "Kasir hanya dapat menambah stok, bukan opname atau pengurangan/pemusnahan." });
     }
   }
+  if (!productId || !branchId) return res.status(400).json({ error: "Produk atau cabang tidak ditentukan." });
+  const hasNewQty = newQty !== undefined && newQty !== null;
+  const safeNewQty = hasNewQty ? toFiniteNumber(newQty) : null;
+  const safeQty = (qty !== undefined && qty !== null) ? toFiniteNumber(qty) : null;
+  if (hasNewQty) {
+    if (safeNewQty === null || !Number.isInteger(safeNewQty) || safeNewQty < 0) {
+      return res.status(400).json({ error: "Nilai opname (newQty) harus bilangan bulat >= 0." });
+    }
+  } else if (safeQty === null || !Number.isInteger(safeQty) || safeQty === 0) {
+    return res.status(400).json({ error: "Jumlah penyesuaian (qty) harus bilangan bulat bukan nol." });
+  }
+  const safeOldQty = toFiniteNumber(oldQty) ?? 0;
   try {
     const result = await prisma.$transaction(async (tx) => {
       // Update ProductStock
       const stock = await tx.productStock.upsert({
         where: { productId_branchId: { productId, branchId } },
-        update: { qty: newQty !== undefined ? newQty : { increment: qty } },
-        create: { productId, branchId, qty: newQty !== undefined ? newQty : qty }
+        update: { qty: hasNewQty ? (safeNewQty as number) : { increment: safeQty as number } },
+        create: { productId, branchId, qty: hasNewQty ? (safeNewQty as number) : (safeQty as number) }
       });
 
       // Add Adjustment Record
@@ -753,8 +827,8 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
         data: {
           productId,
           branchId,
-          qty: qty !== undefined ? Math.abs(qty) : Math.abs(newQty - (oldQty || 0)),
-          type: type || (qty > 0 ? "STOCK_IN" : "STOCK_OUT"),
+          qty: hasNewQty ? Math.abs((safeNewQty as number) - safeOldQty) : Math.abs(safeQty as number),
+          type: type || ((safeQty ?? 0) > 0 ? "STOCK_IN" : "STOCK_OUT"),
           reason,
         }
       });
@@ -776,13 +850,23 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
   if (requester.role === "CASHIER" && sourceBranchId !== requester.branchId) {
     return res.status(403).json({ error: "Kasir hanya dapat transfer stok dari cabangnya sendiri." });
   }
+  if (!productId || !sourceBranchId || !targetBranchId) {
+    return res.status(400).json({ error: "Produk atau cabang asal/tujuan tidak lengkap." });
+  }
+  if (sourceBranchId === targetBranchId) {
+    return res.status(400).json({ error: "Cabang asal dan tujuan tidak boleh sama." });
+  }
+  const safeQty = toPositiveInt(qty);
+  if (safeQty === null) {
+    return res.status(400).json({ error: "Jumlah transfer harus bilangan bulat positif." });
+  }
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Kurangi dari asal — guard atomik agar stok asal tidak bisa minus walau
       // ada transfer/penjualan bersamaan. UPDATE hanya jalan bila stok masih cukup.
       const decremented = await tx.productStock.updateMany({
-        where: { productId, branchId: sourceBranchId, qty: { gte: qty } },
-        data: { qty: { decrement: qty } }
+        where: { productId, branchId: sourceBranchId, qty: { gte: safeQty } },
+        data: { qty: { decrement: safeQty } }
       });
       if (decremented.count === 0) {
         throw new Error("Stok cabang asal tidak mencukupi");
@@ -794,8 +878,8 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
       // 2. Tambah ke tujuan
       const targetStock = await tx.productStock.upsert({
         where: { productId_branchId: { productId, branchId: targetBranchId } },
-        update: { qty: { increment: qty } },
-        create: { productId, branchId: targetBranchId, qty }
+        update: { qty: { increment: safeQty } },
+        create: { productId, branchId: targetBranchId, qty: safeQty }
       });
 
       // 3. Catat log asal
@@ -803,7 +887,7 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
         data: {
           productId,
           branchId: sourceBranchId,
-          qty,
+          qty: safeQty,
           type: "TRANSFER_OUT",
           reason: `Transfer ke Cabang ID: ${targetBranchId}`,
         }
@@ -814,7 +898,7 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
         data: {
           productId,
           branchId: targetBranchId,
-          qty,
+          qty: safeQty,
           type: "TRANSFER_IN",
           reason: `Transfer dari Cabang ID: ${sourceBranchId}`,
         }
@@ -1372,6 +1456,24 @@ async function startServer() {
     .catch((error) => {
       console.error("❌ Database connection failed at startup:", error.message);
     });
+
+  // Last-resort error middleware: any synchronous throw or forwarded error from a
+  // route returns a clean 500 instead of leaking a stack trace or hanging the request.
+  app.use((err: any, _req: any, res: any, _next: any) => {
+    console.error("Unhandled route error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Terjadi kesalahan internal pada server." });
+    }
+  });
+
+  // Keep the POS online: a single stray rejection/exception anywhere must not take
+  // the whole API down and knock every cashier offline. Log loudly and stay alive.
+  process.on("unhandledRejection", (reason) => {
+    console.error("⚠️ Unhandled promise rejection:", reason);
+  });
+  process.on("uncaughtException", (err) => {
+    console.error("⚠️ Uncaught exception:", err);
+  });
 
   // 2. Start Listening (frontend is served by a separate artifact)
   httpServer.listen(PORT, "0.0.0.0", () => {
