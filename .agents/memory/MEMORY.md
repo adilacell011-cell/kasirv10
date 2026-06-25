@@ -4,6 +4,7 @@
 - [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — single-stage api image, entrypoint db push auto-creates tables, nginx proxies /api + /socket.io.
 - [AlfathPOS frontend UI conventions](alfath-pos-ui.md) — fragile dark-mode palette, ALL browser dialogs replaced by in-app modals/toasts, opt-in .mobile-cards, ImageMagick not sharp.
 - [AlfathPOS dark-mode styling](alfathpos-dark-mode-styling.md) — restyle dark panels with the app standard LIGHT utility classes; dark-mode CSS overrides only match exact class names (opacity/hover variants need explicit dark:).
+- [AlfathPOS app-wide theme remap](alfathpos-theme-remap.md) — re-skin whole app via @theme ramp remaps (blue/indigo/slate) in index.css; inline recharts hex, .dark hardcoded hex & the login PNG icon bypass it; never put `*/` in an @theme comment.
 - [AlfathPOS product naming](alfathpos-product-naming.md) — add-product name is built per-category by buildProductName(); Parfum aroma/size live only inside the name string, not DB columns.
 - [AlfathPOS shift & day boundaries](alfathpos-shift-day-boundaries.md) — day resets at 6 AM but shift-overdue boundary is 7 AM ON PURPOSE; 06:00–07:00 txns stay in night shift. Do not harmonize.
 - [AlfathPOS stock & SN model](alfathpos-stock-model.md) — one masterSN per product for recall + plain Pcs qty stock; per-unit Voucher SN intake removed (dead code); VoucherSN model kept for legacy cleanup only.

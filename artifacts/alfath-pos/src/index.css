@@ -1,25 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:wght@700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Lora", ui-serif, Georgia, serif;
+  /* "Fresh & Friendly": iOS system font stack (San Francisco) for every text.
+     Replaces the previous Inter/Lora pair. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --animate-marquee: marquee 15s linear infinite;
 
-  /* "Bersih & Profesional" accent: remap the blue ramp to a calmer indigo.
-     Centralized token refinement — every blue-* utility (bg/text/border/ring/
-     gradient) shifts cohesively without touching the JSX. Revert by deleting
-     this block. Dark-mode keeps its own hardcoded accent overrides below. */
-  --color-blue-50: #eef2ff;
-  --color-blue-100: #e0e7ff;
-  --color-blue-200: #c7d2fe;
-  --color-blue-300: #a5b4fc;
-  --color-blue-400: #818cf8;
-  --color-blue-500: #6366f1;
-  --color-blue-600: #4f46e5;
-  --color-blue-700: #4338ca;
-  --color-blue-800: #3730a3;
-  --color-blue-900: #312e81;
+  /* "Fresh & Friendly" accent: remap the blue AND indigo ramps to a calm teal.
+     Centralized token refinement — every blue and indigo utility (bg, text,
+     border, ring, gradient) shifts cohesively without touching the JSX.
+     Revert by restoring the previous indigo values. Dark-mode accent is
+     harmonized to teal in the override block at the end of this file. */
+  --color-blue-50: #e6f3f0;
+  --color-blue-100: #cce7e1;
+  --color-blue-200: #a6d6cb;
+  --color-blue-300: #74bdae;
+  --color-blue-400: #45a492;
+  --color-blue-500: #2d8a78;
+  --color-blue-600: #236b5d;
+  --color-blue-700: #1a6355;
+  --color-blue-800: #154f44;
+  --color-blue-900: #103b33;
+
+  --color-indigo-50: #e6f3f0;
+  --color-indigo-100: #cce7e1;
+  --color-indigo-200: #a6d6cb;
+  --color-indigo-300: #74bdae;
+  --color-indigo-400: #45a492;
+  --color-indigo-500: #2d8a78;
+  --color-indigo-600: #236b5d;
+  --color-indigo-700: #1a6355;
+  --color-indigo-800: #154f44;
+  --color-indigo-900: #103b33;
+
+  /* "Fresh & Friendly" warm neutral ramp: warms every slate-* utility from a
+     cool blue-gray into a soft warm greige to match the mockup. Luminance is
+     kept close to default slate so text/border contrast is preserved.
+     Revert by deleting this slate block. */
+  --color-slate-50: #fbf9f6;
+  --color-slate-100: #f3f0eb;
+  --color-slate-200: #ebe7e0;
+  --color-slate-300: #d7d1c7;
+  --color-slate-400: #9b9c92;
+  --color-slate-500: #6b766f;
+  --color-slate-600: #56604f;
+  --color-slate-700: #3d453a;
+  --color-slate-800: #2d3a37;
+  --color-slate-900: #222e29;
+  --color-slate-950: #161e1b;
 
   @keyframes marquee {
     0% {
@@ -34,21 +63,21 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --canvas-bg: #f8fafc;
+  --canvas-bg: #fbf9f6;
   --card-bg: #ffffff;
-  --text-main: #1e293b;
-  --text-mute: #64748b;
-  --border-color: #e2e8f0;
-  --input-bg: #f8fafc;
+  --text-main: #2d3a37;
+  --text-mute: #66726d;
+  --border-color: #ebe7e0;
+  --input-bg: #fbf9f6;
 }
 
 .dark {
-  --canvas-bg: #090e17;
-  --card-bg: #121b2d;
-  --text-main: #f8fafc;
-  --text-mute: #94a3b8;
-  --border-color: #1a273f;
-  --input-bg: #172237;
+  --canvas-bg: #0e1311;
+  --card-bg: #18211d;
+  --text-main: #f4f6f3;
+  --text-mute: #9ca89f;
+  --border-color: #25302b;
+  --input-bg: #1b2520;
 }
 
 body {
@@ -152,7 +181,7 @@ body {
 .dark table thead th,
 .dark table thead tr th {
   color: var(--text-main) !important;
-  background-color: #172237 !important;
+  background-color: #1f2a25 !important;
   border-color: var(--border-color) !important;
 }
 
@@ -163,14 +192,14 @@ body {
 .dark .hover\:bg-slate-100:hover,
 .dark div.hover\:bg-slate-50:hover,
 .dark .group:hover .group-hover\:bg-white {
-  background-color: #1c2a41 !important;
+  background-color: #232f29 !important;
 }
 
 /* Category header dividers in the tables */
 .dark tr.bg-slate-50,
 .dark tr.bg-slate-50\/50,
 .dark td.bg-slate-50 {
-  background-color: #172237 !important;
+  background-color: #1f2a25 !important;
   color: var(--text-main) !important;
 }
 
@@ -178,17 +207,17 @@ body {
 .dark .bg-blue-50,
 .dark .bg-blue-50\/50,
 .dark tr.bg-blue-50\/50 {
-  background-color: rgba(30, 58, 138, 0.25) !important;
-  color: #93c5fd !important;
-  border-color: rgba(30, 58, 138, 0.45) !important;
+  background-color: rgba(45, 138, 120, 0.22) !important;
+  color: #5eead4 !important;
+  border-color: rgba(45, 138, 120, 0.45) !important;
 }
 
 .dark .text-blue-900 {
-  color: #93c5fd !important;
+  color: #5eead4 !important;
 }
 
 .dark td.border-b-2 {
-  border-color: rgba(30, 58, 138, 0.5) !important;
+  border-color: rgba(45, 138, 120, 0.5) !important;
 }
 
 /* Badge tags & custom pill colors in dark mode */
@@ -203,9 +232,9 @@ body {
 .dark span.bg-blue-50,
 .dark div.bg-blue-50,
 .dark p.bg-blue-50 {
-  background-color: rgba(30, 58, 138, 0.25) !important;
-  border-color: rgba(29, 78, 216, 0.4) !important;
-  color: #93c5fd !important;
+  background-color: rgba(45, 138, 120, 0.22) !important;
+  border-color: rgba(45, 138, 120, 0.4) !important;
+  color: #5eead4 !important;
 }
 
 .dark span.bg-emerald-50,
@@ -241,9 +270,9 @@ body {
 .dark div.bg-indigo-50,
 .dark p.bg-indigo-50,
 .dark .bg-indigo-50 {
-  background-color: rgba(49, 46, 129, 0.25) !important;
-  border-color: rgba(67, 56, 202, 0.4) !important;
-  color: #a5b4fc !important;
+  background-color: rgba(45, 138, 120, 0.22) !important;
+  border-color: rgba(45, 138, 120, 0.4) !important;
+  color: #5eead4 !important;
 }
 
 .dark span.bg-purple-50,
@@ -279,9 +308,9 @@ body {
 .dark div.bg-blue-50,
 .dark p.bg-blue-50,
 .dark .bg-blue-50 {
-  background-color: rgba(30, 58, 138, 0.25) !important;
-  border-color: rgba(30, 64, 175, 0.4) !important;
-  color: #93c5fd !important;
+  background-color: rgba(45, 138, 120, 0.22) !important;
+  border-color: rgba(45, 138, 120, 0.4) !important;
+  color: #5eead4 !important;
 }
 
 .dark p.text-slate-400,
@@ -293,7 +322,7 @@ body {
 .dark .text-blue-700,
 .dark .text-blue-800,
 .dark .text-blue-900 {
-  color: #60a5fa !important;
+  color: #34c9ae !important;
 }
 
 .dark .text-emerald-600,
@@ -328,7 +357,7 @@ body {
 .dark .text-indigo-700,
 .dark .text-indigo-800,
 .dark .text-indigo-900 {
-  color: #818cf8 !important;
+  color: #34c9ae !important;
 }
 
 .dark .bg-slate-100 {
@@ -456,10 +485,10 @@ body {
    Semua reversible: hapus blok ini untuk kembali. */
 
 :root {
-  --accent: #4f46e5;
+  --accent: #2d8a78;
 }
 .dark {
-  --accent: #60a5fa;
+  --accent: #34c9ae;
 }
 
 /* Transisi mulus & konsisten pada elemen interaktif */
@@ -510,11 +539,11 @@ button:not(:disabled):active {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d7d1c7;
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #b3b5ab;
 }
 
 /* Blur halus pada latar modal di mode terang (mode gelap punya blur lebih kuat) */
