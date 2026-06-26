@@ -119,6 +119,24 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
+## Glassmorphism ("Figma glass") cards — central, class-gated, with `.app-solid` opt-out
+A central block at the END of index.css gives ALL cards a frosted-glass look WITHOUT editing
+App.tsx: selector `.bg-white:is(.rounded-lg,.rounded-xl,.rounded-2xl,.rounded-3xl,.rounded-\[32px\])`
++ exclusions `:not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid)`.
+It sets translucent bg + `backdrop-filter: blur(12px)`, `border-width:1.5px` (the "pertebal"), a top
+sheen via `--tw-inset-shadow`, and a layered glass shadow via `--tw-shadow` (NEVER box-shadow directly —
+preserves Tailwind v4 ring composition, same rule as the shadow block).
+**`.app-solid` = the opt-out marker:** ANY floating dropdown/popover/menu (e.g. the portal CustomSelect
+panel, the POS instant-search dropdown, the ProductCombobox typeahead in components/CustomSelect.tsx)
+MUST carry class `app-solid` or it turns translucent and unreadable over busy content. When you add a
+NEW overlay panel that is `bg-white rounded-*`, add `app-solid` to it.
+**Dark mode:** `.dark .bg-white:is(...)` (3 classes + many :not = high specificity) intentionally beats
+the `.dark .bg-white:not(aside)` !important override; uses translucent navy. Don't lower its specificity.
+**Escaping gotcha:** the `rounded-\[32px\]` (login card radius) selector must keep its backslashes — a
+careless `sed` once stripped them, silently producing invalid `[32px]` that `:is()` drops. Edit literally.
+**Why class-gated not box-shadow:** an architect review caught that a global `bg-white` (no radius gate)
+would frost icon badges/chips and form fields; gating on card radii + the :not chain keeps it to real panels.
+
 ## Dropdowns: two distinct custom-select components (no native `<select>` left)
 All 18 native `<select>` were replaced by a portal-based custom dropdown, so the
 `color-scheme` workaround above (section "Native control popups") is now mostly moot for

@@ -526,7 +526,7 @@ function CustomSelect({
               bottom: pos.bottom,
               zIndex: 9500,
             }}
-            className="bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="app-solid bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
           >
             <div
               className="overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800"
@@ -7080,7 +7080,7 @@ export default function App() {
 
                             {/* DROPDOWN HASIL PENCARIAN CEPAT */}
                             {searchSuggestions.length > 0 && (
-                              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
+                              <div className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
                                 <div className="px-4 py-2 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-left font-sans">
                                     Hasil Pencarian Instan:
