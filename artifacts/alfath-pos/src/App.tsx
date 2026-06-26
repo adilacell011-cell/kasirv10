@@ -3593,19 +3593,19 @@ export default function App() {
                           {[
                             {
                               label: "Shift Hari Ini", date: new Date(),
-                              card: "bg-gradient-to-br from-sky-50 via-blue-100 to-indigo-100 border-2 border-blue-300 shadow-lg shadow-blue-200/50 dark:from-blue-900/50 dark:via-blue-900/40 dark:to-indigo-900/40 dark:border-blue-600 dark:shadow-none",
-                              blob: "bg-blue-300/50 dark:bg-blue-500/20",
-                              labelColor: "text-blue-700 dark:text-blue-300",
-                              amount: "text-blue-900 dark:text-blue-50",
-                              labaPill: "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-300",
+                              card: "bg-[#e0e5ec] shadow-[7px_7px_16px_#b8c2d0,-7px_-7px_16px_#ffffff] dark:bg-[#2a2d35] dark:shadow-[6px_6px_14px_#1e2027,-6px_-6px_14px_#363a44]",
+                              blob: "hidden",
+                              labelColor: "text-[#8794a8] dark:text-[#9aa3b5]",
+                              amount: "text-[#3d4859] dark:text-[#e2e6ed]",
+                              labaPill: "bg-[#e0e5ec] text-[#5b9279] shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:bg-[#2a2d35] dark:text-[#74b894] dark:shadow-[inset_3px_3px_6px_#1e2027,inset_-3px_-3px_6px_#363a44]",
                             },
                             {
                               label: "Shift Kemarin", date: new Date(Date.now() - 86400000),
-                              card: "bg-gradient-to-br from-violet-50 via-fuchsia-100 to-purple-100 border-2 border-fuchsia-300 shadow-lg shadow-fuchsia-200/50 dark:from-fuchsia-900/40 dark:via-purple-900/40 dark:to-violet-900/40 dark:border-fuchsia-600 dark:shadow-none",
-                              blob: "bg-fuchsia-300/50 dark:bg-fuchsia-500/20",
-                              labelColor: "text-fuchsia-700 dark:text-fuchsia-300",
-                              amount: "text-fuchsia-900 dark:text-fuchsia-50",
-                              labaPill: "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/20 dark:text-emerald-300",
+                              card: "bg-[#e0e5ec] shadow-[7px_7px_16px_#b8c2d0,-7px_-7px_16px_#ffffff] dark:bg-[#2a2d35] dark:shadow-[6px_6px_14px_#1e2027,-6px_-6px_14px_#363a44]",
+                              blob: "hidden",
+                              labelColor: "text-[#8794a8] dark:text-[#9aa3b5]",
+                              amount: "text-[#3d4859] dark:text-[#e2e6ed]",
+                              labaPill: "bg-[#e0e5ec] text-[#5b9279] shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:bg-[#2a2d35] dark:text-[#74b894] dark:shadow-[inset_3px_3px_6px_#1e2027,inset_-3px_-3px_6px_#363a44]",
                             }
                           ].map((day) => {
                             const logical = getLogicalShiftDate(day.date);
@@ -3628,7 +3628,7 @@ export default function App() {
                             }, { revenue: 0, profit: 0 });
                             
                             return (
-                              <div key={day.label} className={`relative overflow-hidden p-4 rounded-2xl group ${day.card}`}>
+                              <div key={day.label} className={`relative overflow-hidden p-4 rounded-3xl group ${day.card}`}>
                                 <div className={`absolute top-0 right-0 w-20 h-20 rounded-bl-full transform translate-x-5 -translate-y-5 transition-transform group-hover:scale-110 ${day.blob}`}></div>
                                 <p className={`relative text-[9px] font-black ${day.labelColor} uppercase tracking-wider mb-1`}>{day.label}</p>
                                 <div className="relative flex flex-col items-start gap-1.5">
