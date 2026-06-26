@@ -3676,7 +3676,7 @@ export default function App() {
                             return (
                               <div
                                 key={type}
-                                className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border ${type === "Pagi" ? "bg-amber-50 border-amber-100" : "bg-indigo-50 border-indigo-100"}`}
+                                className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border transition-all ${type === "Pagi" ? "bg-amber-50 border-amber-100 shadow-[0_0_22px_2px_rgba(245,158,11,0.5)]" : "bg-indigo-50 border-indigo-100 shadow-[0_0_22px_2px_rgba(99,102,241,0.5)]"}`}
                               >
                                 <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${type === "Pagi" ? "text-amber-600" : "text-indigo-600"}`}>
                                   TOTAL {type.toUpperCase()} (PERIODE)
@@ -8298,7 +8298,7 @@ export default function App() {
                       </div>
 
                       <div className="space-y-6">
-                        <div className="bg-emerald-50 rounded-2xl p-6 shadow-sm border border-emerald-100 mb-6">
+                        <div className="bg-emerald-50 rounded-2xl p-6 shadow-[0_0_24px_2px_rgba(16,185,129,0.5)] border border-emerald-100 mb-6">
                           <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Total Komisi Seluruh Cabang</p>
                           <p className="text-2xl md:text-3xl font-black text-emerald-900 mt-1 break-words">
                             Rp {Object.values(branchSummaries).reduce((s, b) => s + (b.totalEarned || 0), 0).toLocaleString("id-ID")}
