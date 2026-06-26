@@ -96,6 +96,12 @@ focus outline always remains as a fallback). **Color-coded/status selects must o
 other input-based combobox (components/CustomSelect.tsx) is already covered by the field block.
 **Slide toggles:** style inline (inset track + raised knob, ON=accent / OFF=neutral) and ALWAYS add `dark:`
 variants — arbitrary `bg-[#hex]`/`shadow-[...]` values are NOT caught by the `.dark` override map.
+**Sidebar drawer (`aside`) is EXCLUDED from every global neu/dark rule** (the card selector & `.dark
+.bg-white` both carry `:not(aside)`), so it kept a plain white bg even in dark mode. To make it match the
+grey neu world it must be styled INLINE with explicit `dark:` variants (bg + its header text/borders), or
+the dark sidebar text goes invisible. Nav items (MenuItem): active state uses a bright accent GLOW (outer
+`box-shadow` halo + icon drop-shadow) and an even brighter `active:` flash on tap — this is the owner's
+requested "lampu cerah saat ditekan". Inactive items use a subtle neu-raised hover.
 
 ## Restyling card/panel shadows app-wide — override `--tw-shadow`, NOT `box-shadow`
 This is Tailwind v4 (4.x). To make all cards/panels/modals feel premium without editing JSX,

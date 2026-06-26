@@ -2982,15 +2982,15 @@ export default function App() {
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
-        <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="h-16 flex items-center px-4 md:px-6 border-b border-slate-100 shrink-0">
+        <aside className={`fixed inset-y-0 left-0 w-64 bg-[#e0e5ec] dark:bg-[#23262e] border-r border-white/50 dark:border-white/5 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="h-16 flex items-center px-4 md:px-6 border-b border-white/60 dark:border-white/10 shrink-0">
             <img
               src={`${import.meta.env.BASE_URL}logo.png`}
               alt="Alfath Pulsa"
               className="w-9 h-9 rounded-xl object-contain mr-3 shrink-0"
             />
             <div className="truncate text-left">
-              <h1 className="font-extrabold text-[15px] text-slate-900 tracking-tight leading-tight truncate">
+              <h1 className="font-extrabold text-[15px] text-slate-900 dark:text-white tracking-tight leading-tight truncate">
                 ALFATH PULSA
               </h1>
               <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">
@@ -9781,10 +9781,10 @@ const MenuItem = ({
 }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-xs font-bold transition-all ${active ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "text-slate-500 hover:bg-slate-50"} ${locked ? "opacity-70" : ""}`}
+    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-xs font-bold transition-all active:shadow-[0_0_24px_4px_rgba(37,99,235,0.7)] ${active ? "bg-blue-600 text-white shadow-[0_0_18px_2px_rgba(37,99,235,0.6)]" : "text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-white hover:shadow-[2px_2px_5px_#c2ccd9,-2px_-2px_5px_#ffffff] dark:hover:shadow-[2px_2px_5px_#1c1e24,-2px_-2px_5px_#34373f]"} ${locked ? "opacity-70" : ""}`}
   >
     <div className="flex items-center gap-3">
-      <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? "text-white" : "text-slate-400"}`} />
+      <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? "text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]" : "text-slate-400"}`} />
       <span className="uppercase tracking-widest truncate">{label}</span>
     </div>
     {locked && <Lock className="w-3 h-3 text-amber-500" />}
