@@ -2558,9 +2558,9 @@ export default function App() {
       <div className="flex min-h-[100dvh] bg-slate-900 font-sans items-center justify-center p-4">
         <div className="bg-white p-6 md:p-10 rounded-[32px] border border-slate-200 max-w-md w-full text-center shadow-2xl animate-in zoom-in duration-300">
           <img
-            src={`${import.meta.env.BASE_URL}app-icon-512.png`}
+            src={`${import.meta.env.BASE_URL}logo.png`}
             alt="Alfath Pulsa POS"
-            className="w-20 h-20 rounded-3xl mx-auto mb-8 shadow-xl shadow-blue-200 object-cover"
+            className="w-24 h-24 mx-auto mb-8 object-contain drop-shadow-xl"
           />
           <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter mb-2 uppercase">
             Alfath Pulsa POS
@@ -2721,9 +2721,11 @@ export default function App() {
         />
         <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-50 h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="h-16 flex items-center px-4 md:px-6 border-b border-slate-100 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200 mr-3 shrink-0">
-              <MdStorefront className="w-5 h-5" />
-            </div>
+            <img
+              src={`${import.meta.env.BASE_URL}logo.png`}
+              alt="Alfath Pulsa"
+              className="w-9 h-9 rounded-xl object-contain mr-3 shrink-0"
+            />
             <div className="truncate text-left">
               <h1 className="font-extrabold text-[15px] text-slate-900 tracking-tight leading-tight truncate">
                 ALFATH PULSA
