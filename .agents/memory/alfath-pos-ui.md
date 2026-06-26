@@ -182,6 +182,21 @@ so they only need the glow added (no neu surface).
 arbitrary `shadow-[...]` is NOT caught by the `.dark` override map, so a light-on-light neu shadow
 would leak into dark mode. Pure colored glows (rgba) read fine in both modes, dark variant optional.
 
+## Master-produk is ONE shared `<table>` with two mutually-exclusive row modes
+The product page renders EITHER category-drill "group" summary rows (icon + name + "X Macam",
+the floating-neu-card targets) OR leaf product rows (6 data cols: Modal/Harga/Visibilitas/Aksi),
+never both at once. Mode = `isEndLevel` (computed inside the tbody IIFE):
+`searchTerm || drillPath.length >= 3 || (drillPath.length === 2 && drillPath[0] !== "Aksesoris")`.
+**When adapting the table per mode you MUST gate ALL of these by the SAME condition or the
+table column model breaks:** `<thead>` column count (6 leaf / 2 group), `<table>` `min-w-[700px]`
+(leaf only — drop it in group mode so cards are full-width, no phone h-scroll), tbody `divide-y`
+(leaf only — dividers would draw lines between cards), AND the group row's `<td colSpan>` (must
+equal the group-mode header count = 2, NOT 6 — architect caught a 2-col-header / colSpan-6-body
+mismatch). The inline JSX condition must be byte-identical to the IIFE's isEndLevel.
+**Why:** group rows are floating cards (single `<td>` wrapping a `bg-slate-50 rounded-2xl` neu card);
+the leaf 6-col data table must stay a normal table. Put the scroll container on `bg-slate-50`
+(neu base) so the card glows read instead of washing out on white.
+
 ## Dropdowns: two distinct custom-select components (no native `<select>` left)
 All 18 native `<select>` were replaced by a portal-based custom dropdown, so the
 `color-scheme` workaround above (section "Native control popups") is now mostly moot for
