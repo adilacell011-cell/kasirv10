@@ -2804,11 +2804,11 @@ export default function App() {
       <div className="flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden">
         {/* --- DESKTOP/TABLET SIDEBAR --- */}
         <div
-          className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
-        <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-50 h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="h-16 flex items-center px-4 md:px-6 border-b border-slate-100 shrink-0">
             <img
               src={`${import.meta.env.BASE_URL}logo.png`}
@@ -6770,7 +6770,7 @@ export default function App() {
             {activeMenu === "pos" && profile?.role === "CASHIER" && (
               <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
-                <div className="p-2 border-b border-slate-200 bg-white shadow-sm shrink-0 relative z-30">
+                <div className="p-2 border-b border-slate-200 bg-white shadow-sm shrink-0 relative z-50">
                   <div className="flex items-center justify-between mb-3 px-1 text-left">
                     <div className="text-left">
                       <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-left">
