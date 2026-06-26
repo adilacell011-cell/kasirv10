@@ -8533,12 +8533,6 @@ export default function App() {
                 <div className="bg-white px-4 md:px-8 py-4 md:py-6 border-b border-slate-200 shrink-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="text-left">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="w-6 h-1 bg-blue-600 rounded-full"></span>
-                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">
-                          Executive Overview
-                        </span>
-                      </div>
                       <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">
                         Dashboard Pusat
                       </h2>
