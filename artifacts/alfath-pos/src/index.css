@@ -63,6 +63,10 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
+  /* Paksa kontrol native (popup <select>, date picker, scrollbar) mengikuti
+     tema TERANG aplikasi, walau HP/OS sedang dalam mode gelap — agar tidak
+     ada lagi popup hitam yang tidak sesuai. */
+  color-scheme: light;
   --canvas-bg: #f6f8fc;
   --card-bg: #ffffff;
   --text-main: #0f172a;
@@ -72,6 +76,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --canvas-bg: #0a0f1c;
   --card-bg: #111a2e;
   --text-main: #f8fafc;

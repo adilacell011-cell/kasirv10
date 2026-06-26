@@ -106,3 +106,15 @@ stay lucide. Don't blanket-swap the lucide import — only the menu/nav referenc
 ImageMagick is available as `magick`/`convert` (NOT `sharp`) for icon cropping/resizing.
 Frontend uses a base path: reference public assets in React via `import.meta.env.BASE_URL`
 and use relative (no leading slash) paths in the PWA manifest / index.html icon links.
+
+## Native control popups (select/date pickers) color
+Native `<select>` option pickers and date inputs are OS-rendered — their popup sheet
+ignores Tailwind classes and follows the browser `color-scheme`. On a device in OS dark
+mode this made the dashboard branch dropdown ("SEMUA CABANG") render as a BLACK sheet even
+though the app was in light mode. Fix: declare `color-scheme: light` on `:root` and
+`color-scheme: dark` on `.dark` in index.css so native pickers/scrollbars track the in-app
+theme regardless of OS setting. **Why:** you cannot style the native picker sheet/font via
+CSS; color-scheme is the only lever short of replacing every <select> with a custom dropdown.
+The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-style" fonts
+need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
+`.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
