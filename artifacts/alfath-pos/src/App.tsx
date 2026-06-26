@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 // POS Refined Version 2.0
 
 import {
@@ -44,6 +45,7 @@ import {
   AlertTriangle,
   Calendar,
   Check,
+  ChevronDown,
   Camera,
   Barcode,
   TrendingUp,
@@ -85,7 +87,7 @@ import {
 } from "react-icons/md";
 
 import { ProductTable } from "./components/ProductTable";
-import { CustomSelect } from "./components/CustomSelect";
+import { CustomSelect as ProductCombobox } from "./components/CustomSelect";
 import {
   ResponsiveContainer,
   BarChart,
@@ -390,6 +392,174 @@ function ProductResultGrid({
           })
         )}
       </div>
+    </div>
+  );
+}
+
+function CustomSelect({
+  value,
+  defaultValue,
+  onChange,
+  options,
+  placeholder = "-- PILIH --",
+  hiddenId,
+  className = "",
+  buttonClassName = "",
+  disabled = false,
+}: {
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  hiddenId?: string;
+  className?: string;
+  buttonClassName?: string;
+  disabled?: boolean;
+}) {
+  const isControlled = value !== undefined;
+  const [internal, setInternal] = useState(defaultValue ?? "");
+  const current = isControlled ? (value as string) : internal;
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{
+    left: number;
+    width: number;
+    top?: number;
+    bottom?: number;
+    maxH: number;
+  } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const place = () => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = Math.max(r.width, 170);
+    let left = r.left;
+    const vw = window.innerWidth;
+    if (left + width > vw - 8) left = Math.max(8, vw - width - 8);
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top;
+    const up = spaceBelow < 240 && spaceAbove > spaceBelow;
+    const maxH = Math.max(120, Math.min(256, (up ? spaceAbove : spaceBelow) - 16));
+    setPos({
+      left,
+      width,
+      top: up ? undefined : r.bottom + 6,
+      bottom: up ? window.innerHeight - r.top + 6 : undefined,
+      maxH,
+    });
+  };
+
+  const toggle = () => {
+    if (disabled) return;
+    if (!open) place();
+    setOpen((o) => !o);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onScrollResize = () => setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("scroll", onScrollResize, true);
+    window.addEventListener("resize", onScrollResize);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", onScrollResize, true);
+      window.removeEventListener("resize", onScrollResize);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (isControlled || current === "") return;
+    if (!options.some((o) => o.value === current)) {
+      const fallback = defaultValue ?? "";
+      setInternal(options.some((o) => o.value === fallback) ? fallback : "");
+    }
+  }, [options, isControlled, current, defaultValue]);
+
+  const selected = options.find((o) => o.value === current);
+  const label = selected ? selected.label : placeholder;
+
+  const choose = (v: string) => {
+    if (!isControlled) setInternal(v);
+    onChange?.(v);
+    setOpen(false);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      {hiddenId && (
+        <input type="hidden" id={hiddenId} value={current} readOnly />
+      )}
+      <button
+        ref={btnRef}
+        type="button"
+        disabled={disabled}
+        onClick={toggle}
+        className={`inline-flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
+      >
+        <span className={`truncate ${selected ? "" : "opacity-60"}`}>
+          {label}
+        </span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 shrink-0 opacity-60 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open &&
+        pos &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{
+              position: "fixed",
+              left: pos.left,
+              width: pos.width,
+              top: pos.top,
+              bottom: pos.bottom,
+              zIndex: 9500,
+            }}
+            className="bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div
+              className="overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800"
+              style={{ maxHeight: pos.maxH }}
+            >
+              {options.length === 0 ? (
+                <div className="px-4 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Tidak ada pilihan
+                </div>
+              ) : (
+                options.map((o, i) => {
+                  const active = o.value === current;
+                  return (
+                    <button
+                      key={o.value + "_" + i}
+                      type="button"
+                      onClick={() => choose(o.value)}
+                      className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                        active
+                          ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                          : `${i % 2 === 1 ? "bg-slate-50/60" : "bg-white"} text-slate-700 dark:text-slate-200 hover:bg-slate-100`
+                      }`}
+                    >
+                      <span className="truncate">{o.label}</span>
+                      {active && (
+                        <Check className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -3168,46 +3338,47 @@ export default function App() {
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <select
+                              <CustomSelect
                                 value={emp.role}
-                                onChange={(e) =>
-                                  updateUser(emp.id, "role", e.target.value)
-                                }
-                                className={`text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border focus:ring-2 focus:ring-blue-500 ${
+                                onChange={(v) => updateUser(emp.id, "role", v)}
+                                options={[
+                                  {
+                                    value: "PENDING",
+                                    label: "PENDING (Terkunci)",
+                                  },
+                                  { value: "ADMIN", label: "ADMIN PUSAT" },
+                                  { value: "CASHIER", label: "KASIR TOKO" },
+                                  { value: "AUDIT", label: "TIM AUDIT" },
+                                ]}
+                                buttonClassName={`text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border focus:ring-2 focus:ring-blue-500 ${
                                   emp.role === "PENDING"
                                     ? "bg-amber-50 text-amber-700 border-amber-200"
                                     : emp.role === "ADMIN"
                                       ? "bg-blue-50 text-blue-700 border-blue-200"
                                       : "bg-slate-50 text-slate-700 border-slate-300"
                                 }`}
-                              >
-                                <option value="PENDING">
-                                  PENDING (Terkunci)
-                                </option>
-                                <option value="ADMIN">ADMIN PUSAT</option>
-                                <option value="CASHIER">KASIR TOKO</option>
-                                <option value="AUDIT">TIM AUDIT</option>
-                              </select>
+                              />
                             </td>
                             <td className="px-4 py-3">
-                              <select
+                              <CustomSelect
                                 value={emp.branchId || ""}
-                                onChange={(e) =>
-                                  updateUser(emp.id, "branchId", e.target.value)
+                                onChange={(v) =>
+                                  updateUser(emp.id, "branchId", v)
                                 }
-                                className="text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 w-full max-w-[200px]"
-                              >
-                                <option value="">
-                                  -- BELUM DITEMPATKAN --
-                                </option>
-                                <optgroup label="Daftar Cabang Aktif">
-                                  {branches.map((b) => (
-                                    <option key={b.id} value={b.id}>
-                                      {b.name}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                              </select>
+                                placeholder="-- BELUM DITEMPATKAN --"
+                                options={[
+                                  {
+                                    value: "",
+                                    label: "-- BELUM DITEMPATKAN --",
+                                  },
+                                  ...branches.map((b) => ({
+                                    value: b.id,
+                                    label: b.name,
+                                  })),
+                                ]}
+                                className="w-full max-w-[200px]"
+                                buttonClassName="w-full text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500"
+                              />
                             </td>
                             <td className="px-4 py-3 text-center">
                               <div className="flex items-center justify-center gap-2">
@@ -3374,20 +3545,18 @@ export default function App() {
                           className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
                         />
                       </div>
-                      <select
+                      <CustomSelect
                         value={adminSalesBranchFilter}
-                        onChange={(e) =>
-                          setAdminSalesBranchFilter(e.target.value)
-                        }
-                        className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-100 h-[38px]"
-                      >
-                        <option value="">Semua Cabang</option>
-                        {branches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => setAdminSalesBranchFilter(v)}
+                        options={[
+                          { value: "", label: "Semua Cabang" },
+                          ...branches.map((b) => ({
+                            value: b.id,
+                            label: b.name,
+                          })),
+                        ]}
+                        buttonClassName="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-100 h-[38px]"
+                      />
                       {(reportStartDate || reportEndDate) && (
                         <button
                           onClick={() => {
@@ -4113,7 +4282,7 @@ export default function App() {
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5 focus-within:text-blue-600 transition-colors">
                                   Kategori Produk
                                 </label>
-                                <CustomSelect 
+                                <ProductCombobox 
                                   label="Kategori Produk"
                                   value={prodCategory}
                                   onChange={(val) => {
@@ -4142,7 +4311,7 @@ export default function App() {
                                       className="w-full border border-slate-300 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold transition-all shadow-sm"
                                     />
                                   ) : (
-                                    <CustomSelect 
+                                    <ProductCombobox 
                                       label={ (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Merek (Brand)" }
                                       value={ (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? prodProvider : prodBrand }
                                       onChange={(val) => {
@@ -4170,7 +4339,7 @@ export default function App() {
                                           : "Model / Sub-Kategori"}
                                     </label>
                                     <div className="relative">
-                                    <CustomSelect 
+                                    <ProductCombobox 
                                       label={prodCategory === "Parfum" ? "Jenis Parfum" : "Model / Sub-Kategori"}
                                       value={prodSubCategory}
                                       onChange={setProdSubCategory}
@@ -5027,35 +5196,33 @@ export default function App() {
                             <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
                             <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest">Sistem Memantau Real-time</span>
                           </div>
-                          <select
+                          <CustomSelect
                             value={shoppingListBranch}
-                            onChange={(e) =>
-                              setShoppingListBranch(e.target.value)
-                            }
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-100"
-                          >
-                            <option value="">Semua Cabang</option>
-                            {branches
-                              .filter((b) => !hiddenShoppingBranchIds.includes(b.id))
-                              .map((b) => (
-                                <option key={b.id} value={b.id}>
-                                  {b.name}
-                                </option>
-                              ))}
-                          </select>
-                          <select
+                            onChange={(v) => setShoppingListBranch(v)}
+                            options={[
+                              { value: "", label: "Semua Cabang" },
+                              ...branches
+                                .filter(
+                                  (b) =>
+                                    !hiddenShoppingBranchIds.includes(b.id),
+                                )
+                                .map((b) => ({ value: b.id, label: b.name })),
+                            ]}
+                            buttonClassName="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-100"
+                          />
+                          <CustomSelect
                             value={shoppingListCategory}
-                            onChange={(e) =>
-                              setShoppingListCategory(e.target.value)
-                            }
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-100"
-                          >
-                            <option value="">Semua Kategori</option>
-                            <option value="Aksesoris">Aksesoris</option>
-                            <option value="Voucher/Perdana">
-                              Voucher & Perdana
-                            </option>
-                          </select>
+                            onChange={(v) => setShoppingListCategory(v)}
+                            options={[
+                              { value: "", label: "Semua Kategori" },
+                              { value: "Aksesoris", label: "Aksesoris" },
+                              {
+                                value: "Voucher/Perdana",
+                                label: "Voucher & Perdana",
+                              },
+                            ]}
+                            buttonClassName="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-100"
+                          />
                         </div>
                       </div>
                       <div className="overflow-x-auto">
@@ -5608,22 +5775,23 @@ export default function App() {
                         <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 text-left">
                           Target Audit Institusi Cabang:
                         </p>
-                        <select
+                        <CustomSelect
                           value={auditSelectedBranch}
-                          onChange={(e) =>
-                            setAuditSelectedBranch(e.target.value)
-                          }
-                          className="w-full sm:max-w-xs text-sm font-bold uppercase tracking-widest px-3 py-2 rounded border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 text-left outline-none"
-                        >
-                          <option value="">
-                            -- Pilih Cabang yang Diaudit --
-                          </option>
-                          {branches.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(v) => setAuditSelectedBranch(v)}
+                          placeholder="-- Pilih Cabang yang Diaudit --"
+                          options={[
+                            {
+                              value: "",
+                              label: "-- Pilih Cabang yang Diaudit --",
+                            },
+                            ...branches.map((b) => ({
+                              value: b.id,
+                              label: b.name,
+                            })),
+                          ]}
+                          className="w-full sm:max-w-xs"
+                          buttonClassName="w-full text-sm font-bold uppercase tracking-widest px-3 py-2 rounded border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 text-left outline-none"
+                        />
                       </div>
 
                       <div className="relative w-full sm:max-w-xs shrink-0 items-center">
@@ -6179,20 +6347,26 @@ export default function App() {
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 text-left">
                                   Kategori Alasan:
                                 </label>
-                                <select
-                                  id="audit-dispose-reason"
-                                  className="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 md:py-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-blue-600 shadow-sm transition-all outline-none"
-                                >
-                                  <option value="Expired">
-                                    Kadaluarsa / ED
-                                  </option>
-                                  <option value="Damaged">
-                                    Barang Rusak / Fisik Cacat
-                                  </option>
-                                  <option value="Lost">
-                                    Hilang / Selisih Kurang
-                                  </option>
-                                </select>
+                                <CustomSelect
+                                  hiddenId="audit-dispose-reason"
+                                  defaultValue="Expired"
+                                  options={[
+                                    {
+                                      value: "Expired",
+                                      label: "Kadaluarsa / ED",
+                                    },
+                                    {
+                                      value: "Damaged",
+                                      label: "Barang Rusak / Fisik Cacat",
+                                    },
+                                    {
+                                      value: "Lost",
+                                      label: "Hilang / Selisih Kurang",
+                                    },
+                                  ]}
+                                  className="w-full"
+                                  buttonClassName="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 md:py-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-blue-600 shadow-sm transition-all outline-none"
+                                />
                               </div>
 
                               <div className="space-y-2">
@@ -6314,19 +6488,27 @@ export default function App() {
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 text-left">
                                   Cabang Tujuan:
                                 </label>
-                                <select
-                                  id="audit-transfer-target"
-                                  className="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 md:py-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-blue-600 shadow-sm transition-all outline-none"
-                                >
-                                  <option value="">-- PILIH CABANG TUJUAN --</option>
-                                  {branches
-                                    .filter(b => b.id !== auditSelectedBranch)
-                                    .map((b) => (
-                                    <option key={b.id} value={b.id}>
-                                      {b.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                <CustomSelect
+                                  hiddenId="audit-transfer-target"
+                                  defaultValue=""
+                                  placeholder="-- PILIH CABANG TUJUAN --"
+                                  options={[
+                                    {
+                                      value: "",
+                                      label: "-- PILIH CABANG TUJUAN --",
+                                    },
+                                    ...branches
+                                      .filter(
+                                        (b) => b.id !== auditSelectedBranch,
+                                      )
+                                      .map((b) => ({
+                                        value: b.id,
+                                        label: b.name,
+                                      })),
+                                  ]}
+                                  className="w-full"
+                                  buttonClassName="w-full bg-white border border-slate-300 rounded-2xl px-4 py-3 md:py-4 text-[11px] font-black uppercase focus:ring-2 focus:ring-blue-600 shadow-sm transition-all outline-none"
+                                />
                               </div>
 
                               <div className="space-y-2">
@@ -7658,24 +7840,20 @@ export default function App() {
                             <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block text-left">
                               Produk:
                             </label>
-                            <select
-                              className="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-500 transition-all outline-none text-left"
-                              id="dispose-product"
-                            >
-                              <option value="" className="text-left">
-                                -- PILIH --
-                              </option>
-                              {products.map((p) => (
-                                <option
-                                  key={p.id}
-                                  value={p.id}
-                                  className="text-left"
-                                >
-                                  {p.name} (
-                                  {getBranchStock(profile.branchId, p.id)})
-                                </option>
-                              ))}
-                            </select>
+                            <CustomSelect
+                              hiddenId="dispose-product"
+                              defaultValue=""
+                              placeholder="-- PILIH --"
+                              options={[
+                                { value: "", label: "-- PILIH --" },
+                                ...products.map((p) => ({
+                                  value: p.id,
+                                  label: `${p.name} (${getBranchStock(profile.branchId, p.id)})`,
+                                })),
+                              ]}
+                              className="w-full"
+                              buttonClassName="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-500 transition-all outline-none text-left"
+                            />
                           </div>
                           <div className="grid grid-cols-2 gap-3 text-left">
                             <div className="text-left">
@@ -7693,20 +7871,17 @@ export default function App() {
                               <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block text-left">
                                 Alasan:
                               </label>
-                              <select
-                                id="dispose-reason"
-                                className="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight outline-none text-left shadow-sm"
-                              >
-                                <option value="EXPIRED" className="text-left">
-                                  KADALUARSA
-                                </option>
-                                <option value="DAMAGED" className="text-left">
-                                  RUSAK
-                                </option>
-                                <option value="LOST" className="text-left">
-                                  HILANG
-                                </option>
-                              </select>
+                              <CustomSelect
+                                hiddenId="dispose-reason"
+                                defaultValue="EXPIRED"
+                                options={[
+                                  { value: "EXPIRED", label: "KADALUARSA" },
+                                  { value: "DAMAGED", label: "RUSAK" },
+                                  { value: "LOST", label: "HILANG" },
+                                ]}
+                                className="w-full"
+                                buttonClassName="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight outline-none text-left shadow-sm"
+                              />
                             </div>
                           </div>
                           <button
@@ -7769,25 +7944,22 @@ export default function App() {
                             <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block text-left">
                               Cabang Tujuan:
                             </label>
-                            <select
-                              className="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-500 outline-none text-left"
-                              id="transfer-target-branch"
-                            >
-                              <option value="" className="text-left">
-                                -- PILIH --
-                              </option>
-                              {branches
-                                .filter((b) => b.id !== profile.branchId)
-                                .map((b) => (
-                                  <option
-                                    key={b.id}
-                                    value={b.id}
-                                    className="text-left"
-                                  >
-                                    {b.name}
-                                  </option>
-                                ))}
-                            </select>
+                            <CustomSelect
+                              hiddenId="transfer-target-branch"
+                              defaultValue=""
+                              placeholder="-- PILIH --"
+                              options={[
+                                { value: "", label: "-- PILIH --" },
+                                ...branches
+                                  .filter((b) => b.id !== profile.branchId)
+                                  .map((b) => ({
+                                    value: b.id,
+                                    label: b.name,
+                                  })),
+                              ]}
+                              className="w-full"
+                              buttonClassName="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-500 outline-none text-left"
+                            />
                           </div>
 
                           <div className="text-left border-t border-slate-100 pt-4">
@@ -8242,33 +8414,40 @@ export default function App() {
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                               Personil Aktif (Pilih Nama Anda Jika Operan/Rolling Shift):
                             </p>
-                            <select
+                            <CustomSelect
                               value={cashierName}
-                              onChange={(e) => {
-                                setCashierName(e.target.value);
-                                localStorage.setItem("cashier_name", e.target.value);
+                              onChange={(v) => {
+                                setCashierName(v);
+                                localStorage.setItem("cashier_name", v);
                               }}
-                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
-                            >
-                              <option value="">-- PILIH PERSONIL (ROLLING) --</option>
-                              {users
-                                .filter((u) => u && u.branchId === profile?.branchId)
-                                .map((u) => {
-                                  const names = [u.name];
-                                  if (u.alternativeNames) {
-                                    const alternates = u.alternativeNames
-                                      .split(",")
-                                      .map((s: string) => s.trim())
-                                      .filter((s: string) => s);
-                                    names.push(...alternates);
-                                  }
-                                  return names.map((n, i) => (
-                                    <option key={`${u.id}_${i}`} value={n}>
-                                      {n}
-                                    </option>
-                                  ));
-                                })}
-                            </select>
+                              placeholder="-- PILIH PERSONIL (ROLLING) --"
+                              options={[
+                                {
+                                  value: "",
+                                  label: "-- PILIH PERSONIL (ROLLING) --",
+                                },
+                                ...users
+                                  .filter(
+                                    (u) => u && u.branchId === profile?.branchId,
+                                  )
+                                  .flatMap((u) => {
+                                    const names = [u.name];
+                                    if (u.alternativeNames) {
+                                      const alternates = u.alternativeNames
+                                        .split(",")
+                                        .map((s: string) => s.trim())
+                                        .filter((s: string) => s);
+                                      names.push(...alternates);
+                                    }
+                                    return names.map((n: string) => ({
+                                      value: n,
+                                      label: n,
+                                    }));
+                                  }),
+                              ]}
+                              className="w-full"
+                              buttonClassName="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
+                            />
                             <p className="text-[8px] text-blue-500 font-bold mt-1 uppercase italic">* Nama ini otomatis masuk ke struk & laporan</p>
                           </div>
                           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
@@ -8339,35 +8518,34 @@ export default function App() {
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
                               2. Pilih Nama Penjaga Kasir:
                             </label>
-                            <select
+                            <CustomSelect
                               value={cashierName}
-                              onChange={(e) => setCashierName(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 md:py-4 text-sm font-black uppercase tracking-tight focus:ring-4 focus:ring-blue-100 outline-none transition-all cursor-pointer shadow-sm"
-                            >
-                              <option value="">-- PILIH NAMA ANDA --</option>
-                              {users
-                                .filter(
-                                  (u) => u && u.branchId === profile?.branchId,
-                                )
-                                .map((u) => {
-                                  const names = [u.name];
-                                  if (u.alternativeNames) {
-                                    const alternates = u.alternativeNames
-                                      .split(",")
-                                      .map((s: string) => s.trim())
-                                      .filter((s: string) => s);
-                                    names.push(...alternates);
-                                  }
-                                  return names.map((name, nIdx) => (
-                                    <option
-                                      key={`${u.id}-${nIdx}`}
-                                      value={name}
-                                    >
-                                      {name}
-                                    </option>
-                                  ));
-                                })}
-                            </select>
+                              onChange={(v) => setCashierName(v)}
+                              placeholder="-- PILIH NAMA ANDA --"
+                              options={[
+                                { value: "", label: "-- PILIH NAMA ANDA --" },
+                                ...users
+                                  .filter(
+                                    (u) => u && u.branchId === profile?.branchId,
+                                  )
+                                  .flatMap((u) => {
+                                    const names = [u.name];
+                                    if (u.alternativeNames) {
+                                      const alternates = u.alternativeNames
+                                        .split(",")
+                                        .map((s: string) => s.trim())
+                                        .filter((s: string) => s);
+                                      names.push(...alternates);
+                                    }
+                                    return names.map((name: string) => ({
+                                      value: name,
+                                      label: name,
+                                    }));
+                                  }),
+                              ]}
+                              className="w-full"
+                              buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 md:py-4 text-sm font-black uppercase tracking-tight focus:ring-4 focus:ring-blue-100 outline-none transition-all cursor-pointer shadow-sm"
+                            />
                             <p className="text-[8px] text-blue-600 font-bold uppercase mt-2 text-center">
                               * Pilih nama Anda dari daftar karyawan di cabang
                               ini.
@@ -8608,18 +8786,18 @@ export default function App() {
                       </div>
 
                       {/* Branch Filter in Dashboard */}
-                      <select
+                      <CustomSelect
                         value={adminSalesBranchFilter}
-                        onChange={(e) => setAdminSalesBranchFilter(e.target.value)}
-                        className="bg-white border border-slate-200 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-100 outline-none"
-                      >
-                        <option value="">Semua Cabang</option>
-                        {branches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => setAdminSalesBranchFilter(v)}
+                        options={[
+                          { value: "", label: "Semua Cabang" },
+                          ...branches.map((b) => ({
+                            value: b.id,
+                            label: b.name,
+                          })),
+                        ]}
+                        buttonClassName="bg-white border border-slate-200 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-100 outline-none"
+                      />
                       
                       {dashboardDateRange !== "today" && (
                         <button
@@ -8949,27 +9127,28 @@ export default function App() {
                         </div>
 
                         <div className="flex gap-2 items-center">
-                          <select
+                          <CustomSelect
                             value={adminSalesDateFilter}
-                            onChange={(e) => setAdminSalesDateFilter(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-100"
-                          >
-                            <option value="today">Hari Ini</option>
-                            <option value="3days">3 Hari</option>
-                            <option value="all">Semua</option>
-                          </select>
-                          <select
+                            onChange={(v) => setAdminSalesDateFilter(v)}
+                            options={[
+                              { value: "today", label: "Hari Ini" },
+                              { value: "3days", label: "3 Hari" },
+                              { value: "all", label: "Semua" },
+                            ]}
+                            buttonClassName="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-100"
+                          />
+                          <CustomSelect
                             value={adminSalesBranchFilter}
-                            onChange={(e) => setAdminSalesBranchFilter(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-100"
-                          >
-                            <option value="">Semua Cabang</option>
-                            {branches.map((b) => (
-                              <option key={b.id} value={b.id}>
-                                {b.name}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => setAdminSalesBranchFilter(v)}
+                            options={[
+                              { value: "", label: "Semua Cabang" },
+                              ...branches.map((b) => ({
+                                value: b.id,
+                                label: b.name,
+                              })),
+                            ]}
+                            buttonClassName="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-100"
+                          />
                         </div>
                       </div>
 
@@ -9325,28 +9504,34 @@ export default function App() {
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Role / Hak Akses</label>
-              <select 
-                className="w-full border border-slate-200 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold uppercase tracking-widest text-[10px]"
+              <CustomSelect
+                buttonClassName="w-full border border-slate-200 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold uppercase tracking-widest text-[10px]"
+                className="w-full"
                 value={newUserDraft.role}
-                onChange={(e) => setNewUserDraft({...newUserDraft, role: e.target.value})}
-              >
-                <option value="CASHIER">KASIR TOKO</option>
-                <option value="ADMIN">ADMIN PUSAT</option>
-                <option value="AUDIT">TIM AUDIT</option>
-              </select>
+                onChange={(v) => setNewUserDraft({ ...newUserDraft, role: v })}
+                options={[
+                  { value: "CASHIER", label: "KASIR TOKO" },
+                  { value: "ADMIN", label: "ADMIN PUSAT" },
+                  { value: "AUDIT", label: "TIM AUDIT" },
+                ]}
+              />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Penempatan Cabang</label>
-              <select 
-                className="w-full border border-slate-200 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold uppercase tracking-widest text-[10px]"
+              <CustomSelect
+                buttonClassName="w-full border border-slate-200 px-3 py-2 rounded focus:ring-2 focus:ring-blue-500 outline-none font-bold uppercase tracking-widest text-[10px]"
+                className="w-full"
                 value={newUserDraft.branchId}
-                onChange={(e) => setNewUserDraft({...newUserDraft, branchId: e.target.value})}
-              >
-                <option value="">-- PILIH CABANG --</option>
-                {branches.map(b => (
-                  <option key={b.id} value={b.id}>{b.name.toUpperCase()}</option>
-                ))}
-              </select>
+                onChange={(v) => setNewUserDraft({ ...newUserDraft, branchId: v })}
+                placeholder="-- PILIH CABANG --"
+                options={[
+                  { value: "", label: "-- PILIH CABANG --" },
+                  ...branches.map((b) => ({
+                    value: b.id,
+                    label: b.name.toUpperCase(),
+                  })),
+                ]}
+              />
             </div>
             
             <button 

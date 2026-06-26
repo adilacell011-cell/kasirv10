@@ -119,6 +119,33 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
+## Dropdowns: two distinct custom-select components (no native `<select>` left)
+All 18 native `<select>` were replaced by a portal-based custom dropdown, so the
+`color-scheme` workaround above (section "Native control popups") is now mostly moot for
+selects (date inputs still rely on it). TWO components share the "custom select" idea —
+do NOT confuse them:
+- `ProductCombobox` (imported `CustomSelect as ProductCombobox` from `./components/CustomSelect`):
+  a typeahead/free-create combobox, used ONLY in the product-add form (category/brand/sub).
+  API: `label/value/onChange/options:string[]`. Allows typing a new value.
+- `CustomSelect` (local top-level fn in App.tsx): the fixed-option dropdown for the other 18
+  spots. `createPortal` panel on document.body, fixed position, flips up when spaceBelow<240.
+  API: `value`/`defaultValue`/`onChange`/`options:{value,label}[]`/`placeholder`/`hiddenId`/
+  `buttonClassName`/`disabled`. Supports controlled AND uncontrolled.
+**Why the naming split:** a new local `CustomSelect` collided with the pre-existing imported one;
+aliasing the import to `ProductCombobox` keeps both. Adding a 3rd component named CustomSelect
+will re-collide.
+**hiddenId = legacy getElementById bridge:** 5 selects were read via `document.getElementById(id).value`
+(e.g. `transfer-target-branch`, `dispose-reason`). When `hiddenId` is set, CustomSelect renders a
+hidden `<input id=...>` mirroring its value so those reads keep working — don't "clean up" by removing
+the hidden input without converting the reader to controlled state.
+**Stale-value reconciliation:** uncontrolled CustomSelect has an effect that resets to defaultValue/""
+when the current value drops out of `options` (mirrors native behavior for filtered lists like
+transfer-target filtered by branch). Keep it; without it a stale id can be submitted while UI shows placeholder.
+**Dark mode:** the portal panel deliberately uses LIGHT utility classes (`bg-white`, `bg-slate-50/60`,
+`hover:bg-slate-100`, `border-slate-200`, `text-slate-700`) — all covered by `.dark` global overrides in
+index.css. `divide-*` is NOT covered, so it needs explicit `dark:divide-slate-800`. Do not add
+`dark:bg-slate-900` etc. (deviates from the override convention).
+
 ## Checkout success feedback (no popup)
 The cashier checkout success flow does NOT show a modal/popup — the change ("kembalian")
 calculator modal was removed at the user's request (they don't use it; pulsa sales are
