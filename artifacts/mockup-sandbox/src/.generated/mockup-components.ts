@@ -8,6 +8,7 @@ export const modules: ModuleMap = {
   "./components/mockups/alfath-redesign/FreshFriendly.tsx": () => import("../components/mockups/alfath-redesign/FreshFriendly.tsx"),
   "./components/mockups/alfath-redesign/MidnightLuxe.tsx": () => import("../components/mockups/alfath-redesign/MidnightLuxe.tsx"),
   "./components/mockups/alfath-redesign/PeachSorbet.tsx": () => import("../components/mockups/alfath-redesign/PeachSorbet.tsx"),
+  "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
   "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
   "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
 };
