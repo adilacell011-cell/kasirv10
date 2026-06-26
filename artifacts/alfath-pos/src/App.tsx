@@ -9130,7 +9130,7 @@ export default function App() {
               <div className="flex justify-between items-start mb-6 text-left">
                 <div className="text-left">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[9px] font-black uppercase tracking-widest">
+                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-[9px] font-black uppercase tracking-widest">
                       Scan Berhasil
                     </span>
                   </div>
