@@ -114,6 +114,8 @@ body {
 .dark .bg-slate-100\/80,
 .dark .bg-slate-50\/80,
 .dark .bg-slate-100\/10,
+.dark .bg-slate-200,
+.dark .bg-slate-300,
 .dark main.bg-slate-50\/50 {
   background-color: var(--input-bg) !important;
 }
@@ -198,6 +200,8 @@ body {
 .dark .hover\:bg-blue-50:hover,
 .dark .hover\:bg-slate-50:hover,
 .dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-slate-200:hover,
+.dark .hover\:bg-slate-300:hover,
 .dark div.hover\:bg-slate-50:hover,
 .dark .group:hover .group-hover\:bg-white {
   background-color: #1b2942 !important;

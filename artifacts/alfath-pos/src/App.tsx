@@ -7511,7 +7511,7 @@ export default function App() {
                                 </div>
 
                                 {/* Daftar Produk dengan Fitur Refund Per Item */}
-                                <div className="mb-3 space-y-1.5 bg-white/50 p-2 rounded-lg border border-slate-100 group-hover:bg-white transition-colors">
+                                <div className="mb-3 space-y-1.5 bg-white/50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-100 group-hover:bg-white transition-colors">
                                   {sale.items?.map((item: any, idx: number) => (
                                     <div
                                       key={idx}
