@@ -6770,7 +6770,7 @@ export default function App() {
             {activeMenu === "pos" && profile?.role === "CASHIER" && (
               <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
-                <div className="p-2 border-b border-slate-200 bg-white shadow-sm shrink-0 relative z-50">
+                <div className="p-2 border-b border-slate-200 bg-white shadow-sm shrink-0 relative z-30">
                   <div className="flex items-center justify-between mb-3 px-1 text-left">
                     <div className="text-left">
                       <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-left">
