@@ -2455,6 +2455,16 @@ export default function App() {
     return { ...stats, branchBreakdown };
   }, [dailySummaries, adminSalesBranchFilter, dashboardDateRange]);
 
+  // Close the slide-out sidebar with the Escape key (native drawer feel)
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsSidebarOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isSidebarOpen]);
+
   // --- VIEW RENDERING HELPERS ---
   const getPageTitle = () => {
     switch (activeMenu) {
@@ -2705,10 +2715,12 @@ export default function App() {
     <>
       <div className="flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden">
         {/* --- DESKTOP/TABLET SIDEBAR --- */}
-        {isSidebarOpen && (
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)} />
-        )}
-        <aside className={`${isSidebarOpen ? 'flex w-64' : 'hidden'} fixed md:static inset-y-0 left-0 bg-slate-900 border-r border-slate-800 flex-col shrink-0 z-50 h-[100dvh] shadow-xl md:shadow-none`}>
+        <div
+          className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+        />
+        <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-50 h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="h-16 flex items-center px-4 md:px-6 border-b border-slate-800 bg-slate-950/50 shrink-0">
             <MdStorefront className="w-6 h-6 text-blue-500 mr-3 shrink-0" />
             <div className="truncate text-left">
@@ -2725,7 +2737,7 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="flex-1 overflow-y-auto py-3 md:py-4 space-y-1 hide-scrollbar">
+          <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 overflow-y-auto py-3 md:py-4 space-y-1 hide-scrollbar">
             {profile?.role === "ADMIN" && (
               <>
                 <MenuCategory title="Pusat Komando" />
@@ -8606,58 +8618,169 @@ export default function App() {
 
                 <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full content-fade">
                   {dashboardTab === "overview" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-6">
                        {[
-                        {
-                          label: "Total Omset",
-                          val: dashboardStats.revenue,
-                          icon: TrendingUp,
-                          color: "blue",
-                        },
-                        {
-                          label: "Laba Bersih",
-                          val: dashboardStats.profit,
-                          icon: Sparkles,
-                          color: "emerald",
-                        },
-                        {
-                          label: "Total Transaksi",
-                          val: dashboardStats.count,
-                          icon: ShoppingBag,
-                          color: "indigo",
-                        },
-                        {
-                          label: "Margin Laba",
-                          val: dashboardStats.revenue > 0 ? ((dashboardStats.profit / dashboardStats.revenue) * 100).toFixed(1) + "%" : "0%",
-                          icon: Percent,
-                          color: "amber",
-                        },
+                        { label: "Total Omset", val: `Rp ${dashboardStats.revenue.toLocaleString("id-ID")}`, sub: "Periode terpilih", icon: TrendingUp, tile: "bg-blue-600 shadow-blue-200" },
+                        { label: "Total Transaksi", val: dashboardStats.count.toLocaleString("id-ID"), sub: "transaksi", icon: ShoppingBag, tile: "bg-emerald-500 shadow-emerald-200" },
+                        { label: "Laba Bersih", val: `Rp ${dashboardStats.profit.toLocaleString("id-ID")}`, sub: "estimasi profit", icon: Sparkles, tile: "bg-violet-500 shadow-violet-200" },
+                        { label: "Stok Menipis", val: `${shopListAlertCount}`, sub: "produk perlu restock", icon: AlertTriangle, tile: "bg-amber-500 shadow-amber-200" },
                       ].map((card) => (
                         <div
                           key={card.label}
-                          className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-1 relative overflow-hidden"
+                          className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-3"
                         >
-                           <div className={`absolute top-0 right-0 w-16 h-16 rounded-full -mr-6 -mt-6 opacity-40 ${
-                             card.color === "blue" ? "bg-blue-50" : 
-                             card.color === "emerald" ? "bg-emerald-50" : 
-                             card.color === "indigo" ? "bg-indigo-50" : 
-                             "bg-amber-50"
-                           }`} />
-                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono relative z-10">
-                            {card.label}
-                          </p>
-                          <h3 className="text-2xl font-black text-slate-900 tracking-tighter relative z-10">
-                            {typeof card.val === "number" && !card.label.includes("Transaksi")
-                              ? `Rp ${card.val.toLocaleString("id-ID")}`
-                              : card.val}
-                          </h3>
+                          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-lg ${card.tile}`}>
+                            <card.icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{card.label}</p>
+                            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight break-words leading-tight">{card.val}</h3>
+                            <p className="text-[9px] font-bold text-slate-400 mt-0.5">{card.sub}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
 
                   {dashboardTab === "overview" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="space-y-6">
+                      {/* TREND + MARGIN GAUGE */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                          <div className="mb-5">
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                              <Activity className="w-4 h-4 text-blue-500" /> Tren Transaksi
+                            </h4>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">7 Hari Terakhir</p>
+                          </div>
+                          {(() => {
+                            const days: { label: string; count: number }[] = [];
+                            for (let i = 6; i >= 0; i--) {
+                              const d = new Date();
+                              d.setDate(d.getDate() - i);
+                              const ds = getLogicalShiftDate(d).replace(/\//g, "-");
+                              const label = d.toLocaleDateString("id-ID", { weekday: "short" });
+                              let count = 0;
+                              dailySummaries.forEach((s) => {
+                                if (adminSalesBranchFilter && s.branchId !== adminSalesBranchFilter) return;
+                                if ((s.date || "").replace(/\//g, "-") === ds) count += s.count || 0;
+                              });
+                              days.push({ label, count });
+                            }
+                            const hasData = days.some((d) => d.count > 0);
+                            if (!hasData) {
+                              return (
+                                <div className="h-[200px] flex flex-col items-center justify-center gap-2 text-slate-300">
+                                  <Activity className="w-8 h-8" />
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Belum ada transaksi 7 hari terakhir</p>
+                                </div>
+                              );
+                            }
+                            const max = Math.max(1, ...days.map((d) => d.count));
+                            const W = 560, H = 200, pad = 10;
+                            const stepX = (W - pad * 2) / (days.length - 1);
+                            const pts = days.map((d, i) => {
+                              const x = pad + i * stepX;
+                              const y = H - pad - (d.count / max) * (H - pad * 2);
+                              return { x, y };
+                            });
+                            const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+                            const area = `${line} L${pts[pts.length - 1].x.toFixed(1)},${H - pad} L${pts[0].x.toFixed(1)},${H - pad} Z`;
+                            return (
+                              <div>
+                                <div className="h-[200px] w-full">
+                                  <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+                                    <defs>
+                                      <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#1d52da" stopOpacity="0.22" />
+                                        <stop offset="100%" stopColor="#1d52da" stopOpacity="0" />
+                                      </linearGradient>
+                                    </defs>
+                                    <path d={area} fill="url(#trendFill)" />
+                                    <path d={line} fill="none" stroke="#1d52da" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                                  </svg>
+                                </div>
+                                <div className="flex justify-between mt-3 px-1">
+                                  {days.map((d, i) => (
+                                    <span key={i} className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{d.label}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <Percent className="w-4 h-4 text-emerald-500" /> Margin Laba
+                          </h4>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Periode Terpilih</p>
+                          {(() => {
+                            const pct = dashboardStats.revenue > 0 ? (dashboardStats.profit / dashboardStats.revenue) * 100 : 0;
+                            const clamped = Math.max(0, Math.min(100, pct));
+                            const r = 52;
+                            const circ = 2 * Math.PI * r;
+                            const off = circ - (clamped / 100) * circ;
+                            return (
+                              <div className="flex-1 flex flex-col items-center justify-center py-4">
+                                <div className="relative w-[150px] h-[150px]">
+                                  <svg className="w-full h-full -rotate-90" viewBox="0 0 130 130">
+                                    <circle cx="65" cy="65" r={r} fill="none" stroke="#e2e8f0" strokeWidth="12" />
+                                    <circle cx="65" cy="65" r={r} fill="none" stroke="#1d52da" strokeWidth="12" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} />
+                                  </svg>
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span className="text-3xl font-black text-slate-900">{pct.toFixed(1)}%</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">margin</span>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 w-full mt-4">
+                                  <div className="bg-slate-50 rounded-2xl p-3 text-center">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Laba</p>
+                                    <p className="text-[11px] font-black text-emerald-600 break-words">Rp {dashboardStats.profit.toLocaleString("id-ID")}</p>
+                                  </div>
+                                  <div className="bg-slate-50 rounded-2xl p-3 text-center">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Omset</p>
+                                    <p className="text-[11px] font-black text-slate-700 break-words">Rp {dashboardStats.revenue.toLocaleString("id-ID")}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* RECENT TRANSACTIONS FEED */}
+                      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-emerald-500 animate-pulse" /> Transaksi Terakhir
+                          </h4>
+                          <button onClick={() => setDashboardTab("sales")} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700">Lihat Semua</button>
+                        </div>
+                        <div className="divide-y divide-slate-100">
+                          {sales.slice(0, 5).map((s) => (
+                            <div key={s.id} className="flex items-center gap-3 py-3">
+                              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                <Zap className="w-4 h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-bold text-slate-800 truncate">{s.items?.map((i: any) => `${i.product?.name || i.name || "Produk"} (x${i.qty})`).join(", ") || "Transaksi"}</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{branches.find((b) => b.id === s.branchId)?.name || "Pusat"} · {getSaleCashierName(s)}</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-[11px] font-black text-slate-900">Rp {(s.total || 0).toLocaleString("id-ID")}</p>
+                                <p className="text-[9px] font-bold text-slate-400">{new Date(s.createdAt || s.timestamp || 0).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {sales.length === 0 && (
+                            <div className="py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Belum ada transaksi</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* CHART + TOP PRODUCTS */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* PERFORMANCE CHART SIMULATION */}
                       <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-6">
@@ -8763,6 +8886,7 @@ export default function App() {
                             })()}
                           </div>
                       </div>
+                    </div>
                     </div>
                   )}
 

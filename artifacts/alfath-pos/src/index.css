@@ -77,12 +77,13 @@
 
 .dark {
   color-scheme: dark;
-  --canvas-bg: #0a0f1c;
-  --card-bg: #111a2e;
+  /* "Zanex" premium navy: lifted cards with clearer separation from the canvas. */
+  --canvas-bg: #0b1222;
+  --card-bg: #15203a;
   --text-main: #f8fafc;
   --text-mute: #94a3b8;
-  --border-color: #1e293b;
-  --input-bg: #0f172a;
+  --border-color: #243352;
+  --input-bg: #0f1a30;
 }
 
 body {
