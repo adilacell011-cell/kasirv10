@@ -83,6 +83,19 @@ FIRST, then the color-mix line — old Android WebViews drop the color-mix decla
 would otherwise leave the field with NO visible focus indicator.
 **How to apply:** exclude `[type=checkbox/radio/range/file/submit/button]`; give `.dark` its own
 border/shadow (no white inset highlight). The premium-field block is self-contained & reversible.
+**NEUMORPHIC INSET (matches the app-wide neu cards):** the premium-field block was flipped from a
+raised/bordered look to a CARVED-IN inset (neutral grey bg + transparent border + dual inset shadow, light
+& dark). Forcing a neutral bg on every input is SAFE here — audited: ZERO inputs carry their own bg color
+class, so nothing semantic is clobbered. Focus appends the accent ring AFTER the inset pair (rgba line then
+color-mix line, per the gotcha above).
+**Button-based dropdowns are NOT inputs.** The prominent dropdowns are the LOCAL `CustomSelect` (renders a
+`<button>`), unreachable by the field block. They opt IN to the same inset via a marker class on the
+trigger, ring layers preserved through `var(--tw-ring-*)`, and NO `outline:none` (so the global button
+focus outline always remains as a fallback). **Color-coded/status selects must opt OUT** via prop
+`keepTriggerBg` or they lose their semantic background — role-coding is functional, not decoration. The
+other input-based combobox (components/CustomSelect.tsx) is already covered by the field block.
+**Slide toggles:** style inline (inset track + raised knob, ON=accent / OFF=neutral) and ALWAYS add `dark:`
+variants — arbitrary `bg-[#hex]`/`shadow-[...]` values are NOT caught by the `.dark` override map.
 
 ## Restyling card/panel shadows app-wide — override `--tw-shadow`, NOT `box-shadow`
 This is Tailwind v4 (4.x). To make all cards/panels/modals feel premium without editing JSX,

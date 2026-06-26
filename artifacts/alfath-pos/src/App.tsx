@@ -407,6 +407,7 @@ function CustomSelect({
   hiddenId,
   className = "",
   buttonClassName = "",
+  keepTriggerBg = false,
   disabled = false,
 }: {
   value?: string;
@@ -417,6 +418,7 @@ function CustomSelect({
   hiddenId?: string;
   className?: string;
   buttonClassName?: string;
+  keepTriggerBg?: boolean;
   disabled?: boolean;
 }) {
   const isControlled = value !== undefined;
@@ -504,7 +506,7 @@ function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={toggle}
-        className={`inline-flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
+        className={`${keepTriggerBg ? "" : "app-select-trigger"} inline-flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
       >
         <span className={`truncate ${selected ? "" : "opacity-60"}`}>
           {label}
@@ -3352,6 +3354,7 @@ export default function App() {
                                   { value: "CASHIER", label: "KASIR TOKO" },
                                   { value: "AUDIT", label: "TIM AUDIT" },
                                 ]}
+                                keepTriggerBg
                                 buttonClassName={`text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border focus:ring-2 focus:ring-blue-500 ${
                                   emp.role === "PENDING"
                                     ? "bg-amber-50 text-amber-700 border-amber-200"
@@ -4058,10 +4061,10 @@ export default function App() {
                             console.error(e);
                           }
                         }}
-                        className={`w-14 h-7 rounded-full transition-all relative ${appConfig.allowCashierStockInput ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-slate-300"}`}
+                        className={`w-14 h-7 rounded-full transition-all relative ${appConfig.allowCashierStockInput ? "bg-emerald-500 shadow-[inset_2px_2px_5px_rgba(5,90,60,0.55),inset_-2px_-2px_4px_rgba(110,255,200,0.4)]" : "bg-[#e0e5ec] shadow-[inset_2px_2px_5px_#bcc6d4,inset_-2px_-2px_4px_#ffffff] dark:bg-[#23262e] dark:shadow-[inset_2px_2px_5px_#16181d,inset_-2px_-2px_4px_#363943]"}`}
                       >
                         <div
-                          className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${appConfig.allowCashierStockInput ? "left-8" : "left-1"}`}
+                          className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-[2px_2px_4px_#b0bac8,-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_#141519,-2px_-2px_4px_#3a3d47] transition-all ${appConfig.allowCashierStockInput ? "left-8" : "left-1"}`}
                         ></div>
                       </button>
                     </div>
