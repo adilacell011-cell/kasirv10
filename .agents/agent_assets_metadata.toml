@@ -30,6 +30,30 @@ uri = "file://attached_assets/generated_images/logo_alfath_concept4.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "wJT9uv-_zrnnoPsAszxWr"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "sT1PwIPsDUmeAQ3V0k6ef"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "q1fi3XNr4IbGGEOUlbIfX"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "K6aqidRZI-pXZNlrmZApI"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_4.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "W7yaY3p7K3AQqMEJuIgpJ"
 uri = "file://attached_assets/generated_images/logo_alfath_concept1.png"
@@ -53,3 +77,27 @@ id = "eN29svXxExdTUmud6VZ-Y"
 uri = "file://attached_assets/generated_images/logo_alfath_concept4.png"
 type = "image"
 title = "Konsep 4 — Ikon HP + garis pulsa"
+
+[[outputs]]
+id = "9Pw7jJ6zY77NvpJgtaLYg"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_1.png"
+type = "image"
+title = "Konsep A — Monogram AP garis tipis"
+
+[[outputs]]
+id = "YeOoYOZbfqR-z2iT--7Ks"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_2.png"
+type = "image"
+title = "Konsep B — Bubble chat + petir"
+
+[[outputs]]
+id = "BS_t_Z3CjaOT3D261XGfq"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_3.png"
+type = "image"
+title = "Konsep C — Perisai motif Islami"
+
+[[outputs]]
+id = "yXIsm8dK6gOB-himWHgb3"
+uri = "file://attached_assets/generated_images/logo_alfath_v2_4.png"
+type = "image"
+title = "Konsep D — Wordmark bersih + sinyal/koin"
