@@ -25,5 +25,13 @@ surface, use the app's standard light classes — `bg-white` or `bg-slate-50`,
 **How to apply:** prefer plain light classes for solid surfaces; only reach for explicit
 `dark:` variants when you need opacity/blur or a hover/variant class. App default theme is light.
 
-**Intentionally-dark elements (leave alone):** login screen, sidebar nav, primary dark
+**Intentionally-dark elements (leave alone):** login screen, primary dark
 buttons (`bg-slate-900 hover:bg-black`), modal dim-overlay scrims, camera scanner.
+
+**Sidebar nav is now LIGHT (white) matching the Zanex dashboard mockup** — was hardcoded
+`bg-slate-900` navy, owner asked for white. It uses the light-utility pattern (`bg-white`,
+`text-slate-500/900`, active item `bg-blue-600 text-white`, `hover:bg-slate-50`). Dark-safe:
+`.dark .bg-white` (line ~127, NO `:not(aside)` — the `:not(aside)` is only on the separate
+border rule) recolors the white aside to the navy card in dark mode automatically. Use
+translucent (`/10`) or override-covered hovers; never `hover:text-slate-900` (no dark override
+→ invisible on navy).
