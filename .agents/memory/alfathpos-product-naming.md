@@ -24,3 +24,12 @@ on the last segment). Don't assume a size/aroma column exists.
 
 **How to apply:** Any new category or naming change must go through `buildProductName()` (and its
 live preview box in the popup), and editing relies on name segments staying in the documented order.
+
+## Custom categories (creatable CustomSelect)
+product.category is a FREE-TEXT string (saved as `category: prodCategory`), no DB enum — so
+adding a category needs no backend change; a typed value persists and auto-appears in
+`dynamicCategories` and `ALL_CATEGORIES` (POS filter). The shared `components/CustomSelect.tsx`
+was originally pick-only (readOnly input) despite "Ketik atau pilih" placeholders. It is now a
+creatable combobox (type to filter + "+ Tambah \"X\"" row, commit on click/Enter/blur,
+allowCreate default true). Used by category, brand/provider, sub-category/model fields — all
+become creatable. Dropdown items use onMouseDown+preventDefault to beat the input blur.
