@@ -1,8 +1,55 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "X3BwzFapuplPDJS_xRtxT"
 uri = "file://artifacts/alfath-pos/public/app-icon.png"
 type = "image"
 title = "alfath app icon clean"
+
+[[generated]]
+id = "6-AvNYHh_WOcSZe-EIF6c"
+uri = "file://attached_assets/generated_images/logo_alfath_concept1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "m1VP-fmlSxWi3Gbt8hEK-"
+uri = "file://attached_assets/generated_images/logo_alfath_concept2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Vddi5bMBxT_ioYCu4Px8h"
+uri = "file://attached_assets/generated_images/logo_alfath_concept3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "MLWBJU7McNp7nQyxwDgfz"
+uri = "file://attached_assets/generated_images/logo_alfath_concept4.png"
+type = "image"
+title = "generated_image"
+
+[[outputs]]
+id = "W7yaY3p7K3AQqMEJuIgpJ"
+uri = "file://attached_assets/generated_images/logo_alfath_concept1.png"
+type = "image"
+title = "Konsep 1 — Monogram A + sinyal & koin"
+
+[[outputs]]
+id = "SptNjA1uVOMLS6lwrifG6"
+uri = "file://attached_assets/generated_images/logo_alfath_concept2.png"
+type = "image"
+title = "Konsep 2 — Badge jabat tangan"
+
+[[outputs]]
+id = "X17jN67Au0QxN6R_QJae_"
+uri = "file://attached_assets/generated_images/logo_alfath_concept3.png"
+type = "image"
+title = "Konsep 3 — App icon gradien"
+
+[[outputs]]
+id = "eN29svXxExdTUmud6VZ-Y"
+uri = "file://attached_assets/generated_images/logo_alfath_concept4.png"
+type = "image"
+title = "Konsep 4 — Ikon HP + garis pulsa"
