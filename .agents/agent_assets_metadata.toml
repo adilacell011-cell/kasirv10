@@ -54,6 +54,30 @@ uri = "file://attached_assets/generated_images/logo_alfath_v2_4.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "SpRpBEpyzV7qLQSr6Z3vk"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "or4ASgnuxE2v-U3jbcBjY"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Y5VONteaDe8e9-cKMhXoP"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "d0m5hssChTeKVUsYcv7vM"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_4.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "W7yaY3p7K3AQqMEJuIgpJ"
 uri = "file://attached_assets/generated_images/logo_alfath_concept1.png"
@@ -101,3 +125,27 @@ id = "yXIsm8dK6gOB-himWHgb3"
 uri = "file://attached_assets/generated_images/logo_alfath_v2_4.png"
 type = "image"
 title = "Konsep D — Wordmark bersih + sinyal/koin"
+
+[[outputs]]
+id = "Wc21qEMtKstPuleD3I4d9"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_1.png"
+type = "image"
+title = "Versi 1 — Perisai elegan garis emas"
+
+[[outputs]]
+id = "Z1pI2s-mb6fqldKKrcltf"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_2.png"
+type = "image"
+title = "Versi 2 — Perisai emas tebal + sinyal"
+
+[[outputs]]
+id = "CTYEBZBxbcq3yx2KNwhDB"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_3.png"
+type = "image"
+title = "Versi 3 — Crest + pita nama"
+
+[[outputs]]
+id = "GNK0zYAyedAPhA3XKqHPo"
+uri = "file://attached_assets/generated_images/logo_alfath_shield_4.png"
+type = "image"
+title = "Versi 4 — Minimalis bersih"
