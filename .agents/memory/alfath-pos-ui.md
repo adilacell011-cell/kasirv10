@@ -119,23 +119,35 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
-## Glassmorphism ("Figma glass") cards — central, class-gated, with `.app-solid` opt-out
-A central block at the END of index.css gives ALL cards a frosted-glass look WITHOUT editing
-App.tsx: selector `.bg-white:is(.rounded-lg,.rounded-xl,.rounded-2xl,.rounded-3xl,.rounded-\[32px\])`
-+ exclusions `:not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid)`.
-It sets translucent bg + `backdrop-filter: blur(12px)`, `border-width:1.5px` (the "pertebal"), a top
-sheen via `--tw-inset-shadow`, and a layered glass shadow via `--tw-shadow` (NEVER box-shadow directly —
-preserves Tailwind v4 ring composition, same rule as the shadow block).
-**`.app-solid` = the opt-out marker:** ANY floating dropdown/popover/menu (e.g. the portal CustomSelect
-panel, the POS instant-search dropdown, the ProductCombobox typeahead in components/CustomSelect.tsx)
-MUST carry class `app-solid` or it turns translucent and unreadable over busy content. When you add a
-NEW overlay panel that is `bg-white rounded-*`, add `app-solid` to it.
-**Dark mode:** `.dark .bg-white:is(...)` (3 classes + many :not = high specificity) intentionally beats
-the `.dark .bg-white:not(aside)` !important override; uses translucent navy. Don't lower its specificity.
-**Escaping gotcha:** the `rounded-\[32px\]` (login card radius) selector must keep its backslashes — a
-careless `sed` once stripped them, silently producing invalid `[32px]` that `:is()` drops. Edit literally.
-**Why class-gated not box-shadow:** an architect review caught that a global `bg-white` (no radius gate)
-would frost icon badges/chips and form fields; gating on card radii + the :not chain keeps it to real panels.
+## Card style is NEUMORPHISM ("soft UI") app-wide — central, class-gated, `.app-solid` opt-out
+The owner picked a clean grey neumorphic look ("Neumorphism Abu Klasik") and asked to apply it to
+ALL pages + harmonize the page background. Implemented ENTIRELY in the NEUMORPHISM block at the END of
+index.css (the old glassmorphism + `prefers-reduced-transparency` blocks were REPLACED). Three parts:
+1. **Tokens:** `--canvas-bg` AND `--card-bg` both = `#e0e5ec` (`:root`) / `#23262e`–`#2a2d35` (`.dark`).
+2. **Harmonized page field:** override plain `.bg-slate-50` and `.bg-slate-50\/50` → `#e0e5ec` (light) /
+   `#23262e` (dark) so every content scroll shell + section header merges into one continuous grey field.
+   SAFE because: no inputs use class `bg-slate-50`; `hover:bg-slate-50` and the opacity variants
+   (`/60`,`/80`) are SEPARATE classes → untouched, so zebra rows + hovers survive. Table rows are
+   `bg-white`/`bg-slate-50/60` (NOT plain, NOT rounded) → stay light/readable on the grey card.
+3. **Raised cards:** selector `.bg-white:is(.rounded-lg,.rounded-xl,.rounded-2xl,.rounded-3xl,.rounded-\[32px\])`
+   + the same `:not(input)...:not(.app-solid)` exclusion chain → bg `#e0e5ec`, `border-color:transparent`,
+   dual neumorphic shadow (`7px 7px 16px #b8c2d0, -7px -7px 16px #ffffff`; dark `#1c1e24`/`#34373f`).
+**CRITICAL — box-shadow IS written directly here (NOT via `--tw-shadow`), unlike the shadow-scale block.**
+Reason: `--tw-shadow` only renders if the element ALSO has a `shadow-*` utility; many cards have none →
+they'd be flat grey-on-grey (invisible). Direct `box-shadow` guarantees the extrude. Focus rings are
+preserved by prepending the v4 ring layers: `box-shadow: var(--tw-ring-offset-shadow,0 0 #0000),
+var(--tw-ring-shadow,0 0 #0000), <dual neu shadows> !important;`. An architect review confirmed this is sound.
+**Do NOT broaden the radius list to `rounded-\[40px\]`/`rounded-\[28px\]`** — `40px` is used by bespoke
+surfaces (a glow-shadow promo card, a zoom-in modal, the big POS panel) whose custom intent should
+survive; `28px` cards are all `bg-*-50` (colored, not `bg-white`) so adding it does nothing. Architect
+flagged the 40px collision; the proven set is exactly lg/xl/2xl/3xl/32px.
+**`.app-solid` = the opt-out marker:** ANY floating dropdown/popover/menu (portal CustomSelect panel, POS
+instant-search dropdown, ProductCombobox typeahead) MUST carry `app-solid` or it adopts the card neu bg.
+**Escaping gotcha:** the `rounded-\[32px\]` selector must keep its backslashes — a careless `sed` once
+stripped them, producing invalid `[32px]` that `:is()` drops. Edit literally.
+**Login screen** has a hardcoded dark background (intentional) — the grey neu card reads as a soft floating
+panel there, fine. The shift cards (App.tsx ~3596) use `bg-[#e0e5ec]` + their own arbitrary dual shadow
+(not `bg-white`, so not matched by the card block) and were the approved reference for this whole style.
 
 ## Dropdowns: two distinct custom-select components (no native `<select>` left)
 All 18 native `<select>` were replaced by a portal-based custom dropdown, so the

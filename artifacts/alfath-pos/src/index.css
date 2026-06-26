@@ -67,8 +67,8 @@
      tema TERANG aplikasi, walau HP/OS sedang dalam mode gelap — agar tidak
      ada lagi popup hitam yang tidak sesuai. */
   color-scheme: light;
-  --canvas-bg: #f6f8fc;
-  --card-bg: #ffffff;
+  --canvas-bg: #e0e5ec;
+  --card-bg: #e0e5ec;
   --text-main: #0f172a;
   --text-mute: #5b6878;
   --border-color: #e6ebf3;
@@ -77,9 +77,9 @@
 
 .dark {
   color-scheme: dark;
-  /* "Zanex" premium navy: lifted cards with clearer separation from the canvas. */
-  --canvas-bg: #0b1222;
-  --card-bg: #15203a;
+  /* Neumorphism gelap: kanvas & kartu nyaris sewarna agar efek timbul terbaca. */
+  --canvas-bg: #23262e;
+  --card-bg: #2a2d35;
   --text-main: #f8fafc;
   --text-mute: #94a3b8;
   --border-color: #243352;
@@ -714,40 +714,45 @@ textarea:focus-visible {
 }
 
 /* ============================================================
-   EFEK KARTU "GLASS" (gaya Figma) — semua kartu/panel/modal
-   tampil frosted: latar semi-transparan + blur, tepi dipertebal,
-   kilau halus di sisi atas, dan kedalaman bayangan berlapis.
-   Menyasar pola kartu (bg-white + rounded-2xl/3xl) TANPA menyentuh
-   field form, tombol, atau elemen ber-marka `.app-solid` (mis. panel
-   dropdown) agar tetap pekat & terbaca. Override `--tw-inset-shadow`
-   & `--tw-shadow` (BUKAN box-shadow langsung) supaya cincin fokus tetap utuh.
-   Reversibel: hapus blok ini.
+   NEUMORPHISM ("soft UI") — semua kartu/panel tampil TIMBUL lembut
+   dengan warna SAMA seperti latar (#e0e5ec terang / #2a2d35 gelap),
+   memakai dua bayangan: sorot terang (kiri-atas) + bayangan gelap
+   (kanan-bawah). Latar halaman ikut disamakan agar efek timbul terbaca.
+   TIDAK menyentuh field form, tombol, link, atau elemen ber-marka
+   `.app-solid` (mis. panel dropdown) agar tetap pekat & terbaca.
+   box-shadow ditulis langsung TAPI menyertakan layer ring Tailwind v4
+   (var --tw-ring-*) supaya cincin fokus tetap utuh.
+   Reversibel: hapus blok ini & kembalikan --canvas-bg/--card-bg.
    ============================================================ */
+
+/* Latar halaman & permukaan konten disamakan dengan warna kartu */
+.bg-slate-50,
+.bg-slate-50\/50 {
+  background-color: #e0e5ec !important;
+}
+.dark .bg-slate-50,
+.dark .bg-slate-50\/50 {
+  background-color: #23262e !important;
+}
+
+/* Kartu/panel timbul (neumorphic) — terang */
 .bg-white:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-  border-width: 1.5px !important;
-  border-color: rgba(148, 163, 184, 0.3) !important;
-  --tw-inset-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  --tw-shadow:
-    0 10px 30px rgba(15, 23, 42, 0.1),
-    0 2px 8px rgba(15, 23, 42, 0.05) !important;
+  background-color: #e0e5ec !important;
+  border-color: transparent !important;
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    7px 7px 16px #b8c2d0,
+    -7px -7px 16px #ffffff !important;
 }
 
+/* Kartu/panel timbul (neumorphic) — gelap */
 .dark .bg-white:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
-  background-color: rgba(30, 41, 59, 0.55) !important;
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  border-color: rgba(148, 163, 184, 0.16) !important;
-  --tw-inset-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-/* Hormati pengguna yang meminimalkan animasi/efek berat */
-@media (prefers-reduced-transparency: reduce) {
-  .bg-white:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[32px\]),
-  .dark .bg-white:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[32px\]) {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
+  background-color: #2a2d35 !important;
+  border-color: transparent !important;
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    6px 6px 14px #1c1e24,
+    -6px -6px 14px #34373f !important;
 }
