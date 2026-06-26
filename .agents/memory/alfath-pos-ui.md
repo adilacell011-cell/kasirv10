@@ -168,6 +168,20 @@ stripped them, producing invalid `[32px]` that `:is()` drops. Edit literally.
 panel there, fine. The shift cards (App.tsx ~3596) use `bg-[#e0e5ec]` + their own arbitrary dual shadow
 (not `bg-white`, so not matched by the card block) and were the approved reference for this whole style.
 
+## Extending neu+"lampu" to elements the global card rule SKIPS (buttons/pills/spans)
+The global neu card rule only matches `.bg-white.rounded-*` and excludes `button/a/input/...`,
+so buttons, category pills, status spans etc. stay flat. To give them the neu look inline, set
+the surface to `bg-slate-50` (it is centrally remapped to the neu base `#e0e5ec` light /
+`#23262e` dark — NOT plain white) and add an arbitrary `shadow-[...]`: raised
+(`4px 4px 9px #b8c2d0,-4px -4px 9px #ffffff`) or inset (`inset 3px 3px 6px ...`).
+**"Lampu" (glow) = a colored `shadow-[0_0_Npx_Mpx_rgba(...)]`** — blue for the primary CTA/active
+pill, and per-level hues for the category icon tiles (blue len0 / emerald len1 / purple len2,
+matching the existing drillPath color logic). Active accent pills already sit on `bg-blue-600`
+so they only need the glow added (no neu surface).
+**ALWAYS pair arbitrary neu/structural shadows with an explicit `dark:shadow-[...]` variant** —
+arbitrary `shadow-[...]` is NOT caught by the `.dark` override map, so a light-on-light neu shadow
+would leak into dark mode. Pure colored glows (rgba) read fine in both modes, dark variant optional.
+
 ## Dropdowns: two distinct custom-select components (no native `<select>` left)
 All 18 native `<select>` were replaced by a portal-based custom dropdown, so the
 `color-scheme` workaround above (section "Native control popups") is now mostly moot for

@@ -4699,7 +4699,7 @@ export default function App() {
                         resetProductForm();
                         setShowProductForm(true);
                       }}
-                      className="bg-blue-600 shadow-md text-white px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 shrink-0 w-full sm:w-auto self-end sm:self-center"
+                      className="bg-blue-600 text-white px-4 py-2 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 shrink-0 w-full sm:w-auto self-end sm:self-center shadow-[0_0_20px_2px_rgba(37,99,235,0.55)]"
                     >
                       <Plus className="w-3 h-3 inline mr-1" /> Tambah Master
                       Produk
@@ -4710,7 +4710,7 @@ export default function App() {
                     <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar text-[10px] font-bold uppercase tracking-widest">
                       <button
                         onClick={() => setDrillPath([])}
-                        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${drillPath.length === 0 ? "bg-blue-600 border-blue-600 text-white shadow-sm" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"}`}
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${drillPath.length === 0 ? "bg-blue-600 border-blue-600 text-white shadow-[0_0_16px_2px_rgba(37,99,235,0.5)]" : "bg-slate-50 border-transparent text-slate-500 shadow-[4px_4px_9px_#b8c2d0,-4px_-4px_9px_#ffffff] dark:shadow-[4px_4px_9px_#16181d,-4px_-4px_9px_#34373f]"}`}
                       >
                         <LayoutList className="w-3 h-3" />
                         SEMUA KATEGORI
@@ -4733,7 +4733,7 @@ export default function App() {
                 </div>
                 <div className="flex-1 overflow-x-auto">
                   <table className="w-full min-w-[700px] text-left border-collapse">
-                    <thead className="bg-slate-100 sticky top-0 border-b border-slate-200 z-10">
+                    <thead className="bg-slate-50 sticky top-0 border-b border-slate-200 z-10">
                       <tr>
                         <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                           Item Master
@@ -4938,7 +4938,7 @@ export default function App() {
                               <td colSpan={2} className="px-4 py-3 md:py-4">
                                 <div className="flex items-center gap-4">
                                   <div
-                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border transition-all group-hover:scale-110 ${drillPath.length === 0 ? "bg-blue-50 border-blue-100 text-blue-600" : drillPath.length === 1 ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-purple-50 border-purple-100 text-purple-600"}`}
+                                    className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-110 ${drillPath.length === 0 ? "bg-blue-50 border-blue-100 text-blue-600 shadow-[0_0_16px_1px_rgba(59,130,246,0.5)]" : drillPath.length === 1 ? "bg-emerald-50 border-emerald-100 text-emerald-600 shadow-[0_0_16px_1px_rgba(16,185,129,0.5)]" : "bg-purple-50 border-purple-100 text-purple-600 shadow-[0_0_16px_1px_rgba(168,85,247,0.5)]"}`}
                                   >
                                     {drillPath.length === 0 ? (
                                       <LayoutList className="w-6 h-6" />
@@ -4967,7 +4967,7 @@ export default function App() {
                                 className="px-4 py-3 md:py-4 text-right"
                               >
                                 <div className="flex flex-col items-end gap-1">
-                                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest">
+                                  <span className="px-3 py-1 rounded-full bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-widest shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:shadow-[inset_3px_3px_6px_#16181d,inset_-3px_-3px_6px_#34373f]">
                                     {items.length} Macam
                                   </span>
                                   <div className="flex items-center gap-1 text-blue-600 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
