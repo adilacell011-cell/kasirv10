@@ -3591,8 +3591,8 @@ export default function App() {
                         {/* Summary Today & Yesterday */}
                         <div className="grid grid-cols-2 gap-4">
                           {[
-                            { label: "Shift Hari Ini", date: new Date() },
-                            { label: "Shift Kemarin", date: new Date(Date.now() - 86400000) }
+                            { label: "Shift Hari Ini", date: new Date(), card: "bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-200 shadow-md shadow-blue-100/60 dark:from-blue-900/40 dark:to-indigo-900/40 dark:border-blue-700 dark:shadow-none", labelColor: "text-blue-600 dark:text-blue-300" },
+                            { label: "Shift Kemarin", date: new Date(Date.now() - 86400000), card: "bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-slate-300 shadow-md shadow-slate-200/60 dark:from-slate-800 dark:to-slate-700 dark:border-slate-600 dark:shadow-none", labelColor: "text-slate-500 dark:text-slate-300" }
                           ].map((day) => {
                             const logical = getLogicalShiftDate(day.date);
                             const stats = sales.filter(s => 
@@ -3614,10 +3614,10 @@ export default function App() {
                             }, { revenue: 0, profit: 0 });
                             
                             return (
-                              <div key={day.label} className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">{day.label}</p>
+                              <div key={day.label} className={`p-4 rounded-2xl ${day.card}`}>
+                                <p className={`text-[9px] font-black ${day.labelColor} uppercase tracking-wider mb-1`}>{day.label}</p>
                                 <div className="flex flex-col gap-0.5">
-                                  <p className="text-sm font-black text-slate-800">Rp {stats.revenue.toLocaleString("id-ID")}</p>
+                                  <p className="text-lg font-black text-slate-900 dark:text-slate-50">Rp {stats.revenue.toLocaleString("id-ID")}</p>
                                   <p className="text-[9px] font-bold text-emerald-600 uppercase">Laba: Rp {stats.profit.toLocaleString("id-ID")}</p>
                                 </div>
                               </div>
