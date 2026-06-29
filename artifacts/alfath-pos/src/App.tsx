@@ -1339,39 +1339,11 @@ export default function App() {
     initAuth();
   }, []);
 
-  // --- REAL-TIME SYNC ---
-  useEffect(() => {
-    // Connect only when authenticated; the server derives branch scoping from the JWT.
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    const socket = io({ auth: { token } });
-
-    socket.on("saleProcessed", (data: { items: any[] }) => {
-      // Update local products state with new stock values
-      setProducts(prev => prev.map(product => {
-        const soldItem = data.items.find(item => item.productId === product.id);
-        if (soldItem) {
-          const newStocks = { ...product.stocks };
-          const branchId = soldItem.branchId;
-          newStocks[branchId] = (newStocks[branchId] || 0) - soldItem.qty;
-          return { ...product, stocks: newStocks };
-        }
-        return product;
-      }));
-    });
-
-    socket.on("productUpdated", (updatedProduct: any) => {
-      setProducts(prev => prev.map(p => p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p));
-    });
-
-    socket.on("productDeleted", (data: { id: string }) => {
-      setProducts(prev => prev.filter(p => p.id !== data.id));
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [profile?.role, profile?.branchId]);
+  // NOTE: Real-time socket handling is consolidated in the DATA SYNC useEffect below.
+  // A single socket connection per session handles all events (saleProcessed,
+  // productUpdated, stockUpdated, commissionsUpdated, productDeleted) via loadData().
+  // The separate socket here was removed to prevent duplicate connections accumulating
+  // over long sessions and causing double loadData() calls on every event.
 
   // --- AUTH HANDLERS ---
   const handleLoginSubmit = async (credentials: any) => {
@@ -1513,21 +1485,34 @@ export default function App() {
         } else {
           syncCommissionsSummary(profile?.branchId || undefined); // Get branch summary for cashier
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("General data load error:", err);
+        // If any request returns 401/403 (token expired or revoked), force logout
+        // so the user is immediately sent to the login page instead of a stale/blank UI.
+        const msg = err?.message || "";
+        if (msg.includes("401") || msg.includes("403") || msg.toLowerCase().includes("unauthorized")) {
+          console.warn("Session expired — forcing logout.");
+          localStorage.removeItem("token");
+          setProfile(null);
+          setActiveMenu("pos");
+        }
       }
     };
 
     loadData();
 
-    // Setup Sockets for real-time updates (server scopes events by the JWT's branch)
+    // Single consolidated socket connection per session.
+    // All real-time events trigger a full loadData() refresh from the DB.
     const token = localStorage.getItem("token");
     if (!token) return;
     const socket = io({ auth: { token } });
     socket.on("saleProcessed", () => loadData());
     socket.on("productUpdated", () => loadData());
+    socket.on("productDeleted", () => loadData());
     socket.on("stockUpdated", () => loadData());
     socket.on("commissionsUpdated", () => loadData());
+    // On reconnect, always do a full refresh so stale data from a network gap is corrected.
+    socket.on("connect", () => loadData());
 
     return () => {
       socket.disconnect();
