@@ -680,7 +680,11 @@ export default function App() {
     | "cashier_stock"
     | "reports"
     | "incentive"
-  >("dashboard");
+  >(() => {
+    const valid = ["dashboard","pos","inventory","employees","settings","branch_stocks","shopping_list","audit","shift","cashier_stock","reports","incentive"];
+    const saved = localStorage.getItem("active_menu");
+    return (saved && valid.includes(saved) ? saved : "dashboard") as any;
+  });
   const [auditSidebarTab, setAuditSidebarTab] = useState<
     "incoming" | "disposal" | "transfer" | "logs"
   >("incoming");
@@ -1369,14 +1373,16 @@ export default function App() {
 
   const handleAppLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("active_menu");
     setProfile(null);
     setActiveMenu("pos");
   };
 
-  // Effect to reset UI states when menu changes
+  // Effect to reset UI states when menu changes + simpan posisi halaman agar tidak kembali ke awal saat refresh
   useEffect(() => {
     setShowUserForm(false);
-  }, [activeMenu]);
+    if (profile) localStorage.setItem("active_menu", activeMenu);
+  }, [activeMenu, profile]);
 
   // --- BRANCH & ROLE DEPENDENT DATA LISTENERS ---
   const lastEffectiveBranchId = useRef<string | null>(null);
