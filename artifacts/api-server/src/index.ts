@@ -20,6 +20,17 @@ const io = new Server(httpServer, {
   }
 });
 
+// Idempotency cache: prevents duplicate sales when the client retries due to
+// network instability. Key = X-Idempotency-Key header (UUID from client).
+// Entries expire after 90 seconds — long enough to cover any realistic retry window.
+const idempotencyCache = new Map<string, { result: any; expires: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of idempotencyCache) {
+    if (entry.expires <= now) idempotencyCache.delete(key);
+  }
+}, 30_000);
+
 // Emit an event to the given branch's room plus the global (admin/audit) room.
 // When branchId is missing we fall back to a global broadcast so nothing is lost.
 function emitBranch(branchId: string | null | undefined, event: string, payload: any) {
@@ -453,6 +464,17 @@ app.patch("/api/config", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
+  // Idempotency guard: if the client sends the same key twice (network retry),
+  // return the cached result immediately without touching the DB again.
+  const idempKey = (req.headers["x-idempotency-key"] as string | undefined)?.trim();
+  if (idempKey) {
+    const cached = idempotencyCache.get(idempKey);
+    if (cached && cached.expires > Date.now()) {
+      console.log(`↩️  Idempotency hit for key ${idempKey} — returning cached sale`);
+      return res.json(cached.result);
+    }
+  }
+
   const { branchId, cashierId, items, customerName, total, totalCommission } = req.body;
   const requester = (req as any).user;
   // Cashiers are locked to their own branch and identity: a cashier can never post a
@@ -587,6 +609,12 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       items: normItems.map((i) => ({ productId: i.productId, branchId: actualBranchId, qty: i.qty }))
     });
 
+    // Store result in idempotency cache so a network-retry from the same client
+    // returns the same sale without re-processing (no duplicate stock decrement).
+    if (idempKey) {
+      idempotencyCache.set(idempKey, { result, expires: Date.now() + 90_000 });
+    }
+
     res.json(result);
   } catch (error: any) {
     console.error("Sale Process Error:", error);
@@ -717,29 +745,58 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
 });
 
 app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
-  const { actualCash, totalSales, difference, status } = req.body;
+  const { actualCash, difference, status } = req.body;
   const requester = (req as any).user;
-  // Reject non-numeric money fields so a typo can't poison the shift report, and
-  // normalize provided values to real numbers before writing them.
+
   const shiftData: any = {
     status: status || "closed",
     closeTime: status === "closed" ? new Date() : undefined,
   };
-  for (const [label, val] of [["actualCash", actualCash], ["totalSales", totalSales], ["difference", difference]] as const) {
+
+  // Validate and normalize actualCash & difference if provided.
+  // totalSales is intentionally NOT accepted from the client — it is always
+  // computed server-side from the DB to prevent stale frontend state from
+  // writing an incorrect figure into the shift record.
+  for (const [label, val] of [["actualCash", actualCash], ["difference", difference]] as const) {
     if (val !== undefined && val !== null) {
       const n = toFiniteNumber(val);
       if (n === null) return res.status(400).json({ error: `Nilai ${label} tidak valid.` });
       shiftData[label] = n;
     }
   }
+
   try {
-    if (requester.role === "CASHIER") {
-      const existing = await prisma.shift.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
-      if (!existing) return res.status(404).json({ error: "Shift tidak ditemukan." });
-      if (existing.branchId !== requester.branchId) {
-        return res.status(403).json({ error: "Kasir hanya dapat mengubah shift cabangnya sendiri." });
+    const existing = await prisma.shift.findUnique({
+      where: { id: req.params.id },
+      select: { branchId: true, openTime: true, initialCash: true }
+    });
+    if (!existing) return res.status(404).json({ error: "Shift tidak ditemukan." });
+
+    if (requester.role === "CASHIER" && existing.branchId !== requester.branchId) {
+      return res.status(403).json({ error: "Kasir hanya dapat mengubah shift cabangnya sendiri." });
+    }
+
+    // When closing a shift, always compute totalSales from the DB using the actual
+    // sales records, so the figure is accurate even if the frontend state was stale.
+    if (status === "closed") {
+      const salesAgg = await prisma.sale.aggregate({
+        where: {
+          branchId: existing.branchId,
+          status: "success",
+          createdAt: { gte: existing.openTime }
+        },
+        _sum: { total: true }
+      });
+      const serverTotalSales = Number(salesAgg._sum.total ?? 0);
+      shiftData.totalSales = serverTotalSales;
+
+      // Recalculate difference using server total if actualCash was provided
+      if (shiftData.actualCash !== undefined) {
+        const expectedCash = Number(existing.initialCash) + serverTotalSales;
+        shiftData.difference = shiftData.actualCash - expectedCash;
       }
     }
+
     const shift = await prisma.shift.update({
       where: { id: req.params.id },
       data: shiftData

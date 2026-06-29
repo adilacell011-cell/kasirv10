@@ -124,10 +124,11 @@ export const api = {
     return res.json();
   },
 
-  async createSale(data: any) {
+  async createSale(data: any, idempotencyKey?: string) {
+    const key = idempotencyKey || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
     const res = await fetch(`${BASE_URL}/transactions`, {
       method: "POST",
-      headers: getHeaders(),
+      headers: { ...getHeaders(), "X-Idempotency-Key": key },
       body: JSON.stringify(data),
     });
     if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to create sale: ${res.status} ${txt}`); }

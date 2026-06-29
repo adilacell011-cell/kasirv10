@@ -2614,15 +2614,13 @@ export default function App() {
 
     try {
       // 1. If actualInput is provided, update the shift record
-      if (actualInput !== undefined && showShiftSummary !== null && sId) {
+      if (actualInput !== undefined && sId) {
         const actual = parseInt(actualInput) || 0;
-        const expected = showShiftSummary + drawerCashValue;
-        const diff = actual - expected;
 
+        // totalSales and difference are now computed server-side from real DB data,
+        // so we only send actualCash. The server will recalculate difference correctly.
         await api.updateShift(sId, {
           actualCash: actual,
-          totalSales: showShiftSummary,
-          difference: diff,
           status: "closed"
         });
       }
