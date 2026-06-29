@@ -1,5 +1,6 @@
 name: Build, push, and deploy
 
+# Triggered on every push to main, or manually via GitHub UI.
 on:
   push:
     branches: [main]
@@ -10,7 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  # ── Job 1: Build & push both images to GHCR ──────────────────────────────
+  # ── Job 1: Build & push both images to GHCR (runs on GitHub cloud) ───────
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -53,31 +54,33 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Job 2: SSH into the server and pull + restart containers ─────────────
-  # Requires these GitHub Secrets (Settings → Secrets and variables → Actions):
-  #   SERVER_HOST      — IP address or domain name of your VPS
-  #   SERVER_USER      — SSH username (e.g. root or ubuntu)
-  #   SERVER_SSH_KEY   — contents of your private SSH key (~/.ssh/id_rsa)
-  #   DEPLOY_DIR       — folder on the server (e.g. /opt/alfathpos)
+  # ── Job 2: Pull & restart on your local STB (runs on self-hosted runner) ─
+  # The runner is installed on the STB itself — it connects OUT to GitHub,
+  # so no port forwarding or public IP is needed.
+  #
+  # One-time setup on the STB:
+  #   → Follow the instructions at:
+  #     GitHub repo → Settings → Actions → Runners → New self-hosted runner
+  #     Choose: Linux / ARM64
+  #   → Then run these on the STB:
+  #     mkdir ~/actions-runner && cd ~/actions-runner
+  #     curl -o actions-runner-linux-arm64-2.321.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-arm64-2.321.0.tar.gz
+  #     tar xzf ./actions-runner-linux-arm64-2.321.0.tar.gz
+  #     ./config.sh --url https://github.com/USERNAME/NAMA_REPO --token TOKEN_DARI_GITHUB
+  #     sudo ./svc.sh install && sudo ./svc.sh start
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            set -e
-            cd ${{ secrets.DEPLOY_DIR }}
+      - name: Pull latest images from GHCR
+        run: |
+          cd ${{ secrets.DEPLOY_DIR }}
+          docker compose -f docker-compose.prod.yml pull
 
-            # Pull the latest .env-aware images from GHCR
-            docker compose -f docker-compose.prod.yml pull
+      - name: Restart app containers (database keeps running)
+        run: |
+          cd ${{ secrets.DEPLOY_DIR }}
+          docker compose -f docker-compose.prod.yml up -d --no-deps api web
 
-            # Restart only the app containers (db keeps running → no data loss)
-            docker compose -f docker-compose.prod.yml up -d --no-deps api web
-
-            # Clean up old dangling images to free disk space
-            docker image prune -f
+      - name: Clean up old images
+        run: docker image prune -f
