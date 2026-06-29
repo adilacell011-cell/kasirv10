@@ -7511,56 +7511,51 @@ export default function App() {
                           )}
                         </div>
 
-                        {/* PANEL CHECKSUM totals & QUICK ACTION (Rp POS INDONESIA) */}
-                        <div className="p-3 bg-slate-50 border-t border-slate-200 shrink-0">
-                          
-                          {/* BONUS INSENTIF BAGI KASIR (TRANSPARENSI & MOTIVASI) */}
-                          <div className="flex justify-between items-center text-[9px] mb-2 px-1 text-slate-500 font-bold uppercase tracking-wider">
-                            <span>Bonus Penjaga (Insentif)</span>
-                            <span className="text-blue-600 font-black">
-                              +Rp {cart.reduce((acum, item) => {
-                                const cm = item.product.commissionAmount || 0;
-                                return acum + (cm * item.qty);
-                              }, 0).toLocaleString("id-ID")}
+                        {/* PANEL TOTAL & TOMBOL AKSI */}
+                        <div className="bg-white border-t border-slate-200 shrink-0">
+
+                          {/* TOTAL TAGIHAN */}
+                          <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Tagihan</span>
+                            <span className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                              Rp {cartTotal.toLocaleString("id-ID")}
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-center mb-3 px-1 text-left">
-                            <div>
-                              <p className="text-[7.5px] font-black text-slate-450 uppercase tracking-widest mb-0.5">Subtotal Tagihan</p>
-                              <p className="text-xs font-bold text-slate-500 font-mono">Rp {cartTotal.toLocaleString("id-ID")}</p>
+                          {/* BONUS INSENTIF */}
+                          {cart.some(i => (i.product.commissionAmount || 0) > 0) && (
+                            <div className="mx-4 mb-3 px-3 py-1.5 bg-blue-50 rounded-lg flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Insentif Kamu</span>
+                              <span className="text-[11px] font-black text-blue-700">
+                                +Rp {cart.reduce((a, i) => a + ((i.product.commissionAmount || 0) * i.qty), 0).toLocaleString("id-ID")}
+                              </span>
                             </div>
-                            <div className="text-right">
-                              <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded inline-block mb-1">Akan Dibayar</p>
-                              <p className="text-xl font-black text-slate-900 leading-none tracking-tighter">
-                                Rp {cartTotal.toLocaleString("id-ID")}
-                              </p>
-                            </div>
+                          )}
+
+                          {/* TOMBOL AKSI */}
+                          <div className="px-3 pb-3 flex flex-col gap-2">
+                            <button
+                              onClick={handleCheckout}
+                              disabled={cart.length === 0 || isProcessingCheckout}
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-35 text-white font-black py-4 rounded-xl text-[11px] shadow-[0_0_22px_3px_rgba(16,185,129,0.55)] disabled:shadow-none flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
+                            >
+                              {isProcessingCheckout ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Banknote className="w-4 h-4" />
+                              )}
+                              <span>{isProcessingCheckout ? "Memproses..." : "Bayar & Cetak Nota"}</span>
+                            </button>
+
+                            <button
+                              onClick={holdCurrentCart}
+                              disabled={cart.length === 0 || isProcessingCheckout}
+                              className="w-full bg-slate-100 hover:bg-amber-50 active:scale-[0.98] disabled:opacity-35 text-slate-600 hover:text-amber-700 font-bold py-3 rounded-xl text-[10px] flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
+                            >
+                              <Hand className="w-4 h-4" />
+                              <span>Tahan Transaksi</span>
+                            </button>
                           </div>
-
-                          {/* TOMBOL BAYAR CEPAT & CETAK */}
-                          <button
-                            onClick={handleCheckout}
-                            disabled={cart.length === 0 || isProcessingCheckout}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-35 text-white font-black py-4 rounded-xl text-[11px] shadow-[0_0_22px_3px_rgba(16,185,129,0.55)] disabled:shadow-none flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer font-sans"
-                          >
-                            {isProcessingCheckout ? (
-                              <Loader2 className="w-4 h-4 animate-spin text-white" />
-                            ) : (
-                              <Banknote className="w-4.5 h-4.5 text-white" />
-                            )}
-                            <span>{isProcessingCheckout ? "MEMPROSES TRANSAKSI..." : "BAYAR & CETAK NOTA"}</span>
-                          </button>
-
-                          {/* TOMBOL TAHAN TRANSAKSI SEMENTARA */}
-                          <button
-                            onClick={holdCurrentCart}
-                            disabled={cart.length === 0 || isProcessingCheckout}
-                            className="w-full mt-2 bg-white hover:bg-amber-50 active:scale-[0.98] disabled:opacity-35 text-amber-700 border-2 border-amber-200 hover:border-amber-300 font-black py-3 rounded-xl text-[10px] flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer font-sans"
-                          >
-                            <Hand className="w-4 h-4" />
-                            <span>Tahan Transaksi</span>
-                          </button>
                         </div>
                       </div>
 
