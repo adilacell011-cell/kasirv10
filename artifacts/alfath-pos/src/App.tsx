@@ -3712,7 +3712,7 @@ export default function App() {
                             }
                             return branchMatch && dateMatch;
                           }).forEach(s => {
-                            if (s.shiftType === "Pagi") {
+                            if (getShiftTypePref(s.shiftType) === "Pagi") {
                               grandTotalPagi += (s.totalSales || 0);
                             } else {
                               grandTotalMalam += (s.totalSales || 0);
