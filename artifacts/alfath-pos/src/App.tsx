@@ -7537,7 +7537,7 @@ export default function App() {
                             <button
                               onClick={handleCheckout}
                               disabled={cart.length === 0 || isProcessingCheckout}
-                              className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-35 text-white font-black py-4 rounded-xl text-[11px] shadow-[0_0_22px_3px_rgba(16,185,129,0.55)] disabled:shadow-none flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 active:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.25)] disabled:opacity-35 text-white font-black py-4 rounded-2xl text-[11px] shadow-[0_0_20px_2px_rgba(16,185,129,0.5),4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[0_0_20px_2px_rgba(16,185,129,0.5),4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] disabled:shadow-none flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
                             >
                               {isProcessingCheckout ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -7550,7 +7550,7 @@ export default function App() {
                             <button
                               onClick={holdCurrentCart}
                               disabled={cart.length === 0 || isProcessingCheckout}
-                              className="w-full bg-slate-100 hover:bg-amber-50 active:scale-[0.98] disabled:opacity-35 text-slate-600 hover:text-amber-700 font-bold py-3 rounded-xl text-[10px] flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
+                              className="w-full bg-slate-50 hover:bg-amber-50 active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] disabled:opacity-35 text-slate-500 hover:text-amber-700 font-black py-3 rounded-2xl text-[10px] shadow-[4px_4px_9px_#b8c2d0,-4px_-4px_9px_#ffffff] dark:shadow-[4px_4px_9px_#1c1e24,-4px_-4px_9px_#34373f] flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
                             >
                               <Hand className="w-4 h-4" />
                               <span>Tahan Transaksi</span>
