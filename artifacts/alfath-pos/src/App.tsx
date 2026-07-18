@@ -58,6 +58,7 @@ import {
   LayoutGrid,
   Tag,
   ChevronRight,
+  ChevronLeft,
   Hand,
   Menu,
   Info,
@@ -8072,139 +8073,147 @@ export default function App() {
                             </label>
 
                             {selectedTransferProduct ? (
-                              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0">
-                                    {selectedTransferProduct.category ===
-                                    "Voucher" ? (
-                                      <Wifi className="w-4 h-4" />
-                                    ) : (
-                                      <Smartphone className="w-4 h-4" />
-                                    )}
+                              /* ── PRODUK SUDAH DIPILIH ── */
+                              <div className="space-y-2">
+                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
+                                  <div className="w-9 h-9 bg-blue-600 text-white rounded-lg flex items-center justify-center shrink-0">
+                                    {selectedTransferProduct.category === "Voucher"
+                                      ? <Wifi className="w-4 h-4" />
+                                      : <Smartphone className="w-4 h-4" />}
                                   </div>
-                                  <div className="text-left">
-                                    <p className="text-[8px] font-black text-blue-600 uppercase tracking-tight leading-none mb-1">
-                                      {selectedTransferProduct.brand ||
-                                        "NO BRAND"}
+                                  <div className="flex-1 text-left min-w-0">
+                                    <p className="text-[8px] font-black text-blue-500 uppercase tracking-tight leading-none mb-0.5">
+                                      {selectedTransferProduct.brand || "NO BRAND"}
                                     </p>
-                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter leading-snug line-clamp-2">
                                       {selectedTransferProduct.name}
                                     </p>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">
-                                      Stok:{" "}
-                                      <span className="text-blue-600">
-                                        {getBranchStock(
-                                          profile.branchId,
-                                          selectedTransferProduct.id,
-                                        )}
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">
+                                      Stok di cabang ini:{" "}
+                                      <span className="text-blue-600 font-black">
+                                        {getBranchStock(profile.branchId, selectedTransferProduct.id)} pcs
                                       </span>
                                     </p>
                                   </div>
                                 </div>
+                                {/* Tombol ganti produk — jelas dan mudah ditemukan */}
                                 <button
-                                  onClick={() =>
-                                    setSelectedTransferProduct(null)
-                                  }
-                                  className="p-2 bg-white text-slate-400 hover:text-red-600 rounded-lg border border-slate-200 shadow-sm transition-all"
+                                  onClick={() => {
+                                    setSelectedTransferProduct(null);
+                                    setTransferSearch("");
+                                    setTransferDrillPath([]);
+                                  }}
+                                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:border-blue-300 text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <RefreshCw className="w-3 h-3" />
+                                  Ganti Produk
                                 </button>
                               </div>
                             ) : (
-                              <div className="space-y-3">
+                              /* ── PILIH PRODUK (search + drilldown) ── */
+                              <div className="space-y-2">
+
+                                {/* Search input dengan tombol hapus */}
                                 <div className="relative">
-                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-4 text-slate-400" />
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                                   <input
                                     type="text"
-                                    placeholder="Cari Produk..."
+                                    placeholder="Ketik nama produk untuk cari..."
                                     value={transferSearch}
-                                    onChange={(e) =>
-                                      setTransferSearch(e.target.value)
-                                    }
-                                    className="w-full bg-slate-50 border border-slate-200 py-3 pl-9 pr-3 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-300 transition-all font-mono shadow-inner"
+                                    onChange={(e) => setTransferSearch(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 py-2.5 pl-9 pr-9 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-400/50 outline-none placeholder:text-slate-300 placeholder:normal-case placeholder:tracking-normal transition-all"
                                   />
+                                  {transferSearch && (
+                                    <button
+                                      onClick={() => setTransferSearch("")}
+                                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-lg transition-colors"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                                {/* Breadcrumb + tombol kembali saat drilldown */}
+                                {transferDrillPath.length > 0 && !transferSearch && (
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => setTransferDrillPath(transferDrillPath.slice(0, -1))}
+                                      className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all active:scale-95"
+                                    >
+                                      <ChevronLeft className="w-3 h-3" />
+                                      Kembali
+                                    </button>
+                                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                                      {transferDrillPath.map((seg, idx) => (
+                                        <span key={idx} className="flex items-center gap-1 shrink-0">
+                                          {idx > 0 && <ChevronRight className="w-2.5 h-2.5 text-slate-300" />}
+                                          <span className={`text-[8px] font-black uppercase tracking-wide ${idx === transferDrillPath.length - 1 ? "text-slate-800" : "text-slate-400"}`}>
+                                            {seg}
+                                          </span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Grid produk / kategori / brand */}
+                                <div className="grid grid-cols-2 gap-1.5 max-h-[200px] overflow-y-auto pr-0.5 custom-scrollbar">
                                   {(() => {
                                     const filtered = products.filter(
                                       (p) =>
                                         !transferSearch ||
-                                        p.name
-                                          .toLowerCase()
-                                          .includes(
-                                            transferSearch.toLowerCase(),
-                                          ) ||
-                                        (p.brand || "")
-                                          .toLowerCase()
-                                          .includes(
-                                            transferSearch.toLowerCase(),
-                                          ),
+                                        p.name.toLowerCase().includes(transferSearch.toLowerCase()) ||
+                                        (p.brand || "").toLowerCase().includes(transferSearch.toLowerCase()),
                                     );
 
-                                    if (
-                                      transferSearch ||
-                                      transferDrillPath.length >= 2
-                                    ) {
+                                    if (transferSearch || transferDrillPath.length >= 2) {
                                       const final = !transferSearch
                                         ? filtered.filter((p) => {
                                             if (transferDrillPath.length === 1)
-                                              return (
-                                                (p.category || "UMUM") ===
-                                                transferDrillPath[0]
-                                              );
+                                              return (p.category || "UMUM") === transferDrillPath[0];
                                             if (transferDrillPath.length === 2)
                                               return (
-                                                (p.category || "UMUM") ===
-                                                  transferDrillPath[0] &&
-                                                (p.brand || "UMUM") ===
-                                                  transferDrillPath[1]
+                                                (p.category || "UMUM") === transferDrillPath[0] &&
+                                                (p.brand || "UMUM") === transferDrillPath[1]
                                               );
                                             return true;
                                           })
                                         : filtered;
 
+                                      if (final.length === 0) return (
+                                        <div className="col-span-2 py-8 text-center text-slate-400">
+                                          <p className="text-[9px] font-black uppercase tracking-widest">Produk tidak ditemukan</p>
+                                        </div>
+                                      );
+
                                       return final.map((p) => (
                                         <button
                                           key={p.id}
-                                          onClick={() =>
-                                            setSelectedTransferProduct(p)
-                                          }
-                                          className="p-2 bg-white border border-slate-100 rounded-lg text-left hover:border-blue-300 hover:shadow-sm transition-all flex flex-col justify-between"
+                                          onClick={() => setSelectedTransferProduct(p)}
+                                          className="p-2.5 bg-white border border-slate-100 rounded-xl text-left hover:border-blue-300 hover:bg-blue-50 transition-all"
                                         >
-                                          <div className="text-[9px] font-black text-slate-800 line-clamp-2 uppercase tracking-tight mb-1">
+                                          <div className="text-[9px] font-black text-slate-800 line-clamp-2 uppercase tracking-tight leading-snug mb-1.5">
                                             {p.name}
                                           </div>
-                                          <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
-                                            STOK:{" "}
-                                            {getBranchStock(
-                                              profile.branchId,
-                                              p.id,
-                                            )}
+                                          <div className={`text-[7.5px] font-black uppercase tracking-wide ${getBranchStock(profile.branchId, p.id) <= 0 ? "text-rose-500" : "text-emerald-600"}`}>
+                                            Stok: {getBranchStock(profile.branchId, p.id)}
                                           </div>
                                         </button>
                                       ));
                                     }
 
-                                    // DRILLDOWN MODE
+                                    // DRILLDOWN — kelompok kategori / brand
                                     let groups: any = {};
                                     if (transferDrillPath.length === 0) {
-                                      groups = filtered.reduce(
-                                        (acc: any, p) => {
-                                          const val = p.category || "UMUM";
-                                          if (!acc[val]) acc[val] = [];
-                                          acc[val].push(p);
-                                          return acc;
-                                        },
-                                        {},
-                                      );
+                                      groups = filtered.reduce((acc: any, p) => {
+                                        const val = p.category || "UMUM";
+                                        if (!acc[val]) acc[val] = [];
+                                        acc[val].push(p);
+                                        return acc;
+                                      }, {});
                                     } else if (transferDrillPath.length === 1) {
                                       groups = filtered
-                                        .filter(
-                                          (p) =>
-                                            (p.category || "UMUM") ===
-                                            transferDrillPath[0],
-                                        )
+                                        .filter((p) => (p.category || "UMUM") === transferDrillPath[0])
                                         .reduce((acc: any, p) => {
                                           const val = p.brand || "UMUM";
                                           if (!acc[val]) acc[val] = [];
@@ -8213,27 +8222,20 @@ export default function App() {
                                         }, {});
                                     }
 
-                                    return Object.entries(groups).map(
-                                      ([name, items]: [any, any]) => (
-                                        <button
-                                          key={name}
-                                          onClick={() =>
-                                            setTransferDrillPath([
-                                              ...transferDrillPath,
-                                              name,
-                                            ])
-                                          }
-                                          className="p-2 bg-slate-50 border border-slate-100 rounded-xl text-center hover:bg-white hover:border-blue-200 transition-all shadow-sm group"
-                                        >
-                                          <div className="text-[9px] font-black text-slate-800 truncate uppercase">
-                                            {name}
-                                          </div>
-                                          <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                                            {items.length} ITEM
-                                          </div>
-                                        </button>
-                                      ),
-                                    );
+                                    return Object.entries(groups).map(([name, items]: [any, any]) => (
+                                      <button
+                                        key={name}
+                                        onClick={() => setTransferDrillPath([...transferDrillPath, name])}
+                                        className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-center hover:bg-white hover:border-blue-200 transition-all"
+                                      >
+                                        <div className="text-[9px] font-black text-slate-800 truncate uppercase leading-none mb-1">
+                                          {name}
+                                        </div>
+                                        <div className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                                          {items.length} item
+                                        </div>
+                                      </button>
+                                    ));
                                   })()}
                                 </div>
                               </div>
