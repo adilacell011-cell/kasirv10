@@ -7062,56 +7062,60 @@ export default function App() {
               <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
                 <div className="p-2 bg-white shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
-                  <div className="flex items-center justify-between mb-3 px-1 text-left">
+                  <div className="flex items-center justify-between mb-2 px-1 text-left">
                     <div className="text-left">
-                      <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-left">
+                      <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5 text-left">
                         POS SYSTEM
                       </h3>
                       <p className="text-sm font-black text-slate-900 leading-none tracking-tight text-left">
                         PULSA & VOUCHER KASIR
                       </p>
                     </div>
-                    <div className="flex flex-col items-end text-right gap-1.5">
+                    <div className="flex flex-col items-end gap-1">
+                      {/* Cart total — only when cart has items */}
                       {cart.length > 0 && (
-                        <div className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-xl shadow-sm mb-0.5">
-                          <ShoppingCart className="w-3.5 h-3.5" />
-                          <p className="text-[11px] font-black uppercase tracking-tighter leading-none shrink-0">
-                            TOTAL: Rp {cartTotal.toLocaleString("id-ID")}
+                        <div className="flex items-center gap-1.5 bg-blue-600 text-white px-2.5 py-1.5 rounded-xl shadow-sm">
+                          <ShoppingCart className="w-3 h-3" />
+                          <p className="text-[10px] font-black uppercase tracking-tight leading-none shrink-0">
+                            Rp {cartTotal.toLocaleString("id-ID")}
                           </p>
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-sm">
-                        <TrendingUp className="w-3 h-3" />
-                        <p className="text-[10px] font-black uppercase tracking-tight leading-none text-right">
-                          {shiftOpen
-                            ? `Omzet Sif ${shiftType || ""}:`
-                            : "Omzet Hari Ini:"}{" "}
-                          Rp{" "}
-                          {sales
-                            .filter(
-                              (s) =>
-                                s.branchId === profile.branchId &&
-                                s.status !== "refunded" &&
-                                (shiftOpen && shiftStartTime
-                                  ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
-                                  : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === getLogicalShiftDate()),
-                            )
-                            .reduce((acc, s) => acc + (s.total || 0), 0)
-                            .toLocaleString("id-ID")}
-                        </p>
+                      {/* Omzet + Bonus dalam 1 baris horizontal */}
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-sm">
+                          <TrendingUp className="w-3 h-3 shrink-0" />
+                          <p className="text-[9px] font-black uppercase tracking-tight leading-none whitespace-nowrap">
+                            {shiftOpen ? `Sif ${shiftType || ""}` : "Hari Ini"}:{" "}
+                            Rp{" "}
+                            {sales
+                              .filter(
+                                (s) =>
+                                  s.branchId === profile.branchId &&
+                                  s.status !== "refunded" &&
+                                  (shiftOpen && shiftStartTime
+                                    ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
+                                    : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === getLogicalShiftDate()),
+                              )
+                              .reduce((acc, s) => acc + (s.total || 0), 0)
+                              .toLocaleString("id-ID")}
+                          </p>
+                        </div>
+                        <div
+                          className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1.5 rounded-xl shadow-sm cursor-pointer hover:bg-blue-700 active:scale-95 transition-all"
+                          onClick={() => setActiveMenu("incentive")}
+                          title="Lihat Detail Bonus Cabang"
+                        >
+                          <Sparkles className="w-3 h-3 shrink-0" />
+                          <p className="text-[9px] font-black uppercase tracking-tight leading-none whitespace-nowrap">
+                            Bonus: Rp{" "}
+                            {(profile?.role === "ADMIN"
+                              ? (branchSummaries[profile.branchId || ""]?.totalEarned || 0)
+                              : (commissionsSummary?.totalEarned || 0)
+                            ).toLocaleString("id-ID")}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 bg-blue-600 text-white px-2 py-1.5 rounded-xl shadow-sm cursor-pointer hover:bg-blue-700 transition-colors" onClick={() => setActiveMenu("incentive")}>
-                        <Sparkles className="w-3 h-3" />
-                        <p className="text-[10px] font-black uppercase tracking-tight leading-none text-right">
-                          Bonus Cabang: Rp {(profile?.role === "ADMIN" 
-                            ? (branchSummaries[profile.branchId || ""]?.totalEarned || 0) 
-                            : (commissionsSummary?.totalEarned || 0)
-                          ).toLocaleString("id-ID")}
-                        </p>
-                      </div>
-                      <p className="text-[8px] font-black text-blue-600 uppercase mt-1 tracking-widest text-right">
-                        Klik untuk Detail Bonus Cabang
-                      </p>
                     </div>
                   </div>
 
