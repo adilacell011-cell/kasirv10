@@ -9,6 +9,7 @@ export const modules: ModuleMap = {
   "./components/mockups/alfath-redesign/MidnightLuxe.tsx": () => import("../components/mockups/alfath-redesign/MidnightLuxe.tsx"),
   "./components/mockups/alfath-redesign/PeachSorbet.tsx": () => import("../components/mockups/alfath-redesign/PeachSorbet.tsx"),
   "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
+  "./components/mockups/operator-logos/OperatorLogoPreview.tsx": () => import("../components/mockups/operator-logos/OperatorLogoPreview.tsx"),
   "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
   "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
 };
