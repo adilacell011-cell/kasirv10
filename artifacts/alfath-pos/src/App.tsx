@@ -2842,60 +2842,77 @@ export default function App() {
 
   if (!profile) {
     return (
-      <div className="flex min-h-[100dvh] bg-slate-900 font-sans items-center justify-center p-4">
-        <div className="bg-white p-6 md:p-10 rounded-[32px] border border-slate-200 max-w-md w-full text-center shadow-2xl animate-in zoom-in duration-300">
-          <img
-            src={`${import.meta.env.BASE_URL}logo.png`}
-            alt="Alfath Pulsa POS"
-            className="w-24 h-24 mx-auto mb-8 object-contain drop-shadow-xl"
-          />
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter mb-2 uppercase">
-            Alfath Pulsa POS
-          </h1>
-          <p className="text-[10px] md:text-xs font-bold text-slate-400 mb-6 uppercase tracking-[0.2em]">
-            Sistem Manajemen Multi-Cabang
-          </p>
+      <div className="dark flex min-h-[100dvh] font-sans items-center justify-center p-4" style={{ backgroundColor: '#020617' }}>
+        {/* app-solid: exclude from neumorphic selector — no white halo on dark background */}
+        <div className="app-solid rounded-3xl max-w-sm w-full animate-in zoom-in-95 duration-300 overflow-hidden"
+             style={{ backgroundColor: '#1e293b', border: '1px solid rgba(71,85,105,0.5)', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}>
 
-          <div className="mt-2 flex flex-col gap-4">
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  handleLoginSubmit(Object.fromEntries(formData));
-                }}
-                className="space-y-4 text-left"
-              >
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Username</label>
-                  <input 
-                    name="username"
-                    type="text" 
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                    placeholder="Masukkan Username"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Password</label>
-                  <input 
-                    name="password"
-                    type="password" 
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white font-black py-4 px-4 rounded-2xl hover:bg-blue-700 transition shadow-xl shadow-blue-200 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] mt-4"
-                >
-                  Masuk ke Sistem <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
+          {/* Header strip */}
+          <div className="px-8 pt-9 pb-6 text-center" style={{ borderBottom: '1px solid rgba(71,85,105,0.4)' }}>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden flex items-center justify-center"
+                 style={{ backgroundColor: 'rgba(51,65,85,0.7)', border: '1px solid rgba(71,85,105,0.5)' }}>
+              <img
+                src={`${import.meta.env.BASE_URL}logo.png`}
+                alt="Alfath Pulsa"
+                className="w-14 h-14 object-contain"
+              />
+            </div>
+            <h1 className="text-lg font-black text-white tracking-tight mb-0.5">
+              Alfath Pulsa POS
+            </h1>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+              Sistem Manajemen Multi-Cabang
+            </p>
           </div>
 
-          <div className="mt-10 pt-6 border-t border-slate-100">
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
+          {/* Form body */}
+          <div className="px-8 py-7">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleLoginSubmit(Object.fromEntries(formData));
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+                  Username
+                </label>
+                <input
+                  name="username"
+                  type="text"
+                  required
+                  style={{ backgroundColor: '#0f172a', borderColor: 'rgba(71,85,105,0.6)', color: '#f1f5f9' }}
+                  className="w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
+                  placeholder="Masukkan username"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+                  Password
+                </label>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  style={{ backgroundColor: '#0f172a', borderColor: 'rgba(71,85,105,0.6)', color: '#f1f5f9' }}
+                  className="w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
+                  placeholder="••••••••"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full mt-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+              >
+                Masuk ke Sistem <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <div className="px-8 pb-6 text-center">
+            <p className="text-[9px] font-medium uppercase tracking-widest" style={{ color: '#475569' }}>
               Hubungi Admin Pusat untuk Aktivasi Akun
             </p>
           </div>
