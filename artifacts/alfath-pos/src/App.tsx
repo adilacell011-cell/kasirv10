@@ -827,6 +827,11 @@ export default function App() {
   const [globalAlerts, setGlobalAlerts] = useState<{ id: string; message: string; type: "info" | "warning" | "success" }[]>([]);
   const [confirmModal, setConfirmModal] = useState<{ message: string; resolve: (res: boolean) => void } | null>(null);
 
+  // Android back-button intercept refs
+  const isPopstateNav = useRef(false);
+  const backPressedOnce = useRef(false);
+  const backPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Expose async confirm triggers globally
   const triggerConfirm = (message: string): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -990,6 +995,65 @@ export default function App() {
       if (profile?.role === "AUDIT") setActiveMenu("audit");
     }
   }, [profile]);
+
+  // --- Android back button: seed initial history entry once ---
+  useEffect(() => {
+    window.history.replaceState({ menu: activeMenu }, "");
+  }, []);
+
+  // --- Android back button: push a new history entry whenever page changes ---
+  useEffect(() => {
+    if (isPopstateNav.current) {
+      // This navigation came FROM popstate — don't push again, just reset flag
+      isPopstateNav.current = false;
+      return;
+    }
+    window.history.pushState({ menu: activeMenu }, "");
+  }, [activeMenu]);
+
+  // --- Android back button: intercept popstate (hardware/gesture back) ---
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const prevMenu = e.state?.menu as string | undefined;
+
+      if (prevMenu) {
+        // Navigate within app to the previous page
+        isPopstateNav.current = true;
+        setActiveMenu(prevMenu as any);
+        // Clear any pending exit toast
+        if (backPressTimer.current) clearTimeout(backPressTimer.current);
+        backPressedOnce.current = false;
+      } else {
+        // Below the app's history stack — double-back-press to exit
+        // Push a guard entry back so next back press is interceptable
+        window.history.pushState({ menu: activeMenu }, "");
+
+        if (backPressedOnce.current) {
+          // Second press within 2 s → actually exit (go back past our guard)
+          if (backPressTimer.current) clearTimeout(backPressTimer.current);
+          backPressedOnce.current = false;
+          window.history.go(-2); // skip the guard entry we just pushed
+        } else {
+          backPressedOnce.current = true;
+          const id = `exit-${Date.now()}`;
+          setGlobalAlerts((prev) => [
+            ...prev,
+            { id, message: "Tekan tombol kembali sekali lagi untuk keluar.", type: "warning" },
+          ]);
+          backPressTimer.current = setTimeout(() => {
+            backPressedOnce.current = false;
+            setGlobalAlerts((prev) => prev.filter((a) => a.id !== id));
+          }, 2500);
+        }
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (backPressTimer.current) clearTimeout(backPressTimer.current);
+    };
+  }, [activeMenu]);
 
   useEffect(() => {
     if (activeMenu === "shift" && !shiftOpen) {
