@@ -7073,14 +7073,14 @@ export default function App() {
                     </div>
                     <div className="flex flex-col items-end text-right gap-1.5">
                       {cart.length > 0 && (
-                        <div className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-xl animate-bounce shadow-[0_0_16px_2px_rgba(59,130,246,0.55)] mb-0.5">
+                        <div className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-xl shadow-sm mb-0.5">
                           <ShoppingCart className="w-3.5 h-3.5" />
                           <p className="text-[11px] font-black uppercase tracking-tighter leading-none shrink-0">
                             TOTAL: Rp {cartTotal.toLocaleString("id-ID")}
                           </p>
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-[0_0_14px_2px_rgba(16,185,129,0.5)]">
+                      <div className="flex items-center gap-1.5 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-sm">
                         <TrendingUp className="w-3 h-3" />
                         <p className="text-[10px] font-black uppercase tracking-tight leading-none text-right">
                           {shiftOpen
@@ -7100,7 +7100,7 @@ export default function App() {
                             .toLocaleString("id-ID")}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1.5 bg-blue-600 text-white px-2 py-1.5 rounded-xl shadow-[0_0_14px_2px_rgba(59,130,246,0.5)] cursor-pointer hover:bg-blue-700 transition-colors" onClick={() => setActiveMenu("incentive")}>
+                      <div className="flex items-center gap-1.5 bg-blue-600 text-white px-2 py-1.5 rounded-xl shadow-sm cursor-pointer hover:bg-blue-700 transition-colors" onClick={() => setActiveMenu("incentive")}>
                         <Sparkles className="w-3 h-3" />
                         <p className="text-[10px] font-black uppercase tracking-tight leading-none text-right">
                           Bonus Cabang: Rp {(profile?.role === "ADMIN" 
@@ -8734,7 +8734,7 @@ export default function App() {
                   <div className="fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 animate-in fade-in duration-300">
                     <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
                       <div className="p-5 md:p-6 bg-emerald-600 text-white text-center relative overflow-hidden shrink-0">
-                        <div className="absolute inset-0 bg-emerald-500/20 animate-pulse"></div>
+                        <div className="absolute inset-0 bg-emerald-500/10"></div>
                         <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 relative z-10">
                           <Banknote className="w-6 h-6 text-white" />
                         </div>
@@ -8825,7 +8825,7 @@ export default function App() {
                           <button
                             disabled={actualCashInput === "" || isClosingShift}
                             onClick={() => finalizeCloseShift(actualCashInput)}
-                            className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black active:scale-95 flex items-center justify-center gap-3"
+                            className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black active:scale-95 flex items-center justify-center gap-3"
                           >
                             {isClosingShift ? (
                               <>
