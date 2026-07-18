@@ -7182,7 +7182,7 @@ export default function App() {
                                     () => (code: string) => setSearchTerm(code),
                                   );
                                 }}
-                                className="p-2 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl transition-all shadow-[0_0_12px_1px_rgba(59,130,246,0.4)] flex items-center justify-center"
+                                className="p-2 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl transition-all flex items-center justify-center"
                                 title="Buka Kamera Barcode"
                               >
                                 <Camera className="w-4 h-4" />
@@ -7269,22 +7269,20 @@ export default function App() {
                           )}
                         </div>
 
-                        {/* 1.5 PANEL PRODUK TERLARIS */}
+                        {/* 1.5 PANEL PRODUK TERLARIS — compact strip */}
                         {bestSellers.length > 0 && !searchTerm && (
-                          <div className="bg-white p-3 border-b border-slate-150">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Produk Terlaris (Klik untuk Tambah)</p>
-                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                              {bestSellers.map(p => (
-                                <button
-                                  key={p.id}
-                                  onClick={() => addToCart(p)}
-                                  className="flex-shrink-0 bg-slate-50 p-2 rounded-xl text-left w-32 transition-all font-black shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f] hover:bg-emerald-50 active:scale-95"
-                                >
-                                  <p className="text-[10px] uppercase text-slate-800 truncate mb-1">{getProductName(p)}</p>
-                                  <p className="text-[10px] text-emerald-600 font-mono">Rp {p.sellingPrice.toLocaleString("id-ID")}</p>
-                                </button>
-                              ))}
-                            </div>
+                          <div className="bg-white px-2 py-1.5 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                            <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest shrink-0 leading-none">⭐</span>
+                            {bestSellers.map(p => (
+                              <button
+                                key={p.id}
+                                onClick={() => addToCart(p)}
+                                className="flex-shrink-0 bg-slate-50 hover:bg-blue-50 active:scale-95 border border-slate-150 hover:border-blue-200 px-2 py-1 rounded-lg text-left transition-all"
+                              >
+                                <p className="text-[8px] font-black uppercase text-slate-700 truncate max-w-[90px] leading-none mb-0.5">{getProductName(p)}</p>
+                                <p className="text-[8px] text-slate-500 font-mono leading-none">Rp {p.sellingPrice.toLocaleString("id-ID")}</p>
+                              </button>
+                            ))}
                           </div>
                         )}
 
@@ -7297,7 +7295,7 @@ export default function App() {
                             }}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors ${
                               posSelectedCategory === "Semua"
-                                ? "bg-slate-800 text-white"
+                                ? "bg-blue-600 text-white"
                                 : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
                             }`}
                           >
@@ -7393,7 +7391,7 @@ export default function App() {
                                 Katalog Rak: {posSelectedCategory}
                                 {posSelectedCategory === "Aksesoris" && posSelectedBrand !== "Semua" && ` • ${posSelectedBrand}`}
                               </p>
-                              <p className="text-[8px] font-black text-blue-600 lowercase tracking-tight animate-pulse">
+                              <p className="text-[8px] font-black text-slate-400 lowercase tracking-tight">
                                 {posFilteredProducts.length} produk di cabang
                               </p>
                             </div>
@@ -7435,14 +7433,12 @@ export default function App() {
                                           setScanIndicator(`Ditambahkan: ${getProductName(p)}`);
                                           setTimeout(() => setScanIndicator(null), 1000);
                                         }}
-                                        className={`group text-left bg-slate-50 rounded-2xl p-2.5 flex flex-col justify-between transition-all shadow-[4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] hover:shadow-[0_0_16px_1px_rgba(59,130,246,0.35),4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:hover:shadow-[0_0_16px_1px_rgba(59,130,246,0.35),4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] active:scale-[0.97] duration-155 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-70" : ""}`}
+                                        className={`group text-left bg-slate-50 rounded-2xl p-2.5 flex flex-col justify-between transition-all shadow-[4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] hover:bg-slate-100 active:scale-[0.97] duration-150 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-60" : ""}`}
                                       >
                                         <div>
                                           {/* Mini Tag Brand / Provider */}
                                           <div className="flex justify-between items-start mb-1.5 gap-1.5">
-                                            <span className={`text-[7px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded leading-none shrink-0 ${
-                                              p.category === "Voucher" ? "bg-purple-100 text-purple-700" : "bg-blue-50 text-blue-700"
-                                            }`}>
+                                            <span className="text-[7px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded leading-none shrink-0 bg-slate-100 text-slate-500">
                                               {p.brand || p.provider || p.category || "Aksesoris"}
                                             </span>
                                             
@@ -7473,7 +7469,7 @@ export default function App() {
                                               Rp {price.toLocaleString("id-ID")}
                                             </p>
                                           </div>
-                                          <div className="w-5 h-5 bg-slate-50 group-hover:bg-blue-600 text-slate-400 group-hover:text-white rounded-lg flex items-center justify-center transition-all group-hover:shadow-[0_0_12px_2px_rgba(59,130,246,0.6)]">
+                                          <div className="w-5 h-5 bg-white group-hover:bg-blue-600 text-slate-400 group-hover:text-white rounded-lg flex items-center justify-center transition-all border border-slate-200 group-hover:border-blue-600">
                                             <Plus className="w-3 h-3 group-hover:stroke-[3]" />
                                           </div>
                                         </div>
@@ -7487,7 +7483,7 @@ export default function App() {
                       </div>
 
                       {/* AREA KANAN: NOTA TAGIHAN & CHECKOUT KASIR PERSISTEN (370px - 410px Width di Desktop) */}
-                      <div className="w-full md:w-[370px] lg:w-[410px] bg-white flex flex-col shrink-0 overflow-hidden relative shadow-2xl z-30 border-l border-slate-200">
+                      <div className="w-full md:w-[370px] lg:w-[410px] bg-white flex flex-col shrink-0 overflow-hidden relative z-30 border-l border-slate-200">
                         
                         {/* HEADER DAFTAR NOTA */}
                         <div className="p-3 border-b border-slate-150 flex justify-between items-center bg-white shrink-0">
