@@ -73,6 +73,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api } from "./services/api";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
+import { OperatorBadge } from "./components/OperatorLogo";
 import {
   MdSpaceDashboard,
   MdInsights,
@@ -7439,9 +7440,7 @@ export default function App() {
                                         <div>
                                           {/* Mini Tag Brand / Provider */}
                                           <div className="flex justify-between items-start mb-1.5 gap-1.5">
-                                            <span className="text-[7px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded leading-none shrink-0 bg-slate-100 text-slate-500">
-                                              {p.brand || p.provider || p.category || "Aksesoris"}
-                                            </span>
+                                            <OperatorBadge brand={p.provider || p.brand || p.category || "Aksesoris"} />
                                             
                                             <span className={`text-[7.5px] font-black px-1.5 py-0.5 rounded leading-none ${
                                               isOutOfStock 
