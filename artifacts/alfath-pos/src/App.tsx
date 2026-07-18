@@ -7440,7 +7440,11 @@ export default function App() {
                                         <div>
                                           {/* Mini Tag Brand / Provider */}
                                           <div className="flex justify-between items-start mb-1.5 gap-1.5">
-                                            <OperatorBadge brand={p.provider || p.brand || p.category || "Aksesoris"} />
+                                            <OperatorBadge brand={
+                                              ["Voucher","Kartu Perdana Kuota","Kartu Perdana Biasa"].includes(p.category)
+                                                ? (p.provider || p.brand || p.category)
+                                                : (p.brand || p.category || "Umum")
+                                            } />
                                             
                                             <span className={`text-[7.5px] font-black px-1.5 py-0.5 rounded leading-none ${
                                               isOutOfStock 
