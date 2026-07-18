@@ -884,14 +884,20 @@ export default function App() {
 
   const getProductName = (p: any, fallback?: string) => {
     if (!p) return fallback || "Bonus";
-    const provider = p.provider || p.brand || "";
-    let displayName = p.name || fallback || "Produk";
+    const provider = (p.provider || p.brand || "").trim();
+    let displayName = (p.name || fallback || "Produk").trim();
     
-    // Enhanced names for Voucher/Perdana
+    // Voucher/Perdana: stored name format is "Voucher Telkomsel - 5GB 3 Hari".
+    // Strip the generic category prefix so display reads "Telkomsel - 5GB 3 Hari".
+    // The old logic replaced "Voucher" with provider which caused "Telkomsel Telkomsel ..." duplication.
     if (p.category === "Voucher" || p.category?.includes("Perdana")) {
-      if (displayName.toLowerCase().startsWith("voucher")) {
-        displayName = displayName.replace(/voucher/i, provider || "Voucher").trim();
-      } else if (provider && !displayName.toLowerCase().includes(provider.toLowerCase())) {
+      displayName = displayName
+        .replace(/^Voucher\s+/i, "")
+        .replace(/^Perdana\s+Kuota\s+/i, "")
+        .replace(/^Perdana\s+/i, "")
+        .trim();
+      // If provider is still missing from display name, prepend it.
+      if (provider && !displayName.toLowerCase().startsWith(provider.toLowerCase())) {
         displayName = `${provider} ${displayName}`.trim();
       }
     }
@@ -1764,13 +1770,26 @@ export default function App() {
       case "Aksesoris":
         // Merek - Tipe/Model - Varian
         return join([prodBrand, prodSubCategory, prodType]);
-      case "Voucher":
-        // Voucher Provider - Nominal/Kuota
-        return join([head(["Voucher", prodProvider]), prodType]);
-      case "Kartu Perdana Kuota":
-        return join([head(["Perdana Kuota", prodProvider]), prodType]);
-      case "Kartu Perdana Biasa":
-        return join([head(["Perdana", prodProvider]), prodType]);
+      case "Voucher": {
+        // Guard: strip provider prefix if admin accidentally typed it in the nominal field
+        // e.g. typed "Telkomsel 5GB" when provider is already "Telkomsel" → store as "5GB"
+        const vType = prodProvider
+          ? prodType.replace(new RegExp(`^${prodProvider}\\s*[-–]?\\s*`, "i"), "").trim()
+          : prodType;
+        return join([head(["Voucher", prodProvider]), vType]);
+      }
+      case "Kartu Perdana Kuota": {
+        const kqType = prodProvider
+          ? prodType.replace(new RegExp(`^${prodProvider}\\s*[-–]?\\s*`, "i"), "").trim()
+          : prodType;
+        return join([head(["Perdana Kuota", prodProvider]), kqType]);
+      }
+      case "Kartu Perdana Biasa": {
+        const kbType = prodProvider
+          ? prodType.replace(new RegExp(`^${prodProvider}\\s*[-–]?\\s*`, "i"), "").trim()
+          : prodType;
+        return join([head(["Perdana", prodProvider]), kbType]);
+      }
       case "Handphone":
         // Merek Model - Varian (RAM/Storage/Warna)
         return join([head([prodBrand, prodSubCategory]), prodType]);
@@ -4463,15 +4482,18 @@ export default function App() {
                                       : prodCategory === "Aksesoris"
                                         ? "Varian / Tipe"
                                         : "Nama Produk"}{" "}
-                                <span className="text-red-500 font-black">
-                                  *
-                                </span>
+                                <span className="text-red-500 font-black">*</span>
+                                {(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) && (prodProvider || prodBrand) && (
+                                  <span className="ml-2 text-[8px] font-black text-emerald-600 normal-case tracking-normal">
+                                    — provider <span className="text-emerald-700">{prodProvider || prodBrand}</span> sudah otomatis
+                                  </span>
+                                )}
                               </label>
                               <input
                                 type="text"
                                 placeholder={
                                   prodCategory === "Voucher" || prodCategory?.includes("Perdana")
-                                    ? "Cth: 10GB 30 Hari / 25.000"
+                                    ? "Cth: 10GB 30 Hari  atau  25.000"
                                     : prodCategory === "Handphone"
                                       ? "Cth: 8/256 Hitam"
                                       : prodCategory === "Parfum"
