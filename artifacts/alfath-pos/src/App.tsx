@@ -3295,171 +3295,190 @@ export default function App() {
             {activeMenu === "employees" && profile?.role === "ADMIN" && (
               <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
                 <div className="bg-white rounded-3xl flex flex-col h-full overflow-hidden">
-                  <div className="p-4 md:p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+                  <div className="p-3 md:p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                        <Users className="w-5 h-5" />
+                      <div className="w-8 h-8 shrink-0 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                        <Users className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
-                            Atur Role & Cabang Tim
+                          <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                            Karyawan & Akses
                           </h3>
-                          <span className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-widest">
+                          <span className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase">
                             {users.length} Akun
                           </span>
                         </div>
-                        <p className="text-[10px] font-medium text-slate-500 mt-1 max-w-md leading-relaxed">
-                          Isi "Nama Karyawan" agar muncul di pilihan shift kasir.
-                          Jika 1 Akun dipakai 2 orang, pisahkan nama di kolom Petugas.
+                        <p className="hidden sm:block text-[9px] font-medium text-slate-400 mt-0.5 leading-relaxed">
+                          Isi nama agar muncul di pilihan shift. Pisah nama dengan koma jika 1 akun dipakai bergantian.
                         </p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setShowUserForm(true)}
-                      className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-sm shadow-blue-200 active:scale-95 flex items-center gap-1.5"
+                      className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white font-black px-3 py-2 rounded-xl text-[9px] uppercase tracking-widest transition-all shadow-sm shadow-blue-200 active:scale-95 flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" /> Tambah Akun Login
                     </button>
                   </div>
-                  <div className="flex-1 overflow-auto">
-                    <table className="w-full min-w-[700px] text-left border-collapse">
-                      <thead className="bg-slate-100 sticky top-0 border-b border-slate-200 z-10">
+                  {/* === MOBILE CARD LIST (< md) === */}
+                  <div className="md:hidden flex-1 overflow-auto divide-y divide-slate-100">
+                    {users.length === 0 && (
+                      <div className="py-12 flex flex-col items-center gap-2">
+                        <Users className="w-8 h-8 text-slate-200" />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Belum ada akun</p>
+                      </div>
+                    )}
+                    {[...users]
+                      .sort((a, b) => {
+                        const an = branches.find((x) => x.id === a.branchId)?.name || "\uffff";
+                        const bn = branches.find((x) => x.id === b.branchId)?.name || "\uffff";
+                        return an.localeCompare(bn) || (a.name || a.displayName || "").localeCompare(b.name || b.displayName || "");
+                      })
+                      .map((emp) => (
+                      <div key={emp.id} className="p-3 space-y-2 hover:bg-slate-50/60 transition-colors">
+                        {/* Baris 1: Avatar + Nama + Role badge */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shrink-0 border border-blue-100">
+                            {(emp.name || emp.displayName || emp.email || "?")[0].toUpperCase()}
+                          </div>
+                          <input
+                            type="text"
+                            defaultValue={emp.name || emp.displayName || ""}
+                            onBlur={(e) => { if (e.target.value !== (emp.name || emp.displayName || "")) updateUser(emp.id, "name", e.target.value); }}
+                            placeholder="Nama Petugas..."
+                            className="flex-1 min-w-0 text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all"
+                          />
+                          <CustomSelect
+                            value={emp.role}
+                            onChange={(v) => updateUser(emp.id, "role", v)}
+                            options={[
+                              { value: "PENDING", label: "PENDING" },
+                              { value: "ADMIN", label: "ADMIN" },
+                              { value: "CASHIER", label: "KASIR" },
+                              { value: "AUDIT", label: "AUDIT" },
+                            ]}
+                            keepTriggerBg
+                            buttonClassName={`text-[9px] font-black uppercase px-2 py-1 rounded-lg border ${emp.role === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-200" : emp.role === "ADMIN" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}
+                          />
+                        </div>
+                        {/* Baris 2: Nama alternatif */}
+                        <input
+                          type="text"
+                          defaultValue={emp.alternativeNames || ""}
+                          onBlur={(e) => { if (e.target.value !== (emp.alternativeNames || "")) updateUser(emp.id, "alternativeNames", e.target.value); }}
+                          placeholder="Petugas 2, 3 (pisah koma)..."
+                          className="block w-full text-[9px] font-medium text-slate-400 bg-slate-50 border border-slate-100 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all italic"
+                        />
+                        {/* Baris 3: Cabang + tombol aksi */}
+                        <div className="flex items-center gap-1.5">
+                          <CustomSelect
+                            value={emp.branchId || ""}
+                            onChange={(v) => updateUser(emp.id, "branchId", v)}
+                            placeholder="Belum ditempatkan"
+                            options={[
+                              { value: "", label: "-- Belum Ditempatkan --" },
+                              ...branches.map((b) => ({ value: b.id, label: b.name })),
+                            ]}
+                            className="flex-1"
+                            buttonClassName="w-full text-[9px] font-bold uppercase tracking-tight px-2 py-1 rounded-lg border border-slate-200 bg-white"
+                          />
+                          <button onClick={() => setResetUser(emp)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all active:scale-95 shrink-0" title="Reset Password">
+                            <Key className="w-3.5 h-3.5" />
+                          </button>
+                          {emp.id !== user?.uid && (
+                            <button onClick={() => deleteUser(emp.id, emp.name)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all active:scale-90 shrink-0" title="Hapus">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[8px] text-slate-300 font-mono">{emp.email}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* === DESKTOP TABLE (≥ md) === */}
+                  <div className="hidden md:flex flex-1 overflow-auto">
+                    <table className="w-full min-w-[620px] text-left border-collapse">
+                      <thead className="bg-slate-50 sticky top-0 border-b border-slate-200 z-10">
                         <tr>
-                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                            Detail Karyawan
-                          </th>
-                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                            Hak Akses (Role)
-                          </th>
-                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                            Penempatan Cabang
-                          </th>
-                          <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">
-                            Tindakan
-                          </th>
+                          <th className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Karyawan</th>
+                          <th className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Role</th>
+                          <th className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cabang</th>
+                          <th className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">Aksi</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100 text-sm">
+                      <tbody className="divide-y divide-slate-100">
                         {users.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="px-4 py-16 text-center">
-                              <div className="flex flex-col items-center gap-3 text-slate-300">
-                                <Users className="w-10 h-10" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                  Belum ada akun karyawan
-                                </p>
-                                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-300">
-                                  Klik "Tambah Akun Login" untuk membuat akses tim
-                                </p>
-                              </div>
-                            </td>
-                          </tr>
+                          <tr><td colSpan={4} className="px-4 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2 text-slate-300">
+                              <Users className="w-8 h-8" />
+                              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Belum ada akun karyawan</p>
+                            </div>
+                          </td></tr>
                         )}
                         {[...users]
                           .sort((a, b) => {
                             const an = branches.find((x) => x.id === a.branchId)?.name || "\uffff";
                             const bn = branches.find((x) => x.id === b.branchId)?.name || "\uffff";
-                            return (
-                              an.localeCompare(bn) ||
-                              (a.name || a.displayName || "").localeCompare(b.name || b.displayName || "")
-                            );
+                            return an.localeCompare(bn) || (a.name || a.displayName || "").localeCompare(b.name || b.displayName || "");
                           })
                           .map((emp) => (
-                          <tr key={emp.id} className="hover:bg-slate-50">
-                            <td className="px-4 py-3">
+                          <tr key={emp.id} className="hover:bg-slate-50/70">
+                            <td className="px-3 py-2">
                               <div className="space-y-1">
                                 <input
                                   type="text"
                                   defaultValue={emp.name || emp.displayName || ""}
-                                  onBlur={(e) => {
-                                    if (e.target.value !== (emp.name || emp.displayName || "")) {
-                                      updateUser(emp.id, "name", e.target.value);
-                                    }
-                                  }}
-                                  placeholder="Petugas 1..."
-                                  className="block w-full font-bold text-slate-800 bg-white border border-slate-200 focus:border-blue-500 focus:outline-none px-2 py-0.5 rounded transition-all text-sm"
+                                  onBlur={(e) => { if (e.target.value !== (emp.name || emp.displayName || "")) updateUser(emp.id, "name", e.target.value); }}
+                                  placeholder="Nama petugas..."
+                                  className="block w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all"
                                 />
                                 <input
                                   type="text"
                                   defaultValue={emp.alternativeNames || ""}
-                                  onBlur={(e) => {
-                                    if (e.target.value !== (emp.alternativeNames || "")) {
-                                      updateUser(
-                                        emp.id,
-                                        "alternativeNames",
-                                        e.target.value,
-                                      );
-                                    }
-                                  }}
-                                  placeholder="Petugas 2, 3 (Pisah Koma)..."
-                                  className="block w-full text-[9px] font-medium text-slate-400 bg-white border border-slate-200 focus:border-blue-500 focus:outline-none px-2 py-0.5 rounded transition-all italic shadow-sm"
+                                  onBlur={(e) => { if (e.target.value !== (emp.alternativeNames || "")) updateUser(emp.id, "alternativeNames", e.target.value); }}
+                                  placeholder="Petugas 2, 3 (pisah koma)..."
+                                  className="block w-full text-[9px] font-medium text-slate-400 bg-slate-50 border border-slate-100 focus:border-blue-400 focus:outline-none px-2 py-0.5 rounded-lg transition-all italic"
                                 />
-                                <p className="text-[10px] text-slate-400 font-mono mt-1 opacity-60 italic">
-                                  {emp.email}
-                                </p>
+                                <p className="text-[9px] text-slate-300 font-mono">{emp.email}</p>
                               </div>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-2">
                               <CustomSelect
                                 value={emp.role}
                                 onChange={(v) => updateUser(emp.id, "role", v)}
                                 options={[
-                                  {
-                                    value: "PENDING",
-                                    label: "PENDING (Terkunci)",
-                                  },
+                                  { value: "PENDING", label: "PENDING (Terkunci)" },
                                   { value: "ADMIN", label: "ADMIN PUSAT" },
                                   { value: "CASHIER", label: "KASIR TOKO" },
                                   { value: "AUDIT", label: "TIM AUDIT" },
                                 ]}
                                 keepTriggerBg
-                                buttonClassName={`text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border focus:ring-2 focus:ring-blue-500 ${
-                                  emp.role === "PENDING"
-                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : emp.role === "ADMIN"
-                                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                                      : "bg-slate-50 text-slate-700 border-slate-300"
-                                }`}
+                                buttonClassName={`text-[10px] font-bold uppercase px-2 py-1.5 rounded-lg border ${emp.role === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-200" : emp.role === "ADMIN" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-2">
                               <CustomSelect
                                 value={emp.branchId || ""}
-                                onChange={(v) =>
-                                  updateUser(emp.id, "branchId", v)
-                                }
+                                onChange={(v) => updateUser(emp.id, "branchId", v)}
                                 placeholder="-- BELUM DITEMPATKAN --"
                                 options={[
-                                  {
-                                    value: "",
-                                    label: "-- BELUM DITEMPATKAN --",
-                                  },
-                                  ...branches.map((b) => ({
-                                    value: b.id,
-                                    label: b.name,
-                                  })),
+                                  { value: "", label: "-- Belum Ditempatkan --" },
+                                  ...branches.map((b) => ({ value: b.id, label: b.name })),
                                 ]}
-                                className="w-full max-w-[200px]"
-                                buttonClassName="w-full text-xs font-bold uppercase tracking-widest px-2 py-1.5 rounded border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500"
+                                className="w-full max-w-[180px]"
+                                buttonClassName="w-full text-[10px] font-bold uppercase tracking-tight px-2 py-1.5 rounded-lg border border-slate-200 bg-white"
                               />
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <button 
-                                  onClick={() => setResetUser(emp)}
-                                  className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-all active:scale-95 flex items-center justify-center border border-transparent hover:border-orange-100"
-                                  title="Reset Password"
-                                >
-                                  <Key className="w-5 h-5" />
+                            <td className="px-3 py-2 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button onClick={() => setResetUser(emp)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all active:scale-95" title="Reset Password">
+                                  <Key className="w-3.5 h-3.5" />
                                 </button>
                                 {emp.id !== user?.uid && (
-                                  <button
-                                    onClick={() => deleteUser(emp.id, emp.name)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all active:scale-90"
-                                    title="Hapus Karyawan"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
+                                  <button onClick={() => deleteUser(emp.id, emp.name)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all active:scale-90" title="Hapus">
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
                               </div>
@@ -4081,8 +4100,8 @@ export default function App() {
               <div className="flex-1 p-4 md:p-4 md:p-6 overflow-y-auto">
                 <div className="max-w-3xl mx-auto space-y-6 text-left pb-20">
                   {/* Card Configuration Switch */}
-                  <div className="bg-white p-7 rounded-[32px]">
-                    <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                  <div className="bg-white p-4 md:p-7 rounded-2xl md:rounded-[32px]">
+                    <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-4 md:mb-8 flex items-center gap-2">
                       <Settings className="w-4 h-4 text-emerald-500" />
                       Fitur & Hak Akses Global
                     </h3>
@@ -4130,7 +4149,7 @@ export default function App() {
                   </div>
 
                   {/* Card Add Branch */}
-                  <div className="bg-white p-3 md:p-5 rounded-2xl">
+                  <div className="bg-white p-3 md:p-4 rounded-2xl">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b border-slate-200/60 pb-3 mb-4 flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-blue-500 drop-shadow-[0_0_5px_rgba(59,130,246,0.6)]" /> Registrasi
                       Cabang Baru
@@ -4172,152 +4191,90 @@ export default function App() {
                         .map((b, idx) => (
                           <div
                             key={b.id}
-                            className="p-4 flex items-center justify-between hover:bg-slate-50"
+                            className="p-3 flex items-center gap-3 hover:bg-slate-50/70 transition-colors"
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm border border-blue-100">
-                                {idx + 1}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <h4 className="font-bold text-slate-800">
-                                    {b.name}
-                                  </h4>
-                                  <button
-                                    onClick={async () => {
-                                      const newName = await triggerPrompt(`Ubah Nama Cabang "${b.name}" menjadi:`, b.name);
-                                      if (newName === null) return;
-                                      const trimmed = newName.trim();
-                                      if (!trimmed) return alert("Nama cabang tidak boleh kosong!");
-                                      try {
-                                        const res = await fetch(`/api/branches/${b.id}`, {
-                                          method: "PATCH",
-                                          headers: {
-                                            "Content-Type": "application/json",
-                                            Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                          },
-                                          body: JSON.stringify({ name: trimmed }),
-                                        });
-                                        if (!res.ok) {
-                                          const errData = await res.json().catch(() => ({}));
-                                          throw new Error(errData.error || "Gagal mengubah nama cabang");
-                                        }
-                                        const bData = await api.getBranches();
-                                        setBranches(
-                                          bData.sort((a: any, b: any) =>
-                                            (a.name || "").localeCompare(b.name || "")
-                                          )
-                                        );
-                                      } catch (err: any) {
-                                        alert(err.message || "Gagal mengubah nama cabang");
-                                      }
-                                    }}
-                                    className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
-                                    title="Ubah Nama Cabang"
-                                  >
-                                    <Edit className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                                <p className="text-[10px] text-slate-400 font-mono">
-                                  ID: {b.id}
-                                </p>
-                              </div>
+                            {/* Nomor */}
+                            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shrink-0 border border-blue-100">
+                              {idx + 1}
                             </div>
-                            <div className="flex flex-col items-end gap-2 text-right">
-                              <div className="flex items-center gap-3">
+                            {/* Nama + Toggle */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1">
+                                <h4 className="text-xs font-black text-slate-800 truncate">{b.name}</h4>
+                                <button
+                                  onClick={async () => {
+                                    const newName = await triggerPrompt(`Ubah Nama Cabang "${b.name}" menjadi:`, b.name);
+                                    if (newName === null) return;
+                                    const trimmed = newName.trim();
+                                    if (!trimmed) return alert("Nama cabang tidak boleh kosong!");
+                                    try {
+                                      const res = await fetch(`/api/branches/${b.id}`, {
+                                        method: "PATCH",
+                                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                        body: JSON.stringify({ name: trimmed }),
+                                      });
+                                      if (!res.ok) { const errData = await res.json().catch(() => ({})); throw new Error(errData.error || "Gagal mengubah nama cabang"); }
+                                      const bData = await api.getBranches();
+                                      setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
+                                    } catch (err: any) { alert(err.message || "Gagal mengubah nama cabang"); }
+                                  }}
+                                  className="p-0.5 text-slate-300 hover:text-blue-500 transition-colors shrink-0"
+                                  title="Ubah Nama"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <button
                                   onClick={async () => {
                                     try {
                                       const newVal = !b.allowEmployeeInput;
                                       await fetch(`/api/branches/${b.id}`, {
                                         method: "PATCH",
-                                        headers: {
-                                          "Content-Type": "application/json",
-                                          Authorization: `Bearer ${localStorage.getItem(
-                                            "token",
-                                          )}`,
-                                        },
-                                        body: JSON.stringify({
-                                          allowEmployeeInput: newVal,
-                                        }),
+                                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                        body: JSON.stringify({ allowEmployeeInput: newVal }),
                                       });
                                       const bData = await api.getBranches();
-                                      setBranches(
-                                        bData.sort((a: any, b: any) =>
-                                          (a.name || "").localeCompare(
-                                            b.name || "",
-                                          ),
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      console.error(e);
-                                    }
+                                      setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
+                                    } catch (e) { console.error(e); }
                                   }}
-                                  className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all ${b.allowEmployeeInput !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all ${b.allowEmployeeInput !== false ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}
                                 >
-                                  {b.allowEmployeeInput !== false
-                                    ? "INPUT AKTIF"
-                                    : "INPUT OFF"}
+                                  {b.allowEmployeeInput !== false ? "Input ✓" : "Input Off"}
                                 </button>
                                 <button
                                   onClick={() => toggleBranchShoppingHidden(b.id)}
-                                  className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-rose-100 text-rose-700 hover:bg-rose-200"}`}
-                                  title={!hiddenShoppingBranchIds.includes(b.id) ? "Klik untuk sembunyikan cabang ini dari Daftar Belanja" : "Klik untuk tampilkan kembali cabang ini di Daftar Belanja"}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-blue-50 text-blue-600" : "bg-rose-50 text-rose-500"}`}
+                                  title={!hiddenShoppingBranchIds.includes(b.id) ? "Tampil di Daftar Belanja" : "Disembunyikan dari Daftar Belanja"}
                                 >
-                                  {!hiddenShoppingBranchIds.includes(b.id)
-                                    ? "MUNCUL DI BELANJA"
-                                    : "DISEMBUNYIKAN"}
+                                  {!hiddenShoppingBranchIds.includes(b.id) ? "Belanja ✓" : "Belanja ✗"}
                                 </button>
-                                <button
-                                  onClick={async () => {
-                                    if (b.id === "default-branch-id") {
-                                      alert(
-                                        `PERINGATAN: "${b.name}" adalah Cabang Sistem Utama bawaan (seed) yang tertaut dengan akun 'admin' and 'cashier' default.\n\nSangat disarankan untuk mengubah NAMA cabang ini di database (atau rename) daripada menghapusnya.\n\nSetiap kali web restart, Cabang Sistem Utama ini akan otomatis dibuat kembali jika tidak ada.`
-                                      );
-                                      return;
-                                    }
-                                    if (
-                                      await triggerConfirm(
-                                        `Hapus Cabang "${b.name}"?\nSemua data stok dan voucher di cabang ini akan dihapus. Data penjualan tetap tersimpan.`,
-                                      )
-                                    ) {
-                                      try {
-                                        const res = await fetch(`/api/branches/${b.id}`, {
-                                          method: "DELETE",
-                                          headers: {
-                                            Authorization: `Bearer ${localStorage.getItem(
-                                              "token",
-                                            )}`,
-                                          },
-                                        });
-                                        if (!res.ok) {
-                                          const errData = await res.json().catch(() => ({}));
-                                          throw new Error(errData.error || "Gagal menghapus cabang");
-                                        }
-                                        const bData = await api.getBranches();
-                                        setBranches(
-                                          bData.sort((a: any, b: any) =>
-                                            (a.name || "").localeCompare(
-                                              b.name || "",
-                                            ),
-                                          ),
-                                        );
-                                      } catch (e: any) {
-                                        alert(e.message || "Gagal menghapus cabang");
-                                        console.error(e);
-                                      }
-                                    }
-                                  }}
-                                  className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                                  title="Hapus Cabang"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                                <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-bold uppercase tracking-widest leading-none">
-                                  Beroperasi
-                                </span>
                               </div>
                             </div>
+                            {/* Hapus */}
+                            <button
+                              onClick={async () => {
+                                if (b.id === "default-branch-id") {
+                                  alert(`PERINGATAN: "${b.name}" adalah Cabang Sistem Utama bawaan (seed) yang tertaut dengan akun 'admin' and 'cashier' default.\n\nSangat disarankan untuk mengubah NAMA cabang ini di database (atau rename) daripada menghapusnya.\n\nSetiap kali web restart, Cabang Sistem Utama ini akan otomatis dibuat kembali jika tidak ada.`);
+                                  return;
+                                }
+                                if (await triggerConfirm(`Hapus Cabang "${b.name}"?\nSemua data stok dan voucher di cabang ini akan dihapus. Data penjualan tetap tersimpan.`)) {
+                                  try {
+                                    const res = await fetch(`/api/branches/${b.id}`, {
+                                      method: "DELETE",
+                                      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                    });
+                                    if (!res.ok) { const errData = await res.json().catch(() => ({})); throw new Error(errData.error || "Gagal menghapus cabang"); }
+                                    const bData = await api.getBranches();
+                                    setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
+                                  } catch (e: any) { alert(e.message || "Gagal menghapus cabang"); console.error(e); }
+                                }
+                              }}
+                              className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all active:scale-90 shrink-0"
+                              title="Hapus Cabang"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         ))}
                     </div>
