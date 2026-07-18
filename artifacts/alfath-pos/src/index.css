@@ -380,8 +380,8 @@ body {
 .dark .bg-black\/95,
 .dark .bg-black\/50,
 .dark .bg-black\/75 {
-  background-color: rgba(3, 5, 10, 0.8) !important;
-  backdrop-filter: blur(8px) !important;
+  background-color: rgba(3, 5, 10, 0.85) !important;
+  /* backdrop-filter dihapus: opacity sudah cukup gelap untuk overlay modal */
 }
 
 /* Custom Premium Dark Scrollbars */
@@ -558,11 +558,11 @@ button:not(:disabled):active {
   background: #94a3b8;
 }
 
-/* Blur halus pada latar modal di mode terang (mode gelap punya blur lebih kuat) */
+/* Overlay latar modal — tanpa blur agar tidak membebani GPU */
 .bg-black\/95,
 .bg-black\/75,
 .bg-black\/50 {
-  backdrop-filter: blur(4px);
+  /* backdrop-filter dihapus: opacity background sudah cukup untuk overlay */
 }
 
 /* Hormati preferensi pengurangan gerak (aksesibilitas) */
@@ -740,30 +740,36 @@ textarea:focus-visible {
   background-color: #23262e !important;
 }
 
-/* Kartu/panel timbul (neumorphic) — terang */
-.bg-white:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
+/* ============================================================
+   Neumorphic — HANYA panel besar (rounded-2xl ke atas).
+   rounded-lg / rounded-xl sengaja dikeluarkan agar badge kecil,
+   dropdown menu, dan chip tidak kena shadow ganda yang berantakan.
+   Shadow lebih halus & highlight tidak terlalu putih keras.
+   ============================================================ */
+
+/* Panel timbul — mode terang */
+.bg-white:is(.rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
   background-color: #e0e5ec !important;
   border-color: transparent !important;
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000),
     var(--tw-ring-shadow, 0 0 #0000),
-    7px 7px 16px #b8c2d0,
-    -7px -7px 16px #ffffff !important;
+    5px 5px 12px #c1cad6,
+    -5px -5px 12px #f8faff !important;
 }
 
-/* Kartu/panel timbul (neumorphic) — gelap */
-.dark .bg-white:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
+/* Panel timbul — mode gelap */
+.dark .bg-white:is(.rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
   background-color: #2a2d35 !important;
   border-color: transparent !important;
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000),
     var(--tw-ring-shadow, 0 0 #0000),
-    6px 6px 14px #1c1e24,
-    -6px -6px 14px #34373f !important;
+    4px 4px 10px #1a1c22,
+    -4px -4px 10px #343840 !important;
 }
 
-/* Pemicu dropdown (CustomSelect) — cekung neumorphic agar serasi dgn kolom.
-   Ring fokus dipertahankan dgn menyertakan layer ring Tailwind v4. */
+/* Input cekung (CustomSelect trigger) — tetap neumorphic agar serasi */
 .app-select-trigger {
   background-color: #e0e5ec !important;
   border-color: transparent !important;
@@ -771,14 +777,14 @@ textarea:focus-visible {
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000),
     var(--tw-ring-shadow, 0 0 #0000),
-    inset 2px 2px 5px #c2ccd9,
-    inset -2px -2px 4px #ffffff !important;
+    inset 2px 2px 5px #c1cad6,
+    inset -2px -2px 4px #f8faff !important;
 }
 .dark .app-select-trigger {
   background-color: #2a2d35 !important;
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000),
     var(--tw-ring-shadow, 0 0 #0000),
-    inset 2px 2px 5px #1c1e24,
-    inset -2px -2px 4px #34373f !important;
+    inset 2px 2px 5px #1a1c22,
+    inset -2px -2px 4px #343840 !important;
 }

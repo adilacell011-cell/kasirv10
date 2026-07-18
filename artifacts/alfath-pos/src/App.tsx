@@ -162,7 +162,7 @@ const ScannerModal = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[3000] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-4 overflow-hidden">
+    <div className="fixed inset-0 z-[3000] bg-black/95 flex flex-col items-center justify-center p-4 overflow-hidden">
       <div className="w-full max-w-sm bg-white rounded-[40px] overflow-hidden relative shadow-[0_0_80px_rgba(30,58,138,0.4)] border border-white/20">
         <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
           <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ const ScannerModal = ({
           <div className="absolute inset-x-0 top-1/2 h-1 bg-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-[scan_2s_ease-in-out_infinite] z-20 pointer-events-none"></div>
 
           {errorMsg && (
-            <div className="absolute inset-0 z-30 flex items-center justify-center p-4 md:p-8 text-center bg-slate-950/90 backdrop-blur-md">
+            <div className="absolute inset-0 z-30 flex items-center justify-center p-4 md:p-8 text-center bg-slate-950/90">
               <div className="text-white max-w-xs">
                 <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/50">
                   <AlertTriangle className="w-8 h-8 text-amber-500" />
@@ -3002,7 +3002,7 @@ export default function App() {
       <div className="flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden">
         {/* --- DESKTOP/TABLET SIDEBAR --- */}
         <div
-          className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          className={`fixed inset-0 bg-black/50 z-[80] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -3458,7 +3458,7 @@ export default function App() {
 
             {/* Modal Reset Password */}
             {resetUser && (
-              <div className="fixed inset-0 z-[5000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-left">
+              <div className="fixed inset-0 z-[5000] bg-slate-900/60 flex items-center justify-center p-4 text-left">
                 <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
                   <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                     <div className="flex items-center gap-3">
@@ -4314,7 +4314,7 @@ export default function App() {
               <div className="flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
-                  <div className="absolute inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                  <div className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
                       <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                         <h3 className="font-black text-slate-800 uppercase tracking-tight">
@@ -5934,7 +5934,7 @@ export default function App() {
                   <div className="flex-1 overflow-x-auto relative flex flex-col lg:flex-row h-full overflow-hidden">
                     <div className="flex-1 overflow-y-auto lg:min-w-[700px] border-r border-slate-100 bg-white">
                       {!auditSelectedBranch && (
-                        <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-4 md:p-6 text-center">
+                        <div className="absolute inset-0 bg-slate-50/80 z-20 flex flex-col items-center justify-center p-4 md:p-6 text-center">
                           <MapPin className="w-12 h-12 text-slate-300 mb-3" />
                           <h3 className="text-xl font-black text-slate-800 tracking-tight">
                             Pilih Cabang Terlebih Dahulu
@@ -6195,7 +6195,7 @@ export default function App() {
                   {/* SIDEBAR: AUDIT OPERATIONS */}
                   <div className="w-full lg:w-[350px] bg-slate-50 overflow-y-auto shrink-0 shadow-inner flex flex-col h-full border-l border-slate-200 relative">
                       {!auditSelectedBranch && (
-                        <div className="absolute inset-0 bg-slate-50/70 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-4 md:p-8 text-center">
+                        <div className="absolute inset-0 bg-slate-50/70 z-20 flex flex-col items-center justify-center p-4 md:p-8 text-center">
                           <div className="w-16 h-16 bg-white rounded-2xl md:rounded-3xl shadow-xl flex items-center justify-center mb-4 border border-slate-100">
                             <Lock className="w-7 h-7 text-slate-300" />
                           </div>
@@ -7323,7 +7323,7 @@ export default function App() {
                         {/* 3. SHELF GRID UTAMA: PRODUK DAFTAR DI CABANG INI */}
                         <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50 relative">
                           {!shiftOpen && profile?.branchId && (
-                            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md z-[55] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/40 z-[55] flex items-center justify-center p-4">
                               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xl text-center max-w-[280px] w-full transform transition-all animate-in fade-in zoom-in-95">
                                 <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
                                   <Clock className="w-6 h-6 animate-pulse" />
@@ -7615,7 +7615,7 @@ export default function App() {
 
                       {/* CATALOG MOBILE DRAWER OVERLAY (HANYA AKTIF JIKA TERSEGMENTASI DI SCREEN KECIL) */}
                       {showMobileCart && (
-                        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 flex justify-end">
+                        <div className="fixed inset-0 z-[100] bg-slate-900/60 animate-in fade-in duration-300 flex justify-end">
                           <div className="w-[290px] md:w-[400px] h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 ease-out">
                             <div className="p-4 border-b border-slate-150 flex items-center justify-between">
                               <div>
@@ -8378,7 +8378,7 @@ export default function App() {
                   ) : (
                     <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
                       <div className="relative overflow-hidden bg-blue-600 rounded-2xl md:rounded-[32px] p-5 md:p-6 text-white shadow-lg md:shadow-xl shadow-blue-200">
-                        <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full -mr-10 -mt-10 md:-mr-16 md:-mt-16 blur-2xl"></div>
+                        <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full -mr-10 -mt-10 md:-mr-16 md:-mt-16"></div>
                         <Sparkles className="w-6 h-6 md:w-8 md:h-8 mb-3 md:mb-4 opacity-80" />
                         <h3 className="text-xs md:text-sm font-black uppercase tracking-widest opacity-80 mb-1">
                           Saldo Bonus Saya
@@ -8395,11 +8395,11 @@ export default function App() {
                         </div>
                         <button 
                           onClick={() => syncCommissionsSummary()}
-                          className="mb-6 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-[9px] font-bold uppercase tracking-widest transition-colors backdrop-blur-sm border border-white/10"
+                          className="mb-6 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-[9px] font-bold uppercase tracking-widest transition-colors border border-white/10"
                         >
                           <RefreshCw className="w-3 h-3" /> Sinkronkan Data Bonus
                         </button>
-                        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:gap-4 bg-white/10 backdrop-blur-md rounded-xl md:rounded-2xl p-4 md:p-4 border border-white/10">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:gap-4 bg-white/10 rounded-xl md:rounded-2xl p-4 md:p-4 border border-white/10">
                           <div className="flex-1 border-b sm:border-b-0 sm:border-r border-white/20 pb-2 sm:pb-0">
                             <p className="text-[9px] font-bold uppercase tracking-widest opacity-60 mb-0.5">Sudah Dicairkan</p>
                             <p className="text-[11px] md:text-xs font-black tracking-tight">
@@ -8457,7 +8457,7 @@ export default function App() {
               <div className="flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
                 <div className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden relative shrink-0">
                   <div className="p-4 md:p-8 border-b border-slate-200 bg-slate-50 text-slate-900 text-center relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16"></div>
                     <Clock className="w-14 h-14 text-blue-600 mx-auto mb-4 relative z-10" />
                     <h2 className="text-xl md:text-lg md:text-2xl font-black uppercase tracking-tight relative z-10">
                       Manajemen Shift
@@ -8693,11 +8693,11 @@ export default function App() {
 
                 {/* SHIFT SUMMARY MODAL overlay inside view */}
                 {showShiftSummary !== null && (
-                  <div className="fixed inset-0 z-[110] bg-slate-900/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+                  <div className="fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 animate-in fade-in duration-300">
                     <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
                       <div className="p-5 md:p-6 bg-emerald-600 text-white text-center relative overflow-hidden shrink-0">
                         <div className="absolute inset-0 bg-emerald-500/20 animate-pulse"></div>
-                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 relative z-10 backdrop-blur-md">
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 relative z-10">
                           <Banknote className="w-6 h-6 text-white" />
                         </div>
                         <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter mb-1 relative z-10">
@@ -9140,7 +9140,7 @@ export default function App() {
 
                       {/* TOP PRODUCTS */}
                       <div className="lg:col-span-1 bg-white rounded-3xl p-6 text-slate-900 border border-slate-200/60 shadow-sm overflow-hidden relative">
-                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16" />
                          <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-6 text-blue-600 relative z-10">
                             <TrendingUp className="w-4 h-4" /> Produk Terlaris
                           </h4>
@@ -9421,7 +9421,7 @@ export default function App() {
 
 
       {quickAuditProduct && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/60">
           <div className="bg-white w-full max-w-md rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="p-4 md:p-8">
               <div className="flex justify-between items-start mb-6 text-left">
@@ -9536,7 +9536,7 @@ export default function App() {
       )}
     {/* USER FORM MODAL */}
     {showUserForm && (
-      <div className="absolute inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="absolute inset-0 z-[60] bg-slate-900/50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col">
           <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
             <h3 className="font-black text-slate-800 uppercase tracking-tight">
@@ -9624,7 +9624,7 @@ export default function App() {
       {globalAlerts.map((alert) => (
         <div
           key={alert.id}
-          className={`pointer-events-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl text-slate-900 border border-slate-200/80 p-4 rounded-2xl shadow-2xl shadow-slate-900/10 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 relative border-l-4 ${alert.type === 'success' ? 'border-l-emerald-500' : 'border-l-amber-500'}`}
+          className={`pointer-events-auto bg-white/90 dark:bg-slate-900/90 text-slate-900 border border-slate-200/80 p-4 rounded-2xl shadow-2xl shadow-slate-900/10 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 relative border-l-4 ${alert.type === 'success' ? 'border-l-emerald-500' : 'border-l-amber-500'}`}
         >
           <div className={`w-5 h-5 rounded-full ${alert.type === 'success' ? 'bg-emerald-500/15' : 'bg-amber-500/15'} flex items-center justify-center shrink-0 mt-0.5`}>
             {alert.type === 'success' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
@@ -9645,7 +9645,7 @@ export default function App() {
 
     {/* --- BRAND CONFIRMATION POPUP (NO WEB ADDRESS NO DOMAIN SHOWN) --- */}
     {confirmModal && (
-      <div className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
         <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
           <div className="p-6 text-center">
             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -9680,7 +9680,7 @@ export default function App() {
 
     {/* --- BRAND PROMPT POPUP (NO WEB ADDRESS / DOMAIN SHOWN) --- */}
     {promptModal && (
-      <div className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
         <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
           <form
             onSubmit={(e) => {
@@ -9727,7 +9727,7 @@ export default function App() {
 
     {/* MODAL DAFTAR TRANSAKSI DITAHAN */}
     {showHeldList && (
-      <div className="fixed inset-0 z-[99998] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowHeldList(false)}>
+      <div className="fixed inset-0 z-[99998] bg-slate-950/80 flex items-center justify-center p-4" onClick={() => setShowHeldList(false)}>
         <div
           className="bg-white w-full max-w-md rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]"
           onClick={(e) => e.stopPropagation()}
