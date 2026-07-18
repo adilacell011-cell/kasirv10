@@ -3190,7 +3190,7 @@ export default function App() {
         {/* --- DASHBOARD CONTENT AREA --- */}
         <div className="flex-1 flex flex-col min-w-0 pb-[68px] md:pb-0 relative h-[100dvh]">
           {/* HEADER */}
-          <header className="h-16 bg-slate-50 flex items-center justify-between px-4 md:px-6 shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative">
+          <header className="h-16 bg-white flex items-center justify-between px-4 md:px-6 shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative">
             <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
               <button className="p-2 -ml-1 rounded-xl bg-slate-50 text-blue-600 shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_12px_1px_rgba(59,130,246,0.3)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_12px_1px_rgba(59,130,246,0.3)] active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] transition-all" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <Menu className="w-6 h-6" />
@@ -3220,7 +3220,7 @@ export default function App() {
               {profile?.role === "ADMIN" && (
                 <button
                   onClick={() => setActiveMenu("shopping_list")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeMenu === "shopping_list" ? "bg-blue-600 text-white shadow-[0_0_18px_2px_rgba(59,130,246,0.6),4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[0_0_18px_2px_rgba(59,130,246,0.6),4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f]" : "bg-slate-50 text-slate-600 shadow-[4px_4px_9px_#b8c2d0,-4px_-4px_9px_#ffffff] dark:shadow-[4px_4px_9px_#1c1e24,-4px_-4px_9px_#34373f] hover:shadow-[0_0_14px_1px_rgba(59,130,246,0.35),4px_4px_9px_#b8c2d0,-4px_-4px_9px_#ffffff] dark:hover:shadow-[0_0_14px_1px_rgba(59,130,246,0.35),4px_4px_9px_#1c1e24,-4px_-4px_9px_#34373f]"}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeMenu === "shopping_list" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
                   Daftar Belanja
@@ -3294,7 +3294,7 @@ export default function App() {
             {/* --- 1. ADMIN: PENGATURAN AKSES KARYAWAN --- */}
             {activeMenu === "employees" && profile?.role === "ADMIN" && (
               <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+                <div className="bg-white rounded-3xl flex flex-col h-full overflow-hidden">
                   <div className="p-4 md:p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 shrink-0 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
@@ -3735,7 +3735,7 @@ export default function App() {
                             return (
                               <div
                                 key={type}
-                                className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border transition-all ${type === "Pagi" ? "bg-amber-50 border-amber-100 shadow-[0_0_22px_2px_rgba(245,158,11,0.5)]" : "bg-indigo-50 border-indigo-100 shadow-[0_0_22px_2px_rgba(99,102,241,0.5)]"}`}
+                                className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border transition-all ${type === "Pagi" ? "bg-amber-50 border-amber-200" : "bg-indigo-50 border-indigo-200"}`}
                               >
                                 <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${type === "Pagi" ? "text-amber-600" : "text-indigo-600"}`}>
                                   TOTAL {type.toUpperCase()} (PERIODE)
@@ -4081,7 +4081,7 @@ export default function App() {
               <div className="flex-1 p-4 md:p-4 md:p-6 overflow-y-auto">
                 <div className="max-w-3xl mx-auto space-y-6 text-left pb-20">
                   {/* Card Configuration Switch */}
-                  <div className="bg-white p-7 rounded-[32px] border border-slate-200/60 shadow-sm">
+                  <div className="bg-white p-7 rounded-[32px]">
                     <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
                       <Settings className="w-4 h-4 text-emerald-500" />
                       Fitur & Hak Akses Global
@@ -4130,7 +4130,7 @@ export default function App() {
                   </div>
 
                   {/* Card Add Branch */}
-                  <div className="bg-slate-50 p-3 md:p-5 rounded-2xl shadow-[6px_6px_14px_#b8c2d0,-6px_-6px_14px_#ffffff] dark:shadow-[6px_6px_14px_#1c1e24,-6px_-6px_14px_#34373f]">
+                  <div className="bg-white p-3 md:p-5 rounded-2xl">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b border-slate-200/60 pb-3 mb-4 flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-blue-500 drop-shadow-[0_0_5px_rgba(59,130,246,0.6)]" /> Registrasi
                       Cabang Baru
@@ -4141,12 +4141,12 @@ export default function App() {
                         placeholder="Nama Cabang (Contoh: Cabang Jakarta Pusat)"
                         value={newBranch}
                         onChange={(e) => setNewBranch(e.target.value)}
-                        className="flex-1 bg-slate-50 rounded-xl px-4 py-2 text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                        className="flex-1 bg-slate-50 rounded-xl px-4 py-2 text-sm font-medium border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
                       />
                       <button
                         onClick={handleAddBranch}
                         disabled={!newBranch.trim()}
-                        className="bg-blue-600 disabled:opacity-50 text-white px-4 md:px-6 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest shrink-0 transition-all shadow-[0_0_16px_2px_rgba(59,130,246,0.5),4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[0_0_16px_2px_rgba(59,130,246,0.5),4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] disabled:shadow-none"
+                        className="bg-blue-600 disabled:opacity-50 text-white px-4 md:px-6 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest shrink-0 transition-all hover:bg-blue-700 shadow-sm disabled:shadow-none"
                       >
                         Simpan Cabang
                       </button>
@@ -4154,7 +4154,7 @@ export default function App() {
                   </div>
 
                   {/* List Branches */}
-                  <div className="bg-slate-50 rounded-2xl shadow-[6px_6px_14px_#b8c2d0,-6px_-6px_14px_#ffffff] dark:shadow-[6px_6px_14px_#1c1e24,-6px_-6px_14px_#34373f] overflow-hidden">
+                  <div className="bg-white rounded-2xl overflow-hidden">
                     <div className="p-4 border-b border-slate-200/60 bg-slate-50">
                       <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">
                         Daftar Cabang Aktif
@@ -4175,7 +4175,7 @@ export default function App() {
                             className="p-4 flex items-center justify-between hover:bg-slate-50"
                           >
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-slate-50 text-blue-600 flex items-center justify-center font-black text-sm shadow-[0_0_14px_1px_rgba(59,130,246,0.4),3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[0_0_14px_1px_rgba(59,130,246,0.4),3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f]">
+                              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm border border-blue-100">
                                 {idx + 1}
                               </div>
                               <div>
@@ -4253,7 +4253,7 @@ export default function App() {
                                       console.error(e);
                                     }
                                   }}
-                                  className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all ${b.allowEmployeeInput !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-[0_0_12px_1px_rgba(16,185,129,0.5)]" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}
+                                  className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all ${b.allowEmployeeInput !== false ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}
                                 >
                                   {b.allowEmployeeInput !== false
                                     ? "INPUT AKTIF"
@@ -4261,7 +4261,7 @@ export default function App() {
                                 </button>
                                 <button
                                   onClick={() => toggleBranchShoppingHidden(b.id)}
-                                  className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-blue-100 text-blue-700 hover:bg-blue-200 shadow-[0_0_12px_1px_rgba(59,130,246,0.45)]" : "bg-rose-100 text-rose-700 hover:bg-rose-200 shadow-[0_0_12px_1px_rgba(244,63,94,0.45)]"}`}
+                                  className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-rose-100 text-rose-700 hover:bg-rose-200"}`}
                                   title={!hiddenShoppingBranchIds.includes(b.id) ? "Klik untuk sembunyikan cabang ini dari Daftar Belanja" : "Klik untuk tampilkan kembali cabang ini di Daftar Belanja"}
                                 >
                                   {!hiddenShoppingBranchIds.includes(b.id)
@@ -4313,7 +4313,7 @@ export default function App() {
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
-                                <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-bold uppercase tracking-widest leading-none shadow-[0_0_10px_1px_rgba(59,130,246,0.35)]">
+                                <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-[9px] font-bold uppercase tracking-widest leading-none">
                                   Beroperasi
                                 </span>
                               </div>
@@ -4328,11 +4328,11 @@ export default function App() {
 
             {/* --- 3. ADMIN: INVENTORY MASTER --- */}
             {activeMenu === "inventory" && profile?.role === "ADMIN" && (
-              <div className="flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden relative">
+              <div className="flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
                   <div className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
                       <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                         <h3 className="font-black text-slate-800 uppercase tracking-tight">
                           {editingProduct
@@ -5087,7 +5087,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-300 shadow-xl overflow-hidden">
+                <div className="bg-white rounded-2xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left table-auto border-collapse">
                       <thead>
@@ -5269,7 +5269,7 @@ export default function App() {
                 {!isCreatingPlan ? (
                   <div className="space-y-8">
                     {/* LOW STOCK ALERTS SECTION */}
-                    <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-xl overflow-hidden text-left">
+                    <div className="bg-white rounded-[32px] overflow-hidden text-left">
                       <div className="p-4 md:p-6 border-b border-slate-100 bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="text-left">
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest text-left flex items-center gap-2">
@@ -7040,7 +7040,7 @@ export default function App() {
             {activeMenu === "pos" && profile?.role === "CASHIER" && (
               <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
-                <div className="p-2 bg-slate-50 shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
+                <div className="p-2 bg-white shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
                   <div className="flex items-center justify-between mb-3 px-1 text-left">
                     <div className="text-left">
                       <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-left">
@@ -7095,7 +7095,7 @@ export default function App() {
                   </div>
 
                   {/* SUB-NAVIGATION TABS */}
-                  <div className="flex gap-1 bg-slate-50 p-1 rounded-2xl shadow-[inset_3px_3px_7px_#b8c2d0,inset_-3px_-3px_7px_#ffffff] dark:shadow-[inset_3px_3px_7px_#1c1e24,inset_-3px_-3px_7px_#34373f]">
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl shadow-[inset_2px_2px_5px_#b8c2d0,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1c1e24,inset_-2px_-2px_5px_#34373f]">
                     {[
                       { id: "billing", label: "Billing", icon: Calculator },
                       { id: "history", label: "Riwayat", icon: Clock },
@@ -7253,7 +7253,7 @@ export default function App() {
                                 <button
                                   key={p.id}
                                   onClick={() => addToCart(p)}
-                                  className="flex-shrink-0 bg-slate-50 p-2 rounded-xl text-left w-32 transition-all font-black shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f] hover:shadow-[0_0_14px_1px_rgba(16,185,129,0.4),3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:hover:shadow-[0_0_14px_1px_rgba(16,185,129,0.4),3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f]"
+                                  className="flex-shrink-0 bg-slate-50 p-2 rounded-xl text-left w-32 transition-all font-black shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f] hover:bg-emerald-50 active:scale-95"
                                 >
                                   <p className="text-[10px] uppercase text-slate-800 truncate mb-1">{getProductName(p)}</p>
                                   <p className="text-[10px] text-emerald-600 font-mono">Rp {p.sellingPrice.toLocaleString("id-ID")}</p>
@@ -7465,7 +7465,7 @@ export default function App() {
                       <div className="w-full md:w-[370px] lg:w-[410px] bg-white flex flex-col shrink-0 overflow-hidden relative shadow-2xl z-30 border-l border-slate-200">
                         
                         {/* HEADER DAFTAR NOTA */}
-                        <div className="p-3 border-b border-slate-150 flex justify-between items-center bg-slate-50 shrink-0">
+                        <div className="p-3 border-b border-slate-150 flex justify-between items-center bg-white shrink-0">
                           <div className="flex items-center gap-1.5">
                             <ShoppingCart className="w-4 h-4 text-slate-650" />
                             <h4 className="text-[10px] font-black text-slate-850 uppercase tracking-widest leading-none">
@@ -8314,7 +8314,7 @@ export default function App() {
                   {profile?.role === "ADMIN" ? (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl md:rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
+                        <div className="bg-white rounded-2xl md:rounded-[32px] overflow-hidden">
                           <div className="p-4 md:p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                             <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight">Ringkasan Saldo Per Cabang</h3>
                             <Store className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
@@ -8361,14 +8361,14 @@ export default function App() {
                       </div>
 
                       <div className="space-y-6">
-                        <div className="bg-emerald-50 rounded-2xl p-6 shadow-[0_0_24px_2px_rgba(16,185,129,0.5)] border border-emerald-100 mb-6">
+                        <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-200 mb-6">
                           <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Total Komisi Seluruh Cabang</p>
                           <p className="text-2xl md:text-3xl font-black text-emerald-900 mt-1 break-words">
                             Rp {Object.values(branchSummaries).reduce((s, b) => s + (b.totalEarned || 0), 0).toLocaleString("id-ID")}
                           </p>
                           <p className="text-[9px] text-emerald-600 font-bold uppercase mt-2 italic">* Total saldo yang belum dicairkan</p>
                         </div>
-                        <div className="bg-white rounded-2xl md:rounded-[32px] shadow-sm border border-slate-100 p-4 md:p-6">
+                        <div className="bg-white rounded-2xl md:rounded-[32px] p-4 md:p-6">
                           <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight mb-4">Aktivitas Bonus Terbaru</h3>
                           <div className="space-y-4">
                             {commissions.slice(0, 10).map((c, idx) => (
@@ -8432,7 +8432,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-2xl md:rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
+                      <div className="bg-white rounded-2xl md:rounded-[32px] overflow-hidden">
                         <div className="p-4 md:p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                           <h3 className="font-black text-slate-800 text-[10px] md:text-xs uppercase tracking-widest">Riwayat Bonus Penjualan</h3>
                         </div>
@@ -8472,8 +8472,8 @@ export default function App() {
             )}
             {activeMenu === "shift" && profile?.role === "CASHIER" && (
               <div className="flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
-                <div className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden relative shrink-0">
-                  <div className="p-4 md:p-8 border-b border-slate-200 bg-slate-50 text-slate-900 text-center relative overflow-hidden">
+                <div className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden relative shrink-0">
+                  <div className="p-4 md:p-8 border-b border-slate-200 bg-white text-slate-900 text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16"></div>
                     <Clock className="w-14 h-14 text-blue-600 mx-auto mb-4 relative z-10" />
                     <h2 className="text-xl md:text-lg md:text-2xl font-black uppercase tracking-tight relative z-10">
@@ -9384,7 +9384,7 @@ export default function App() {
 
         {/* MOBILE BOTTOM NAV */}
         <nav 
-          className="md:hidden fixed bottom-0 w-full bg-slate-50 shadow-[0_-8px_20px_rgba(184,194,208,0.45)] dark:shadow-[0_-8px_20px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
+          className="md:hidden fixed bottom-0 w-full bg-white shadow-[0_-6px_14px_rgba(184,194,208,0.45)] dark:shadow-[0_-6px_14px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="flex items-center h-[68px] px-2 min-w-max">
@@ -9405,7 +9405,7 @@ export default function App() {
                   <div
                     className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
                       activeMenu === item.id
-                        ? "bg-slate-50 scale-105 shadow-[0_0_18px_2px_rgba(59,130,246,0.5),4px_4px_9px_#b8c2d0,-4px_-4px_9px_#ffffff] dark:shadow-[0_0_18px_2px_rgba(59,130,246,0.5),4px_4px_9px_#1c1e24,-4px_-4px_9px_#34373f]"
+                        ? "bg-blue-50 scale-105 shadow-sm"
                         : ""
                     }`}
                   >
