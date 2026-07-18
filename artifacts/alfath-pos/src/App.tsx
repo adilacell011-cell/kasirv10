@@ -800,6 +800,11 @@ export default function App() {
     }
   });
   const [isOnline, setIsOnline] = useState(true);
+  // dataLoadFailed = true when loadData() encounters a non-auth server error,
+  // so the cashier sees a visible warning instead of silently working with stale data.
+  const [dataLoadFailed, setDataLoadFailed] = useState(false);
+  // Incrementing this forces the data-sync useEffect to re-run (manual refresh).
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const bestSellers = useMemo(() => {
     const salesMap = new Map<string, number>();
@@ -1446,6 +1451,7 @@ export default function App() {
         setAdjustments(aData);
         setDailySummaries(dsData || []);
         setShoppingPlans(spData || []);
+        setDataLoadFailed(false); // Data loaded successfully — clear any stale warning.
         
         // --- RESTORE OPEN SHIFT FROM DATABASE ---
         if (profile?.branchId) {
@@ -1501,6 +1507,10 @@ export default function App() {
           localStorage.removeItem("token");
           setProfile(null);
           setActiveMenu("pos");
+        } else {
+          // Non-auth error: server may be restarting or temporarily unreachable.
+          // Mark data as stale so the cashier sees a visible warning and can retry.
+          setDataLoadFailed(true);
         }
       }
     };
@@ -1527,7 +1537,8 @@ export default function App() {
     profile?.id, profile?.role, profile?.branchId, 
     activeMenu === "dashboard", activeMenu === "audit", activeMenu === "reports", 
     adminSalesBranchFilter, auditSelectedBranch,
-    branches.length
+    branches.length,
+    refreshTick, // manual refresh trigger — incremented by the stale-data retry button
   ]);
 
 
@@ -3195,12 +3206,28 @@ export default function App() {
                   </span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl bg-slate-50 shrink-0 shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f]">
-                <div className={`w-2 h-2 rounded-full ${isOnline ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse"}`} />
-                <span className="text-[7px] font-black uppercase text-slate-600 tracking-widest hidden xs:block">
-                  {isOnline ? "Sistem Online" : "Koneksi Bermasalah"}
+              <button
+                onClick={() => setRefreshTick(t => t + 1)}
+                title={dataLoadFailed ? "Data gagal dimuat — klik untuk refresh" : isOnline ? "Sistem online" : "Koneksi bermasalah — klik untuk coba lagi"}
+                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl shrink-0 transition-all active:scale-95 cursor-pointer ${
+                  !isOnline
+                    ? "bg-red-50 dark:bg-red-950/30 shadow-[3px_3px_7px_#f8c4c4,-3px_-3px_7px_#ffffff] dark:shadow-none"
+                    : dataLoadFailed
+                    ? "bg-amber-50 dark:bg-amber-950/30 shadow-[3px_3px_7px_#f5e0b3,-3px_-3px_7px_#ffffff] dark:shadow-none animate-pulse"
+                    : "bg-slate-50 dark:bg-transparent shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f]"
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  !isOnline
+                    ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse"
+                    : dataLoadFailed
+                    ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
+                    : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                }`} />
+                <span className="text-[7px] font-black uppercase tracking-widest hidden xs:block text-slate-600">
+                  {!isOnline ? "Offline" : dataLoadFailed ? "Data Lama ↺" : "Online"}
                 </span>
-              </div>
+              </button>
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className="flex items-center justify-center h-8.5 w-8.5 rounded-xl bg-slate-50 text-slate-600 shrink-0 cursor-pointer transition-all shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f] active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f]"

@@ -1003,11 +1003,30 @@ app.patch("/api/users/:id", authenticateToken, async (req, res) => {
 
 app.delete("/api/users/:id", authenticateToken, async (req, res) => {
   if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  const targetId = req.params.id;
+  // Prevent self-deletion — admin cannot lock themselves out.
+  if ((req as any).user.userId === targetId) {
+    return res.status(400).json({ error: "Tidak bisa menghapus akun Anda sendiri." });
+  }
   try {
-    await prisma.user.delete({ where: { id: req.params.id } });
+    // A user with any operational history (sales, commissions, shifts) cannot be hard-deleted:
+    // doing so would corrupt reports, bonus ledgers, and shift records. The correct action is
+    // to set status = "Inactive" to revoke access while preserving the history.
+    const [salesCount, commissionsCount, shiftsCount] = await Promise.all([
+      prisma.sale.count({ where: { cashierId: targetId } }),
+      prisma.commission.count({ where: { cashierId: targetId } }),
+      prisma.shift.count({ where: { cashierId: targetId } }),
+    ]);
+    if (salesCount > 0 || commissionsCount > 0 || shiftsCount > 0) {
+      return res.status(400).json({
+        error: `Karyawan tidak dapat dihapus karena memiliki riwayat operasional (${salesCount} penjualan, ${shiftsCount} shift, ${commissionsCount} komisi). Nonaktifkan akun dengan mengubah status menjadi "Inactive" untuk mencabut akses tanpa menghapus riwayat.`
+      });
+    }
+    await prisma.user.delete({ where: { id: targetId } });
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete user" });
+    console.error("Delete User Error:", error);
+    res.status(500).json({ error: "Gagal menghapus karyawan." });
   }
 });
 
