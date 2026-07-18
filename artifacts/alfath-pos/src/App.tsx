@@ -1742,7 +1742,7 @@ export default function App() {
     setProdCategory("Aksesoris");
     setProdSubCategory("Kabel Data");
     setProdBrand("Robot");
-    setProdProvider("Telkomsel");
+    setProdProvider(""); // Aksesoris does not use provider — leave empty to avoid DB pollution
     setProdType("");
     setProdDesc("");
     setProdCapital("");
@@ -1838,11 +1838,15 @@ export default function App() {
         return;
       }
 
+      // Only Voucher / Perdana categories use the provider field.
+      // For Aksesoris, Handphone, Parfum, etc., always save empty string
+      // to prevent stale provider values (e.g. "Telkomsel") polluting search results.
+      const isProviderCategory = prodCategory === "Voucher" || prodCategory?.includes("Perdana");
       const data = {
         name: generatedName,
         category: prodCategory,
-        brand: prodBrand,
-        provider: prodProvider,
+        brand: isProviderCategory ? prodProvider : prodBrand,
+        provider: isProviderCategory ? prodProvider : "",
         subCategory: prodSubCategory,
         barcode: finalBarcode,
         masterSN: prodMasterSN,
@@ -2249,16 +2253,17 @@ export default function App() {
       list = list.filter(p => {
         const name = (p.name || "").toLowerCase();
         const barcode = (p.barcode || "").toLowerCase();
-        const type = (p.type || "").toLowerCase();
         const brand = (p.brand || "").toLowerCase();
         const category = (p.category || "").toLowerCase();
-        const provider = (p.provider || "").toLowerCase();
         const masterSN = (p.masterSN || "").toLowerCase();
+        // Only match provider for categories that actually use it,
+        // preventing aksesoris products with stale provider data from appearing.
+        const isProviderCat = p.category === "Voucher" || (p.category || "").includes("Perdana");
+        const provider = isProviderCat ? (p.provider || "").toLowerCase() : "";
         
         return searchWords.every(word => 
           name.includes(word) || 
           barcode.includes(word) || 
-          type.includes(word) ||
           brand.includes(word) || 
           category.includes(word) || 
           provider.includes(word) ||
