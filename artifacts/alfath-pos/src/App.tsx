@@ -6709,292 +6709,301 @@ export default function App() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex-1 flex flex-col bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden min-h-[500px] lg:min-h-0">
-                      <div className="p-4 md:p-6 border-b border-slate-100 shrink-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                              <PlusSquare className="w-5 h-5" />
-                            </div>
-                            <div className="text-left">
-                              <h3 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-widest leading-none mb-1">
-                                Pilih Produk Stok-In
-                              </h3>
-                              <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">
-                                Navigasi Visual / Tanpa Scan
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <button
-                            onClick={() => {
-                              setScannerCallback(() => (code: string) => {
-                                const found = products.find(p => p.barcode === code);
-                                if (found) setSelectedTransferProduct(found);
-                                setShowScanner(false);
-                              });
-                              setShowScanner(true);
-                            }}
-                            className="bg-emerald-600 text-white p-3.5 rounded-xl flex items-center justify-center gap-2 px-6 shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 outline-none sm:w-auto w-full"
-                          >
-                            <Camera className="w-4 h-4" /> Scan Barcode
-                          </button>
+                    {/* ── LEFT: product browser ── */}
+                    <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] lg:min-h-0">
+                      {/* header */}
+                      <div className="px-3 py-2.5 border-b border-slate-100 shrink-0 flex items-center gap-2">
+                        <div className="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                          <PlusSquare className="w-4 h-4" />
                         </div>
+                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest flex-1">Pilih Produk Stok-In</span>
+                        <button
+                          onClick={() => {
+                            setScannerCallback(() => (code: string) => {
+                              const found = products.find(p => p.barcode === code);
+                              if (found) setSelectedTransferProduct(found);
+                              setShowScanner(false);
+                            });
+                            setShowScanner(true);
+                          }}
+                          className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-black text-[9px] uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition-all outline-none"
+                        >
+                          <Camera className="w-3 h-3" /> Scan
+                        </button>
+                      </div>
 
-                        <div className="relative group">
-                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                      {/* search */}
+                      <div className="px-3 py-2 border-b border-slate-100 shrink-0">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                           <input
                             type="text"
-                            placeholder="CARI NAMA / KETIK BARCODE..."
+                            placeholder="Cari nama / barcode..."
                             value={transferSearch}
                             onChange={(e) => setTransferSearch(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 py-4 pl-12 pr-4 rounded-2xl text-[11px] font-black uppercase tracking-widest focus:ring-4 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all shadow-inner"
+                            className="w-full bg-slate-50 border border-slate-200 py-2 pl-9 pr-3 rounded-lg text-[11px] font-semibold focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all"
                           />
                         </div>
                       </div>
 
-                      {/* DRILLDOWN / BROWSE AREA */}
-                      <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-slate-50/50 min-h-0">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
-                          {(() => {
-                            const filtered = products
-                              .filter(
-                                (p) =>
-                                  !transferSearch ||
-                                  (p?.name || "")
-                                    .toLowerCase()
-                                    .includes(transferSearch.toLowerCase()) ||
-                                  (p?.barcode || "").includes(transferSearch) ||
-                                  (p?.brand || "")
-                                    .toLowerCase()
-                                    .includes(transferSearch.toLowerCase()),
-                              )
-                              .sort((a, b) => {
-                                const getPrice = (px: any) =>
-                                  px.discountPrice > 0
-                                    ? px.discountPrice
-                                    : px.sellingPrice;
-                                return getPrice(a) - getPrice(b);
-                              });
-
-                            if (transferSearch || transferDrillPath.length >= 2) {
-                              const final = !transferSearch
-                                ? filtered.filter((p) => {
-                                    if (transferDrillPath.length === 1)
-                                      return (p.category || "UMUM") === transferDrillPath[0];
-                                    if (transferDrillPath.length === 2)
-                                      return (p.category || "UMUM") === transferDrillPath[0] && (p.brand || "UMUM") === transferDrillPath[1];
-                                    return true;
-                                  })
-                                : filtered;
-
-                              return final.map((p) => (
-                                <button
-                                  key={p.id}
-                                  onClick={() => setSelectedTransferProduct(p)}
-                                  className={`p-3 md:p-4 rounded-2xl border transition-all text-left flex flex-col justify-between min-h-[110px] group ${
-                                    selectedTransferProduct?.id === p.id
-                                      ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-[0.98]"
-                                      : "bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md text-slate-800"
-                                  }`}
-                                >
-                                  <div>
-                                    <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-[0.1em] mb-1 ${selectedTransferProduct?.id === p.id ? "text-emerald-100" : "text-slate-400"}`}>
-                                      {p.brand || "UMUM"}
-                                    </p>
-                                    <h4 className="text-[10px] md:text-xs font-black uppercase leading-tight line-clamp-2">
-                                      {p.name}
-                                      {p.masterSN && <span className="block text-[8px] text-emerald-300 font-bold mt-1">SN: {p.masterSN}</span>}
-                                    </h4>
-                                  </div>
-                                  <div className="flex items-center justify-between mt-3">
-                                    <p className={`text-[9px] md:text-10px font-mono font-bold ${selectedTransferProduct?.id === p.id ? "text-emerald-200" : "text-emerald-600"}`}>
-                                      {p.barcode || "NO-BC"}
-                                    </p>
-                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${selectedTransferProduct?.id === p.id ? "bg-white/20" : "bg-emerald-50"}`}>
-                                      <Plus className="w-3 h-3 md:w-4 md:h-4" />
-                                    </div>
-                                  </div>
-                                </button>
-                              ));
-                            }
-
-                            let groups: any = {};
-                            if (transferDrillPath.length === 0) {
-                              groups = filtered.reduce((acc: any, p) => {
-                                const val = p.category || "UMUM";
-                                if (!acc[val]) acc[val] = [];
-                                acc[val].push(p);
-                                return acc;
-                              }, {});
-                            } else if (transferDrillPath.length === 1) {
-                              groups = filtered
-                                .filter((p) => (p.category || "UMUM") === transferDrillPath[0])
-                                .reduce((acc: any, p) => {
-                                  const val = p.brand || "UMUM";
-                                  if (!acc[val]) acc[val] = [];
-                                  acc[val].push(p);
-                                  return acc;
-                                }, {});
-                            }
-
-                            return Object.entries(groups).map(([name, items]: [any, any]) => (
-                              <button
-                                key={name}
-                                onClick={() => setTransferDrillPath([...transferDrillPath, name])}
-                                className="p-4 bg-white border border-slate-200 rounded-2xl hover:border-emerald-400 hover:shadow-md transition-all text-left flex flex-col justify-between min-h-[120px] group"
-                              >
-                                <div className="w-9 h-9 bg-slate-50 text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 rounded-xl flex items-center justify-center mb-3 transition-colors">
-                                  {transferDrillPath.length === 0 ? <LayoutGrid className="w-4 h-4 md:w-5 md:h-5" /> : <Tag className="w-4 h-4 md:w-5 md:h-5" />}
-                                </div>
-                                <div className="text-left">
-                                  <p className="text-xs font-black text-slate-800 uppercase tracking-tight line-clamp-1">{name}</p>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{items.length} Produk</p>
-                                </div>
-                              </button>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-
-                      {/* BREADCRUMBS */}
+                      {/* breadcrumb */}
                       {transferDrillPath.length > 0 && !transferSearch && (
-                        <div className="bg-slate-50 px-4 md:px-6 py-3 flex items-center gap-2 shrink-0 border-b border-slate-200">
-                          <button
-                            onClick={() => setTransferDrillPath([])}
-                            className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-                          >
-                            Semua
-                          </button>
+                        <div className="bg-slate-50 px-3 py-1.5 flex items-center gap-1.5 shrink-0 border-b border-slate-200">
+                          <button onClick={() => setTransferDrillPath([])} className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700 transition-colors">Semua</button>
                           {transferDrillPath.map((path, idx) => (
                             <React.Fragment key={idx}>
                               <ChevronRight className="w-3 h-3 text-slate-400" />
                               <button
                                 onClick={() => setTransferDrillPath(transferDrillPath.slice(0, idx + 1))}
-                                className={`text-[10px] font-black uppercase tracking-widest max-w-[120px] truncate ${
-                                  idx === transferDrillPath.length - 1 ? "text-slate-900" : "text-slate-400"
-                                }`}
-                              >
-                                {path}
-                              </button>
+                                className={`text-[10px] font-black uppercase tracking-widest max-w-[120px] truncate ${idx === transferDrillPath.length - 1 ? "text-slate-900" : "text-slate-400"}`}
+                              >{path}</button>
                             </React.Fragment>
                           ))}
                         </div>
                       )}
+
+                      {/* DRILLDOWN / BROWSE AREA */}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                        {(() => {
+                          const filtered = products
+                            .filter((p) =>
+                              !transferSearch ||
+                              (p?.name || "").toLowerCase().includes(transferSearch.toLowerCase()) ||
+                              (p?.barcode || "").includes(transferSearch) ||
+                              (p?.brand || "").toLowerCase().includes(transferSearch.toLowerCase())
+                            )
+                            .sort((a, b) => {
+                              const getPrice = (px: any) => px.discountPrice > 0 ? px.discountPrice : px.sellingPrice;
+                              return getPrice(a) - getPrice(b);
+                            });
+
+                          if (transferSearch || transferDrillPath.length >= 2) {
+                            const final = !transferSearch
+                              ? filtered.filter((p) => {
+                                  if (transferDrillPath.length === 1) return (p.category || "UMUM") === transferDrillPath[0];
+                                  if (transferDrillPath.length === 2) return (p.category || "UMUM") === transferDrillPath[0] && (p.brand || "UMUM") === transferDrillPath[1];
+                                  return true;
+                                })
+                              : filtered;
+
+                            return (
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                    <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
+                                    <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Barcode</th>
+                                    <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-16">Pilih</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {final.map((p) => {
+                                    const selected = selectedTransferProduct?.id === p.id;
+                                    return (
+                                      <tr
+                                        key={p.id}
+                                        onClick={() => setSelectedTransferProduct(p)}
+                                        className={`cursor-pointer border-b border-slate-100 transition-colors ${selected ? "bg-emerald-50" : "hover:bg-slate-50"}`}
+                                      >
+                                        <td className="px-3 py-2">
+                                          <p className="text-[9px] text-slate-400 font-bold uppercase">{p.brand || "UMUM"}</p>
+                                          <p className={`text-[11px] font-black uppercase leading-tight ${selected ? "text-emerald-700" : "text-slate-800"}`}>{p.name}</p>
+                                          {p.masterSN && <p className="text-[9px] text-emerald-500 font-mono">SN: {p.masterSN}</p>}
+                                        </td>
+                                        <td className="px-3 py-2 hidden sm:table-cell">
+                                          <span className="text-[10px] font-mono text-slate-500">{p.barcode || "—"}</span>
+                                        </td>
+                                        <td className="px-3 py-2 text-right">
+                                          <div className={`inline-flex items-center justify-center w-6 h-6 rounded-md ${selected ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-400"}`}>
+                                            {selected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                  {final.length === 0 && (
+                                    <tr><td colSpan={3} className="py-8 text-center text-[10px] text-slate-400 font-bold uppercase">Tidak ada produk ditemukan</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            );
+                          }
+
+                          let groups: any = {};
+                          if (transferDrillPath.length === 0) {
+                            groups = filtered.reduce((acc: any, p) => {
+                              const val = p.category || "UMUM";
+                              if (!acc[val]) acc[val] = [];
+                              acc[val].push(p);
+                              return acc;
+                            }, {});
+                          } else if (transferDrillPath.length === 1) {
+                            groups = filtered
+                              .filter((p) => (p.category || "UMUM") === transferDrillPath[0])
+                              .reduce((acc: any, p) => {
+                                const val = p.brand || "UMUM";
+                                if (!acc[val]) acc[val] = [];
+                                acc[val].push(p);
+                                return acc;
+                              }, {});
+                          }
+
+                          return (
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                                  <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    {transferDrillPath.length === 0 ? "Kategori" : "Brand / Tipe"}
+                                  </th>
+                                  <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-24">Jml Produk</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(groups).map(([name, items]: [any, any]) => (
+                                  <tr
+                                    key={name}
+                                    onClick={() => setTransferDrillPath([...transferDrillPath, name])}
+                                    className="cursor-pointer border-b border-slate-100 hover:bg-emerald-50 transition-colors group"
+                                  >
+                                    <td className="px-3 py-2.5">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 bg-slate-100 group-hover:bg-emerald-100 text-slate-400 group-hover:text-emerald-600 rounded-md flex items-center justify-center shrink-0 transition-colors">
+                                          {transferDrillPath.length === 0 ? <LayoutGrid className="w-3.5 h-3.5" /> : <Tag className="w-3.5 h-3.5" />}
+                                        </div>
+                                        <span className="text-[11px] font-black text-slate-800 uppercase">{name}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-3 py-2.5 text-right">
+                                      <span className="text-[10px] font-bold text-slate-400">{items.length}</span>
+                                      <ChevronRight className="w-3 h-3 text-slate-400 inline ml-1" />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          );
+                        })()}
+                      </div>
                     </div>
 
-                    {/* INPUT FORM SECTION */}
-                    <div className="w-full lg:w-[360px] xl:w-[400px] flex flex-col bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden shrink-0">
-                      <div className="p-6 bg-slate-50 text-slate-900 text-left shrink-0 border-b border-slate-200">
-                        <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4 text-emerald-600">Input Detail Stok</h3>
+                    {/* ── RIGHT: input form ── */}
+                    <div className="w-full lg:w-[300px] xl:w-[320px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+                      {/* product info */}
+                      <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 shrink-0">
+                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-2">Input Detail Stok</p>
                         {selectedTransferProduct ? (
-                          <div className="flex gap-4 items-center animate-in slide-in-from-right-4">
-                            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center shrink-0">
-                              <Package className="w-6 h-6 text-emerald-600" />
+                          <div className="flex gap-3 items-center">
+                            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                              <Package className="w-4 h-4 text-emerald-600" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[10px] font-black text-emerald-600 uppercase leading-none mb-1.5">{selectedTransferProduct.brand}</p>
-                              <h4 className="text-[14px] font-black leading-tight uppercase line-clamp-2">{selectedTransferProduct.name}</h4>
+                              <p className="text-[9px] font-black text-emerald-600 uppercase leading-none mb-0.5">{selectedTransferProduct.brand}</p>
+                              <p className="text-[12px] font-black uppercase leading-tight line-clamp-2 text-slate-900">{selectedTransferProduct.name}</p>
                             </div>
                           </div>
                         ) : (
-                          <div className="py-6 flex flex-col items-center opacity-30">
-                            <Hand className="w-10 h-10 mb-3" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-center">Pilih produk disamping</p>
+                          <div className="py-2 flex items-center gap-2 opacity-30">
+                            <Hand className="w-5 h-5" />
+                            <p className="text-[10px] font-black uppercase tracking-widest">Pilih produk di sebelah kiri</p>
                           </div>
                         )}
                       </div>
 
-                      <div className="p-6 md:p-8 space-y-6 flex-1 text-left overflow-y-auto custom-scrollbar">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kuantitas Masuk</label>
+                      {/* form fields */}
+                      <div className="p-3 space-y-2.5 shrink-0 border-b border-slate-100">
+                        <div>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kuantitas Masuk</label>
                           <input
                             type="number"
                             id="cs-qty"
                             placeholder="0"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-[20px] px-6 py-5 text-2xl font-black text-center focus:ring-4 focus:ring-emerald-100 focus:bg-white outline-none transition-all placeholder:text-slate-200"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xl font-black text-center focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all placeholder:text-slate-200"
                           />
                         </div>
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Keterangan / Supplier</label>
+                        <div>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Keterangan / Supplier</label>
                           <input
                             type="text"
                             id="cs-supplier"
-                            placeholder="CONTOH: STOK PUSAT"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-[20px] px-5 py-4 text-xs md:text-sm font-black uppercase tracking-widest focus:ring-4 focus:ring-emerald-100 focus:bg-white outline-none transition-all"
+                            placeholder="Contoh: Stok Pusat"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all"
                           />
                         </div>
+                        <button
+                          disabled={!selectedTransferProduct}
+                          onClick={async () => {
+                            const pId = selectedTransferProduct?.id;
+                            const qtyInput = document.getElementById("cs-qty") as HTMLInputElement;
+                            const supplierInput = document.getElementById("cs-supplier") as HTMLInputElement;
+                            const qty = parseInt(qtyInput.value);
+                            const supplier = supplierInput.value;
+                            if (!pId || isNaN(qty) || qty <= 0) return alert("Masukkan qty!");
+                            await handleStockAddition(pId, qty, supplier || "Input Kasir", profile.branchId);
+                            qtyInput.value = "";
+                            supplierInput.value = "";
+                            setSelectedTransferProduct(null);
+                          }}
+                          className={`w-full py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 ${
+                            selectedTransferProduct
+                              ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                              : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                          }`}
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          Simpan Stok Masuk
+                        </button>
+                      </div>
 
-                        <div className="pt-4 mt-auto">
-                          <button
-                            disabled={!selectedTransferProduct}
-                            onClick={async () => {
-                              const pId = selectedTransferProduct?.id;
-                              const qtyInput = document.getElementById("cs-qty") as HTMLInputElement;
-                              const supplierInput = document.getElementById("cs-supplier") as HTMLInputElement;
-                              const qty = parseInt(qtyInput.value);
-                              const supplier = supplierInput.value;
-
-                              if (!pId || isNaN(qty) || qty <= 0) return alert("Masukkan qty!");
-
-                              await handleStockAddition(pId, qty, supplier || "Input Kasir", profile.branchId);
-
-                              qtyInput.value = "";
-                              supplierInput.value = "";
-                              setSelectedTransferProduct(null);
-                            }}
-                            className={`w-full py-5 rounded-[24px] font-black text-[12px] uppercase tracking-[0.3em] shadow-xl transition-all flex items-center justify-center gap-3 active:scale-95 ${
-                              selectedTransferProduct 
-                                ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 hover:-translate-y-1" 
-                                : "bg-slate-100 text-slate-300 cursor-not-allowed"
-                            }`}
-                          >
-                            <CheckCircle2 className="w-5 h-5" />
-                            PATENKAN MASUK
-                          </button>
+                      {/* aktivitas terakhir — tabel compact */}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 sticky top-0">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aktivitas Terakhir</span>
                         </div>
-
-                        <div className="mt-8 pt-8 border-t border-slate-100">
-                           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Aktivitas Terakhir</h4>
-                           <div className="space-y-3">
-                             {adjustments
-                              .filter((a) => a.branchId === profile.branchId)
-                              .slice(0, 10)
-                              .map((a, idx) => {
-                                const isPos = a.type === "STOCK_IN" || a.type === "TRANSFER_IN";
-                                const isSale = a.reason && a.reason.includes("SALE_");
-                                return (
-                                  <div key={idx} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100/50 shadow-sm">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-[10px] font-black text-slate-800 uppercase truncate">
-                                        {products.find((p) => p.id === a.productId)?.name || "Produk"}
-                                      </p>
-                                      <div className="flex items-center gap-1.5 mt-0.5">
-                                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wide">
-                                          {new Date(a.createdAt).toLocaleTimeString("id-ID")}
-                                        </p>
-                                        <span className="text-[8px] text-slate-300">•</span>
-                                        <p className={`text-[8px] font-black uppercase tracking-widest ${isSale ? "text-blue-500" : isPos ? "text-emerald-500" : "text-rose-500"}`}>
-                                          {isSale ? "TERJUAL" : a.reason || (isPos ? "STOK MASUK" : "STOK KELUAR")}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div className="text-right ml-3 shrink-0">
-                                      <span className={`text-[12px] font-black ${isPos ? "text-emerald-600" : "text-rose-600"}`}>
-                                        {isPos ? "+" : "-"}{a.qty}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                             {adjustments.filter((a) => a.branchId === profile.branchId).length === 0 && (
-                               <div className="py-10 flex flex-col items-center opacity-20">
-                                 <Activity className="w-8 h-8 mb-2" />
-                                 <p className="text-[8px] font-black uppercase tracking-widest">Belum ada riwayat</p>
-                                </div>
-                             )}
-                           </div>
-                        </div>
+                        {(() => {
+                          const acts = adjustments.filter((a) => a.branchId === profile.branchId).slice(0, 20);
+                          if (acts.length === 0) return (
+                            <div className="py-8 flex flex-col items-center opacity-20">
+                              <Activity className="w-6 h-6 mb-1" />
+                              <p className="text-[9px] font-black uppercase tracking-widest">Belum ada riwayat</p>
+                            </div>
+                          );
+                          return (
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-slate-100">
+                                  <th className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
+                                  <th className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Ket.</th>
+                                  <th className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-12">Qty</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {acts.map((a, idx) => {
+                                  const isPos = a.type === "STOCK_IN" || a.type === "TRANSFER_IN";
+                                  const isSale = a.reason && a.reason.includes("SALE_");
+                                  const prodName = products.find((p) => p.id === a.productId)?.name || "Produk";
+                                  const timeStr = new Date(a.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+                                  return (
+                                    <tr key={idx} className={`border-b border-slate-50 ${idx % 2 === 0 ? "" : "bg-slate-50/60"}`}>
+                                      <td className="px-3 py-1.5">
+                                        <p className="text-[10px] font-bold text-slate-800 uppercase leading-tight truncate max-w-[110px]">{prodName}</p>
+                                        <p className="text-[9px] text-slate-400 font-mono">{timeStr}</p>
+                                      </td>
+                                      <td className="px-3 py-1.5 hidden sm:table-cell">
+                                        <span className={`text-[9px] font-black uppercase tracking-wide ${isSale ? "text-blue-500" : isPos ? "text-emerald-500" : "text-rose-500"}`}>
+                                          {isSale ? "Terjual" : a.reason ? a.reason.slice(0, 14) : isPos ? "Masuk" : "Keluar"}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-1.5 text-right">
+                                        <span className={`text-[11px] font-black tabular-nums ${isPos ? "text-emerald-600" : "text-rose-600"}`}>
+                                          {isPos ? "+" : "−"}{a.qty}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          );
+                        })()}
                       </div>
                     </div>
                   </>
