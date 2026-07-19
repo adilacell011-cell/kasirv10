@@ -7152,19 +7152,19 @@ export default function App() {
                       <div className="flex-1 flex flex-col overflow-hidden relative border-r border-slate-200">
                         
                         {/* 1. BAR PENCARIAN & SCANNER UTAMA */}
-                        <div className="p-3 bg-slate-50 shrink-0 shadow-[0_4px_12px_rgba(184,194,208,0.35)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.35)]">
+                        <div className="px-3 pt-3 pb-2.5 bg-slate-100 dark:bg-slate-900 shrink-0">
                           <div className="relative group">
                             <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors z-10" />
                             <input
                               ref={searchInputRef}
                               type="text"
-                              placeholder="KETIK UNTUK CARI ATAU PINDAI BARCODE PRODUK..."
+                              placeholder="CARI ATAU PINDAI BARCODE..."
                               value={searchTerm}
                               onChange={(e) => handleSearchChange(e.target.value)}
-                              className="w-full bg-slate-50 rounded-xl pl-11 pr-20 py-3 text-[11px] font-black focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all uppercase tracking-tight placeholder:text-slate-400 text-slate-800"
+                              className="w-full bg-white dark:bg-slate-800 rounded-2xl pl-11 pr-[4.5rem] py-3 text-[11px] font-black focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all uppercase tracking-tight placeholder:text-slate-400 text-slate-800 dark:text-slate-100 shadow-[inset_3px_3px_7px_#c5cdd8,inset_-2px_-2px_6px_#ffffff] dark:shadow-[inset_3px_3px_7px_#1c1e24,inset_-2px_-2px_6px_#34373f]"
                             />
                             
-                            <div className="absolute right-2 top-2 flex items-center gap-1">
+                            <div className="absolute right-2 top-[7px] flex items-center gap-1">
                               {searchTerm && (
                                 <button
                                   onClick={() => {
@@ -7184,7 +7184,7 @@ export default function App() {
                                     () => (code: string) => setSearchTerm(code),
                                   );
                                 }}
-                                className="p-2 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl transition-all flex items-center justify-center"
+                                className="p-2 bg-white dark:bg-slate-700 hover:bg-blue-600 text-slate-400 hover:text-white rounded-xl transition-all flex items-center justify-center shadow-[2px_2px_5px_#b8c2d0,-1px_-1px_4px_#ffffff] hover:shadow-none dark:shadow-[2px_2px_5px_#1c1e24,-1px_-1px_4px_#34373f]"
                                 title="Buka Kamera Barcode"
                               >
                                 <Camera className="w-4 h-4" />
