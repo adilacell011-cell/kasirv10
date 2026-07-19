@@ -266,21 +266,33 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 // Protected API Routes
 app.get("/api/products", authenticateToken, async (req, res) => {
   try {
+    const requester = (req as any).user;
+    // Harga modal (buyingPrice) hanya boleh dilihat oleh ADMIN dan AUDIT.
+    // Kasir hanya mendapatkan harga jual, tidak bisa baca harga modal lewat DevTools.
+    const showCost = requester.role === "ADMIN" || requester.role === "AUDIT";
     const products = await prisma.product.findMany({
         where: { status: "ACTIVE" },
       include: {
         stocks: true
       }
     });
-    const formattedProducts = products.map(p => ({
-      ...p,
-      buyingPrice: Number(p.buyingPrice),
-      sellingPrice: Number(p.sellingPrice),
-      discountPrice: p.discountPrice ? Number(p.discountPrice) : 0,
-      commissionAmount: Number(p.commissionAmount),
-      purchasePrice: Number(p.buyingPrice),
-      stocks: p.stocks.reduce((acc, s) => ({ ...acc, [s.branchId]: s.qty }), {})
-    }));
+    const formattedProducts = products.map(p => {
+      const base: any = {
+        ...p,
+        sellingPrice: Number(p.sellingPrice),
+        discountPrice: p.discountPrice ? Number(p.discountPrice) : 0,
+        commissionAmount: Number(p.commissionAmount),
+        stocks: p.stocks.reduce((acc: any, s: any) => ({ ...acc, [s.branchId]: s.qty }), {})
+      };
+      if (showCost) {
+        base.buyingPrice  = Number(p.buyingPrice);
+        base.purchasePrice = Number(p.buyingPrice);
+      } else {
+        delete base.buyingPrice;
+        delete base.purchasePrice;
+      }
+      return base;
+    });
     res.json(formattedProducts);
   } catch (error) {
     console.error("Fetch Products Error:", error);
@@ -801,6 +813,50 @@ app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"),
       where: { id: req.params.id },
       data: shiftData
     });
+
+    // Setelah shift ditutup: recompute dan simpan DailyIncomeSummary untuk hari itu.
+    // Ini adalah fondasi optimasi laporan — laporan membaca summary (1 baris/hari),
+    // bukan scan seluruh tabel Sale. Idempoten: bisa dijalankan berulang kali.
+    if (status === "closed") {
+      try {
+        const logicalDate = getLogicalShiftDate(existing.openTime);
+        const [ly, lm, ld] = logicalDate.split("-").map(Number);
+        const dayStart = new Date(Date.UTC(ly, lm - 1, ld - 1, 23, 0, 0, 0));
+        const dayEnd   = new Date(Date.UTC(ly, lm - 1, ld,     23, 0, 0, 0));
+
+        const dayAgg = await prisma.sale.aggregate({
+          where: {
+            branchId: existing.branchId,
+            status: "success",
+            createdAt: { gte: dayStart, lt: dayEnd }
+          },
+          _sum: { total: true, totalProfit: true, totalCommission: true },
+          _count: { id: true }
+        });
+
+        await prisma.dailyIncomeSummary.upsert({
+          where: { branchId_date: { branchId: existing.branchId, date: logicalDate } },
+          create: {
+            date: logicalDate,
+            branchId: existing.branchId,
+            revenue: Number(dayAgg._sum.total ?? 0),
+            totalProfit: Number(dayAgg._sum.totalProfit ?? 0),
+            totalCommission: Number(dayAgg._sum.totalCommission ?? 0),
+            salesCount: dayAgg._count.id,
+          },
+          update: {
+            revenue: Number(dayAgg._sum.total ?? 0),
+            totalProfit: Number(dayAgg._sum.totalProfit ?? 0),
+            totalCommission: Number(dayAgg._sum.totalCommission ?? 0),
+            salesCount: dayAgg._count.id,
+          }
+        });
+      } catch (summaryErr) {
+        // Non-fatal — shift sudah tersimpan. Log saja, jangan gagalkan response.
+        console.error("⚠️ Gagal update DailyIncomeSummary saat tutup shift:", summaryErr);
+      }
+    }
+
     res.json(shift);
   } catch (error) {
     res.status(500).json({ error: "Failed to update shift" });
@@ -1213,83 +1269,75 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
 
 app.get("/api/daily-summaries", authenticateToken, async (req, res) => {
   try {
-    // 1. Fetch archived daily summaries
+    // Strategi efisien jangka panjang:
+    //  - DailyIncomeSummary (1 baris/hari/cabang) dibuat otomatis saat tutup shift.
+    //    Ini menjadi sumber data historis — tidak perlu scan tabel Sale sama sekali.
+    //  - Hari ini (shift sedang berjalan): baca langsung dari Sale, tapi hanya hari ini
+    //    sehingga query tetap kecil meskipun database sudah besar.
+    //  - Hasilnya: laporan selalu ringan seberapa pun banyaknya transaksi historis.
+
+    // 1. Semua summary historis (tabel kecil, selalu cepat)
     const archivedSummaries = await prisma.dailyIncomeSummary.findMany({
       orderBy: { date: "asc" }
     });
 
-    // 2. Fetch active sales to build current summaries
-    const activeSales = await prisma.sale.findMany({
-      where: { status: "success" },
-      orderBy: { createdAt: "asc" }
+    // 2. Hanya transaksi HARI INI secara live (shift masih terbuka belum punya summary)
+    const todayStr = getLogicalShiftDate(new Date());
+    const [ty, tm, td] = todayStr.split("-").map(Number);
+    const todayStart = new Date(Date.UTC(ty, tm - 1, td - 1, 23, 0, 0, 0));
+    const todayEnd   = new Date(Date.UTC(ty, tm - 1, td,     23, 0, 0, 0));
+
+    const todaySales = await prisma.sale.findMany({
+      where: { status: "success", createdAt: { gte: todayStart, lt: todayEnd } }
     });
 
-    // 3. Group active sales by branch and date
-    const activeGrouped: Record<string, {
-      id: string;
-      date: string;
-      branchId: string;
-      revenue: number;
-      profit: number;
-      totalCommission: number;
-      count: number;
+    // 3. Agregasi hari ini per cabang
+    const todayLive: Record<string, {
+      date: string; branchId: string;
+      revenue: number; profit: number; totalCommission: number; count: number;
     }> = {};
-
-    for (const sale of activeSales) {
-      const dateStr = getLogicalShiftDate(sale.createdAt);
-      const key = `${sale.branchId}_${dateStr}`;
-      
-      if (!activeGrouped[key]) {
-        activeGrouped[key] = {
-          id: `active_${key}`,
-          date: dateStr,
-          branchId: sale.branchId,
-          revenue: 0,
-          profit: 0,
-          totalCommission: 0,
-          count: 0
-        };
+    for (const sale of todaySales) {
+      const key = sale.branchId;
+      if (!todayLive[key]) {
+        todayLive[key] = { date: todayStr, branchId: sale.branchId, revenue: 0, profit: 0, totalCommission: 0, count: 0 };
       }
-
-      activeGrouped[key].revenue += sale.total;
-      activeGrouped[key].profit += sale.totalProfit;
-      activeGrouped[key].totalCommission += sale.totalCommission;
-      activeGrouped[key].count += 1;
+      todayLive[key].revenue         += Number(sale.total);
+      todayLive[key].profit          += Number(sale.totalProfit);
+      todayLive[key].totalCommission += Number(sale.totalCommission);
+      todayLive[key].count           += 1;
     }
 
-    // 4. Merge them together.
+    // 4. Gabungkan: summary historis untuk hari lalu, data live selalu menggantikan entry hari ini
     const mergedMap: Record<string, any> = {};
 
-    // First load archived summaries
     for (const s of archivedSummaries) {
       const key = `${s.branchId}_${s.date}`;
       mergedMap[key] = {
         id: s.id,
         date: s.date,
         branchId: s.branchId,
-        revenue: s.revenue,
-        profit: s.totalProfit,
-        totalCommission: s.totalCommission,
+        revenue: Number(s.revenue),
+        profit: Number(s.totalProfit),
+        totalCommission: Number(s.totalCommission),
         count: s.salesCount
       };
     }
 
-    // Then merge active grouped sales (sum if overlap)
-    for (const [key, s] of Object.entries(activeGrouped)) {
-      if (mergedMap[key]) {
-        mergedMap[key].revenue += s.revenue;
-        mergedMap[key].profit += s.profit;
-        mergedMap[key].totalCommission += s.totalCommission;
-        mergedMap[key].count += s.count;
-      } else {
-        mergedMap[key] = s;
-      }
+    // Data live hari ini menggantikan (bukan menjumlahkan) entry archived untuk hari ini
+    for (const [branchId, s] of Object.entries(todayLive)) {
+      const key = `${branchId}_${todayStr}`;
+      mergedMap[key] = {
+        id: `live_${key}`,
+        date: s.date,
+        branchId: s.branchId,
+        revenue: s.revenue,
+        profit: s.profit,
+        totalCommission: s.totalCommission,
+        count: s.count
+      };
     }
 
-    const mergedList = Object.values(mergedMap);
-    // Sort by date ascending
-    mergedList.sort((a: any, b: any) => a.date.localeCompare(b.date));
-
+    const mergedList = Object.values(mergedMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
     res.json(mergedList);
   } catch (error: any) {
     console.error("Get Daily Summaries Error:", error);
@@ -1545,8 +1593,61 @@ async function syncCredentials() {
     });
 
     console.log("✅ Credentials and Global Config synchronized.");
+    // Backfill historical summaries sekali saat startup (idempoten, aman diulang)
+    await backfillDailySummaries();
   } catch (dbErr: any) {
     console.error("ℹ️ User synchronization check failed:", dbErr.message);
+  }
+}
+
+// Isi DailyIncomeSummary dari data Sale historis yang belum punya summary.
+// Dijalankan sekali saat server start — setelah itu setiap tutup shift mengisi sendiri.
+// Query ke Sale hanya terjadi di sini (startup); endpoint laporan tidak perlu scan Sale lagi.
+async function backfillDailySummaries() {
+  try {
+    const allSales = await prisma.sale.findMany({
+      where: { status: "success" },
+      select: { branchId: true, createdAt: true, total: true, totalProfit: true, totalCommission: true }
+    });
+
+    const grouped: Record<string, {
+      branchId: string; date: string;
+      revenue: number; totalProfit: number; totalCommission: number; count: number;
+    }> = {};
+
+    for (const sale of allSales) {
+      const dateStr = getLogicalShiftDate(sale.createdAt);
+      const key = `${sale.branchId}_${dateStr}`;
+      if (!grouped[key]) {
+        grouped[key] = { branchId: sale.branchId, date: dateStr, revenue: 0, totalProfit: 0, totalCommission: 0, count: 0 };
+      }
+      grouped[key].revenue          += Number(sale.total);
+      grouped[key].totalProfit      += Number(sale.totalProfit);
+      grouped[key].totalCommission  += Number(sale.totalCommission);
+      grouped[key].count            += 1;
+    }
+
+    const entries = Object.values(grouped);
+    for (const entry of entries) {
+      await prisma.dailyIncomeSummary.upsert({
+        where: { branchId_date: { branchId: entry.branchId, date: entry.date } },
+        create: {
+          date: entry.date, branchId: entry.branchId,
+          revenue: entry.revenue, totalProfit: entry.totalProfit,
+          totalCommission: entry.totalCommission, salesCount: entry.count
+        },
+        update: {
+          revenue: entry.revenue, totalProfit: entry.totalProfit,
+          totalCommission: entry.totalCommission, salesCount: entry.count
+        }
+      });
+    }
+
+    if (entries.length > 0) {
+      console.log(`✅ DailyIncomeSummary: ${entries.length} entri hari-cabang disinkronkan.`);
+    }
+  } catch (err: any) {
+    console.error("⚠️ DailyIncomeSummary backfill gagal (non-fatal):", err.message);
   }
 }
 

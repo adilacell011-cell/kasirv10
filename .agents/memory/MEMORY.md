@@ -11,3 +11,4 @@
 - [AlfathPOS stock & SN model](alfathpos-stock-model.md) — one masterSN per product for recall + plain Pcs qty stock; per-unit Voucher SN intake removed (dead code); VoucherSN model kept for legacy cleanup only.
 - [AlfathPOS crash hardening](alfathpos-crash-hardening.md) — process error handlers log-and-stay-alive (POS uptime); numeric inputs must be validated AND normalized before DB writes, never written raw.
 - [AlfathPOS bonus accounting](alfathpos-bonus-accounting.md) — bonus = sum of Commission rows status=earned per BRANCH (single source of truth); User.bonusBalance is vestigial, refund only flips earned→refunded.
+- [AlfathPOS Laporan performance](alfathpos-laporan-perf.md) — daily-summaries endpoint reads DailyIncomeSummary (pre-aggregated on shift close) + today-only Sale scan; never full-table scan.

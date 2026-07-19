@@ -118,6 +118,9 @@ model Sale {
 
   items       SaleItem[]
   commissions Commission[]
+
+  @@index([branchId, status, createdAt])
+  @@index([status, createdAt])
 }
 
 model SaleItem {
