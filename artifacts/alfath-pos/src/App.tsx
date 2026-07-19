@@ -1427,6 +1427,21 @@ export default function App() {
   // --- BRANCH & ROLE DEPENDENT DATA LISTENERS ---
   const lastEffectiveBranchId = useRef<string | null>(null);
 
+  // --- EXPIRY HELPER ---
+  const getExpiryInfo = (expiredAt: string | null | undefined) => {
+    if (!expiredAt) return null;
+    const days = Math.ceil((new Date(expiredAt).getTime() - Date.now()) / 86_400_000);
+    if (days < 0)  return { daysLeft: days, label: "KADALUARSA", urgency: "expired"   as const };
+    if (days <= 7) return { daysLeft: days, label: `${days} hr`,  urgency: "critical"  as const };
+    if (days <= 30) return { daysLeft: days, label: `${days} hr`, urgency: "warning"   as const };
+    return null;
+  };
+
+  const cashierExpiringCount = useMemo(() => {
+    if (profile?.role !== "CASHIER") return 0;
+    return products.filter(p => getExpiryInfo(p.expiredAt) !== null).length;
+  }, [products, profile]);
+
   // --- DATA SYNC (Stocks, Sales, Summaries, etc.) ---
   // Reacts only to filter changes, not every menu click
   const shopListAlertCount = useMemo(() => {
@@ -3114,6 +3129,7 @@ export default function App() {
                   label="Kasir (POS)"
                   active={activeMenu === "pos"}
                   onClick={() => setActiveMenu("pos")}
+                  badge={cashierExpiringCount}
                 />
                 <MenuItem
                   icon={MdSchedule}
@@ -7369,6 +7385,7 @@ export default function App() {
                                     const isOutOfStock = stock <= 0;
                                     const hasDiscount = p.discountPrice > 0;
                                     const price = hasDiscount ? p.discountPrice : p.sellingPrice;
+                                    const expiry = getExpiryInfo(p.expiredAt);
                                     
                                     return (
                                       <button
@@ -7384,7 +7401,18 @@ export default function App() {
                                         }}
                                         className={`group text-left bg-slate-50 rounded-2xl p-2.5 flex flex-col justify-between transition-all shadow-[4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] hover:bg-slate-100 active:scale-[0.97] duration-150 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-60" : ""}`}
                                       >
-                                        <div>
+                                        {/* Expiry ribbon */}
+                                        {expiry && (
+                                          <div className={`absolute top-0 left-0 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-widest rounded-br-lg leading-none z-10 ${
+                                            expiry.urgency === "expired"  ? "bg-rose-600 text-white" :
+                                            expiry.urgency === "critical" ? "bg-rose-500 text-white" :
+                                                                            "bg-amber-400 text-amber-900"
+                                          }`}>
+                                            {expiry.urgency === "expired" ? "⚠ KADALUARSA" : `⚠ ${expiry.label}`}
+                                          </div>
+                                        )}
+
+                                        <div className={expiry ? "pt-3.5" : ""}>
                                           {/* Mini Tag Brand / Provider */}
                                           <div className="flex justify-between items-start mb-1.5 gap-1.5">
                                             <OperatorBadge brand={
@@ -7527,6 +7555,20 @@ export default function App() {
                                           </span>
                                         )}
                                       </div>
+                                      {(() => {
+                                        const exp = getExpiryInfo(item.product.expiredAt);
+                                        if (!exp) return null;
+                                        return (
+                                          <div className={`flex items-center gap-1 mt-1 text-[8.5px] font-black uppercase tracking-wide ${
+                                            exp.urgency === "expired"  ? "text-rose-600" :
+                                            exp.urgency === "critical" ? "text-rose-500" :
+                                                                         "text-amber-600"
+                                          }`}>
+                                            <span>⚠</span>
+                                            <span>{exp.urgency === "expired" ? "Kartu sudah kadaluarsa" : `Kadaluarsa ${exp.label} lagi`}</span>
+                                          </div>
+                                        );
+                                      })()}
                                     </div>
 
                                     {/* CONTROLLER JUMLAH */}
@@ -9835,12 +9877,14 @@ const MenuItem = ({
   active,
   onClick,
   locked,
+  badge,
 }: {
   icon: any;
   label: string;
   active: boolean;
   onClick: () => void;
   locked?: boolean;
+  badge?: number;
 }) => (
   <button
     onClick={onClick}
@@ -9850,6 +9894,13 @@ const MenuItem = ({
       <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? "text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)]" : "text-slate-400"}`} />
       <span className="uppercase tracking-widest truncate">{label}</span>
     </div>
-    {locked && <Lock className="w-3 h-3 text-amber-500" />}
+    <div className="flex items-center gap-1.5">
+      {badge != null && badge > 0 && (
+        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none ${active ? "bg-white/25 text-white" : "bg-amber-500 text-white"}`}>
+          {badge}
+        </span>
+      )}
+      {locked && <Lock className="w-3 h-3 text-amber-500" />}
+    </div>
   </button>
 );
