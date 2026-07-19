@@ -1308,8 +1308,11 @@ export default function App() {
         const type = (p.type || "").toLowerCase();
         const brand = (p.brand || "").toLowerCase();
         const category = (p.category || "").toLowerCase();
-        const provider = (p.provider || "").toLowerCase();
         const masterSN = (p.masterSN || "").toLowerCase();
+        // provider hanya dipakai untuk kategori operator — hindari Aksesoris lama
+        // yang masih punya provider=Telkomsel muncul saat cari "telko"
+        const isOperatorCat = ["voucher","kartu perdana kuota","kartu perdana biasa"].includes(category);
+        const provider = isOperatorCat ? (p.provider || "").toLowerCase() : "";
 
         return searchWords.every(word => 
           name.includes(word) || 
