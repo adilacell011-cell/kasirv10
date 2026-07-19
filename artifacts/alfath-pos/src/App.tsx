@@ -7729,137 +7729,113 @@ export default function App() {
                             Live Updates
                           </span>
                         </div>
-                        <div className="space-y-2 text-left">
-                          {sales
-                            .filter(
+                        {/* Tabel Excel — riwayat transaksi kompak */}
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                          <table className="w-full text-left border-collapse text-[8px]">
+                            <thead>
+                              <tr className="bg-blue-600 text-white">
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest text-center w-5">#</th>
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest">Nota</th>
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest whitespace-nowrap">Waktu</th>
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest">Produk</th>
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest text-right whitespace-nowrap">Total</th>
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest text-center">Status</th>
+                                <th className="py-1.5 px-2 font-black uppercase tracking-widest text-center">Aksi</th>
+                              </tr>
+                            </thead>
+                            {sales
+                              .filter(
+                                (s) =>
+                                  s.branchId === profile.branchId &&
+                                  (shiftOpen && shiftStartTime
+                                    ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
+                                    : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === (shiftLogicalDate || getLogicalShiftDate())),
+                              )
+                              .sort(
+                                (a, b) =>
+                                  new Date(b.createdAt || b.timestamp || 0).getTime() -
+                                  new Date(a.createdAt || a.timestamp || 0).getTime(),
+                              )
+                              .map((sale, sIdx) => (
+                                // Setiap transaksi = 1 <tbody>: baris header + sub-baris item
+                                <tbody key={sale.id} className={sIdx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                  {/* Baris ringkasan transaksi */}
+                                  <tr className="border-t border-slate-100">
+                                    <td className="py-1 px-2 text-slate-400 font-black text-center">{sIdx + 1}</td>
+                                    <td className="py-1 px-2 font-black text-slate-800 whitespace-nowrap">
+                                      #{sale.id?.slice(-6).toUpperCase()}
+                                    </td>
+                                    <td className="py-1 px-2 font-bold text-slate-500 whitespace-nowrap">
+                                      {new Date(sale.createdAt || sale.timestamp || 0).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                                    </td>
+                                    <td className="py-1 px-2 text-slate-400 font-bold">
+                                      {sale.items?.length || 0} item
+                                    </td>
+                                    <td className="py-1 px-2 font-black text-slate-800 text-right whitespace-nowrap">
+                                      Rp {(sale.total || 0).toLocaleString("id-ID")}
+                                    </td>
+                                    <td className="py-1 px-2 text-center">
+                                      <span className={`font-black uppercase px-1.5 py-0.5 rounded-sm leading-none ${sale.status === "refunded" ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-700"}`}>
+                                        {sale.status === "refunded" ? "REFUND" : "OK"}
+                                      </span>
+                                    </td>
+                                    <td className="py-1 px-2 text-center">
+                                      <button
+                                        onClick={() => handleRefund(sale)}
+                                        disabled={sale.status === "refunded" || sale.items?.every((i: any) => i.refunded)}
+                                        className="px-2 py-0.5 text-[7px] font-black uppercase tracking-widest rounded border border-red-200 text-red-500 bg-white hover:bg-red-50 disabled:opacity-25 disabled:grayscale transition-all whitespace-nowrap"
+                                      >
+                                        {sale.status === "refunded" ? "✓ Done" : "Refund"}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                  {/* Sub-baris per item */}
+                                  {sale.items?.map((item: any, iIdx: number) => (
+                                    <tr key={iIdx} className="border-t border-slate-50">
+                                      <td className="py-0.5 px-2" />
+                                      <td className="py-0.5 px-2 text-slate-300 select-none">└</td>
+                                      <td className="py-0.5 px-2" />
+                                      <td className="py-0.5 px-2">
+                                        <span className={`font-bold ${item.refunded ? "line-through opacity-40 text-slate-400" : "text-slate-500"}`}>
+                                          {item.product?.name || item.name || "Produk"}
+                                        </span>
+                                        {item.sn ? (
+                                          <span className={`ml-1 font-bold ${item.refunded ? "text-slate-300" : "text-blue-400"}`}>
+                                            · {item.sn}
+                                          </span>
+                                        ) : null}
+                                        {item.refunded && (
+                                          <span className="ml-1 text-[5px] bg-red-400 text-white px-1 py-0.5 rounded-sm font-black align-middle">R</span>
+                                        )}
+                                      </td>
+                                      <td className="py-0.5 px-2 text-right whitespace-nowrap">
+                                        <span className={`font-bold ${item.refunded ? "line-through opacity-40 text-slate-400" : "text-slate-500"}`}>
+                                          x{item.qty} · Rp {(item.price * item.qty).toLocaleString("id-ID")}
+                                        </span>
+                                      </td>
+                                      <td className="py-0.5 px-2" />
+                                      <td className="py-0.5 px-2" />
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              ))}
+                            {/* Empty state */}
+                            {sales.filter(
                               (s) =>
                                 s.branchId === profile.branchId &&
                                 (shiftOpen && shiftStartTime
                                   ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
                                   : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === (shiftLogicalDate || getLogicalShiftDate())),
-                            )
-                            .sort(
-                              (a, b) =>
-                                new Date(
-                                  b.createdAt || b.timestamp || 0,
-                                ).getTime() -
-                                new Date(
-                                  a.createdAt || a.timestamp || 0,
-                                ).getTime(),
-                            )
-                            .map((sale) => (
-                              <div
-                                key={sale.id}
-                                className="p-3 bg-slate-50 border border-slate-100 rounded-xl transition-all hover:border-blue-200 hover:bg-white group text-left"
-                              >
-                                <div className="flex justify-between items-start mb-2 text-left">
-                                  <div className="text-left">
-                                    <div className="flex items-center gap-1.5 mb-1 text-left">
-                                      <p className="text-[10px] font-black text-slate-900 leading-none text-left">
-                                        NOTA #{sale.id?.slice(-6).toUpperCase()}
-                                      </p>
-                                      <span
-                                        className={`text-[6px] font-black uppercase px-1.5 py-0.5 rounded-sm ${sale.status === "refunded" ? "bg-red-500 text-white" : "bg-emerald-500 text-white"}`}
-                                      >
-                                        {sale.status === "refunded"
-                                          ? "REFUNDED"
-                                          : "SUCCESS"}
-                                      </span>
-                                    </div>
-                                    <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest text-left">
-                                      {new Date(
-                                        sale.createdAt || sale.timestamp || 0,
-                                      ).toLocaleTimeString("id-ID")}{" "}
-                                      • {sale.items?.length || 0} Item
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-sm font-black text-slate-900 leading-none tracking-tight text-right">
-                                      Rp{" "}
-                                      {(sale.total || 0).toLocaleString(
-                                        "id-ID",
-                                      )}
-                                    </p>
-                                    <p className="text-[7px] text-blue-500 font-bold uppercase mt-1 tracking-widest text-right">
-                                      {sale.cashierName || "Kasir"}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* Daftar Produk dengan Fitur Refund Per Item */}
-                                <div className="mb-3 space-y-1.5 bg-white/50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-100 group-hover:bg-white transition-colors">
-                                  {sale.items?.map((item: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className={`flex justify-between items-start text-[8px] font-bold uppercase tracking-tight ${item.refunded ? "opacity-40 line-through text-slate-300" : "text-slate-600"}`}
-                                    >
-                                      <div className="flex-1 pr-2">
-                                        <div className="flex items-center gap-1.5">
-                                          <p className="leading-tight">
-                                            {item.product?.name || item.name || "Produk"}
-                                          </p>
-                                          {item.refunded && (
-                                            <span className="bg-red-500 text-white text-[5px] px-1 py-0 rounded-sm leading-none font-black">
-                                              REFUNDED
-                                            </span>
-                                          )}
-                                        </div>
-                                        {item.sn ? (
-                                          <p
-                                            className={`${item.refunded ? "text-slate-300" : "text-blue-500"} mt-0.5 text-[7px] font-black`}
-                                          >
-                                            SN: {item.sn}
-                                          </p>
-                                        ) : null}
-                                      </div>
-                                      <div className="shrink-0 flex items-center gap-3">
-                                        <div className="flex flex-col items-end">
-                                          <span className="text-slate-400 shrink-0">
-                                            x{item.qty}
-                                          </span>
-                                          <span className="min-w-[50px] text-right shrink-0">
-                                            Rp{" "}
-                                            {(
-                                              item.price * item.qty
-                                            ).toLocaleString("id-ID")}
-                                          </span>
-                                        </div>
-                                        {!item.refunded &&
-                                          sale.status !== "refunded" && (
-                                            <div className="w-6" />
-                                          )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-
-                                <div className="flex gap-2 text-left">
-                                  <button
-                                    onClick={() => handleRefund(sale)}
-                                    disabled={
-                                      sale.status === "refunded" ||
-                                      sale.items?.every((i: any) => i.refunded)
-                                    }
-                                    className="flex-1 py-1.5 bg-white border border-red-200 text-red-600 text-[8px] font-black rounded-lg uppercase tracking-widest hover:bg-red-50 disabled:opacity-30 disabled:grayscale transition-all shadow-sm"
-                                  >
-                                    {sale.status === "refunded"
-                                      ? "Sudah Direfund"
-                                      : "Refund Seluruhnya"}
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          {sales.filter(
-                            (s) =>
-                              s.branchId === profile.branchId &&
-                              (shiftOpen && shiftStartTime
-                                ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
-                                : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === (shiftLogicalDate || getLogicalShiftDate())),
-                          ).length === 0 && (
-                            <div className="py-12 text-center opacity-30 text-[9px] font-black uppercase tracking-[0.2em] text-center w-full mx-auto">
-                              Kosong
-                            </div>
-                          )}
+                            ).length === 0 && (
+                              <tbody>
+                                <tr>
+                                  <td colSpan={7} className="py-12 text-center opacity-30 font-black uppercase tracking-[0.2em]">
+                                    Belum ada transaksi
+                                  </td>
+                                </tr>
+                              </tbody>
+                            )}
+                          </table>
                         </div>
                       </div>
                     </div>
