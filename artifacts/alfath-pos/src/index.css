@@ -58,6 +58,11 @@
       transform: translateX(-100%);
     }
   }
+
+  @keyframes shrink {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
 }
 
 @variant dark (&:where(.dark, .dark *));
