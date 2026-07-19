@@ -9612,46 +9612,41 @@ export default function App() {
     {/* --- PAYMENT SUCCESS OVERLAY --- */}
     {paymentSuccessOverlay && (
       <div
-        className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150"
+        className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-emerald-950/30 backdrop-blur-md animate-in fade-in duration-200"
         onClick={() => setPaymentSuccessOverlay(null)}
       >
-        <div className="bg-white rounded-3xl shadow-[0_32px_80px_-12px_rgba(0,0,0,0.35)] w-full max-w-xs overflow-hidden animate-in zoom-in-90 duration-200">
-          {/* top green strip */}
-          <div className="bg-emerald-500 px-6 pt-8 pb-6 flex flex-col items-center gap-3">
-            {/* animated checkmark circle */}
-            <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center ring-4 ring-white/30">
-              <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <p className="text-white text-[11px] font-black uppercase tracking-[0.2em]">Pembayaran Berhasil</p>
-          </div>
-
-          {/* detail */}
-          <div className="px-6 py-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</span>
-              <span className="text-xl font-black text-slate-900 tabular-nums">
-                Rp {paymentSuccessOverlay.total.toLocaleString("id-ID")}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Item</span>
-              <span className="text-[13px] font-black text-slate-700">{paymentSuccessOverlay.itemCount} pcs</span>
-            </div>
-            {paymentSuccessOverlay.saleId && (
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nota</span>
-                <span className="text-[11px] font-mono font-bold text-slate-500">
-                  #{paymentSuccessOverlay.saleId.slice(-6).toUpperCase()}
-                </span>
+        <div className="w-full max-w-[320px] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250 ease-out">
+          {/* glass card */}
+          <div className="rounded-2xl overflow-hidden border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.18)] bg-white/20 backdrop-blur-xl">
+            {/* inner content */}
+            <div className="px-5 py-4 flex items-center gap-4">
+              {/* icon */}
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/90 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30">
+                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               </div>
-            )}
-          </div>
-
-          {/* progress bar auto-dismiss */}
-          <div className="h-1 bg-slate-100 overflow-hidden">
-            <div className="h-full bg-emerald-400 animate-[shrink_2.5s_linear_forwards]" style={{ width: "100%" }} />
+              {/* text */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-emerald-700 uppercase tracking-[0.15em] leading-none mb-1">Pembayaran Berhasil</p>
+                <p className="text-[22px] font-black text-slate-900 leading-none tabular-nums tracking-tight">
+                  Rp {paymentSuccessOverlay.total.toLocaleString("id-ID")}
+                </p>
+              </div>
+              {/* meta */}
+              <div className="text-right shrink-0">
+                <p className="text-[10px] font-bold text-slate-500 tabular-nums">{paymentSuccessOverlay.itemCount} pcs</p>
+                {paymentSuccessOverlay.saleId && (
+                  <p className="text-[10px] font-mono text-slate-400 mt-0.5">
+                    #{paymentSuccessOverlay.saleId.slice(-6).toUpperCase()}
+                  </p>
+                )}
+              </div>
+            </div>
+            {/* progress bar */}
+            <div className="h-[3px] bg-white/20 overflow-hidden">
+              <div className="h-full bg-emerald-400/80 animate-[shrink_2.5s_linear_forwards]" />
+            </div>
           </div>
         </div>
       </div>
