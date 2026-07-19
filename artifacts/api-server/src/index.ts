@@ -283,7 +283,7 @@ app.get("/api/products", authenticateToken, async (req, res) => {
     }));
     res.json(formattedProducts);
   } catch (error) {
-    console.error("Fetch Products Error (DEBUG):", error);
+    console.error("Fetch Products Error:", error);
     res.status(500).json({ error: "Failed to fetch products", details: (error as Error).message });
   }
 });
@@ -436,7 +436,7 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/config", async (req, res) => {
+app.get("/api/config", authenticateToken, async (req, res) => {
   try {
     const config = await prisma.globalConfig.upsert({
       where: { id: "default" },

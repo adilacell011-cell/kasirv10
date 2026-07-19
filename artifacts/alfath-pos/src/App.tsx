@@ -9,7 +9,6 @@ import {
   Calculator,
   Boxes,
   ArrowRightLeft,
-  ClipboardCheck,
   Clock,
   Settings,
   ShoppingBag,
@@ -21,11 +20,9 @@ import {
   ShieldCheck,
   Store,
   PlusSquare,
-  CreditCard,
   Banknote,
   ScanBarcode,
   CheckCircle2,
-  Bell,
   RefreshCw,
   User,
   Key,
@@ -34,7 +31,6 @@ import {
   X,
   Eye,
   LayoutList,
-  ClipboardList,
   Users,
   MapPin,
   Smartphone,
@@ -43,14 +39,12 @@ import {
   Package,
   PackagePlus,
   AlertTriangle,
-  Calendar,
   Check,
   ChevronDown,
   Camera,
   Barcode,
   TrendingUp,
   Sparkles,
-  Box,
   Database,
   Edit,
   Lock,
@@ -65,7 +59,6 @@ import {
   ArrowRight,
   History as HistoryIcon,
   Zap,
-  Mail,
   Sun,
   Moon,
 } from "lucide-react";
@@ -598,15 +591,8 @@ export default function App() {
   const [branches, setBranches] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [hasMoreProducts, setHasMoreProducts] = useState(false);
-  const [lastProductDoc, setLastProductDoc] = useState<any>(null);
   const [isSearchingProducts, setIsSearchingProducts] = useState(false);
-  const PRODUCTS_PAGE_SIZE = 2000;
-
-  // Products are now loaded in full from the local API (api.getProducts), so there is
-  // no extra Firestore page to fetch. Kept as a no-op for compatibility.
   const loadMoreProducts = async () => {};
-
-  // Sales are loaded from the local API; the old Firestore pagination is no longer needed.
   const loadMoreSales = async () => {};
 
   const handleFullDatabaseSearch = async () => {
@@ -654,9 +640,6 @@ export default function App() {
     return result;
   }, [products]);
   const [sales, setSales] = useState<any[]>([]);
-  const [hasMoreSales, setHasMoreSales] = useState(true);
-  const [lastSalesDoc, setLastSalesDoc] = useState<any>(null);
-  const SALES_PAGE_SIZE = 100;
   const [appConfig, setAppConfig] = useState<any>({
     allowCashierStockInput: true,
   });
@@ -731,10 +714,7 @@ export default function App() {
   const [posSelectedCategory, setPosSelectedCategory] = useState("Semua");
   const [posSelectedBrand, setPosSelectedBrand] = useState("Semua");
   const [adminSalesBranchFilter, setAdminSalesBranchFilter] = useState("");
-  const [adminLogBranchFilter, setAdminLogBranchFilter] = useState("");
-
   const [adminSalesDateFilter, setAdminSalesDateFilter] = useState("today");
-  const [adminLogDateFilter, setAdminLogDateFilter] = useState("today");
   const [reportStartDate, setReportStartDate] = useState("");
   const [reportSubTab, setReportSubTab] = useState<"summary" | "excel">("summary");
   const [reportEndDate, setReportEndDate] = useState("");
@@ -1192,20 +1172,6 @@ export default function App() {
     "Tri",
     "Axis",
   ];
-  const ACC_SUB_CATEGORIES = [
-    "Kabel Data",
-    "Charger",
-    "Kepala Charger",
-    "Headset",
-    "Headset Bluetooth",
-    "Handsfree",
-    "Powerbank",
-    "Tempered Glass",
-    "Speaker",
-    "Casing",
-    "Baterai",
-    "Flashdisk",
-  ];
 
   const PARFUM_TYPES = [
     "EDP",
@@ -1254,13 +1220,6 @@ export default function App() {
   }, [products, prodCategory]);
 
 
-  // Derive all categories present in products + defaults
-  const ALL_CATEGORIES = Array.from(new Set([
-    ...DEFAULT_CATEGORIES,
-    ...products
-      .filter(p => p.category && p.category !== "UMUM" && p.category !== "LAINNYA")
-      .map(p => p.category!)
-  ])).filter(c => c !== "UMUM" && c !== "LAINNYA");
 
   // Auto-focus search input in POS
   useEffect(() => {
@@ -1791,19 +1750,6 @@ export default function App() {
     return `${prefix}${timestamp}${random}`;
   };
 
-  const handleCleanupAdjustments = async () => {
-    if (profile?.role !== "ADMIN") return;
-    if (!(await triggerConfirm("Hapus riwayat penyesuaian stok (adjustments) lama?"))) return;
-    
-    try {
-      await api.cleanupAdjustments();
-      alert("Riwayat penyesuaian stok berhasil dibersihkan!");
-      // Refresh adjustments if needed
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Gagal membersihkan riwayat.");
-    }
-  };
 
   // Reset all product-form fields to a clean default (for a fresh "Tambah" form / on close).
   const resetProductForm = () => {
@@ -2106,8 +2052,6 @@ export default function App() {
   };
 
   const handleRefund = async (sale: any) => {
-    console.log("handleRefund called", sale);
-    
     if (!sale) {
        alert("Error: Data penjualan tidak ditemukan. Hubungi pengembang.");
        return;
@@ -2672,9 +2616,7 @@ export default function App() {
   };
 
   const handleCloseShift = async () => {
-    console.log("handleCloseShift called, profile:", profile);
     if (!profile?.branchId) {
-       console.log("handleCloseShift aborted: no profile or branchId");
        alert("Error: Profile atau Branch ID tidak ditemukan. Silakan login kembali/refresh.");
        return;
     }
