@@ -312,6 +312,14 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
       return res.status(400).json({ error: `Nilai ${f} harus angka >= 0.` });
     }
   }
+  // Normalize expiredAt: input type="date" sends "YYYY-MM-DD" but Prisma DateTime needs ISO string.
+  if ((data as any).expiredAt) {
+    const raw = (data as any).expiredAt as string;
+    // If it's already a full ISO string leave it; if it's just a date ("YYYY-MM-DD") append time.
+    (data as any).expiredAt = raw.includes("T") ? new Date(raw) : new Date(raw + "T00:00:00.000Z");
+  } else {
+    (data as any).expiredAt = null;
+  }
   try {
     const product = id 
       ? await prisma.product.update({ where: { id }, data })
