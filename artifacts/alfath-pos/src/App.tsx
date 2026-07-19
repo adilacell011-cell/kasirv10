@@ -7191,19 +7191,20 @@ export default function App() {
                             {/* DROPDOWN HASIL PENCARIAN CEPAT */}
                             {searchSuggestions.length > 0 && (
                               <div className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
-                                <div className="px-4 py-2 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-left font-sans">
-                                    Hasil Pencarian Instan:
-                                  </p>
-                                  <button onClick={() => setSearchSuggestions([])}>
-                                    <X className="w-3.5 h-3.5 text-slate-400 hover:text-red-500 transition-colors" />
-                                  </button>
+                                {/* Header tabel Excel */}
+                                <div className="grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 border-b border-slate-200 bg-blue-600 px-2 py-1.5">
+                                  <span className="text-[8px] font-black text-white/80 uppercase tracking-widest text-center">#</span>
+                                  <span className="text-[8px] font-black text-white uppercase tracking-widest">Nama Produk</span>
+                                  <span className="text-[8px] font-black text-white uppercase tracking-widest text-center">Stok</span>
+                                  <span className="text-[8px] font-black text-white uppercase tracking-widest text-right pr-1">Harga</span>
                                 </div>
-                                <div className="max-h-[300px] overflow-y-auto">
-                                  {searchSuggestions.slice(0, 10).map((p) => {
+                                <div className="max-h-[320px] overflow-y-auto">
+                                  {searchSuggestions.slice(0, 15).map((p, idx) => {
                                     const stock = getBranchStock(profile?.branchId || "", p.id);
                                     const hasDiscount = p.discountPrice > 0;
                                     const price = hasDiscount ? p.discountPrice : p.sellingPrice;
+                                    const isEmpty = stock <= 0;
+                                    const rowBg = idx % 2 === 0 ? "bg-white" : "bg-blue-50/60";
                                     return (
                                     <button
                                       key={p.id}
@@ -7213,34 +7214,31 @@ export default function App() {
                                         setSearchSuggestions([]);
                                         searchInputRef.current?.focus();
                                       }}
-                                      className="w-full text-left px-4 py-3 hover:bg-blue-600 hover:text-white flex items-center justify-between group border-b border-slate-100 last:border-0"
+                                      className={`w-full text-left grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 items-center px-2 py-1 border-b border-slate-100 last:border-0 hover:bg-blue-600 group transition-colors ${rowBg}`}
                                     >
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-white/20 flex items-center justify-center shrink-0">
-                                          {p.category === "Voucher" ? (
-                                            <Wifi className="w-4 h-4 text-blue-600 group-hover:text-white" />
-                                          ) : (
-                                            <Smartphone className="w-4 h-4 text-slate-600 group-hover:text-white" />
-                                          )}
-                                        </div>
-                                        <div>
-                                          <p className="text-[11px] font-black uppercase tracking-tight leading-none text-left text-slate-800 group-hover:text-white">
-                                            {getProductName(p)}
-                                            {p.masterSN && <span className="ml-1.5 text-purple-600 group-hover:text-purple-200 font-mono">({p.masterSN})</span>}
-                                          </p>
-                                          <p className={`text-[8px] font-black mt-1 px-1 py-0.5 rounded leading-none uppercase text-left group-hover:bg-white/15 group-hover:text-white ${stock > 0 ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"}`}>
-                                            {stock > 0 ? `Stok Cabang: ${stock} Pcs` : "Stok Habis"}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-xs font-black text-emerald-600 group-hover:text-white font-mono">
-                                          Rp {price.toLocaleString("id-ID")}
-                                        </p>
+                                      {/* No urut */}
+                                      <span className="text-[8px] font-bold text-slate-400 group-hover:text-white/70 text-center tabular-nums">{idx + 1}</span>
+
+                                      {/* Nama produk */}
+                                      <span className={`text-[9.5px] font-black uppercase tracking-tight leading-tight text-left pr-1 truncate transition-colors ${isEmpty ? "text-slate-300 line-through decoration-slate-300" : "text-slate-800"} group-hover:text-white group-hover:no-underline`}>
+                                        {getProductName(p)}
+                                        {p.masterSN && <span className="ml-1 font-mono text-[8px] text-purple-400 group-hover:text-purple-200">·{p.masterSN}</span>}
+                                      </span>
+
+                                      {/* Stok */}
+                                      <span className={`text-[9px] font-black text-center tabular-nums transition-colors ${isEmpty ? "text-rose-400 group-hover:text-rose-200" : "text-emerald-600 group-hover:text-white"}`}>
+                                        {isEmpty ? "HABIS" : `${stock}`}
+                                      </span>
+
+                                      {/* Harga */}
+                                      <div className="text-right pr-1">
+                                        <span className={`text-[9.5px] font-black tabular-nums font-mono block transition-colors ${isEmpty ? "text-slate-300" : "text-slate-800"} group-hover:text-white`}>
+                                          {price.toLocaleString("id-ID")}
+                                        </span>
                                         {hasDiscount && (
-                                          <p className="text-[8px] font-bold text-slate-400 group-hover:text-white/70 line-through font-mono mt-0.5">
-                                            Rp {p.sellingPrice.toLocaleString("id-ID")}
-                                          </p>
+                                          <span className="text-[7.5px] font-bold text-slate-300 group-hover:text-white/50 line-through font-mono block">
+                                            {p.sellingPrice.toLocaleString("id-ID")}
+                                          </span>
                                         )}
                                       </div>
                                     </button>
@@ -7250,9 +7248,9 @@ export default function App() {
                                     <button 
                                       onClick={handleFullDatabaseSearch}
                                       disabled={isSearchingProducts}
-                                      className="w-full p-4 bg-slate-50 text-blue-600 font-black text-[10px] uppercase tracking-widest hover:bg-blue-100 flex items-center justify-center gap-2 border-t border-slate-100 disabled:opacity-50"
+                                      className="w-full px-3 py-2 bg-slate-50 text-blue-600 font-black text-[9px] uppercase tracking-widest hover:bg-blue-100 flex items-center justify-center gap-2 border-t border-slate-200 disabled:opacity-50"
                                     >
-                                      {isSearchingProducts ? <Loader2 className="w-3 h-3 animate-spin text-blue-600"/> : <Search className="w-3.5 h-3.5 text-blue-600"/>}
+                                      {isSearchingProducts ? <Loader2 className="w-3 h-3 animate-spin text-blue-600"/> : <Search className="w-3 h-3 text-blue-600"/>}
                                       Cari Mendalam di Database Pusat
                                     </button>
                                   )}
