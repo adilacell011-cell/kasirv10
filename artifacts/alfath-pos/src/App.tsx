@@ -3269,7 +3269,7 @@ export default function App() {
                   {getPageTitle()}
                 </h2>
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
-                  Akses Log: {profile?.name} ({profile?.email})
+                  Akses Log: {profile?.name}{(profile?.email || profile?.role) ? ` (${profile?.email || profile?.role})` : ""}
                 </p>
               </div>
               <div className="hidden sm:block h-5 w-px bg-slate-200 shrink-0 mx-2"></div>
