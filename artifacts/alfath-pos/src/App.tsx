@@ -5293,22 +5293,19 @@ export default function App() {
                         </div>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse mobile-cards">
+                        <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-100">
-                              <th className="px-4 md:px-6 py-3 md:py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] w-1/3 text-left">
-                                Item Restock
+                              <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] text-left">
+                                Produk · Cabang
                               </th>
-                              <th className="px-4 md:px-6 py-3 md:py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-left">
-                                Cabang
+                              <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] text-center w-14">
+                                Stok
                               </th>
-                              <th className="px-4 md:px-6 py-3 md:py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">
-                                Stok Skrg
+                              <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] text-center w-14">
+                                Min
                               </th>
-                              <th className="px-4 md:px-6 py-3 md:py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">
-                                Batas Min
-                              </th>
-                              <th className="px-4 md:px-6 py-3 md:py-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">
+                              <th className="px-2 py-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] text-right w-24">
                                 Aksi
                               </th>
                             </tr>
@@ -5351,12 +5348,12 @@ export default function App() {
                                 return (
                                   <tr>
                                     <td
-                                      colSpan={5}
-                                      className="px-4 md:px-6 py-12 text-center text-slate-400"
+                                      colSpan={4}
+                                      className="px-3 py-10 text-center text-slate-400"
                                     >
                                       <div className="flex flex-col items-center gap-3">
-                                        <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
-                                          <CheckCircle2 className="w-6 h-6" />
+                                        <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
+                                          <CheckCircle2 className="w-5 h-5" />
                                         </div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic text-center">
                                           Semua stok aman terpantau
@@ -5371,32 +5368,27 @@ export default function App() {
                                   key={`${a.product.id}-${a.branch.id}`}
                                   className="hover:bg-slate-50/50 transition-colors group"
                                 >
-                                  <td data-card-title className="px-4 md:px-6 py-3 md:py-4 text-left">
-                                    <p className="font-bold text-slate-800 text-sm tracking-tight text-left">
+                                  <td className="px-3 py-2 text-left">
+                                    <p className="font-bold text-slate-800 text-xs tracking-tight leading-snug">
                                       {a.product.name}
                                     </p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 text-left">
-                                      {a.product.category}
+                                    <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wide mt-0.5 flex items-center gap-1.5">
+                                      <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-black">{a.branch.name}</span>
+                                      <span className="text-slate-300">·</span>
+                                      <span>{a.product.category}</span>
                                     </p>
                                   </td>
-                                  <td data-label="Cabang" className="px-4 md:px-6 py-3 md:py-4 text-left">
-                                    <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-tight">
-                                      {a.branch.name}
-                                    </span>
-                                  </td>
-                                  <td data-label="Stok Skrg" className="px-4 md:px-6 py-3 md:py-4 text-center">
-                                    <p
-                                      className={`font-mono font-black text-sm ${a.qty === 0 ? "text-red-500" : "text-amber-500"}`}
-                                    >
+                                  <td className="px-3 py-2 text-center">
+                                    <p className={`font-mono font-black text-sm leading-none ${a.qty === 0 ? "text-red-500" : "text-amber-500"}`}>
                                       {a.qty}
                                     </p>
                                   </td>
-                                  <td data-label="Batas Min" className="px-4 md:px-6 py-3 md:py-4 text-center">
-                                    <p className="font-mono font-bold text-slate-400 text-xs">
+                                  <td className="px-3 py-2 text-center">
+                                    <p className="font-mono font-bold text-slate-400 text-xs leading-none">
                                       {a.product.minStock}
                                     </p>
                                   </td>
-                                  <td data-label="Aksi" className="px-4 md:px-6 py-3 md:py-4 text-right">
+                                  <td className="px-2 py-2 text-right">
                                     <button
                                       onClick={() => {
                                         setIsCreatingPlan(true);
@@ -5414,9 +5406,9 @@ export default function App() {
                                           },
                                         ]);
                                       }}
-                                      className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all"
+                                      className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-wider hover:bg-blue-600 hover:text-white transition-all whitespace-nowrap"
                                     >
-                                      Tambah ke Rencana
+                                      + Rencana
                                     </button>
                                   </td>
                                 </tr>
@@ -5619,7 +5611,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-x-auto p-4">
+                    <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2">
                       {planDraftItems.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center py-20 gap-4">
                           <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center">
@@ -5630,148 +5622,100 @@ export default function App() {
                           </p>
                         </div>
                       ) : (
-                        <table className="w-full text-left border-separate border-spacing-y-2">
-                          <thead>
-                            <tr>
-                              <th className="px-4 md:px-6 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-left">
-                                Nama Produk / Provider
-                              </th>
-                              {branches
-                                .slice()
-                                .sort((a, b) => naturalSort(a.name, b.name))
-                                .filter((b) => !hiddenShoppingBranchIds.includes(b.id))
-                                .map((b) => (
-                                  <th
-                                    key={b.id}
-                                    className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center"
-                                  >
-                                    {b.name}
-                                  </th>
-                                ))}
-                              <th className="px-4 md:px-6 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">
-                                Total
-                              </th>
-                              <th className="w-10"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {planDraftItems
+                        planDraftItems
+                          .slice()
+                          .sort((a, b) => {
+                            const pa = products.find((p) => p.id === a.productId)?.name || "";
+                            const pb = products.find((p) => p.id === b.productId)?.name || "";
+                            return naturalSort(pa, pb);
+                          })
+                          .map((item) => {
+                            const p = products.find((x) => x.id === item.productId);
+                            const globalIdx = planDraftItems.findIndex((x) => x.productId === item.productId);
+                            const total = Object.values((item.branchQtys || {}) as Record<string, string>)
+                              .reduce((s: number, v) => s + (parseInt(v || "0") || 0), 0);
+                            const visibleBranches = branches
                               .slice()
-                              .sort((a, b) => {
-                                const pa =
-                                  products.find((p) => p.id === a.productId)
-                                    ?.name || "";
-                                const pb =
-                                  products.find((p) => p.id === b.productId)
-                                    ?.name || "";
-                                return naturalSort(pa, pb);
-                              })
-                              .map((item, idx) => {
-                                const p = products.find(
-                                  (x) => x.id === item.productId,
-                                );
-                                const globalIdx = planDraftItems.findIndex(
-                                  (x) => x.productId === item.productId,
-                                );
-                                return (
-                                  <tr
-                                    key={item.productId}
-                                    className="bg-white border-y border-slate-100 shadow-sm hover:border-blue-200 transition-all rounded-xl"
-                                  >
-                                    <td className="px-4 md:px-6 py-3 md:py-5 rounded-l-2xl border-l border-slate-100 text-left">
-                                      <p className="font-extrabold text-slate-800 text-sm tracking-tight text-left">
-                                        {p?.name || "Invalid Product"}
-                                      </p>
-                                      <p className="text-[9px] text-blue-500 font-bold uppercase tracking-widest mt-1 text-left">
-                                        {p?.category}
-                                      </p>
-                                    </td>
-                                    {branches
-                                      .slice()
-                                      .sort((a, b) =>
-                                        naturalSort(a.name, b.name),
-                                      )
-                                      .filter((b) => !hiddenShoppingBranchIds.includes(b.id))
-                                      .map((b) => {
-                                        const visibleIds = p?.visibleBranchIds || "*";
-                                        const isProductVisibleInBranch = visibleIds === "*" || visibleIds.split(",").map((id: string) => id.trim()).includes(b.id);
-                                        if (!isProductVisibleInBranch) {
-                                          return (
-                                            <td key={b.id} className="px-2 py-3 md:py-5 border-y border-slate-100 text-center text-slate-350">
-                                              <span className="text-xs opacity-30 italic font-medium">—</span>
-                                            </td>
-                                          );
-                                        }
-
-                                        const isSafe =
-                                          getBranchStock(b.id, item.productId) >
-                                          (p?.minStock || 0);
-                                        return (
-                                          <td
-                                            key={b.id}
-                                            className="px-2 py-3 md:py-5 border-y border-slate-100 relative group"
-                                          >
-                                            <input
-                                              type="number"
-                                              disabled={isSafe}
-                                              value={
-                                                item.branchQtys[b.id] || ""
-                                              }
-                                              onChange={(e) => {
-                                                const newItems = [
-                                                  ...planDraftItems,
-                                                ];
-                                                newItems[globalIdx].branchQtys =
-                                                  {
-                                                    ...newItems[globalIdx]
-                                                      .branchQtys,
-                                                    [b.id]: e.target.value,
-                                                  };
-                                                setPlanDraftItems(newItems);
-                                              }}
-                                              placeholder="0"
-                                              title={
-                                                isSafe
-                                                  ? `Stok aman: ${getBranchStock(b.id, item.productId)} (Min: ${p?.minStock || 0})`
-                                                  : `Sisa stok: ${getBranchStock(b.id, item.productId)} (Min: ${p?.minStock || 0})`
-                                              }
-                                              className={`w-16 mx-auto border rounded-xl px-2 py-2 text-center font-mono font-black outline-none focus:ring-4 transition-all ${isSafe ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-50" : "bg-slate-50 border-slate-200 text-slate-700 focus:ring-blue-500/10 focus:bg-white"}`}
-                                            />
-                                          </td>
-                                        );
-                                      })}
-                                    <td className="px-4 md:px-6 py-3 md:py-5 text-right font-mono font-black text-slate-900 border-y border-slate-100 bg-slate-50/30">
-                                      {Object.values(
-                                        (item.branchQtys || {}) as Record<
-                                          string,
-                                          string
-                                        >,
-                                      ).reduce(
-                                        (s: number, v) =>
-                                          s + (parseInt(v || "0") || 0),
-                                        0,
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-3 md:py-5 text-right rounded-r-2xl border-r border-slate-100">
-                                      <button
-                                        onClick={() =>
-                                          setPlanDraftItems(
-                                            planDraftItems.filter(
-                                              (x) =>
-                                                x.productId !== item.productId,
-                                            ),
-                                          )
-                                        }
-                                        className="p-2 text-slate-300 hover:text-red-500 transition-all font-black text-[9px] uppercase tracking-widest"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                          </tbody>
-                        </table>
+                              .sort((a, b) => naturalSort(a.name, b.name))
+                              .filter((b) => {
+                                if (hiddenShoppingBranchIds.includes(b.id)) return false;
+                                const visibleIds = p?.visibleBranchIds || "*";
+                                return visibleIds === "*" || visibleIds.split(",").map((id: string) => id.trim()).includes(b.id);
+                              });
+                            return (
+                              <div key={item.productId} className="bg-white border border-slate-100 rounded-2xl p-3 shadow-sm hover:border-blue-200 transition-all">
+                                {/* Header row */}
+                                <div className="flex items-start justify-between mb-2.5 gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-extrabold text-slate-800 text-[13px] tracking-tight leading-snug truncate">
+                                      {p?.name || "Invalid Product"}
+                                    </p>
+                                    <p className="text-[8.5px] text-blue-500 font-bold uppercase tracking-widest mt-0.5">
+                                      {p?.category}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <div className="text-right">
+                                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">Total</p>
+                                      <p className="text-base font-black text-slate-900 leading-tight">{total}</p>
+                                    </div>
+                                    <button
+                                      onClick={() => setPlanDraftItems(planDraftItems.filter((x) => x.productId !== item.productId))}
+                                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {/* Branch inputs row */}
+                                <div className="flex flex-wrap gap-2">
+                                  {visibleBranches.map((b) => {
+                                    const isSafe = getBranchStock(b.id, item.productId) > (p?.minStock || 0);
+                                    const currentStock = getBranchStock(b.id, item.productId);
+                                    return (
+                                      <div key={b.id} className="flex flex-col items-center gap-0.5">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide leading-none">{b.name}</span>
+                                        <input
+                                          type="number"
+                                          inputMode="numeric"
+                                          disabled={isSafe}
+                                          value={item.branchQtys[b.id] || ""}
+                                          onChange={(e) => {
+                                            const newItems = [...planDraftItems];
+                                            newItems[globalIdx].branchQtys = {
+                                              ...newItems[globalIdx].branchQtys,
+                                              [b.id]: e.target.value,
+                                            };
+                                            setPlanDraftItems(newItems);
+                                          }}
+                                          placeholder="0"
+                                          title={isSafe ? `Stok aman: ${currentStock} (Min: ${p?.minStock || 0})` : `Sisa stok: ${currentStock} (Min: ${p?.minStock || 0})`}
+                                          className={`w-14 border rounded-xl px-1 py-1.5 text-center font-mono font-black text-sm outline-none focus:ring-2 transition-all ${isSafe ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 focus:ring-blue-300 focus:border-blue-400"}`}
+                                        />
+                                        {!isSafe && (
+                                          <span className={`text-[7.5px] font-bold leading-none ${currentStock === 0 ? "text-red-400" : "text-amber-400"}`}>
+                                            stok:{currentStock}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  {branches.filter(b => {
+                                    if (hiddenShoppingBranchIds.includes(b.id)) return false;
+                                    const visibleIds = p?.visibleBranchIds || "*";
+                                    return visibleIds !== "*" && !visibleIds.split(",").map((id: string) => id.trim()).includes(b.id);
+                                  }).map(b => (
+                                    <div key={b.id} className="flex flex-col items-center gap-0.5 opacity-30">
+                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide leading-none">{b.name}</span>
+                                      <div className="w-14 h-[34px] border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-center">
+                                        <span className="text-slate-300 text-xs">—</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })
                       )}
                     </div>
 
