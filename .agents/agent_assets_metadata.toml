@@ -107,93 +107,109 @@ id = "W7yaY3p7K3AQqMEJuIgpJ"
 uri = "file://attached_assets/generated_images/logo_alfath_concept1.png"
 type = "image"
 title = "Konsep 1 — Monogram A + sinyal & koin"
+logical_id = "9b3ebecf-8341-4d36-8e9d-16aadc964215"
 
 [[outputs]]
 id = "SptNjA1uVOMLS6lwrifG6"
 uri = "file://attached_assets/generated_images/logo_alfath_concept2.png"
 type = "image"
 title = "Konsep 2 — Badge jabat tangan"
+logical_id = "29beb73d-4721-4bdf-9f60-8632ca7c5fa3"
 
 [[outputs]]
 id = "X17jN67Au0QxN6R_QJae_"
 uri = "file://attached_assets/generated_images/logo_alfath_concept3.png"
 type = "image"
 title = "Konsep 3 — App icon gradien"
+logical_id = "596834a7-2938-4a02-8348-07135c35862a"
 
 [[outputs]]
 id = "eN29svXxExdTUmud6VZ-Y"
 uri = "file://attached_assets/generated_images/logo_alfath_concept4.png"
 type = "image"
 title = "Konsep 4 — Ikon HP + garis pulsa"
+logical_id = "0aa8f47f-100b-4b28-bd1d-177ee78b424b"
 
 [[outputs]]
 id = "9Pw7jJ6zY77NvpJgtaLYg"
 uri = "file://attached_assets/generated_images/logo_alfath_v2_1.png"
 type = "image"
 title = "Konsep A — Monogram AP garis tipis"
+logical_id = "6d7dfb6d-c688-464d-9965-95f109d6f237"
 
 [[outputs]]
 id = "YeOoYOZbfqR-z2iT--7Ks"
 uri = "file://attached_assets/generated_images/logo_alfath_v2_2.png"
 type = "image"
 title = "Konsep B — Bubble chat + petir"
+logical_id = "862a222a-681a-4086-b302-07bef4057329"
 
 [[outputs]]
 id = "BS_t_Z3CjaOT3D261XGfq"
 uri = "file://attached_assets/generated_images/logo_alfath_v2_3.png"
 type = "image"
 title = "Konsep C — Perisai motif Islami"
+logical_id = "06933a78-1978-44bb-ab15-1849e8c31471"
 
 [[outputs]]
 id = "yXIsm8dK6gOB-himWHgb3"
 uri = "file://attached_assets/generated_images/logo_alfath_v2_4.png"
 type = "image"
 title = "Konsep D — Wordmark bersih + sinyal/koin"
+logical_id = "b0674c9b-4a95-467a-a6aa-b7adc385b7a5"
 
 [[outputs]]
 id = "Wc21qEMtKstPuleD3I4d9"
 uri = "file://attached_assets/generated_images/logo_alfath_shield_1.png"
 type = "image"
 title = "Versi 1 — Perisai elegan garis emas"
+logical_id = "5bb722fd-2a0e-43f9-9639-8e689aa0d639"
 
 [[outputs]]
 id = "Z1pI2s-mb6fqldKKrcltf"
 uri = "file://attached_assets/generated_images/logo_alfath_shield_2.png"
 type = "image"
 title = "Versi 2 — Perisai emas tebal + sinyal"
+logical_id = "efb5c290-562e-4f63-8d03-27646075a9db"
 
 [[outputs]]
 id = "CTYEBZBxbcq3yx2KNwhDB"
 uri = "file://attached_assets/generated_images/logo_alfath_shield_3.png"
 type = "image"
 title = "Versi 3 — Crest + pita nama"
+logical_id = "160fe903-e735-42af-9933-af5453524b0d"
 
 [[outputs]]
 id = "GNK0zYAyedAPhA3XKqHPo"
 uri = "file://attached_assets/generated_images/logo_alfath_shield_4.png"
 type = "image"
 title = "Versi 4 — Minimalis bersih"
+logical_id = "89389b8c-fb23-48b3-a74e-21dbdf98baa9"
 
 [[outputs]]
 id = "RxkdHcXRCIWOQu_wmxTq3"
 uri = "file://attached_assets/generated_images/logo_alfath_pro_1.png"
 type = "image"
 title = "Versi 1 — Kios + tenda + koin"
+logical_id = "ba364e1f-31fb-4368-8e03-d16152cccf1b"
 
 [[outputs]]
 id = "lfTzNDF7EjWbBPutBo6C_"
 uri = "file://attached_assets/generated_images/logo_alfath_pro_2.png"
 type = "image"
 title = "Versi 2 — Meja konter lengkap (EDC)"
+logical_id = "90ffaaef-54fe-4d3e-91d7-b17d40618fa2"
 
 [[outputs]]
 id = "OIP-5NNa7kKgARioqTo1K"
 uri = "file://attached_assets/generated_images/logo_alfath_pro_3.png"
 type = "image"
 title = "Versi 3 — Badge bulat gedung konter"
+logical_id = "332dc88f-424a-493c-a114-d670b3b72650"
 
 [[outputs]]
 id = "3kuKY9X0Bs-rSFhzqHwBZ"
 uri = "file://attached_assets/generated_images/logo_alfath_pro_4.png"
 type = "image"
 title = "Versi 4 — Tenda toko + garis pulsa + koin"
+logical_id = "bca8369f-fb05-444e-af51-39ff221eae8b"

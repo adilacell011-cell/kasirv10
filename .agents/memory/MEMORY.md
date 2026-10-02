@@ -12,3 +12,4 @@
 - [AlfathPOS crash hardening](alfathpos-crash-hardening.md) — process error handlers log-and-stay-alive (POS uptime); numeric inputs must be validated AND normalized before DB writes, never written raw.
 - [AlfathPOS bonus accounting](alfathpos-bonus-accounting.md) — bonus = sum of Commission rows status=earned per BRANCH (single source of truth); User.bonusBalance is vestigial, refund only flips earned→refunded.
 - [AlfathPOS Laporan performance](alfathpos-laporan-perf.md) — daily-summaries endpoint reads DailyIncomeSummary (pre-aggregated on shift close) + today-only Sale scan; never full-table scan.
+- [Imported artifact registration](imported-artifact-registration.md) — validate existing imported metadata when artifact and workflow lists are empty; do not recreate the apps.
