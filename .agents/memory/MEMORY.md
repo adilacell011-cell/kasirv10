@@ -11,8 +11,9 @@
 - [AlfathPOS stock & SN model](alfathpos-stock-model.md) — one masterSN per product for recall + plain Pcs qty stock; per-unit Voucher SN intake removed (dead code); VoucherSN model kept for legacy cleanup only.
 - [AlfathPOS crash hardening](alfathpos-crash-hardening.md) — process error handlers log-and-stay-alive (POS uptime); numeric inputs must be validated AND normalized before DB writes, never written raw.
 - [AlfathPOS bonus accounting](alfathpos-bonus-accounting.md) — bonus = sum of Commission rows status=earned per BRANCH (single source of truth); User.bonusBalance is vestigial, refund only flips earned→refunded.
-- [AlfathPOS Laporan performance](alfathpos-laporan-perf.md) — daily-summaries endpoint reads DailyIncomeSummary (pre-aggregated on shift close) + today-only Sale scan; never full-table scan.
+- [AlfathPOS owner read constraints](alfathpos-laporan-perf.md) — load summaries independently; preserve stored history and day boundaries; archive integrity is a separate audit.
 - [Imported artifact registration](imported-artifact-registration.md) — validate existing imported metadata when artifact and workflow lists are empty; do not recreate the apps.
 - [Persetujuan perubahan kode](change-approval.md) — jangan mengubah kode aplikasi tanpa persetujuan pengguna; pelajari dan jelaskan secara baca-saja terlebih dahulu.
 - [Rekap permanen untuk owner](owner-summary-requirement.md) — pendapatan dan bonus tetap tersedia setelah rincian lama dihapus; dashboard membaca rekap ringan.
 - [Akun kasir bersama per cabang](shared-branch-cashier-account.md) — satu akun cabang dipakai dua karyawan bergantian untuk shift siang dan malam.
+- [Imported API codegen compatibility](api-codegen-compatibility.md) — check generator runtime built-ins and pin output targets to installed Zod/React Query versions.

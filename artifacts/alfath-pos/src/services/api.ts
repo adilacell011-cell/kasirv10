@@ -66,9 +66,9 @@ export const api = {
     return data;
   },
 
-  async getProducts() {
+  async getProducts(signal?: AbortSignal) {
     const res = await fetch(`${BASE_URL}/products`, {
-      headers: getHeaders(),
+      headers: getHeaders(), signal,
     });
     if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch products: ${res.status} ${txt}`); }
     return res.json();
@@ -271,6 +271,26 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch daily summaries: ${res.status} ${txt}`); }
+    return res.json();
+  },
+
+  async getOwnerDashboard(branchId = "", signal?: AbortSignal) {
+    const params = new URLSearchParams();
+    if (branchId) params.set("branchId", branchId);
+    const res = await fetch(`${BASE_URL}/owner-dashboard?${params}`, {
+      headers: getHeaders(), signal,
+    });
+    if (!res.ok) throw new Error(`Gagal memuat ringkasan owner (${res.status}).`);
+    return res.json();
+  },
+
+  async getOwnerDashboardDetails(branchId = "", signal?: AbortSignal) {
+    const params = new URLSearchParams();
+    if (branchId) params.set("branchId", branchId);
+    const res = await fetch(`${BASE_URL}/owner-dashboard/details?${params}`, {
+      headers: getHeaders(), signal,
+    });
+    if (!res.ok) throw new Error(`Gagal memuat rincian dashboard (${res.status}).`);
     return res.json();
   },
 

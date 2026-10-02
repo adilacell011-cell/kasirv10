@@ -24,8 +24,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /owner-dashboard:
+    get:
+      operationId: getOwnerDashboard
+      summary: Read-only owner daily income summaries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: branchId
+          in: query
+          schema:
+            type: string
+          description: Omit for all branches.
+      responses:
+        "200":
+          description: Historical daily summaries with today's live totals replacing stored totals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [summaries, updatedAt]
+                properties:
+                  updatedAt:
+                    type: string
+                    format: date-time
+                  summaries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OwnerDailySummary"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner access required.
+  /owner-dashboard/details:
+    get:
+      operationId: getOwnerDashboardDetails
+      summary: Read-only bounded owner recent sales and top products
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: branchId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: At most 10 recent sales and 5 product totals; never the full transaction ledger.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recentSales, topProducts]
+                properties:
+                  recentSales:
+                    type: array
+                    maxItems: 10
+                    items:
+                      type: object
+                      additionalProperties: true
+                  topProducts:
+                    type: array
+                    maxItems: 5
+                    items:
+                      type: object
+                      required: [name, qty]
+                      properties:
+                        name:
+                          type: string
+                        qty:
+                          type: number
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner access required.
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
   schemas:
+    OwnerDailySummary:
+      type: object
+      required: [id, date, branchId, revenue, profit, totalCommission, count]
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+        branchId:
+          type: string
+        revenue:
+          type: number
+        profit:
+          type: number
+        totalCommission:
+          type: number
+        count:
+          type: integer
     HealthStatus:
       type: object
       properties:

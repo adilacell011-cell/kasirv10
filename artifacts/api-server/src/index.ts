@@ -10,6 +10,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -1367,6 +1368,8 @@ function getLogicalShiftDate(d: Date = new Date()) {
   
   return `${year}-${month}-${day}`;
 }
+
+registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
 
 async function autoArchiveOldSales() {
   try {

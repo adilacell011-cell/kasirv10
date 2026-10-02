@@ -66,6 +66,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api } from "./services/api";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
+import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
 import { OperatorBadge } from "./components/OperatorLogo";
 import {
   MdSpaceDashboard,
@@ -721,6 +722,10 @@ export default function App() {
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [scanIndicator, setScanIndicator] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<"overview" | "sales" | "inventory">("overview");
+  const ownerDashboard = useOwnerDashboard(
+    !authLoading && profile?.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory",
+    profile?.id, adminSalesBranchFilter, setProducts,
+  );
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [paymentSuccessOverlay, setPaymentSuccessOverlay] = useState<{ total: number; saleId: string; itemCount: number } | null>(null);
   const [isProcessingTransfer, setIsProcessingTransfer] = useState(false);
@@ -1466,7 +1471,10 @@ export default function App() {
   }, [products, branches, stocks, profile, hiddenShoppingBranchIds]);
 
   useEffect(() => {
-    if (!profile || profile.role === "PENDING") return;
+    if (!profile || profile.role === "PENDING" || (profile.role === "ADMIN" && authLoading)) return;
+    // Owner income and recent sales use bounded, independent read-only requests.
+    // Preserve the existing full synchronization for POS and the other menus.
+    if (profile.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory") return;
 
     const isAdmin = profile.role === "ADMIN";
     
@@ -1584,8 +1592,8 @@ export default function App() {
       socket.disconnect();
     };
   }, [
-    profile?.id, profile?.role, profile?.branchId, 
-    activeMenu === "dashboard", activeMenu === "audit", activeMenu === "reports", 
+    profile?.id, profile?.role, profile?.branchId, authLoading,
+    activeMenu === "dashboard", activeMenu === "audit", activeMenu === "reports", dashboardTab,
     adminSalesBranchFilter, auditSelectedBranch,
     branches.length,
     refreshTick, // manual refresh trigger — incremented by the stale-data retry button
@@ -2342,6 +2350,10 @@ export default function App() {
     
     setIsSyncingOldSales(true);
     try {
+        if (activeMenu === "dashboard") {
+          await ownerDashboard.refresh();
+          return;
+        }
         // The backend now computes daily summaries directly from local sales data,
         // so "syncing" simply re-fetches the up-to-date summaries from the API.
         const dsData = await api.getDailySummaries();
@@ -2715,6 +2727,8 @@ export default function App() {
   }, [currentShiftSales]);
 
   const [dashboardDateRange, setDashboardDateRange] = useState<"today" | "week" | "month" | "all">("today");
+  const dashboardSummaries = ownerDashboard.summaries;
+  const dashboardRecentSales = ownerDashboard.recentSales;
 
   const dashboardStats = useMemo(() => {
     const now = new Date();
@@ -2730,7 +2744,7 @@ export default function App() {
     const startOfMonthStr = formatDateLocal(startOfMonth).replace(/\//g, "-");
 
     // Filter summaries directly
-    const filteredSummaries = dailySummaries.filter((s) => {
+    const filteredSummaries = dashboardSummaries.filter((s) => {
       // Filter by branch if owner selected one
       const branchMatch = !adminSalesBranchFilter || s.branchId === adminSalesBranchFilter;
       if (!branchMatch) return false;
@@ -2763,7 +2777,7 @@ export default function App() {
     );
 
     return { ...stats, branchBreakdown };
-  }, [dailySummaries, adminSalesBranchFilter, dashboardDateRange]);
+  }, [dashboardSummaries, adminSalesBranchFilter, dashboardDateRange]);
 
   // Close the slide-out sidebar with the Escape key (native drawer feel)
   useEffect(() => {
@@ -8853,12 +8867,31 @@ export default function App() {
               </div>
 
                 <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full content-fade">
+                  {dashboardTab !== "inventory" && <div className="mb-4 text-xs" role="status" aria-live="polite">
+                    {ownerDashboard.error ? (
+                      <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">
+                        {ownerDashboard.hasSummary ? "Menampilkan data terakhir yang berhasil dimuat — " : ""}
+                        {ownerDashboard.error}
+                        <button className="ml-3 font-bold underline" onClick={() => void ownerDashboard.refresh()}>Coba lagi</button>
+                      </div>
+                    ) : ownerDashboard.loading ? (
+                      <span className="text-slate-500">Memperbarui ringkasan pendapatan…</span>
+                    ) : ownerDashboard.updatedAt ? (
+                      <span className="text-slate-500">Diperbarui {new Date(ownerDashboard.updatedAt).toLocaleTimeString("id-ID")}</span>
+                    ) : null}
+                    {(ownerDashboard.detailsError || ownerDashboard.stockError) && (
+                      <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800">
+                        {ownerDashboard.detailsError || ownerDashboard.stockError}
+                        <button className="ml-3 font-bold underline" onClick={() => void ownerDashboard.refresh()}>Coba lagi</button>
+                      </div>
+                    )}
+                  </div>}
                   {dashboardTab === "overview" && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-6">
                        {[
-                        { label: "Total Omset", val: `Rp ${dashboardStats.revenue.toLocaleString("id-ID")}`, sub: "Periode terpilih", icon: TrendingUp, tile: "bg-blue-600 shadow-blue-200" },
-                        { label: "Total Transaksi", val: dashboardStats.count.toLocaleString("id-ID"), sub: "transaksi", icon: ShoppingBag, tile: "bg-emerald-500 shadow-emerald-200" },
-                        { label: "Laba Bersih", val: `Rp ${dashboardStats.profit.toLocaleString("id-ID")}`, sub: "estimasi profit", icon: Sparkles, tile: "bg-violet-500 shadow-violet-200" },
+                        { label: "Total Omset", val: ownerDashboard.hasSummary ? `Rp ${dashboardStats.revenue.toLocaleString("id-ID")}` : "—", sub: "Periode terpilih", icon: TrendingUp, tile: "bg-blue-600 shadow-blue-200" },
+                        { label: "Total Transaksi", val: ownerDashboard.hasSummary ? dashboardStats.count.toLocaleString("id-ID") : "—", sub: "transaksi", icon: ShoppingBag, tile: "bg-emerald-500 shadow-emerald-200" },
+                        { label: "Laba Bersih", val: ownerDashboard.hasSummary ? `Rp ${dashboardStats.profit.toLocaleString("id-ID")}` : "—", sub: "estimasi profit", icon: Sparkles, tile: "bg-violet-500 shadow-violet-200" },
                         { label: "Stok Menipis", val: `${shopListAlertCount}`, sub: "produk perlu restock", icon: AlertTriangle, tile: "bg-amber-500 shadow-amber-200" },
                       ].map((card) => (
                         <div
@@ -8897,7 +8930,7 @@ export default function App() {
                               const ds = getLogicalShiftDate(d).replace(/\//g, "-");
                               const label = d.toLocaleDateString("id-ID", { weekday: "short" });
                               let count = 0;
-                              dailySummaries.forEach((s) => {
+                              dashboardSummaries.forEach((s) => {
                                 if (adminSalesBranchFilter && s.branchId !== adminSalesBranchFilter) return;
                                 if ((s.date || "").replace(/\//g, "-") === ds) count += s.count || 0;
                               });
@@ -8994,7 +9027,7 @@ export default function App() {
                           <button onClick={() => setDashboardTab("sales")} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700">Lihat Semua</button>
                         </div>
                         <div className="divide-y divide-slate-100">
-                          {sales.slice(0, 5).map((s) => (
+                          {dashboardRecentSales.slice(0, 5).map((s) => (
                             <div key={s.id} className="flex items-center gap-3 py-3">
                               <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                                 <Zap className="w-4 h-4" />
@@ -9009,8 +9042,8 @@ export default function App() {
                               </div>
                             </div>
                           ))}
-                          {sales.length === 0 && (
-                            <div className="py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Belum ada transaksi</div>
+                          {dashboardRecentSales.length === 0 && (
+                            <div className="py-8 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">{ownerDashboard.hasDetails ? "Belum ada transaksi" : "Memuat transaksi terbaru…"}</div>
                           )}
                         </div>
                       </div>
@@ -9098,21 +9131,7 @@ export default function App() {
                           </h4>
                           <div className="space-y-4 relative z-10">
                             {(() => {
-                              const productSales: Record<string, { name: string, qty: number }> = {};
-                              sales.filter(s => s.status !== "refunded").forEach(s => {
-                                s.items?.forEach((it: any) => {
-                                  const pId = it.productId || it.product?.id || it.id;
-                                  if (!pId) return;
-                                  const pName = it.product?.name || it.name || "Produk";
-                                  if (!productSales[pId]) {
-                                    productSales[pId] = { name: pName, qty: 0 };
-                                  }
-                                  productSales[pId].qty += (it.qty || 0);
-                                });
-                              });
-                              return Object.values(productSales)
-                                .sort((a, b) => b.qty - a.qty)
-                                .slice(0, 5)
+                              return ownerDashboard.topProducts
                                 .map((p, i) => (
                                   <div key={i} className="flex items-center justify-between border-b border-slate-100 pb-2 last:border-0">
                                     <span className="text-[10px] font-medium uppercase flex-1 pr-4 break-words py-0.5 text-slate-600">{p.name}</span>
@@ -9173,7 +9192,7 @@ export default function App() {
                       <div className="flex-1 overflow-auto max-h-[300px]">
                         <table className="w-full border-collapse">
                           <tbody className="divide-y divide-slate-100">
-                            {sales
+                            {dashboardRecentSales
                               .slice(0, 10) // Force UI limit for dashboard consistency
                               .map((s) => {
                                 const capital = (s.items || []).reduce((sum: number, it: any) => {
