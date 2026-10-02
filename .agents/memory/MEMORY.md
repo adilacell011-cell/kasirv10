@@ -15,3 +15,4 @@
 - [Imported artifact registration](imported-artifact-registration.md) — validate existing imported metadata when artifact and workflow lists are empty; do not recreate the apps.
 - [Persetujuan perubahan kode](change-approval.md) — jangan mengubah kode aplikasi tanpa persetujuan pengguna; pelajari dan jelaskan secara baca-saja terlebih dahulu.
 - [Rekap permanen untuk owner](owner-summary-requirement.md) — pendapatan dan bonus tetap tersedia setelah rincian lama dihapus; dashboard membaca rekap ringan.
+- [Akun kasir bersama per cabang](shared-branch-cashier-account.md) — satu akun cabang dipakai dua karyawan bergantian untuk shift siang dan malam.
