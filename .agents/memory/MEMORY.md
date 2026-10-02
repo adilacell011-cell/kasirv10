@@ -13,3 +13,4 @@
 - [AlfathPOS bonus accounting](alfathpos-bonus-accounting.md) — bonus = sum of Commission rows status=earned per BRANCH (single source of truth); User.bonusBalance is vestigial, refund only flips earned→refunded.
 - [AlfathPOS Laporan performance](alfathpos-laporan-perf.md) — daily-summaries endpoint reads DailyIncomeSummary (pre-aggregated on shift close) + today-only Sale scan; never full-table scan.
 - [Imported artifact registration](imported-artifact-registration.md) — validate existing imported metadata when artifact and workflow lists are empty; do not recreate the apps.
+- [Persetujuan perubahan kode](change-approval.md) — jangan mengubah kode aplikasi tanpa persetujuan pengguna; pelajari dan jelaskan secara baca-saja terlebih dahulu.
