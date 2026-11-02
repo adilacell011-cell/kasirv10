@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import { api } from "../services/api";
+import { api, createReadRefresh, isSessionError } from "../services/api";
 
 type DashboardState = {
   key: string;
@@ -28,8 +28,12 @@ export function useOwnerDashboard(
   userId: string | undefined,
   branchId: string,
   onProductsUpdated: (products: any[]) => void,
+  onSessionExpired?: () => void,
 ) {
   const key = `${userId || ""}:${branchId}`;
+  const token = localStorage.getItem("token");
+  const liveContext = useRef({ key, enabled, token });
+  liveContext.current = { key, enabled, token };
   const [state, setState] = useState(() => emptyState(key));
   const refreshRef = useRef<() => Promise<void>>(() => Promise.resolve());
   const refresh = useCallback(() => refreshRef.current(), []);
@@ -41,25 +45,28 @@ export function useOwnerDashboard(
       return;
     }
     let disposed = false;
-    let busy = false;
-    let queued = false;
-    let running: Promise<void> = Promise.resolve();
-    let timer: ReturnType<typeof setTimeout> | undefined;
     const controller = new AbortController();
+    const active = () => !disposed && liveContext.current.enabled &&
+      liveContext.current.key === key && liveContext.current.token === token &&
+      localStorage.getItem("token") === token;
     setState(emptyState(key));
 
     const patch = (values: Partial<DashboardState>) => {
-      if (!disposed) setState((previous) => ({
+      if (active()) setState((previous) => ({
         ...(previous.key === key ? previous : emptyState(key)), ...values,
       }));
     };
-    const load = (): Promise<void> => {
-      if (disposed) return Promise.resolve();
-      if (busy) {
-        queued = true;
-        return running;
+    const failed = (error: unknown, values: Partial<DashboardState>) => {
+      if (!active() || controller.signal.aborted) return;
+      if (isSessionError(error)) {
+        onSessionExpired?.();
+        controller.abort();
+        return;
       }
-      busy = true;
+      patch(values);
+    };
+    const load = (): Promise<void> => {
+      if (!active()) return Promise.resolve();
       patch({ loading: true });
       // The income request commits independently: products/details cannot delay it.
       const summary = api.getOwnerDashboard(branchId, controller.signal)
@@ -71,7 +78,7 @@ export function useOwnerDashboard(
           });
         })
         .catch((error) => {
-          if (!disposed) patch({ error: error.message, loading: false });
+          failed(error, { error: error.message, loading: false });
         });
       const details = api.getOwnerDashboardDetails(branchId, controller.signal)
         .then((data) => {
@@ -84,52 +91,43 @@ export function useOwnerDashboard(
           });
         })
         .catch((error) => {
-          if (!disposed) patch({ detailsError: error.message });
+          failed(error, { detailsError: error.message });
         });
       const products = api.getProducts(controller.signal)
         .then((data) => {
-          if (!disposed) {
+          if (active()) {
             onProductsUpdated(data);
             patch({ stockError: "" });
           }
         })
         .catch((error) => {
-          if (!disposed) patch({ stockError: `Stok belum diperbarui: ${error.message}` });
+          failed(error, { stockError: `Stok belum diperbarui: ${error.message}` });
         });
-      running = Promise.all([summary, details, products]).then(() => {
-        busy = false;
-        if (queued && !disposed) {
-          queued = false;
-          schedule();
-        }
-      });
-      return running;
+      return Promise.all([summary, details, products]).then(() => {});
     };
-    const schedule = () => {
-      if (disposed) return;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => { timer = undefined; void load(); }, 500);
-    };
-    refreshRef.current = load;
-    void load();
-    const socket = io({ auth: { token: localStorage.getItem("token") } });
+    const refresh = createReadRefresh(load, 500);
+    const schedule = refresh.schedule;
+    refreshRef.current = refresh.refresh;
+    schedule();
+    const socket = io({ auth: { token }, autoConnect: false });
     for (const event of [
       "saleProcessed", "saleUpdated", "stockUpdated", "commissionsUpdated",
       "productUpdated", "productDeleted", "connect",
     ]) socket.on(event, schedule);
+    socket.connect();
     const poll = setInterval(schedule, 60_000);
     const onFocus = () => { if (document.visibilityState === "visible") schedule(); };
     document.addEventListener("visibilitychange", onFocus);
     return () => {
       disposed = true;
       controller.abort();
-      if (timer) clearTimeout(timer);
+      refresh.dispose();
       clearInterval(poll);
       document.removeEventListener("visibilitychange", onFocus);
       socket.disconnect();
       refreshRef.current = () => Promise.resolve();
     };
-  }, [enabled, userId, branchId, key, onProductsUpdated]);
+  }, [enabled, userId, branchId, key, token, onProductsUpdated, onSessionExpired]);
 
   return { ...(state.key === key ? state : emptyState(key)), refresh };
 }

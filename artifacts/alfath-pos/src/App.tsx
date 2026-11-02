@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { OpnameStockInput } from "./components/OpnameStockInput";
 // POS Refined Version 2.0
@@ -65,7 +65,7 @@ import {
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
-import { api } from "./services/api";
+import { api, createReadRefresh, isSessionError, ReadError } from "./services/api";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
 import { OperatorBadge } from "./components/OperatorLogo";
@@ -584,6 +584,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const readEpoch = useRef(0);
 
   // Firestore Data States
   const [users, setUsers] = useState<any[]>([]);
@@ -723,9 +724,19 @@ export default function App() {
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [scanIndicator, setScanIndicator] = useState<string | null>(null);
   const [dashboardTab, setDashboardTab] = useState<"overview" | "sales" | "inventory">("overview");
+  const expireReadSession = useCallback(() => {
+    readEpoch.current++;
+    localStorage.removeItem("token");
+    localStorage.removeItem("active_menu");
+    clearSyncedReads();
+    setBranches([]);
+    setProfile(null);
+    setAuthLoading(false);
+    setActiveMenu("pos");
+  }, []);
   const ownerDashboard = useOwnerDashboard(
     !authLoading && profile?.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory",
-    profile?.id, adminSalesBranchFilter, setProducts,
+    profile?.id, adminSalesBranchFilter, setProducts, expireReadSession,
   );
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [paymentSuccessOverlay, setPaymentSuccessOverlay] = useState<{ total: number; saleId: string; itemCount: number } | null>(null);
@@ -791,7 +802,13 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(true);
   // dataLoadFailed = true when loadData() encounters a non-auth server error,
   // so the cashier sees a visible warning instead of silently working with stale data.
-  const [dataLoadFailed, setDataLoadFailed] = useState(false);
+  const [readLoadFailed, setDataLoadFailed] = useState(false);
+  const usesOwnerSync = profile?.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory";
+  const dataLoadFailed = usesOwnerSync
+    ? Boolean(ownerDashboard.error || ownerDashboard.detailsError || ownerDashboard.stockError)
+    : readLoadFailed;
+  const fullRefreshRef = useRef<() => void>(() => {});
+  const previousReadScope = useRef("");
   // Incrementing this forces the data-sync useEffect to re-run (manual refresh).
   const [refreshTick, setRefreshTick] = useState(0);
 
@@ -1357,21 +1374,32 @@ export default function App() {
 
   // --- CORE SYSTEM LISTENERS ---
   useEffect(() => {
+    let disposed = false;
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
     const initAuth = async () => {
       const token = localStorage.getItem("token");
+      const current = () => !disposed && readEpoch.current === epoch && localStorage.getItem("token") === token;
       if (token) {
         try {
-          const userData = await api.getMe();
+          const userData = await api.getMe(controller.signal);
+          if (!current()) return;
           setProfile(userData);
           const [bData, pData, cData] = await Promise.all([
-            api.getBranches(),
-            api.getProducts(),
+            api.getBranches(controller.signal),
+            api.getProducts(controller.signal),
             fetch("/api/config", {
+              signal: controller.signal,
               headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                Authorization: `Bearer ${token}`,
               },
-            }).then((res) => res.json()),
+            }).then(async (res) => {
+              const body = await res.json();
+              if (!res.ok) throw new ReadError("http", res.status, body.error);
+              return body;
+            }),
           ]);
+          if (!current()) return;
           setBranches(
             bData.sort((a: any, b: any) =>
               (a.name || "").localeCompare(b.name || ""),
@@ -1381,14 +1409,19 @@ export default function App() {
           setAppConfig(cData);
           setAuthLoading(false);
         } catch (err) {
-          localStorage.removeItem("token");
-          setAuthLoading(false);
+          if (current()) {
+            if (isSessionError(err)) expireReadSession();
+            else setDataLoadFailed(true);
+          }
+        } finally {
+          if (current()) setAuthLoading(false);
         }
       } else {
         setAuthLoading(false);
       }
     };
     initAuth();
+    return () => { disposed = true; controller.abort(); };
   }, []);
 
   // NOTE: Real-time socket handling is consolidated in the DATA SYNC useEffect below.
@@ -1399,20 +1432,29 @@ export default function App() {
 
   // --- AUTH HANDLERS ---
   const handleLoginSubmit = async (credentials: any) => {
+    const epoch = ++readEpoch.current;
+    clearSyncedReads();
+    setBranches([]);
     setAuthLoading(true);
     try {
       const { user: userData } = await api.login(credentials);
+      if (readEpoch.current !== epoch) return;
+      const token = localStorage.getItem("token");
       setProfile(userData);
       const [bData, pData] = await Promise.all([api.getBranches(), api.getProducts()]);
+      if (readEpoch.current !== epoch || localStorage.getItem("token") !== token) return;
       setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: 'base' })));
       setProducts(pData);
       if (userData.role === "ADMIN") setActiveMenu("dashboard");
       else if (userData.role === "AUDIT") setActiveMenu("audit");
       else if (userData.role === "CASHIER") setActiveMenu("pos");
     } catch (err: any) {
-      alert(err.message);
+      if (readEpoch.current === epoch) {
+        setDataLoadFailed(true);
+        alert(err.message);
+      }
     } finally {
-      setAuthLoading(false);
+      if (readEpoch.current === epoch) setAuthLoading(false);
     }
   };
 
@@ -1420,10 +1462,7 @@ export default function App() {
   // authentication only (handleLoginSubmit) so it can run on a local server.
 
   const handleAppLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("active_menu");
-    setProfile(null);
-    setActiveMenu("pos");
+    expireReadSession();
   };
 
   // Effect to reset UI states when menu changes + simpan posisi halaman agar tidak kembali ke awal saat refresh
@@ -1473,49 +1512,87 @@ export default function App() {
     return alertCount;
   }, [products, branches, stocks, profile, hiddenShoppingBranchIds]);
 
+  function clearSyncedReads() {
+    setProducts([]);
+    setSales([]);
+    setCommissions([]);
+    setShifts([]);
+    setUsers([]);
+    setAdjustments([]);
+    setDailySummaries([]);
+    setShoppingPlans([]);
+    setCommissionsSummary(null);
+    setBranchSummaries({});
+    setDataLoadFailed(true);
+  }
+
+  const effectiveReadBranch = activeMenu === "audit"
+    ? auditSelectedBranch || (profile?.role === "ADMIN" ? "" : "N/A")
+    : profile?.role === "ADMIN" ? adminSalesBranchFilter : profile?.branchId;
+  const readScope = JSON.stringify([profile?.id, profile?.role, profile?.branchId, effectiveReadBranch]);
+  const fullSyncEnabled = Boolean(profile && profile.role !== "PENDING" && !authLoading && !usesOwnerSync);
+  const syncKey = `${readScope}:${fullSyncEnabled}`;
+  const syncToken = localStorage.getItem("token");
+  const liveSyncKey = useRef(syncKey);
+  liveSyncKey.current = syncKey;
+
   useEffect(() => {
-    if (!profile || profile.role === "PENDING" || (profile.role === "ADMIN" && authLoading)) return;
+    if (!fullSyncEnabled || !syncToken) return;
     // Owner income and recent sales use bounded, independent read-only requests.
     // Preserve the existing full synchronization for POS and the other menus.
-    if (profile.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory") return;
-
     const isAdmin = profile.role === "ADMIN";
-    
-    // Determine target branch for data sync
-    let effectiveBranchId = profile.branchId;
-    if (activeMenu === "audit") {
-      effectiveBranchId = auditSelectedBranch || (isAdmin ? "" : "N/A");
-    } else if (isAdmin) {
-      effectiveBranchId = adminSalesBranchFilter;
+    const effectiveBranchId = effectiveReadBranch;
+    let disposed = false;
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
+    const current = () => !disposed && !controller.signal.aborted &&
+      liveSyncKey.current === syncKey && readEpoch.current === epoch &&
+      localStorage.getItem("token") === syncToken;
+    if (previousReadScope.current !== readScope) {
+      clearSyncedReads();
+      previousReadScope.current = readScope;
     }
 
     const loadData = async () => {
+      if (!current()) return;
+      let failed = false;
+      const read = async (request: () => Promise<any>, apply: (data: any[]) => void) => {
+        if (!current()) return undefined;
+        try {
+          const data = await request();
+          if (!Array.isArray(data)) throw new ReadError("invalid-response");
+          if (!current()) return undefined;
+          apply(data);
+          return data;
+        } catch (error) {
+          if (!current()) return undefined;
+          if (isSessionError(error)) {
+            expireReadSession();
+            controller.abort();
+          } else {
+            failed = true;
+            console.error("Data read failed:", error);
+          }
+          return undefined;
+        }
+      };
       try {
         // Memuat sebagian secara parallel, sebagian berurutan agar tidak overload koneksi
-        const pData = await api.getProducts().catch(e => { console.error("Products Load Error:", e); return products; });
-        const sData = await api.getSales({ branchId: effectiveBranchId }).catch(e => { console.error("Sales Load Error:", e); return sales; });
-        const cData = await api.getCommissions({ branchId: effectiveBranchId }).catch(e => { console.error("Commissions Load Error:", e); return commissions; });
+        await read(() => api.getProducts(controller.signal), setProducts);
+        await read(() => api.getSales({ branchId: effectiveBranchId }, controller.signal), setSales);
+        await read(() => api.getCommissions({ branchId: effectiveBranchId }, controller.signal), setCommissions);
         
-        const [shData, uData, aData, dsData, spData] = await Promise.all([
-          api.getShifts({ branchId: effectiveBranchId }).catch(e => { console.error("Shifts Load Error:", e); return shifts; }),
-          api.getUsers().catch(e => { console.error("Users Load Error:", e); return users; }),
-          api.getAdjustments().catch(e => { console.error("Adjustments Load Error:", e); return adjustments; }),
-          api.getDailySummaries().catch(e => { console.error("Daily Summaries Load Error:", e); return dailySummaries; }),
-          api.getShoppingPlans().catch(e => { console.error("Shopping Plans Load Error:", e); return shoppingPlans; })
+        const [shData] = await Promise.all([
+          read(() => api.getShifts({ branchId: effectiveBranchId }, controller.signal), setShifts),
+          read(() => api.getUsers(controller.signal), setUsers),
+          read(() => api.getAdjustments(controller.signal), setAdjustments),
+          read(() => api.getDailySummaries(controller.signal), setDailySummaries),
+          read(() => api.getShoppingPlans(controller.signal), setShoppingPlans),
         ]);
-        
-        setProducts(pData);
-        setSales(sData);
-        setCommissions(cData);
-        setShifts(shData);
-        setUsers(uData);
-        setAdjustments(aData);
-        setDailySummaries(dsData || []);
-        setShoppingPlans(spData || []);
-        setDataLoadFailed(false); // Data loaded successfully — clear any stale warning.
+        if (!current()) return;
         
         // --- RESTORE OPEN SHIFT FROM DATABASE ---
-        if (profile?.branchId) {
+        if (shData && profile?.branchId) {
           const openShift = shData.find((s: any) => s.status === "open" && s.branchId === profile?.branchId);
           
           if (openShift) {
@@ -1553,21 +1630,17 @@ export default function App() {
         }
         
         // Also sync commission summaries
-        if (isAdmin) {
-          syncCommissionsSummary(); // Get global summary for owner
-        } else {
-          syncCommissionsSummary(profile?.branchId || undefined); // Get branch summary for cashier
-        }
+        const summaryOk = await syncCommissionsSummary(isAdmin ? undefined : profile?.branchId || undefined, {
+          signal: controller.signal, isCurrent: current,
+        });
+        if (current()) setDataLoadFailed(failed || !summaryOk);
       } catch (err: any) {
+        if (!current()) return;
         console.error("General data load error:", err);
         // If any request returns 401/403 (token expired or revoked), force logout
         // so the user is immediately sent to the login page instead of a stale/blank UI.
-        const msg = err?.message || "";
-        if (msg.includes("401") || msg.includes("403") || msg.toLowerCase().includes("unauthorized")) {
-          console.warn("Session expired — forcing logout.");
-          localStorage.removeItem("token");
-          setProfile(null);
-          setActiveMenu("pos");
+        if (isSessionError(err)) {
+          expireReadSession();
         } else {
           // Non-auth error: server may be restarting or temporarily unreachable.
           // Mark data as stale so the cashier sees a visible warning and can retry.
@@ -1576,38 +1649,57 @@ export default function App() {
       }
     };
 
-    loadData();
+    const refresh = createReadRefresh(loadData);
+    fullRefreshRef.current = refresh.schedule;
+    refresh.schedule();
 
     // Single consolidated socket connection per session.
     // All real-time events trigger a full loadData() refresh from the DB.
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    const socket = io({ auth: { token } });
-    socket.on("saleProcessed", () => loadData());
-    socket.on("productUpdated", () => loadData());
-    socket.on("productDeleted", () => loadData());
-    socket.on("stockUpdated", () => loadData());
-    socket.on("commissionsUpdated", () => loadData());
+    const socket = io({ auth: { token: syncToken }, autoConnect: false });
+    socket.on("saleProcessed", refresh.schedule);
+    socket.on("saleUpdated", refresh.schedule);
+    socket.on("productUpdated", refresh.schedule);
+    socket.on("productDeleted", refresh.schedule);
+    socket.on("stockUpdated", refresh.schedule);
+    socket.on("commissionsUpdated", refresh.schedule);
     // On reconnect, always do a full refresh so stale data from a network gap is corrected.
-    socket.on("connect", () => loadData());
+    socket.on("connect", refresh.schedule);
+    socket.connect();
+    const poll = setInterval(() => { if (!socket.connected) refresh.schedule(); }, 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") refresh.schedule(); };
+    window.addEventListener("online", refresh.schedule);
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
+      disposed = true;
+      refresh.dispose();
+      controller.abort();
+      clearInterval(poll);
+      window.removeEventListener("online", refresh.schedule);
+      document.removeEventListener("visibilitychange", onVisible);
+      fullRefreshRef.current = () => {};
       socket.disconnect();
     };
-  }, [
-    profile?.id, profile?.role, profile?.branchId, authLoading,
-    activeMenu === "dashboard", activeMenu === "audit", activeMenu === "reports", dashboardTab,
-    adminSalesBranchFilter, auditSelectedBranch,
-    branches.length,
-    refreshTick, // manual refresh trigger — incremented by the stale-data retry button
-  ]);
+  }, [syncKey, syncToken]);
+
+  useEffect(() => { fullRefreshRef.current(); }, [refreshTick]);
 
 
 
 
-  const syncCommissionsSummary = async (targetBranchId?: string) => {
+  const syncCommissionsSummary = async (
+    targetBranchId?: string,
+    options?: { signal?: AbortSignal; isCurrent?: () => boolean },
+  ) => {
+    const epoch = readEpoch.current;
+    const token = localStorage.getItem("token");
+    const context = liveSyncKey.current;
+    const current = () => readEpoch.current === epoch && localStorage.getItem("token") === token &&
+      liveSyncKey.current === context && !options?.signal?.aborted && (options?.isCurrent?.() ?? true);
     try {
-      const summary = await api.getCommissionSummary(targetBranchId);
+      const summary = await api.getCommissionSummary(targetBranchId, options?.signal);
+      if (!current()) return false;
+      if (!summary || typeof summary !== "object" || !("total" in summary)) throw new ReadError("invalid-response");
       
       // Map server response { total, byBranch } to what the app expects
       const formattedSummary = {
@@ -1625,8 +1717,13 @@ export default function App() {
         });
         setBranchSummaries(newBranchSummaries);
       }
+      return true;
     } catch (err) {
+      if (!current()) return false;
+      if (isSessionError(err)) expireReadSession();
+      else setDataLoadFailed(true);
       console.error("Sync Commissions Summary Error:", err);
+      return false;
     }
   };
 
@@ -3283,7 +3380,10 @@ export default function App() {
                 </div>
               )}
               <button
-                onClick={() => setRefreshTick(t => t + 1)}
+                onClick={() => {
+                  if (usesOwnerSync) void ownerDashboard.refresh();
+                  else setRefreshTick(t => t + 1);
+                }}
                 title={dataLoadFailed ? "Data gagal dimuat — klik untuk refresh" : isOnline ? "Sistem online" : "Koneksi bermasalah — klik untuk coba lagi"}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl shrink-0 transition-all active:scale-95 cursor-pointer ${
                   !isOnline
@@ -3300,8 +3400,8 @@ export default function App() {
                     ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
                     : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                 }`} />
-                <span className="text-[7px] font-black uppercase tracking-widest hidden xs:block text-slate-600">
-                  {!isOnline ? "Offline" : dataLoadFailed ? "Data Lama ↺" : "Online"}
+                <span className="text-[7px] font-black uppercase tracking-widest text-slate-600">
+                  {!isOnline ? (dataLoadFailed ? "Offline · Data Lama" : "Offline") : dataLoadFailed ? "Data Lama ↺" : "Online"}
                 </span>
               </button>
               <button

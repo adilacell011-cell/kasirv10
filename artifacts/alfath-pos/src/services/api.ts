@@ -8,6 +8,89 @@ const getHeaders = () => {
   };
 };
 
+export class ReadError extends Error {
+  constructor(
+    public readonly kind: "http" | "network" | "invalid-response",
+    public readonly status?: number,
+    public readonly serverError?: string,
+  ) {
+    super(kind === "network" ? "Koneksi gagal: Failed to fetch" :
+      kind === "invalid-response" ? "Format respons tidak valid" : `Gagal memuat data (HTTP ${status})`);
+    this.name = "ReadError";
+  }
+}
+
+export const isSessionError = (error: unknown) => error instanceof ReadError &&
+  (error.status === 401 || (error.status === 403 && error.serverError === "Invalid or expired token"));
+
+async function readJson(path: string, signal?: AbortSignal): Promise<any> {
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, { headers: getHeaders(), signal });
+  } catch (error) {
+    if (signal?.aborted || (error as Error)?.name === "AbortError") throw error;
+    throw new ReadError("network");
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new ReadError("http", response.status, typeof body.error === "string" ? body.error : undefined);
+  }
+  try {
+    return await response.json();
+  } catch (error) {
+    if (signal?.aborted || (error as Error)?.name === "AbortError") throw error;
+    throw new ReadError("invalid-response", response.status);
+  }
+}
+
+// One read cycle at a time. Events arriving DURING a read require a trailing
+// cycle, so reconnects cannot lose changes made after the HTTP snapshot.
+export function createReadRefresh(run: () => Promise<void>, delay = 150) {
+  let disposed = false;
+  let busy = false;
+  let queued = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let waiting: { resolve: () => void; reject: (error: unknown) => void }[] = [];
+  const schedule = () => {
+    if (disposed) return;
+    if (busy) { queued = true; return; }
+    if (timer) return;
+    timer = setTimeout(async () => {
+      timer = undefined;
+      if (disposed) return;
+      busy = true;
+      const batch = waiting;
+      waiting = [];
+      try {
+        await run();
+        batch.forEach(({ resolve }) => resolve());
+      } catch (error) {
+        batch.forEach(({ reject }) => reject(error));
+        if (!batch.length) console.error("Read refresh error:", error);
+      } finally {
+        busy = false;
+        if (!disposed && (queued || waiting.length)) {
+          queued = false;
+          schedule();
+        }
+      }
+    }, delay);
+  };
+  return {
+    schedule,
+    refresh: () => disposed ? Promise.resolve() : new Promise<void>((resolve, reject) => {
+      waiting.push({ resolve, reject });
+      schedule();
+    }),
+    dispose: () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      waiting.forEach(({ resolve }) => resolve());
+      waiting = [];
+    },
+  };
+}
+
 export const api = {
   async login(credentials: any) {
     let res;
@@ -56,22 +139,14 @@ export const api = {
     return result;
   },
 
-  async getMe() {
-    const res = await fetch(`${BASE_URL}/auth/me`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Unauthorized: ${res.status} ${txt}`); }
-    const data = await res.json();
+  async getMe(signal?: AbortSignal) {
+    const data = await readJson("/auth/me", signal);
     if (data) data.uid = data.id;
     return data;
   },
 
   async getProducts(signal?: AbortSignal) {
-    const res = await fetch(`${BASE_URL}/products`, {
-      headers: getHeaders(), signal,
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch products: ${res.status} ${txt}`); }
-    return res.json();
+    return readJson("/products", signal);
   },
 
   async createProduct(data: any) {
@@ -116,12 +191,8 @@ export const api = {
     return res.json();
   },
 
-  async getBranches() {
-    const res = await fetch(`${BASE_URL}/branches`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch branches: ${res.status} ${txt}`); }
-    return res.json();
+  async getBranches(signal?: AbortSignal) {
+    return readJson("/branches", signal);
   },
 
   async createSale(data: any, idempotencyKey?: string) {
@@ -135,31 +206,19 @@ export const api = {
     return res.json();
   },
 
-  async getSales(params: any = {}) {
+  async getSales(params: any = {}, signal?: AbortSignal) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE_URL}/transactions?${query}`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch sales: ${res.status} ${txt}`); }
-    return res.json();
+    return readJson(`/transactions?${query}`, signal);
   },
 
-  async getCommissions(params: any = {}) {
+  async getCommissions(params: any = {}, signal?: AbortSignal) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE_URL}/incentives?${query}`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch commissions: ${res.status} ${txt}`); }
-    return res.json();
+    return readJson(`/incentives?${query}`, signal);
   },
 
-  async getShifts(params: any = {}) {
+  async getShifts(params: any = {}, signal?: AbortSignal) {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE_URL}/shifts?${query}`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch shifts: ${res.status} ${txt}`); }
-    return res.json();
+    return readJson(`/shifts?${query}`, signal);
   },
 
   async openShift(data: any) {
@@ -182,12 +241,8 @@ export const api = {
     return res.json();
   },
 
-  async getUsers() {
-    const res = await fetch(`${BASE_URL}/users`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch users: ${res.status} ${txt}`); }
-    const data = await res.json();
+  async getUsers(signal?: AbortSignal) {
+    const data = await readJson("/users", signal);
     return data.map((u: any) => ({ ...u, uid: u.id }));
   },
 
@@ -213,8 +268,7 @@ export const api = {
   },
 
   async getHealth() {
-    const res = await fetch(`${BASE_URL}/health`);
-    return res.json();
+    return readJson("/health");
   },
   
   async refundSale(id: string) {
@@ -239,22 +293,14 @@ export const api = {
     return res.json();
   },
 
-  async getCommissionSummary(branchId?: string) {
+  async getCommissionSummary(branchId?: string, signal?: AbortSignal) {
     const params = new URLSearchParams();
     if (branchId) params.append("branchId", branchId);
-    const res = await fetch(`${BASE_URL}/incentives/summary?${params.toString()}`, {
-        headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch commission summary: ${res.status} ${txt}`); }
-    return res.json();
+    return readJson(`/incentives/summary?${params.toString()}`, signal);
   },
 
-  async getAdjustments() {
-    const res = await fetch(`${BASE_URL}/adjustments`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch adjustments: ${res.status} ${txt}`); }
-    return res.json();
+  async getAdjustments(signal?: AbortSignal) {
+    return readJson("/adjustments", signal);
   },
 
   async cleanupAdjustments() {
@@ -266,40 +312,24 @@ export const api = {
     return res.json();
   },
 
-  async getDailySummaries() {
-    const res = await fetch(`${BASE_URL}/daily-summaries`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch daily summaries: ${res.status} ${txt}`); }
-    return res.json();
+  async getDailySummaries(signal?: AbortSignal) {
+    return readJson("/daily-summaries", signal);
   },
 
   async getOwnerDashboard(branchId = "", signal?: AbortSignal) {
     const params = new URLSearchParams();
     if (branchId) params.set("branchId", branchId);
-    const res = await fetch(`${BASE_URL}/owner-dashboard?${params}`, {
-      headers: getHeaders(), signal,
-    });
-    if (!res.ok) throw new Error(`Gagal memuat ringkasan owner (${res.status}).`);
-    return res.json();
+    return readJson(`/owner-dashboard?${params}`, signal);
   },
 
   async getOwnerDashboardDetails(branchId = "", signal?: AbortSignal) {
     const params = new URLSearchParams();
     if (branchId) params.set("branchId", branchId);
-    const res = await fetch(`${BASE_URL}/owner-dashboard/details?${params}`, {
-      headers: getHeaders(), signal,
-    });
-    if (!res.ok) throw new Error(`Gagal memuat rincian dashboard (${res.status}).`);
-    return res.json();
+    return readJson(`/owner-dashboard/details?${params}`, signal);
   },
 
-  async getShoppingPlans() {
-    const res = await fetch(`${BASE_URL}/shopping-plans`, {
-      headers: getHeaders(),
-    });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to fetch shopping plans: ${res.status} ${txt}`); }
-    return res.json();
+  async getShoppingPlans(signal?: AbortSignal) {
+    return readJson("/shopping-plans", signal);
   },
 
   async createShoppingPlan(data: any) {
