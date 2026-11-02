@@ -1231,8 +1231,11 @@ export default function App() {
     if (prodCategory === "Parfum") {
       return PARFUM_TYPES;
     }
-    if (prodCategory === "Handphone" && prodBrand && PRODUCT_HIERARCHY["Handphone"].brands[prodBrand]) {
-      return PRODUCT_HIERARCHY["Handphone"].brands[prodBrand];
+    if (prodCategory === "Handphone" && prodBrand) {
+      const brands: Readonly<Record<string, string[] | undefined>> =
+        PRODUCT_HIERARCHY["Handphone"].brands;
+      const models = brands[prodBrand];
+      if (models) return models;
     }
     return [];
   }, [products, prodCategory, prodBrand]);
