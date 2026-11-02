@@ -8,3 +8,11 @@ Alur kasir sekarang: satu akun cabang dipakai oleh dua karyawan untuk shift sian
 **Why:** Pengguna menjelaskan bahwa ini adalah alur operasional saat ini.
 
 **How to apply:** Jangan mengasumsikan satu akun untuk setiap karyawan, mengubah login menjadi akun terpisah, atau menggunakan ID akun sebagai pembeda karyawan/shift. Pertahankan alur akun bersama dan bedakan sesi shift melalui catatan shift, cabang, serta waktu buka/tutup. Perubahan kode tetap memerlukan persetujuan pengguna.
+
+## Pembukaan shift tanpa modal awal
+
+Pembukaan shift TIDAK menggunakan modal awal. Kasir tidak perlu memasukkan uang modal saat membuka shift. Jangan mencari atau mengasumsikan adanya input modal awal, dan jangan menambahkan fitur modal awal.
+
+**Why:** Pengguna menegaskan bahwa ini adalah aturan aplikasi kasir yang sebenarnya setelah skenario pengujian sebelumnya keliru mengasumsikan input modal awal.
+
+**How to apply:** Ikuti mekanisme pembukaan shift yang sudah diterapkan pada aplikasi saat ini. Ekspektasi pengujian harus mengikuti aturan tanpa modal awal, bukan mengubah aplikasi agar memenuhi asumsi pengujian.
