@@ -34,10 +34,16 @@ inline own-branch checks inside handlers. The owner's authoritative role matrix:
 **Why:** a prior review flagged the whole mutating surface as broken access control;
 the owner then gave the exact matrix above, so it is now enforced rather than permissive.
 
-**Deliberately left open to ALL authenticated roles:** `GET /api/users` — the frontend
-loads it at startup for every role to map cashier IDs→names; it already strips the
-password hash. Locking it to ADMIN breaks cashier/audit screens. Other broad GETs were
-left readable for the same reason.
+Cashier user-name lookup must remain available, but only for the cashier's own
+branch roster. ADMIN/AUDIT retain their existing read permissions.
+
+**Why:** cashier data sync loads the roster to resolve names; denying the endpoint
+breaks compatibility, while the owner explicitly forbids cross-branch cashier reads.
+
+**How to apply:** derive branch scope from verified identity, never request parameters.
+An unassigned cashier must not fall back to global or unassigned-user results.
+Products use the existing branch-visibility rule; do not require an existing stock
+row, because visible zero-stock products must remain available for stock intake.
 
 ## Never leak password hashes through nested includes
 Read endpoints that do Prisma `include: { cashier: true }` (`GET /api/transactions`,

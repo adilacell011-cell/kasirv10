@@ -1220,90 +1220,6 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
   }
 });
 
-app.get("/api/daily-summaries", authenticateToken, async (req, res) => {
-  try {
-    const requester = (req as any).user;
-    const cashierBranchFilter = requester.role === "CASHIER"
-      ? { branchId: typeof requester.branchId === "string" ? requester.branchId : "" }
-      : {};
-
-    // Strategi efisien jangka panjang:
-    //  - DailyIncomeSummary (1 baris/hari/cabang) dibuat otomatis saat tutup shift.
-    //    Ini menjadi sumber data historis — tidak perlu scan tabel Sale sama sekali.
-    //  - Hari ini (shift sedang berjalan): baca langsung dari Sale, tapi hanya hari ini
-    //    sehingga query tetap kecil meskipun database sudah besar.
-    //  - Hasilnya: laporan selalu ringan seberapa pun banyaknya transaksi historis.
-
-    // 1. Semua summary historis (tabel kecil, selalu cepat)
-    const archivedSummaries = await prisma.dailyIncomeSummary.findMany({
-      where: cashierBranchFilter,
-      orderBy: { date: "asc" }
-    });
-
-    // 2. Hanya transaksi HARI INI secara live (shift masih terbuka belum punya summary)
-    const todayStr = getLogicalShiftDate(new Date());
-    const [ty, tm, td] = todayStr.split("-").map(Number);
-    const todayStart = new Date(Date.UTC(ty, tm - 1, td - 1, 23, 0, 0, 0));
-    const todayEnd   = new Date(Date.UTC(ty, tm - 1, td,     23, 0, 0, 0));
-
-    const todaySales = await prisma.sale.findMany({
-      where: { ...cashierBranchFilter, status: "success", createdAt: { gte: todayStart, lt: todayEnd } }
-    });
-
-    // 3. Agregasi hari ini per cabang
-    const todayLive: Record<string, {
-      date: string; branchId: string;
-      revenue: number; profit: number; totalCommission: number; count: number;
-    }> = {};
-    for (const sale of todaySales) {
-      const key = sale.branchId;
-      if (!todayLive[key]) {
-        todayLive[key] = { date: todayStr, branchId: sale.branchId, revenue: 0, profit: 0, totalCommission: 0, count: 0 };
-      }
-      todayLive[key].revenue         += Number(sale.total);
-      todayLive[key].profit          += Number(sale.totalProfit);
-      todayLive[key].totalCommission += Number(sale.totalCommission);
-      todayLive[key].count           += 1;
-    }
-
-    // 4. Gabungkan: summary historis untuk hari lalu, data live selalu menggantikan entry hari ini
-    const mergedMap: Record<string, any> = {};
-
-    for (const s of archivedSummaries) {
-      const key = `${s.branchId}_${s.date}`;
-      mergedMap[key] = {
-        id: s.id,
-        date: s.date,
-        branchId: s.branchId,
-        revenue: Number(s.revenue),
-        profit: Number(s.totalProfit),
-        totalCommission: Number(s.totalCommission),
-        count: s.salesCount
-      };
-    }
-
-    // Data live hari ini menggantikan (bukan menjumlahkan) entry archived untuk hari ini
-    for (const [branchId, s] of Object.entries(todayLive)) {
-      const key = `${branchId}_${todayStr}`;
-      mergedMap[key] = {
-        id: `live_${key}`,
-        date: s.date,
-        branchId: s.branchId,
-        revenue: s.revenue,
-        profit: s.profit,
-        totalCommission: s.totalCommission,
-        count: s.count
-      };
-    }
-
-    const mergedList = Object.values(mergedMap).sort((a: any, b: any) => a.date.localeCompare(b.date));
-    res.json(mergedList);
-  } catch (error: any) {
-    console.error("Get Daily Summaries Error:", error);
-    res.status(500).json({ error: "Gagal mengambil ringkasan harian: " + error.message });
-  }
-});
-
 function getLogicalShiftDate(d: Date = new Date()) {
   const wibTime = d.getTime() + (7 * 60 * 60 * 1000);
   const wibDate = new Date(wibTime);
@@ -1319,8 +1235,7 @@ function getLogicalShiftDate(d: Date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-registerBranchReadRoutes(app, prisma, authenticateToken);
-registerBranchReadRoutes(app, prisma, authenticateToken);
+registerBranchReadRoutes(app, prisma, authenticateToken, getLogicalShiftDate);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
 
 async function autoArchiveOldSales() {

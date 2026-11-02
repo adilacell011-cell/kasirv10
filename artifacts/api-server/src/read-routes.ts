@@ -34,7 +34,17 @@ export function registerBranchReadRoutes(
             : { where: { branchId: cashierBranchId } },
         },
       });
-      const formattedProducts = products.map((product: any) => {
+      // Match the existing POS visibility rule, but enforce it before sending data.
+      const visibleProducts = cashierBranchId === undefined
+        ? products
+        : products.filter((product) => {
+          const visibleIds = product.visibleBranchIds || "*";
+          return Boolean(cashierBranchId) && (
+            visibleIds === "*" ||
+            visibleIds.split(",").map((id) => id.trim()).includes(cashierBranchId)
+          );
+        });
+      const formattedProducts = visibleProducts.map((product: any) => {
         const base: any = {
           ...product,
           sellingPrice: Number(product.sellingPrice),
@@ -51,6 +61,9 @@ export function registerBranchReadRoutes(
         } else {
           delete base.buyingPrice;
           delete base.purchasePrice;
+        }
+        if (cashierBranchId !== undefined && base.visibleBranchIds && base.visibleBranchIds !== "*") {
+          base.visibleBranchIds = cashierBranchId;
         }
         return base;
       });
@@ -145,9 +158,9 @@ export function registerBranchReadRoutes(
         todayLive[key].count += 1;
       }
 
-      const merged = new Map<string, any>();
+      const merged: Record<string, any> = {};
       for (const summary of archivedSummaries as any[]) {
-        merged.set(`${summary.branchId}_${summary.date}`, {
+        merged[`${summary.branchId}_${summary.date}`] = {
           id: summary.id,
           date: summary.date,
           branchId: summary.branchId,
@@ -155,10 +168,10 @@ export function registerBranchReadRoutes(
           profit: Number(summary.totalProfit),
           totalCommission: Number(summary.totalCommission),
           count: summary.salesCount,
-        });
+        };
       }
       for (const [branchId, summary] of Object.entries(todayLive)) {
-        merged.set(`${branchId}_${today}`, {
+        merged[`${branchId}_${today}`] = {
           id: `live_${branchId}_${today}`,
           date: summary.date,
           branchId: summary.branchId,
@@ -166,10 +179,10 @@ export function registerBranchReadRoutes(
           profit: summary.profit,
           totalCommission: summary.totalCommission,
           count: summary.count,
-        });
+        };
       }
 
-      res.json([...merged.values()].sort((a, b) => a.date.localeCompare(b.date)));
+      res.json(Object.values(merged).sort((a, b) => a.date.localeCompare(b.date)));
     } catch (error: any) {
       console.error("Get Daily Summaries Error:", error);
       res.status(500).json({
