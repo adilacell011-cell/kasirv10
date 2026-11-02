@@ -13,9 +13,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
   **How to apply:** keep `COPY . .` + `pnpm install` in the same image you run from; don't "optimize" into a copy-only runtime stage without testing Prisma resolution.
 
-- **Tables are created automatically via `prisma db push --skip-generate` in the entrypoint**, not migrations.
-  **Why:** owner wants a zero-step local install; there are no committed Prisma migrations. `db push` makes the empty DB match `schema.prisma` on first boot; app startup seed then creates default users/branch.
-  **How to apply:** for production schema evolution, switch to committed migrations + `prisma migrate deploy` to avoid destructive drift. For local single-tenant installs, `db push` is acceptable.
+- **The earlier zero-step database initialization assumption is superseded.**
+  **Why:** the owner explicitly required database changes and historical maintenance to require separate approval, rather than occur as a side effect of booting an API.
+  **How to apply:** do not reuse old deployment advice promising automatic database initialization. Follow the current startup safety contract documented in `artifacts/api-server/STARTUP-SAFETY.md`; first installation now requires a separately approved procedure.
 
 - **Web is nginx serving the Vite static build + proxying `/api` and `/socket.io` to `api:8080`.**
   **Why:** frontend uses same-origin `BASE_URL='/api'` and `io({auth:{token}})` (default path `/socket.io`). nginx must preserve those paths (`proxy_pass http://api:8080;` with NO path segment) and send WebSocket upgrade headers on `/socket.io/`.

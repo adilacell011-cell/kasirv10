@@ -1,7 +1,7 @@
 - [Multi-artifact socket.io routing](multi-artifact-socketio.md) — same-origin `io()` needs `/socket.io` added to the api artifact.toml `paths`, else the proxy sends it to the frontend.
 - [Prisma dual-schema pitfall](prisma-dual-schema.md) — Prisma prefers `./schema.prisma` over `./prisma/schema.prisma`; a stray root copy silently overrides edits.
 - [AlfathPOS authz & realtime model](alfathpos-authz-model.md) — ADMIN/AUDIT/CASHIER role matrix, own-branch scoping from verified JWT, socket rooms, no-oversell stock guard.
-- [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — single-stage api image, entrypoint db push auto-creates tables, nginx proxies /api + /socket.io.
+- [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — pnpm runtime-resolution and backup tradeoffs; the previous zero-step database initialization assumption is superseded.
 - [AlfathPOS frontend UI conventions](alfath-pos-ui.md) — fragile dark-mode palette, ALL browser dialogs replaced by in-app modals/toasts, opt-in .mobile-cards, ImageMagick not sharp.
 - [AlfathPOS dark-mode styling](alfathpos-dark-mode-styling.md) — restyle dark panels with the app standard LIGHT utility classes; dark-mode CSS overrides only match exact class names (opacity/hover variants need explicit dark:).
 - [AlfathPOS app-wide theme remap](alfathpos-theme-remap.md) — re-skin whole app via @theme ramp remaps (blue/indigo/slate) in index.css; inline recharts hex, .dark hardcoded hex & the login PNG icon bypass it; never put `*/` in an @theme comment.

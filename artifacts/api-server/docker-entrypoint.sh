@@ -3,8 +3,5 @@ set -e
 
 cd /app/artifacts/api-server
 
-echo "[entrypoint] Applying database schema (creates tables automatically if missing)..."
-pnpm exec prisma db push --skip-generate
-
-echo "[entrypoint] Starting API server..."
+echo "[entrypoint] Starting API with read-only database compatibility checks (no schema changes)..."
 exec node --enable-source-maps dist/index.mjs

@@ -13,15 +13,15 @@ An Indonesian point-of-sale and stock/transaction management system for a multi-
   - `artifacts/api-server: API Server` — Express backend (served at `/api` and `/socket.io`)
 - `pnpm --filter @workspace/api-server run db:push` — push Prisma schema to the database (dev only)
 - `pnpm --filter @workspace/api-server run db:studio` — open Prisma Studio
-- Required env: `DATABASE_URL` (Postgres). Optional: `JWT_SECRET` — if unset, the server reads/creates a persisted random secret in `artifacts/api-server/.jwt-secret` (gitignored), so tokens survive restarts. There is no hardcoded fallback secret.
-- Seeded login credentials (created on server startup): `admin` / `admin123` (ADMIN), `cashier` / `cashier123` (CASHIER). Default branch: "Cabang Utama".
+- Required env: `DATABASE_URL` and `DB_RUNTIME_ENV`. Development/test must match the independent `PGHOST`/`PGDATABASE`/`PGPORT` target; production additionally requires explicit `DB_EXPECTED_HOST`, `DB_EXPECTED_NAME`, `DB_EXPECTED_PORT` and matching `NODE_ENV`. See `artifacts/api-server/STARTUP-SAFETY.md`. Optional: `JWT_SECRET` — if unset, the server reads/creates its persisted random secret as before.
+- Startup does not seed accounts, backfill summaries, archive data, or modify schema. Legacy default accounts/branch can only be created through the explicitly approved administrative procedure; never expose default credentials publicly.
 
 ### Local server (Docker Compose)
 
 - For self-hosting on a local server: `cp .env.example .env` (edit passwords/secret), then `docker compose up -d --build`. App opens at `http://<server-ip>:8080`.
 - Three services in `docker-compose.yml`: `db` (postgres:16-alpine + `pgdata` volume + healthcheck), `api` (Express/Prisma, `artifacts/api-server/Dockerfile`), `web` (nginx serving the Vite static build + reverse-proxying `/api` and `/socket.io` to `api:8080`, `artifacts/alfath-pos/Dockerfile` + `nginx.conf`).
-- DB schema/tables are created automatically on first boot: the api entrypoint (`artifacts/api-server/docker-entrypoint.sh`) runs `prisma db push --skip-generate` before starting, then the app's startup seed creates the default users/branch. Data persists in the `pgdata` volume across rebuilds.
-- Old/dev data does NOT transfer to a Docker install — it starts from an empty DB (only the seed). To carry data over, dump/restore Postgres manually.
+- API boot only connects and checks target/schema using SELECT; Docker no longer runs `prisma db push`. Existing Compose configuration must be supplemented with the explicit expected-target settings before using the updated API. Empty databases require separately approved schema provisioning and account initialization; startup refuses incompatible schema instead of repairing it. Data persists in `pgdata`.
+- Old/dev data does NOT transfer to a Docker install. Carrying data over requires a separately approved dump/restore procedure; do not run it as part of normal startup.
 - Automated backups: a `backup` service (`docker/db-backup.sh`) pg_dumps on an interval (`BACKUP_INTERVAL_SECONDS`, default 6h) to `./backups` on the host (gitignored), rotating files older than `BACKUP_KEEP_DAYS`. Runs as root (`user: "0:0"`) so it can always write the bind mount. Restore: `gunzip -c backups/<file>.sql.gz | docker compose exec -T db psql -U alfath -d alfath`. NOTE: backups live on the same host — copy them off-host for real disaster recovery.
 
 ## Stack

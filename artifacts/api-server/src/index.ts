@@ -13,8 +13,19 @@ import { Server } from "socket.io";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { applyOpname, OpnameConflict } from "./opname";
+import { validateDatabaseTarget } from "./database-target";
+import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
+import { getLogicalShiftDate } from "./business-date";
 
+// Validate before constructing Prisma. Never log connection-string errors.
+let databaseTarget: ReturnType<typeof validateDatabaseTarget>;
+try { databaseTarget = validateDatabaseTarget(process.env); }
+catch {
+  console.error("API startup refused: invalid database target/environment configuration. See STARTUP-SAFETY.md.");
+  process.exit(1);
+}
 const prisma = new PrismaClient();
+const readiness = createReadiness(() => inspectDatabase(prisma, databaseTarget));
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -102,9 +113,9 @@ app.use(helmet({
 app.use(morgan("dev"));
 app.use(express.json());
 
-app.get("/api/healthz", (req, res) => {
-  res.json({ status: "ok" });
-});
+app.get("/api/healthz", readiness.health);
+app.get("/api/health", readiness.health);
+app.use("/api", readiness.gate);
 
 // Middleware for token validation
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -164,15 +175,6 @@ const toNonNegativeNumber = (v: any): number | null => {
 };
 
 // API Routes
-app.get("/api/health", async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", database: "connected" });
-  } catch (error) {
-    res.status(500).json({ status: "error", database: "disconnected", message: (error as Error).message });
-  }
-});
-
 // Authentication API
 app.post("/api/auth/register", authenticateToken, async (req, res) => {
   if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
@@ -1237,194 +1239,10 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
   }
 });
 
-function getLogicalShiftDate(d: Date = new Date()) {
-  const wibTime = d.getTime() + (7 * 60 * 60 * 1000);
-  const wibDate = new Date(wibTime);
-  
-  if (wibDate.getUTCHours() < 6) {
-    wibDate.setUTCDate(wibDate.getUTCDate() - 1);
-  }
-  
-  const year = wibDate.getUTCFullYear();
-  const month = String(wibDate.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(wibDate.getUTCDate()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}`;
-}
-
 registerBranchReadRoutes(app, prisma, authenticateToken, getLogicalShiftDate);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
 
-async function autoArchiveOldSales() {
-  try {
-    const date30DaysAgo = new Date();
-    date30DaysAgo.setDate(date30DaysAgo.getDate() - 30);
-
-    const oldSales = await prisma.sale.findMany({
-      where: {
-        createdAt: { lt: date30DaysAgo }
-      }
-    });
-
-    if (oldSales.length === 0) return;
-
-    console.log(`Starting auto-archiving of ${oldSales.length} old sales...`);
-
-    const groups: Record<string, {
-      revenue: number;
-      profit: number;
-      commissions: number;
-      count: number;
-    }> = {};
-
-    for (const sale of oldSales) {
-      const logicalDate = getLogicalShiftDate(sale.createdAt);
-      const key = `${sale.branchId}_${logicalDate}`;
-      
-      if (!groups[key]) {
-        groups[key] = { revenue: 0, profit: 0, commissions: 0, count: 0 };
-      }
-
-      if (sale.status === "success") {
-        groups[key].revenue += sale.total;
-        groups[key].profit += sale.totalProfit;
-        groups[key].commissions += sale.totalCommission;
-        groups[key].count += 1;
-      }
-    }
-
-    await prisma.$transaction(async (tx) => {
-      for (const [key, delta] of Object.entries(groups)) {
-        const [branchId, date] = key.split("_");
-        await tx.dailyIncomeSummary.upsert({
-          where: {
-            branchId_date: { branchId, date }
-          },
-          update: {
-            revenue: { increment: delta.revenue },
-            totalProfit: { increment: delta.profit },
-            totalCommission: { increment: delta.commissions },
-            salesCount: { increment: delta.count }
-          },
-          create: {
-            branchId,
-            date,
-            revenue: delta.revenue,
-            totalProfit: delta.profit,
-            totalCommission: delta.commissions,
-            salesCount: delta.count
-          }
-        });
-      }
-
-      const oldSaleIds = oldSales.map(s => s.id);
-      
-      // Preserve the FULL bonus history when archiving old sales: unlink ALL commissions
-      // (set saleId = null) instead of deleting any. Bonus must never decrease except via a
-      // refund or a withdrawal, so every earned/withdrawn/refunded record is kept and the
-      // daily/weekly/historical bonus reports stay in sync after a sale is archived.
-      await tx.commission.updateMany({
-        where: {
-          saleId: { in: oldSaleIds }
-        },
-        data: {
-          saleId: null
-        }
-      });
-
-      await tx.saleItem.deleteMany({
-        where: { saleId: { in: oldSaleIds } }
-      });
-
-      await tx.voucherSN.updateMany({
-        where: { saleId: { in: oldSaleIds } },
-        data: { saleId: null }
-      });
-      
-      await tx.sale.deleteMany({
-        where: { id: { in: oldSaleIds } }
-      });
-    });
-
-    console.log(`Auto-archive completed: ${oldSales.length} transactions processed.`);
-  } catch (err) {
-    console.error("Auto Archive Old Sales Error:", err);
-  }
-}
-
-// Vite Middleware
 async function startServer() {
-  // 1. Try to connect to DB in background
-  prisma.$connect()
-    .then(async () => {
-      console.log("✅ Database connection established.");
-
-      // Dynamic table creation for DailyIncomeSummary to bypass prisma db push sandbox timeout limitations
-      try {
-        console.log("🔄 Verifying DailyIncomeSummary table exists...");
-        await prisma.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "DailyIncomeSummary" (
-            "id" TEXT NOT NULL,
-            "date" TEXT NOT NULL,
-            "branchId" TEXT NOT NULL,
-            "revenue" DOUBLE PRECISION NOT NULL DEFAULT 0,
-            "totalProfit" DOUBLE PRECISION NOT NULL DEFAULT 0,
-            "totalCommission" DOUBLE PRECISION NOT NULL DEFAULT 0,
-            "salesCount" INTEGER NOT NULL DEFAULT 0,
-            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT "DailyIncomeSummary_pkey" PRIMARY KEY ("id"),
-            CONSTRAINT "DailyIncomeSummary_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE
-          );
-        `);
-        await prisma.$executeRawUnsafe(`
-          CREATE UNIQUE INDEX IF NOT EXISTS "DailyIncomeSummary_branchId_date_key" ON "DailyIncomeSummary"("branchId", "date");
-        `);
-        console.log("✅ DailyIncomeSummary table verified.");
-      } catch (tableErr: any) {
-        console.error("⚠️ Failed to ensure DailyIncomeSummary table exists:", tableErr.message);
-      }
-
-      // Ensure the ShoppingPlan table exists (mirrors the DailyIncomeSummary safeguard above).
-      try {
-        console.log("🔄 Verifying ShoppingPlan table exists...");
-        await prisma.$executeRawUnsafe(`
-          CREATE TABLE IF NOT EXISTS "ShoppingPlan" (
-            "id" TEXT NOT NULL,
-            "title" TEXT,
-            "items" JSONB NOT NULL DEFAULT '[]',
-            "status" TEXT NOT NULL DEFAULT 'DRAFT',
-            "creatorId" TEXT,
-            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT "ShoppingPlan_pkey" PRIMARY KEY ("id")
-          );
-        `);
-        console.log("✅ ShoppingPlan table verified.");
-      } catch (tableErr: any) {
-        console.error("⚠️ Failed to ensure ShoppingPlan table exists:", tableErr.message);
-      }
-
-      // Ensure Commission.saleId can be NULL to preserve earned commissions
-      try {
-        console.log("🔄 Adjusting Commission.saleId constraint to allow NULL...");
-        await prisma.$executeRawUnsafe(`
-          ALTER TABLE "Commission" ALTER COLUMN "saleId" DROP NOT NULL;
-        `);
-        console.log("✅ Commission.saleId constraint adjusted successfully.");
-      } catch (err: any) {
-        console.log("ℹ️ Commission.saleId adjustment info (it might be already nullable):", err.message);
-      }
-
-      // Credentials sync logic
-      syncCredentials();
-      // Run automatic archiving of old sales (older than 30 days)
-      autoArchiveOldSales();
-      // Run autoArchive periodically every 12 hours
-      setInterval(autoArchiveOldSales, 12 * 60 * 60 * 1000);
-    })
-    .catch((error) => {
-      console.error("❌ Database connection failed at startup:", error.message);
-    });
-
   // Last-resort error middleware: any synchronous throw or forwarded error from a
   // route returns a clean 500 instead of leaking a stack trace or hanging the request.
   app.use((err: any, _req: any, res: any, _next: any) => {
@@ -1443,108 +1261,19 @@ async function startServer() {
     console.error("⚠️ Uncaught exception:", err);
   });
 
-  // 2. Start Listening (frontend is served by a separate artifact)
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT} with Socket.IO enabled`);
-  });
+  // Connection and read-only compatibility checks must precede listening.
+  await prepareDatabase(prisma, readiness.verify, () => new Promise<void>((resolve, reject) => {
+    httpServer.once("error", reject);
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      httpServer.removeListener("error", reject);
+      console.log(`Server running on http://localhost:${PORT}; database and schema ready; automatic maintenance disabled.`);
+      resolve();
+    });
+  }));
 }
 
-async function syncCredentials() {
-  try {
-    const pHashAdmin = await bcrypt.hash("admin123", 10);
-    const pHashCashier = await bcrypt.hash("cashier123", 10);
-    
-    const defaultBranchId = "default-branch-id";
-    const branch = await prisma.branch.upsert({
-      where: { id: defaultBranchId },
-      update: {},
-      create: {
-        id: defaultBranchId,
-        name: "Cabang Utama",
-        address: "Cianjur",
-        phone: "0812"
-      }
-    });
-    
-    // Seed default users only when they don't exist yet. Do NOT overwrite the
-    // password/role on every startup, so a changed password persists across restarts
-    // (previously the password was reset to the default on each boot — a security hole).
-    await prisma.user.upsert({
-      where: { username: "admin" },
-      update: {},
-      create: { username: "admin", password: pHashAdmin, name: "Super Admin", role: "ADMIN", branchId: branch.id, status: "Active" }
-    });
-
-    await prisma.user.upsert({
-      where: { username: "cashier" },
-      update: {},
-      create: { username: "cashier", password: pHashCashier, name: "Kasir Toko", role: "CASHIER", branchId: branch.id, status: "Active" }
-    });
-
-    await prisma.globalConfig.upsert({
-      where: { id: "default" },
-      update: {},
-      create: { id: "default", allowCashierStockInput: true }
-    });
-
-    console.log("✅ Credentials and Global Config synchronized.");
-    // Backfill historical summaries sekali saat startup (idempoten, aman diulang)
-    await backfillDailySummaries();
-  } catch (dbErr: any) {
-    console.error("ℹ️ User synchronization check failed:", dbErr.message);
-  }
-}
-
-// Isi DailyIncomeSummary dari data Sale historis yang belum punya summary.
-// Dijalankan sekali saat server start — setelah itu setiap tutup shift mengisi sendiri.
-// Query ke Sale hanya terjadi di sini (startup); endpoint laporan tidak perlu scan Sale lagi.
-async function backfillDailySummaries() {
-  try {
-    const allSales = await prisma.sale.findMany({
-      where: { status: "success" },
-      select: { branchId: true, createdAt: true, total: true, totalProfit: true, totalCommission: true }
-    });
-
-    const grouped: Record<string, {
-      branchId: string; date: string;
-      revenue: number; totalProfit: number; totalCommission: number; count: number;
-    }> = {};
-
-    for (const sale of allSales) {
-      const dateStr = getLogicalShiftDate(sale.createdAt);
-      const key = `${sale.branchId}_${dateStr}`;
-      if (!grouped[key]) {
-        grouped[key] = { branchId: sale.branchId, date: dateStr, revenue: 0, totalProfit: 0, totalCommission: 0, count: 0 };
-      }
-      grouped[key].revenue          += Number(sale.total);
-      grouped[key].totalProfit      += Number(sale.totalProfit);
-      grouped[key].totalCommission  += Number(sale.totalCommission);
-      grouped[key].count            += 1;
-    }
-
-    const entries = Object.values(grouped);
-    for (const entry of entries) {
-      await prisma.dailyIncomeSummary.upsert({
-        where: { branchId_date: { branchId: entry.branchId, date: entry.date } },
-        create: {
-          date: entry.date, branchId: entry.branchId,
-          revenue: entry.revenue, totalProfit: entry.totalProfit,
-          totalCommission: entry.totalCommission, salesCount: entry.count
-        },
-        update: {
-          revenue: entry.revenue, totalProfit: entry.totalProfit,
-          totalCommission: entry.totalCommission, salesCount: entry.count
-        }
-      });
-    }
-
-    if (entries.length > 0) {
-      console.log(`✅ DailyIncomeSummary: ${entries.length} entri hari-cabang disinkronkan.`);
-    }
-  } catch (err: any) {
-    console.error("⚠️ DailyIncomeSummary backfill gagal (non-fatal):", err.message);
-  }
-}
-
-startServer();
+startServer().catch(async () => {
+  console.error("API startup refused: database unavailable or incompatible. No automatic repair performed.");
+  try { await prisma.$disconnect(); } finally { process.exit(1); }
+});
 

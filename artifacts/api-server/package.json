@@ -7,10 +7,14 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
-    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "dev": "export NODE_ENV=development DB_RUNTIME_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test:authz": "tsx --test src/read-routes.test.ts",
+    "test:startup": "tsx --test src/database-startup.test.ts",
+    "test:startup:integration": "tsx --test src/database-startup.integration.test.ts",
+    "db:check": "tsx src/database-check-cli.ts",
+    "db:admin": "tsx src/maintenance-main.ts",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
