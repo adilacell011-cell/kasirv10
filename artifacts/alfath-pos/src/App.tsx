@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { OpnameStockInput } from "./components/OpnameStockInput";
+import { toCsvRow } from "./lib/csv";
 // POS Refined Version 2.0
 
 import {
@@ -3972,7 +3973,7 @@ export default function App() {
                               onClick={() => {
                                 const csvRows = [];
                                 const headers = ["Tanggal", "Cabang", "Kasir Pagi", "Rp Pagi", "Kasir Malam", "Rp Malam", "Total Harian"];
-                                csvRows.push(headers.join(","));
+                                csvRows.push(toCsvRow(headers));
                                 
                                 const grouped: Record<string, Record<string, { pagi: { val: number, kasir: string }, malam: { val: number, kasir: string } }>> = {};
                                 shifts.filter(s => {
@@ -4002,7 +4003,7 @@ export default function App() {
                                 Object.entries(grouped).sort((a,b) => b[0].localeCompare(a[0])).forEach(([date, branchMap]) => {
                                   Object.entries(branchMap).forEach(([bId, d]) => {
                                     const bName = branches.find(b => b.id === bId)?.name || "Pusat";
-                                    csvRows.push([date, bName, d.pagi.kasir, d.pagi.val, d.malam.kasir, d.malam.val, d.pagi.val + d.malam.val].join(","));
+                                    csvRows.push(toCsvRow([date, bName, d.pagi.kasir, d.pagi.val, d.malam.kasir, d.malam.val, d.pagi.val + d.malam.val]));
                                   });
                                 });
 

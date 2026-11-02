@@ -13,6 +13,7 @@ import { Server } from "socket.io";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { applyOpname, OpnameConflict } from "./opname";
+import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment";
 import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
@@ -895,12 +896,7 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
           newQty: safeNewQty as number, reason,
         });
       }
-      // Update ProductStock
-      const stock = await tx.productStock.upsert({
-        where: { productId_branchId: { productId, branchId } },
-        update: { qty: hasNewQty ? (safeNewQty as number) : { increment: safeQty as number } },
-        create: { productId, branchId, qty: hasNewQty ? (safeNewQty as number) : (safeQty as number) }
-      });
+      const stock = await applyStockDelta(tx, productId, branchId, safeQty as number);
 
       // Add Adjustment Record
       await tx.adjustment.create({
@@ -920,6 +916,10 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
   } catch (error) {
     if (error instanceof OpnameConflict) {
       res.status(409).json({ error: error.message, code: "OPNAME_STOCK_CHANGED" });
+      return;
+    }
+    if (error instanceof InsufficientAdjustmentStock) {
+      res.status(400).json({ error: error.message, code: "INSUFFICIENT_STOCK" });
       return;
     }
     console.error("Stock Adjust Error:", error);
