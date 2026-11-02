@@ -5,6 +5,7 @@ An Indonesian point-of-sale and stock/transaction management system for a multi-
 ## Run & Operate
 
 - Fresh Replit import setup: run `pnpm install --frozen-lockfile`, then `pnpm --filter @workspace/api-server run db:push` against the Replit development database before starting the workflows below. The database schema must exist before startup can seed the default accounts. Do not run `db:push` against production.
+- Keep Express on the compatible 4.x release used by this project; version 4.22.3 resolves the imported lockfile's blocked `proxy-addr` dependency without a major framework upgrade.
 - The frontend preview is at `/`; API requests and Socket.IO connections use the same preview origin. Only the frontend and API workflows are needed to run the app; the optional Canvas workflow can remain stopped.
 - Change the seeded admin and cashier passwords before using real business data. The Replit development database starts empty and does not import data from an existing self-hosted installation.
 - Workflows (not root `pnpm dev`) run the apps:
