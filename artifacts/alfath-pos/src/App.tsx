@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { OpnameStockInput } from "./components/OpnameStockInput";
 // POS Refined Version 2.0
 
 import {
@@ -1056,6 +1057,8 @@ export default function App() {
   // Form States
   const [newBranch, setNewBranch] = useState("");
   const [auditSelectedBranch, setAuditSelectedBranch] = useState("");
+  const activeAuditBranch = useRef(auditSelectedBranch);
+  activeAuditBranch.current = auditSelectedBranch;
   const [drillPath, setDrillPath] = useState<string[]>([]);
   const [transferDrillPath, setTransferDrillPath] = useState<string[]>([]);
   const [transferSearch, setTransferSearch] = useState("");
@@ -1981,21 +1984,13 @@ export default function App() {
   };
 
   // Audit: Update Physical Stock for selected branch
-  const handleAuditStock = async (productId: string, qtyStr: string) => {
-    if (!auditSelectedBranch) return alert("Pilih Cabang Dulu!");
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-
-    const qty = parseInt(qtyStr);
-    if (isNaN(qty)) return;
-
-    const oldQty = (product.stocks || {})[auditSelectedBranch] || 0;
-    
+  const handleAuditStock = async (branchId: string, productId: string, oldQty: number, qty: number) => {
+    if (!branchId || branchId !== activeAuditBranch.current) return;
     if (qty === oldQty) return;
 
     try {
       await api.adjustStock({
-        branchId: auditSelectedBranch,
+        branchId,
         productId,
         newQty: qty,
         oldQty: oldQty,
@@ -2008,7 +2003,11 @@ export default function App() {
       setProducts(pData);
     } catch (e: any) {
       console.error(e);
-      alert("Gagal update stok.");
+      // A rejected snapshot is never silently retried with a newer baseline.
+      try { setProducts(await api.getProducts()); } catch {}
+      alert(e?.message?.includes("409")
+        ? "Stok sudah berubah. Data dimuat ulang; periksa jumlah fisik lalu simpan kembali."
+        : "Gagal update stok.");
     }
   };
 
@@ -5800,6 +5799,7 @@ export default function App() {
                         <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 text-left">
                           Target Audit Institusi Cabang:
                         </p>
+                        <div data-opname-branch>
                         <CustomSelect
                           value={auditSelectedBranch}
                           onChange={(v) => setAuditSelectedBranch(v)}
@@ -5817,6 +5817,7 @@ export default function App() {
                           className="w-full sm:max-w-xs"
                           buttonClassName="w-full text-sm font-bold uppercase tracking-widest px-3 py-2 rounded border border-slate-300 bg-white focus:ring-2 focus:ring-blue-500 text-left outline-none"
                         />
+                        </div>
                       </div>
 
                       <div className="relative w-full sm:max-w-xs shrink-0 items-center">
@@ -5996,7 +5997,7 @@ export default function App() {
                                       s.productId === p.id,
                                   )?.qty || 0;
                                 return (
-                                  <tr key={p.id} className="hover:bg-slate-50">
+                                  <tr key={`${auditSelectedBranch}:${p.id}`} className="hover:bg-slate-50">
                                     <td className="px-4 py-3 text-left">
                                       <p className="font-bold text-slate-800 flex items-center gap-2 uppercase tracking-tight text-left">
                                         {p.type === "Voucher" ? (
@@ -6019,28 +6020,12 @@ export default function App() {
                                       </span>
                                     </td>
                                     <td className="px-2 md:px-4 py-3">
-                                      <div className="flex items-center gap-2">
-                                        <input
-                                          type="number"
-                                          defaultValue={currentStock}
-                                          onBlur={(e) =>
-                                            handleAuditStock(
-                                              p.id,
-                                              e.target.value,
-                                            )
-                                          }
-                                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center text-xs font-black focus:ring-2 focus:ring-blue-600 focus:bg-white focus:outline-none transition-all outline-none"
-                                        />
-                                        <button 
-                                          onClick={(e) => {
-                                            const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                                            handleAuditStock(p.id, input.value);
-                                          }}
-                                          className="shrink-0 p-2 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
-                                        >
-                                          <Check className="w-4 h-4" />
-                                        </button>
-                                      </div>
+                                      <OpnameStockInput
+                                        branchId={auditSelectedBranch}
+                                        productId={p.id}
+                                        currentStock={currentStock}
+                                        onSave={handleAuditStock}
+                                      />
                                     </td>
                                   </tr>
                                 );

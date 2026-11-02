@@ -17,3 +17,4 @@
 - [Rekap permanen untuk owner](owner-summary-requirement.md) — pendapatan dan bonus tetap tersedia setelah rincian lama dihapus; dashboard membaca rekap ringan.
 - [Akun kasir dan pembukaan shift](shared-branch-cashier-account.md) — satu akun cabang dipakai bergantian; shift tanpa modal awal, jangan menambahkan fitur modal awal.
 - [Imported API codegen compatibility](api-codegen-compatibility.md) — check generator runtime built-ins and pin output targets to installed Zod/React Query versions.
+- [Database test safety](database-test-safety.md) — inspect startup side effects before restarting services during no-DDL or no-deletion audits.

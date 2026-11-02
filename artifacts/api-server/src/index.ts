@@ -12,6 +12,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
+import { applyOpname, OpnameConflict } from "./opname";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -878,8 +879,20 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
     return res.status(400).json({ error: "Jumlah penyesuaian (qty) harus bilangan bulat bukan nol." });
   }
   const safeOldQty = toFiniteNumber(oldQty) ?? 0;
+  if (hasNewQty && (
+    oldQty === undefined || oldQty === null ||
+    toFiniteNumber(oldQty) === null || !Number.isInteger(safeOldQty)
+  )) {
+    return res.status(400).json({ error: "Stok awal opname (oldQty) harus bilangan bulat." });
+  }
   try {
     const result = await prisma.$transaction(async (tx) => {
+      if (hasNewQty) {
+        return applyOpname(tx, {
+          productId, branchId, oldQty: safeOldQty,
+          newQty: safeNewQty as number, reason,
+        });
+      }
       // Update ProductStock
       const stock = await tx.productStock.upsert({
         where: { productId_branchId: { productId, branchId } },
@@ -903,6 +916,10 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
     emitBranch(branchId, "stockUpdated", { productId, branchId, qty: result.qty });
     res.json(result);
   } catch (error) {
+    if (error instanceof OpnameConflict) {
+      res.status(409).json({ error: error.message, code: "OPNAME_STOCK_CHANGED" });
+      return;
+    }
     console.error("Stock Adjust Error:", error);
     res.status(500).json({ error: "Failed to adjust stock" });
   }
