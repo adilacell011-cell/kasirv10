@@ -11,6 +11,7 @@ import { PrismaClient } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
+import { registerBranchReadRoutes } from "./read-routes";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -265,42 +266,6 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 });
 
 // Protected API Routes
-app.get("/api/products", authenticateToken, async (req, res) => {
-  try {
-    const requester = (req as any).user;
-    // Harga modal (buyingPrice) hanya boleh dilihat oleh ADMIN dan AUDIT.
-    // Kasir hanya mendapatkan harga jual, tidak bisa baca harga modal lewat DevTools.
-    const showCost = requester.role === "ADMIN" || requester.role === "AUDIT";
-    const products = await prisma.product.findMany({
-        where: { status: "ACTIVE" },
-      include: {
-        stocks: true
-      }
-    });
-    const formattedProducts = products.map(p => {
-      const base: any = {
-        ...p,
-        sellingPrice: Number(p.sellingPrice),
-        discountPrice: p.discountPrice ? Number(p.discountPrice) : 0,
-        commissionAmount: Number(p.commissionAmount),
-        stocks: p.stocks.reduce((acc: any, s: any) => ({ ...acc, [s.branchId]: s.qty }), {})
-      };
-      if (showCost) {
-        base.buyingPrice  = Number(p.buyingPrice);
-        base.purchasePrice = Number(p.buyingPrice);
-      } else {
-        delete base.buyingPrice;
-        delete base.purchasePrice;
-      }
-      return base;
-    });
-    res.json(formattedProducts);
-  } catch (error) {
-    console.error("Fetch Products Error:", error);
-    res.status(500).json({ error: "Failed to fetch products", details: (error as Error).message });
-  }
-});
-
 app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, res) => {
   const { id, purchasePrice, ...data } = req.body;
   if (purchasePrice !== undefined) {
@@ -354,15 +319,6 @@ app.delete("/api/products/:id", authenticateToken, requireRole("ADMIN"), async (
   } catch (error: any) {
     console.error("Archive Product Error:", error);
     res.status(500).json({ error: "Gagal mengarsipkan produk: " + (error.message || "Coba lagi.") });
-  }
-});
-
-app.get("/api/branches", authenticateToken, async (req, res) => {
-  try {
-    const branches = await prisma.branch.findMany();
-    res.json(branches);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch branches" });
   }
 });
 
@@ -881,18 +837,6 @@ app.delete("/api/shifts/:id", authenticateToken, requireRole("ADMIN"), async (re
   }
 });
 
-app.get("/api/users", authenticateToken, async (req, res) => {
-  try {
-    const users = await prisma.user.findMany({
-      include: { branch: true }
-    });
-    const usersWithoutPasswords = users.map(({ password: _, ...u }) => u);
-    res.json(usersWithoutPasswords);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch users" });
-  }
-});
-
 app.get("/api/adjustments", authenticateToken, async (req, res) => {
   const requester = (req as any).user;
   try {
@@ -1278,6 +1222,11 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
 
 app.get("/api/daily-summaries", authenticateToken, async (req, res) => {
   try {
+    const requester = (req as any).user;
+    const cashierBranchFilter = requester.role === "CASHIER"
+      ? { branchId: typeof requester.branchId === "string" ? requester.branchId : "" }
+      : {};
+
     // Strategi efisien jangka panjang:
     //  - DailyIncomeSummary (1 baris/hari/cabang) dibuat otomatis saat tutup shift.
     //    Ini menjadi sumber data historis — tidak perlu scan tabel Sale sama sekali.
@@ -1287,6 +1236,7 @@ app.get("/api/daily-summaries", authenticateToken, async (req, res) => {
 
     // 1. Semua summary historis (tabel kecil, selalu cepat)
     const archivedSummaries = await prisma.dailyIncomeSummary.findMany({
+      where: cashierBranchFilter,
       orderBy: { date: "asc" }
     });
 
@@ -1297,7 +1247,7 @@ app.get("/api/daily-summaries", authenticateToken, async (req, res) => {
     const todayEnd   = new Date(Date.UTC(ty, tm - 1, td,     23, 0, 0, 0));
 
     const todaySales = await prisma.sale.findMany({
-      where: { status: "success", createdAt: { gte: todayStart, lt: todayEnd } }
+      where: { ...cashierBranchFilter, status: "success", createdAt: { gte: todayStart, lt: todayEnd } }
     });
 
     // 3. Agregasi hari ini per cabang
@@ -1369,6 +1319,8 @@ function getLogicalShiftDate(d: Date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+registerBranchReadRoutes(app, prisma, authenticateToken);
+registerBranchReadRoutes(app, prisma, authenticateToken);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
 
 async function autoArchiveOldSales() {
