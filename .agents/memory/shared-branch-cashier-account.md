@@ -16,3 +16,11 @@ Pembukaan shift TIDAK menggunakan modal awal. Kasir tidak perlu memasukkan uang 
 **Why:** Pengguna menegaskan bahwa ini adalah aturan aplikasi kasir yang sebenarnya setelah skenario pengujian sebelumnya keliru mengasumsikan input modal awal.
 
 **How to apply:** Ikuti mekanisme pembukaan shift yang sudah diterapkan pada aplikasi saat ini. Ekspektasi pengujian harus mengikuti aturan tanpa modal awal, bukan mengubah aplikasi agar memenuhi asumsi pengujian.
+
+## Lanjutkan shift karena tidak sengaja ditutup
+
+Owner menjelaskan bahwa “Lanjutkan Shift” digunakan ketika penjaga tidak sengaja menutup shift sementara waktu kerja atau pergantian masih panjang. Transaksi sebelum dan sesudah dilanjutkan digabung dengan pembukuan shift semula, bukan dibuat pembukuan shift baru.
+
+**Why:** Owner secara eksplisit memilih “Gabung dengan shift semula”.
+
+**How to apply:** Pertahankan tujuan pemulihan shift yang sama. Jangan mengubahnya menjadi pergantian penjaga atau shift baru. Pilihan pembukuan ini tidak dengan sendirinya memberi izin perubahan schema, migrasi, atau penghapusan histori penutupan.
