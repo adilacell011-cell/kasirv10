@@ -90,6 +90,38 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     const next = await ok("/shifts", a.token, "POST", open(a, "QA Malam"));
     assert.notEqual(next.id, first.id);
   });
+  await t.test("cashier sale requires an open persisted shift and cannot pass after close", async () => {
+    const f = await fixture("sale-shift-guard");
+    const productId = await product(f);
+    const salePayload = {
+      branchId: f.branchId,
+      cashierId: f.userId,
+      total: 15000,
+      totalCommission: 1000,
+      items: [{ productId, qty: 1, price: 15000, subtotal: 15000, commission: 1000 }],
+    };
+
+    const beforeOpen = await request("/transactions", f.token, "POST", salePayload);
+    assert.equal(beforeOpen.status, 409);
+    assert.match((await beforeOpen.json() as { error: string }).error, /shift/i);
+    assert.equal((await ok<QaRow[]>("/transactions", f.token)).length, 0);
+    assert.equal((await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId], 10);
+    assert.equal((await ok<Array<{ saleId: string }>>("/incentives", f.token)).length, 0);
+
+    const shift = await ok("/shifts", f.token, "POST", open(f));
+    const saleResponse = await request("/transactions", f.token, "POST", salePayload);
+    assert.equal(saleResponse.status, 200);
+    const savedSale = await saleResponse.json() as { id: string };
+    await close(f, shift.id, 15000);
+
+    const afterClose = await request("/transactions", f.token, "POST", salePayload);
+    assert.equal(afterClose.status, 409);
+    assert.match((await afterClose.json() as { error: string }).error, /shift/i);
+    assert.equal((await ok<QaRow[]>("/transactions", f.token)).filter((row) => row.id === savedSale.id).length, 1);
+    assert.equal((await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId], 9);
+    const commissions = await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token);
+    assert.deepEqual(commissions.filter((commission) => commission.saleId === savedSale.id).map((commission) => commission.status), ["earned"]);
+  });
   await t.test("repeated close never includes sales from next shift or replaces snapshot", async () => {
     const f = await fixture("snapshot");
     const p = await product(f);

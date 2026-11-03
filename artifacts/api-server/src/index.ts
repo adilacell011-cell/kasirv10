@@ -492,6 +492,24 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
   try {
     const result = await prisma.$transaction(async (tx) => {
       await lockBranch(tx, actualBranchId);
+      // A cashier sale must belong to a persisted, currently open shift for this
+      // verified branch/account. Sharing the branch lock with open/close keeps the
+      // check atomic against a shift being closed concurrently. Do not apply this
+      // cashier-specific rule to ADMIN requests.
+      if (requester.role === "CASHIER") {
+        const activeShift = await tx.shift.findFirst({
+          where: {
+            branchId: actualBranchId,
+            cashierId: actualCashierId,
+            status: "open",
+          },
+          select: { id: true },
+        });
+        if (!activeShift) {
+          throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup. Buka shift sebelum bertransaksi.");
+        }
+      }
+
       let finalTotalProfit = 0;
       const saleItemsData = [];
       const productNames: Record<string, string> = {};
@@ -600,6 +618,9 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
 
     res.json(result);
   } catch (error: any) {
+    if (error instanceof ShiftConflict) {
+      return res.status(error.status).json({ error: error.message });
+    }
     console.error("Sale Process Error:", error);
     res.status(400).json({ error: error.message || "Gagal memproses penjualan" });
   }
