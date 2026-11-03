@@ -45,6 +45,16 @@ An unassigned cashier must not fall back to global or unassigned-user results.
 Products use the existing branch-visibility rule; do not require an existing stock
 row, because visible zero-stock products must remain available for stock intake.
 
+Cashiers may transfer stock between branches. Keep the general branch directory
+scoped to the cashier's own branch; the transfer picker may receive only other
+branches' IDs and names, not their stock or full branch records.
+
+**Why:** the owner confirmed cross-branch transfers are part of normal operations
+and confirmed the transfer flow worked again after this narrow destination lookup.
+
+**How to apply:** derive the source branch from the verified cashier identity and
+use a purpose-limited destination lookup without widening ordinary branch reads.
+
 ## Never leak password hashes through nested includes
 Read endpoints that do Prisma `include: { cashier: true }` (`GET /api/transactions`,
 `/api/incentives`, `/api/shifts`) return the FULL `User` row — including the bcrypt
