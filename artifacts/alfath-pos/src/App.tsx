@@ -970,10 +970,17 @@ export default function App() {
   };
 
   const displayedAccountName = profile?.name || "?";
-  const displayedCashierName =
-    profile?.role === "CASHIER" && shiftOpen && cashierName.trim()
-      ? cashierName.trim()
-      : displayedAccountName;
+  const displayedAccountLogin = profile?.username || displayedAccountName;
+  const displayedBranchName =
+    branches.find((branch) => branch.id === profile?.branchId)?.name ||
+    (profile?.role === "CASHIER"
+      ? profile?.branchId
+        ? "Cabang belum termuat"
+        : "Cabang belum ditetapkan"
+      : "Pusat");
+  const activeCashierName =
+    profile?.role === "CASHIER" && shiftOpen ? cashierName.trim() : "";
+  const displayedCashierName = activeCashierName || displayedAccountName;
 
   const getSaleCashierName = (sale: any) => {
     if (!sale) return "Kasir";
@@ -3256,8 +3263,7 @@ export default function App() {
                 ALFATH PULSA
               </h1>
               <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">
-                {branches.find((b) => b.id === profile?.branchId)?.name ||
-                  "Pusat"}
+                {displayedBranchName}
               </p>
             </div>
           </div>
@@ -3383,26 +3389,45 @@ export default function App() {
               </button>
             )}
 
-            <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-1 overflow-hidden">
+            <div className="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-1 overflow-hidden">
               <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
-                displayedCashierName.slice(0, 2).toUpperCase()
+                {displayedCashierName.slice(0, 2).toUpperCase()}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold text-slate-900 truncate">
-                  {displayedCashierName}
-                </p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${profile?.role === "ADMIN" ? "bg-blue-500/20 text-blue-600" : profile?.role === "AUDIT" ? "bg-amber-500/20 text-amber-600" : "bg-emerald-500/20 text-emerald-600"}`}
-                  >
-                    {profile?.role}
-                  </span>
-                  {displayedCashierName !== displayedAccountName && (
-                    <span className="text-[8px] text-slate-400 truncate">
-                      Akun cabang: {displayedAccountName}
+              <div className="flex-1 min-w-0 space-y-1">
+                {profile?.role === "CASHIER" ? (
+                  <>
+                    <div>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+                        Petugas bertugas
+                      </p>
+                      <p className="text-[11px] font-bold text-slate-900 truncate">
+                        {activeCashierName || "Belum ada shift aktif"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-600">
+                        CASHIER
+                      </span>
+                    </div>
+                    <p className="text-[8px] text-slate-500 truncate" title={displayedBranchName}>
+                      Cabang: {displayedBranchName}
+                    </p>
+                    <p className="text-[8px] text-slate-500 truncate" title={displayedAccountLogin}>
+                      Akun cabang: {displayedAccountLogin}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] font-bold text-slate-900 truncate">
+                      {displayedAccountName}
+                    </p>
+                    <span
+                      className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest ${profile?.role === "ADMIN" ? "bg-blue-500/20 text-blue-600" : "bg-amber-500/20 text-amber-600"}`}
+                    >
+                      {profile?.role}
                     </span>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             </div>
             <button

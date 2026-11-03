@@ -9,6 +9,14 @@ Alur kasir sekarang: satu akun cabang dipakai oleh dua karyawan untuk shift sian
 
 **How to apply:** Jangan mengasumsikan satu akun untuk setiap karyawan, mengubah login menjadi akun terpisah, atau menggunakan ID akun sebagai pembeda karyawan/shift. Pertahankan alur akun bersama dan bedakan sesi shift melalui catatan shift, cabang, serta waktu buka/tutup. Perubahan kode tetap memerlukan persetujuan pengguna.
 
+## Identitas yang terlihat pada kartu kasir
+
+Tampilkan akun cabang, nama cabang, dan petugas shift aktif sebagai informasi terpisah. Bila shift belum terbuka, jangan menampilkan nama akun seolah-olah itu penjaga yang sedang bertugas.
+
+**Why:** Owner meminta ketiga identitas ini terlihat jelas setelah menemukan kartu akun dan nama petugas bertumpuk pada tampilan ponsel.
+
+**How to apply:** Gunakan identitas akun bersama dari profil, nama cabang yang terikat ke akun, dan nama penjaga pilihan shift hanya saat shift aktif. Jangan mengubah login bersama atau alur pencatatan shift.
+
 ## Pembukaan shift tanpa modal awal
 
 Pembukaan shift TIDAK menggunakan modal awal. Kasir tidak perlu memasukkan uang modal saat membuka shift. Jangan mencari atau mengasumsikan adanya input modal awal, dan jangan menambahkan fitur modal awal.
