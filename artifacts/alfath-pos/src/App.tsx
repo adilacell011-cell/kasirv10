@@ -2743,42 +2743,12 @@ export default function App() {
     if (!cashierName.trim()) return alert("Masukkan Nama Penjaga!");
     if (!shiftType) return alert("Pilih Tipe Shift (Pagi/Malam)!");
 
-    const lastShiftType = localStorage.getItem("last_shift_type");
-    const lastShiftDate = localStorage.getItem("last_shift_date");
-    const lastCashierName = localStorage.getItem("last_cashier_name")?.trim();
-    const logicalDate = getLogicalShiftDate();
-
-    // Logika Lanjutkan Shift
-    if (
-      lastShiftType === shiftType &&
-      lastShiftDate === logicalDate &&
-      lastCashierName === cashierName.trim() &&
-      !shiftOpen
-    ) {
-      const confirmMsg = `Sistem mendeteksi Anda baru saja menutup Shift ${shiftType} hari ini.\n\nApakah Anda ingin MELANJUTKAN shift sebelumnya agar laporan tetap rapi?\n\n(Klik 'OK' untuk Lanjutkan, 'Cancel' untuk Mulai Baru)`;
-      if (await triggerConfirm(confirmMsg)) {
-        const oldStart = localStorage.getItem("last_shift_start_time");
-        const oldName = localStorage.getItem("last_cashier_name");
-        const oldLogical = localStorage.getItem("last_shift_logical_date");
-
-        if (oldStart && oldName) {
-          setShiftStartTime(oldStart);
-          setCashierName(oldName);
-          setShiftLogicalDate(oldLogical || logicalDate);
-          setShiftOpen(true);
-          localStorage.setItem("shift_open", "true");
-          localStorage.setItem("shift_start_time", oldStart);
-          localStorage.setItem("cashier_name", oldName);
-          if (oldLogical) localStorage.setItem("shift_logical_date", oldLogical);
-          return;
-        }
-      }
-    }
-
     const startTime = new Date().toISOString();
     const activeLogicalDate = getLogicalShiftDate();
 
     try {
+      // The server is authoritative. If this exact shift is still open after an
+      // app/API interruption, openShift returns that persisted shift for recovery.
       const shift = await api.openShift({
         branchId: profile.branchId,
         cashierId: profile.id, // profile.id not uid
@@ -2801,13 +2771,6 @@ export default function App() {
     setShiftStartTime(persistedStart);
     setShiftLogicalDate(activeLogicalDate);
     setShiftOpen(true);
-
-    // Simpan untuk backup/lanjutkan nanti
-    localStorage.setItem("last_shift_type", shiftType);
-    localStorage.setItem("last_shift_date", logicalDate);
-    localStorage.setItem("last_shift_start_time", persistedStart);
-    localStorage.setItem("last_cashier_name", cashierName);
-    localStorage.setItem("last_shift_logical_date", activeLogicalDate);
   };
 
   const handleWithdrawCommission = async (branchId: string) => {
