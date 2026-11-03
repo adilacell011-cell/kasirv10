@@ -14,6 +14,14 @@ Two DIFFERENT hour thresholds coexist on purpose in the frontend shift logic:
 
 **How to apply:** Do NOT harmonize the 6 AM and 7 AM thresholds — the gap is the feature. If you ever change the day-reset hour, re-confirm with the owner first; the 6 vs 7 difference is a business rule, not a bug.
 
+## Checkout requires an opened shift
+
+The owner confirms that normal cashier operation must require opening a shift before completing a sale. Preserve this user-facing workflow; a direct API request bypassing that UI gate is a separate server-side security concern, not evidence that the normal cashier flow permits sales without opening a shift.
+
+**Why:** the owner clarified this is the required on-the-ground cashier workflow.
+
+**How to apply:** do not redesign the cashier flow. If strengthening security, enforce the same requirement at the API boundary without changing shift timing or handover rules.
+
 Do not require keepers to wait until 07:00 / 19:00, or close shifts automatically at those hours or at the 06:00 day reset. Late-shift transactions remain allowed with a warning; early handover must not be confused with an overdue shift.
 
 **Corollary — dashboard per-day bucketing:** Any dashboard widget that groups data by day (e.g. the 7-day trend chart) must key off `getLogicalShiftDate(d)`, NOT `formatDateLocal(d)`. `dashboardStats` already uses the logical-shift date; mixing in calendar dates causes off-by-one mismatches between widgets near the 6 AM boundary.
