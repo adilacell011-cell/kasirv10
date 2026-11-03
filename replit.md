@@ -14,7 +14,7 @@ An Indonesian point-of-sale and stock/transaction management system for a multi-
 - `pnpm --filter @workspace/api-server run db:push` — push Prisma schema to the database (dev only)
 - `pnpm --filter @workspace/api-server run db:studio` — open Prisma Studio
 - Required env: `DATABASE_URL` and `DB_RUNTIME_ENV`. Development/test must match the independent `PGHOST`/`PGDATABASE`/`PGPORT` target; production additionally requires explicit `DB_EXPECTED_HOST`, `DB_EXPECTED_NAME`, `DB_EXPECTED_PORT`, `DB_EXPECTED_SCHEMA`, and matching `NODE_ENV`. See `artifacts/api-server/STARTUP-SAFETY.md`. Replit development can use the persisted random JWT secret; Docker Compose requires an explicit `JWT_SECRET`.
-- API and Socket.IO revalidate the account against the database. User-record edits revoke that account's existing sessions; an API restart alone does not, provided the database and JWT secret remain unchanged.
+- API and Socket.IO revalidate the account against the database. Password, status, role, or branch changes revoke that account's existing sessions and sockets; keeper-name/profile edits do not. An API restart alone does not revoke sessions if the database and JWT secret remain unchanged.
 - Startup does not seed accounts, backfill summaries, archive data, or modify schema. First-install seed credentials must be explicitly supplied through `INITIAL_ADMIN_*` and `INITIAL_CASHIER_*`; never place them in Git or leave them configured after the approved seed.
 
 ### Local server (Docker Compose)

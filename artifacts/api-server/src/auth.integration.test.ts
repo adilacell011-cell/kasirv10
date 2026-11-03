@@ -296,6 +296,73 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const cashierBSocket = await connectSocket({ token: cashierBPayload.token });
   const adminSocket = await connectSocket({ token: adminPayload.token });
 
+  const shiftOpenResponse = await fetch(`${apiUrl}/api/shifts`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      initialCash: 0,
+      shiftDate: new Date().toISOString().slice(0, 10),
+      shiftType: "Pagi",
+    }),
+  });
+  assert.equal(shiftOpenResponse.status, 200);
+  const activeShift = await shiftOpenResponse.json() as { id: string; status: string; cashierId: string };
+  assert.equal(activeShift.status, "open");
+  assert.equal(activeShift.cashierId, cashierA.id);
+
+  const assertRosterEditKeepsSession = async (body: Record<string, string>) => {
+    const beforeEdit = await prisma.user.findUniqueOrThrow({
+      where: { id: cashierA.id },
+      select: { updatedAt: true },
+    });
+    const response = await fetch(`${apiUrl}/api/users/${cashierA.id}`, {
+      method: "PATCH",
+      headers: {
+        authorization: `Bearer ${adminPayload.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    assert.equal(response.status, 200);
+    const updatedAccount = await response.json() as { id: string; name: string | null; alternativeNames: string | null };
+    const afterEdit = await prisma.user.findUniqueOrThrow({
+      where: { id: cashierA.id },
+      select: { updatedAt: true },
+    });
+    assert.equal(afterEdit.updatedAt.getTime(), beforeEdit.updatedAt.getTime());
+
+    const transactions = await fetch(`${apiUrl}/api/transactions`, {
+      headers: { authorization: `Bearer ${cashierPayload.token}` },
+    });
+    assert.equal(transactions.status, 200);
+    const users = await fetch(`${apiUrl}/api/users`, {
+      headers: { authorization: `Bearer ${cashierPayload.token}` },
+    });
+    assert.equal(users.status, 200);
+    const currentUsers = await users.json() as Array<{ id: string; name: string | null; alternativeNames: string | null }>;
+    const visibleAccount = currentUsers.find((user) => user.id === cashierA.id);
+    assert.ok(visibleAccount);
+    assert.equal(visibleAccount.name, updatedAccount.name);
+    assert.equal(visibleAccount.alternativeNames, updatedAccount.alternativeNames);
+    const shifts = await fetch(`${apiUrl}/api/shifts?status=open`, {
+      headers: { authorization: `Bearer ${cashierPayload.token}` },
+    });
+    assert.equal(shifts.status, 200);
+    const currentShifts = await shifts.json() as Array<{ id: string; status: string; cashierId: string }>;
+    assert.ok(currentShifts.some((shift) =>
+      shift.id === activeShift.id && shift.status === "open" && shift.cashierId === cashierA.id
+    ));
+    assert.equal(cashierASocket.connected, true);
+  };
+
+  await assertRosterEditKeepsSession({ alternativeNames: "Penjaga Pagi, Penjaga Malam" });
+  await assertRosterEditKeepsSession({ name: "Akun Cabang Test A" });
+  await assertRosterEditKeepsSession({ alternativeNames: "Penjaga Malam, Penjaga Pagi" });
+  await assertRosterEditKeepsSession({ alternativeNames: "Penjaga Malam" });
+
   const forbiddenStockChange = await fetch(`${apiUrl}/api/stocks/adjust`, {
     method: "POST",
     headers: {
@@ -327,6 +394,35 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   await Promise.all([waitForA, waitForAdminA]);
   await new Promise((resolve) => setTimeout(resolve, 100));
   assert.equal(cashierBEvents.length, 0);
+
+  const saleAfterRosterEdits = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      items: [{ productId, qty: 1, price: 2, subtotal: 2, commission: 0 }],
+      total: 2,
+      totalCommission: 0,
+    }),
+  });
+  assert.equal(saleAfterRosterEdits.status, 200);
+  const retainedSessionSale = await saleAfterRosterEdits.json() as { branchId: string; cashierId: string };
+  assert.equal(retainedSessionSale.branchId, branchAId);
+  assert.equal(retainedSessionSale.cashierId, cashierA.id);
+  const closeAfterRosterEdits = await fetch(`${apiUrl}/api/shifts/${activeShift.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ status: "closed", actualCash: 2 }),
+  });
+  assert.equal(closeAfterRosterEdits.status, 200);
+  const closedShift = await closeAfterRosterEdits.json() as { id: string; status: string };
+  assert.equal(closedShift.id, activeShift.id);
+  assert.equal(closedShift.status, "closed");
 
   const waitForB = waitForEvent(cashierBSocket, branchBId);
   const waitForAdminB = waitForEvent(adminSocket, branchBId);
@@ -426,6 +522,45 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const currentRolePayload = await currentRoleLogin.json() as { user: Record<string, unknown> };
   assert.equal(currentRolePayload.user.role, "AUDIT");
   assert.equal(currentRolePayload.user.branchId, branchAId);
+
+  const passwordLogin = await login(cashierB.username, cashierB.password);
+  assert.equal(passwordLogin.status, 200);
+  const passwordPayload = await passwordLogin.json() as { token: string };
+  const passwordSocket = await connectSocket({ token: passwordPayload.token });
+  const passwordDisconnect = waitForSocketDisconnect(passwordSocket);
+  cashierB.password = "cashier-b-updated-test-password";
+  const changePassword = await fetch(`${apiUrl}/api/users/${cashierB.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ password: cashierB.password }),
+  });
+  assert.equal(changePassword.status, 200);
+  await passwordDisconnect;
+  const stalePasswordToken = await fetch(`${apiUrl}/api/transactions`, {
+    headers: { authorization: `Bearer ${passwordPayload.token}` },
+  });
+  assert.equal(stalePasswordToken.status, 401);
+  assert.equal((await login(cashierB.username, "cashier-b-test-password")).status, 401);
+  assert.equal((await login(cashierB.username, cashierB.password)).status, 200);
+
+  const deleteLogin = await login(cashierB.username, cashierB.password);
+  assert.equal(deleteLogin.status, 200);
+  const deletePayload = await deleteLogin.json() as { token: string };
+  const deleteSocket = await connectSocket({ token: deletePayload.token });
+  const deleteDisconnect = waitForSocketDisconnect(deleteSocket);
+  const deleteAccount = await fetch(`${apiUrl}/api/users/${cashierB.id}`, {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${adminPayload.token}` },
+  });
+  assert.equal(deleteAccount.status, 200);
+  await deleteDisconnect;
+  const deletedAccountToken = await fetch(`${apiUrl}/api/transactions`, {
+    headers: { authorization: `Bearer ${deletePayload.token}` },
+  });
+  assert.equal(deletedAccountToken.status, 401);
 
   const restartLogin = await login(cashierA.username, cashierA.password);
   assert.equal(restartLogin.status, 200);

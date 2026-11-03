@@ -1061,11 +1061,38 @@ app.patch("/api/users/:id", authenticateToken, async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    const user = await prisma.user.update({
-      where: { id: req.params.id },
-      data: updateData
-    });
-    if (Object.keys(updateData).length > 0) disconnectUserSockets(user.id);
+    const securityFields = ["role", "branchId", "status", "password"];
+    const changesSecurity = securityFields.some((field) => Object.hasOwn(updateData, field));
+    let user;
+    if (Object.keys(updateData).length === 0) {
+      user = await prisma.user.findUniqueOrThrow({ where: { id: req.params.id } });
+    } else if (changesSecurity) {
+      user = await prisma.user.update({
+        where: { id: req.params.id },
+        data: updateData
+      });
+      // Security changes advance updatedAt (the existing schema-free token
+      // version) and immediately close authenticated sockets for this account.
+      disconnectUserSockets(user.id);
+    } else {
+      // Keeper names are profile data, not authentication identity. Preserve the
+      // security version while changing name/alternativeNames so active cashiers
+      // and their Socket.IO connection remain valid. The timestamp compare avoids
+      // overwriting a concurrent password/role/branch/status change.
+      const existing = await prisma.user.findUnique({
+        where: { id: req.params.id },
+        select: { updatedAt: true },
+      });
+      if (!existing) return void res.status(404).json({ error: "User not found" });
+      const update = await prisma.user.updateMany({
+        where: { id: req.params.id, updatedAt: existing.updatedAt },
+        data: { ...updateData, updatedAt: existing.updatedAt },
+      });
+      if (update.count !== 1) {
+        return void res.status(409).json({ error: "Data akun berubah bersamaan. Muat ulang lalu coba lagi." });
+      }
+      user = await prisma.user.findUniqueOrThrow({ where: { id: req.params.id } });
+    }
     const { password: _, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   } catch (error) {

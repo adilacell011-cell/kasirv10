@@ -66,9 +66,10 @@ awal dengan kredensial yang dipilih Owner melalui prosedur bootstrap yang
 terkontrol. Akun cabang tetap mengikuti model akun bersama yang digunakan
 aplikasi.
 
-API memeriksa status dan versi akun dari database pada permintaan serta
-koneksi Socket.IO. Mengubah data akun akan mencabut sesi lama dan meminta
-login kembali; restart API saja tidak mencabut sesi selama database dan
+API memeriksa status dan versi keamanan akun dari database pada permintaan serta
+koneksi Socket.IO. Perubahan password, status, role, atau cabang mencabut sesi
+lama. Perubahan nama akun/daftar penjaga tidak mencabut sesi maupun memutus
+Socket.IO. Restart API saja tidak mencabut sesi selama database dan
 `JWT_SECRET` tetap sama.
 
 Hak akses mengikuti implementasi aplikasi:
