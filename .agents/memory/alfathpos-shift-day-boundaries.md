@@ -16,11 +16,11 @@ Two DIFFERENT hour thresholds coexist on purpose in the frontend shift logic:
 
 ## Checkout requires an opened shift
 
-The owner confirms that normal cashier operation must require opening a shift before completing a sale. Preserve this user-facing workflow; a direct API request bypassing that UI gate is a separate server-side security concern, not evidence that the normal cashier flow permits sales without opening a shift.
+The owner confirms that normal cashier operation must require opening a shift before completing a sale. Shift closure requires confirmation and entering the actual cash amount, so accidental closure is considered unlikely. Preserve this user-facing workflow; a direct API request bypassing that UI gate is a separate server-side security concern, not evidence that the normal cashier flow permits sales without opening a shift.
 
 **Why:** the owner clarified this is the required on-the-ground cashier workflow.
 
-**How to apply:** do not redesign the cashier flow. If strengthening security, enforce the same requirement at the API boundary without changing shift timing or handover rules.
+**How to apply:** do not redesign the cashier flow. Treat app/server/network interruption as recovery of the still-open server shift; keep correction of a genuinely closed shift separate. If strengthening security, enforce the same requirement at the API boundary without changing shift timing or handover rules.
 
 Do not require keepers to wait until 07:00 / 19:00, or close shifts automatically at those hours or at the 06:00 day reset. Late-shift transactions remain allowed with a warning; early handover must not be confused with an overdue shift.
 
