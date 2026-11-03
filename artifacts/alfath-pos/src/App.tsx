@@ -929,6 +929,26 @@ export default function App() {
     return sh.cashier?.name || "Kasir";
   };
 
+  const getConfiguredKeeperNames = (employee: {
+    name?: string | null;
+    displayName?: string | null;
+    alternativeNames?: string | null;
+  }) => {
+    const names = [
+      employee.name || employee.displayName || "",
+      ...(employee.alternativeNames || "").split(","),
+    ]
+      .map((name) => name.trim())
+      .filter(Boolean);
+    return names.filter((name, index) => names.indexOf(name) === index);
+  };
+
+  const displayedAccountName = profile?.name || "?";
+  const displayedCashierName =
+    profile?.role === "CASHIER" && shiftOpen && cashierName.trim()
+      ? cashierName.trim()
+      : displayedAccountName;
+
   const getSaleCashierName = (sale: any) => {
     if (!sale) return "Kasir";
     if (sale.cashierName) return sale.cashierName;
@@ -3322,11 +3342,11 @@ export default function App() {
 
             <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-1 overflow-hidden">
               <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
-                {(profile?.name || "?").slice(0, 2).toUpperCase()}
+                displayedCashierName.slice(0, 2).toUpperCase()
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-bold text-slate-900 truncate">
-                  {profile?.name}
+                  {displayedCashierName}
                 </p>
                 <div className="flex items-center gap-1 mt-0.5">
                   <span
@@ -3334,6 +3354,11 @@ export default function App() {
                   >
                     {profile?.role}
                   </span>
+                  {displayedCashierName !== displayedAccountName && (
+                    <span className="text-[8px] text-slate-400 truncate">
+                      Akun cabang: {displayedAccountName}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -3469,7 +3494,7 @@ export default function App() {
                           </span>
                         </div>
                         <p className="hidden sm:block text-[9px] font-medium text-slate-400 mt-0.5 leading-relaxed">
-                          Isi nama agar muncul di pilihan shift. Pisah nama dengan koma jika 1 akun dipakai bergantian.
+                          Satu akun cabang dapat dipakai bergantian. Isi nama penjaga utama dan tambahan agar semuanya muncul di pilihan shift.
                         </p>
                       </div>
                     </div>
@@ -3505,7 +3530,7 @@ export default function App() {
                             type="text"
                             defaultValue={emp.name || emp.displayName || ""}
                             onBlur={(e) => { if (e.target.value !== (emp.name || emp.displayName || "")) updateUser(emp.id, "name", e.target.value); }}
-                            placeholder="Nama Petugas..."
+                            placeholder="Nama penjaga utama..."
                             className="flex-1 min-w-0 text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all"
                           />
                           <CustomSelect
@@ -3526,9 +3551,18 @@ export default function App() {
                           type="text"
                           defaultValue={emp.alternativeNames || ""}
                           onBlur={(e) => { if (e.target.value !== (emp.alternativeNames || "")) updateUser(emp.id, "alternativeNames", e.target.value); }}
-                          placeholder="Petugas 2, 3 (pisah koma)..."
+                          placeholder="Nama penjaga tambahan, pisahkan dengan koma..."
                           className="block w-full text-[9px] font-medium text-slate-400 bg-slate-50 border border-slate-100 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all italic"
                         />
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">Pilihan nama kasir:</span>
+                          {getConfiguredKeeperNames(emp).map((name) => (
+                            <span key={name} className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[8px] font-bold text-blue-700">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[8px] text-slate-400">Perubahan tersimpan setelah Anda keluar dari kolom.</p>
                         {/* Baris 3: Cabang + tombol aksi */}
                         <div className="flex items-center gap-1.5">
                           <CustomSelect
@@ -3590,16 +3624,25 @@ export default function App() {
                                   type="text"
                                   defaultValue={emp.name || emp.displayName || ""}
                                   onBlur={(e) => { if (e.target.value !== (emp.name || emp.displayName || "")) updateUser(emp.id, "name", e.target.value); }}
-                                  placeholder="Nama petugas..."
+                                  placeholder="Nama penjaga utama..."
                                   className="block w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all"
                                 />
                                 <input
                                   type="text"
                                   defaultValue={emp.alternativeNames || ""}
                                   onBlur={(e) => { if (e.target.value !== (emp.alternativeNames || "")) updateUser(emp.id, "alternativeNames", e.target.value); }}
-                                  placeholder="Petugas 2, 3 (pisah koma)..."
+                                  placeholder="Nama penjaga tambahan, pisahkan dengan koma..."
                                   className="block w-full text-[9px] font-medium text-slate-400 bg-slate-50 border border-slate-100 focus:border-blue-400 focus:outline-none px-2 py-0.5 rounded-lg transition-all italic"
                                 />
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase">Pilihan nama kasir:</span>
+                                  {getConfiguredKeeperNames(emp).map((name) => (
+                                    <span key={name} className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[8px] font-bold text-blue-700">
+                                      {name}
+                                    </span>
+                                  ))}
+                                </div>
+                                <p className="text-[8px] text-slate-400">Perubahan tersimpan setelah Anda keluar dari kolom.</p>
                                 <p className="text-[9px] text-slate-300 font-mono">{emp.email}</p>
                               </div>
                             </td>
@@ -7104,6 +7147,11 @@ export default function App() {
                       <p className="text-sm font-black text-slate-900 leading-none tracking-tight text-left">
                         PULSA & VOUCHER KASIR
                       </p>
+                      {shiftOpen && (
+                        <p className="text-[9px] font-bold text-blue-700 mt-1 truncate">
+                          Penjaga bertugas: {cashierName.trim() || displayedAccountName}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       {/* Cart total — only when cart has items */}
@@ -8571,20 +8619,12 @@ export default function App() {
                                   .filter(
                                     (u) => u && u.branchId === profile?.branchId,
                                   )
-                                  .flatMap((u) => {
-                                    const names = [u.name];
-                                    if (u.alternativeNames) {
-                                      const alternates = u.alternativeNames
-                                        .split(",")
-                                        .map((s: string) => s.trim())
-                                        .filter((s: string) => s);
-                                      names.push(...alternates);
-                                    }
-                                    return names.map((n: string) => ({
+                                  .flatMap((u) =>
+                                    getConfiguredKeeperNames(u).map((n) => ({
                                       value: n,
                                       label: n,
-                                    }));
-                                  }),
+                                    })),
+                                  ),
                               ]}
                               className="w-full"
                               buttonClassName="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
@@ -8669,20 +8709,12 @@ export default function App() {
                                   .filter(
                                     (u) => u && u.branchId === profile?.branchId,
                                   )
-                                  .flatMap((u) => {
-                                    const names = [u.name];
-                                    if (u.alternativeNames) {
-                                      const alternates = u.alternativeNames
-                                        .split(",")
-                                        .map((s: string) => s.trim())
-                                        .filter((s: string) => s);
-                                      names.push(...alternates);
-                                    }
-                                    return names.map((name: string) => ({
+                                    .flatMap((u) =>
+                                      getConfiguredKeeperNames(u).map((name) => ({
                                       value: name,
                                       label: name,
-                                    }));
-                                  }),
+                                      })),
+                                    ),
                               ]}
                               className="w-full"
                               buttonClassName="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 md:py-4 text-sm font-black uppercase tracking-tight focus:ring-4 focus:ring-blue-100 outline-none transition-all cursor-pointer shadow-sm"
