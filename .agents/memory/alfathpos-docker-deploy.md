@@ -9,9 +9,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 ## Version comparison context
 
-- Owner reported an STB update around 2026-11-02, but the later Dockge screenshot shows Kasir V10 API/web containers created on 2026-10-02; the discrepancy is unresolved.
-  **Why:** container creation time does not identify source commit, and the two dates must not be conflated.
-  **How to apply:** report both dates until image revision metadata or an STB source hash establishes the deployed version.
+- Owner confirms the STB's last Kasir V10 update was around 2026-10-02; Dockge shows the API/web containers were created that date.
+  **Why:** this aligns the reported deployment timeline with the observed container timestamps, though it still does not reveal the source commit.
+  **How to apply:** use 2026-10-02 as the STB comparison date; require a commit/hash or image revision label to assert exact code equivalence.
 
 ## Non-obvious decisions
 
