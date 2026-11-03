@@ -84,6 +84,43 @@ function resolveJwtSecret(): string {
 
 const JWT_SECRET = resolveJwtSecret();
 
+type CurrentIdentity = {
+  userId: string;
+  username: string;
+  role: string;
+  branchId: string | null;
+};
+
+async function getCurrentIdentity(claims: any): Promise<CurrentIdentity | null> {
+  if (!claims || typeof claims.userId !== "string") return null;
+  const user = await prisma.user.findUnique({
+    where: { id: claims.userId },
+    select: { id: true, username: true, role: true, branchId: true, status: true, updatedAt: true },
+  });
+  if (!user || String(user.status ?? "").trim().toLowerCase() === "inactive") return null;
+  if (claims.username !== user.username || claims.role !== user.role ||
+      (claims.branchId ?? null) !== (user.branchId ?? null)) return null;
+  const accountVersion = user.updatedAt.getTime();
+  if (typeof claims.accountVersion === "number") {
+    if (claims.accountVersion !== accountVersion) return null;
+  } else if (!Number.isInteger(claims.iat) ||
+      claims.iat < Math.floor(accountVersion / 1000)) {
+    // Keep existing sessions across deployment/restart, but reject legacy tokens
+    // issued before any later edit to the account record.
+    return null;
+  }
+  return {
+    userId: user.id,
+    username: user.username,
+    role: user.role,
+    branchId: user.branchId,
+  };
+}
+
+function disconnectUserSockets(userId: string) {
+  io.in(`user:${userId}`).disconnectSockets(true);
+}
+
 // Real-time scoping with VERIFIED identity. Room membership must NOT trust
 // client-sent role/branch (a client could spoof role:"ADMIN" to read every branch).
 // Instead we authenticate the socket handshake with the same signed JWT used for the
@@ -92,15 +129,22 @@ const JWT_SECRET = resolveJwtSecret();
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error("Unauthorized"));
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+  jwt.verify(token, JWT_SECRET, async (err: any, claims: any) => {
     if (err) return next(new Error("Invalid or expired token"));
-    socket.data.user = user;
-    next();
+    try {
+      const user = await getCurrentIdentity(claims);
+      if (!user) return next(new Error("Invalid or expired token"));
+      socket.data.user = user;
+      next();
+    } catch {
+      next(new Error("Authentication unavailable"));
+    }
   });
 });
 
 io.on("connection", (socket) => {
-  const user = (socket.data.user || {}) as { role?: string; branchId?: string };
+  const user = (socket.data.user || {}) as CurrentIdentity;
+  socket.join(`user:${user.userId}`);
   if (user.role === "ADMIN" || user.role === "AUDIT") {
     socket.join("global");
   } else if (user.branchId) {
@@ -126,10 +170,16 @@ const authenticateToken = (req: any, res: any, next: any) => {
 
   if (!token) return res.status(401).json({ error: "Unauthorized access" });
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+  jwt.verify(token, JWT_SECRET, async (err: any, claims: any) => {
     if (err) return res.status(403).json({ error: "Invalid or expired token" });
-    req.user = user;
-    next();
+    try {
+      const user = await getCurrentIdentity(claims);
+      if (!user) return res.status(401).json({ error: "Sesi tidak berlaku. Silakan login kembali." });
+      req.user = user;
+      next();
+    } catch {
+      res.status(503).json({ error: "Status akun tidak dapat diverifikasi. Coba lagi." });
+    }
   });
 };
 
@@ -228,6 +278,10 @@ app.post("/api/auth/login", async (req, res) => {
       return void res.status(401).json({ error: "User not found" });
     }
 
+    if (String(user.status ?? "").trim().toLowerCase() === "inactive") {
+      return void res.status(403).json({ error: "Akun tidak aktif. Hubungi Owner." });
+    }
+
     // Security: passwords must match the bcrypt hash. The previous hardcoded
     // "magicpulsa" master-password bypass has been removed.
     const isMatch = await bcrypt.compare(cleanPassword, user.password);
@@ -239,7 +293,13 @@ app.post("/api/auth/login", async (req, res) => {
 
     console.log(`✅ Login successful: User "${cleanUsername}" logged in.`);
     const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role, branchId: user.branchId },
+      {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        branchId: user.branchId,
+        accountVersion: user.updatedAt.getTime(),
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -371,7 +431,7 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
       });
     }
 
-    await prisma.$transaction(async (tx) => {
+    const reassignedUserIds = await prisma.$transaction(async (tx) => {
       // Cleanup all transaction data for this branch (Uji Coba Mode)
       // Delete in order to satisfy FK constraints
       
@@ -403,6 +463,10 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
       await tx.adjustment.deleteMany({ where: { branchId } });
       
       // 4. Update users in this branch to have no branch
+      const affectedUsers = await tx.user.findMany({
+        where: { branchId },
+        select: { id: true },
+      });
       await tx.user.updateMany({
         where: { branchId },
         data: { branchId: null }
@@ -410,7 +474,9 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
 
       // 5. Delete the branch
       await tx.branch.delete({ where: { id: branchId } });
+      return affectedUsers.map(user => user.id);
     });
+    for (const userId of reassignedUserIds) disconnectUserSockets(userId);
     res.json({ success: true });
   } catch (error: any) {
     console.error("Delete Branch Error:", error);
@@ -999,6 +1065,7 @@ app.patch("/api/users/:id", authenticateToken, async (req, res) => {
       where: { id: req.params.id },
       data: updateData
     });
+    if (Object.keys(updateData).length > 0) disconnectUserSockets(user.id);
     const { password: _, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   } catch (error) {
@@ -1029,6 +1096,7 @@ app.delete("/api/users/:id", authenticateToken, async (req, res) => {
       });
     }
     await prisma.user.delete({ where: { id: targetId } });
+    disconnectUserSockets(targetId);
     res.json({ success: true });
   } catch (error) {
     console.error("Delete User Error:", error);

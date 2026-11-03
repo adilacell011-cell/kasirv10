@@ -52,19 +52,29 @@ export async function autoArchiveOldSales(prisma: PrismaClient, pinnedTransactio
 }
 
 export async function syncCredentials(prisma: PrismaClient | Prisma.TransactionClient) {
-  const pHashAdmin = await bcrypt.hash("admin123", 10);
-  const pHashCashier = await bcrypt.hash("cashier123", 10);
+  const adminUsername = process.env.INITIAL_ADMIN_USERNAME?.trim().toLowerCase();
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
+  const cashierUsername = process.env.INITIAL_CASHIER_USERNAME?.trim().toLowerCase();
+  const cashierPassword = process.env.INITIAL_CASHIER_PASSWORD;
+  if (!adminUsername || !adminPassword?.trim() || !cashierUsername || !cashierPassword?.trim()) {
+    throw new Error("Seed requires explicit INITIAL_ADMIN_* and INITIAL_CASHIER_* environment values.");
+  }
+  if (adminUsername === cashierUsername) {
+    throw new Error("Initial admin and cashier usernames must be different.");
+  }
+  const pHashAdmin = await bcrypt.hash(adminPassword, 10);
+  const pHashCashier = await bcrypt.hash(cashierPassword, 10);
   const branch = await prisma.branch.upsert({
     where: { id: "default-branch-id" }, update: {},
     create: { id: "default-branch-id", name: "Cabang Utama", address: "Cianjur", phone: "0812" },
   });
   await prisma.user.upsert({
-    where: { username: "admin" }, update: {},
-    create: { username: "admin", password: pHashAdmin, name: "Super Admin", role: "ADMIN", branchId: branch.id, status: "Active" },
+    where: { username: adminUsername }, update: {},
+    create: { username: adminUsername, password: pHashAdmin, name: "Super Admin", role: "ADMIN", branchId: branch.id, status: "Active" },
   });
   await prisma.user.upsert({
-    where: { username: "cashier" }, update: {},
-    create: { username: "cashier", password: pHashCashier, name: "Kasir Toko", role: "CASHIER", branchId: branch.id, status: "Active" },
+    where: { username: cashierUsername }, update: {},
+    create: { username: cashierUsername, password: pHashCashier, name: "Kasir Toko", role: "CASHIER", branchId: branch.id, status: "Active" },
   });
   await prisma.globalConfig.upsert({
     where: { id: "default" }, update: {},

@@ -195,10 +195,56 @@ test("legacy maintenance totals and archive selection preserved using in-memory 
   } as any, tx);
   assert.deepEqual(writes[2], writes[0]);
   let seeds = 0;
-  await syncCredentials({
-    branch: { upsert: async (x: any) => { assert.deepEqual(x.update, {}); seeds++; return { id: "default-branch-id" }; } },
-    user: { upsert: async (x: any) => { assert.deepEqual(x.update, {}); seeds++; } },
-    globalConfig: { upsert: async (x: any) => { assert.deepEqual(x.update, {}); seeds++; } },
-  } as any);
+  const oldBootstrapEnv = {
+    adminUsername: process.env.INITIAL_ADMIN_USERNAME,
+    adminPassword: process.env.INITIAL_ADMIN_PASSWORD,
+    cashierUsername: process.env.INITIAL_CASHIER_USERNAME,
+    cashierPassword: process.env.INITIAL_CASHIER_PASSWORD,
+  };
+  process.env.INITIAL_ADMIN_USERNAME = "test-owner";
+  process.env.INITIAL_ADMIN_PASSWORD = "test-owner-password";
+  process.env.INITIAL_CASHIER_USERNAME = "test-branch";
+  process.env.INITIAL_CASHIER_PASSWORD = "test-branch-password";
+  try {
+    await syncCredentials({
+      branch: { upsert: async (x: any) => { assert.deepEqual(x.update, {}); seeds++; return { id: "default-branch-id" }; } },
+      user: { upsert: async (x: any) => { assert.deepEqual(x.update, {}); seeds++; } },
+      globalConfig: { upsert: async (x: any) => { assert.deepEqual(x.update, {}); seeds++; } },
+    } as any);
+  } finally {
+    if (oldBootstrapEnv.adminUsername === undefined) delete process.env.INITIAL_ADMIN_USERNAME;
+    else process.env.INITIAL_ADMIN_USERNAME = oldBootstrapEnv.adminUsername;
+    if (oldBootstrapEnv.adminPassword === undefined) delete process.env.INITIAL_ADMIN_PASSWORD;
+    else process.env.INITIAL_ADMIN_PASSWORD = oldBootstrapEnv.adminPassword;
+    if (oldBootstrapEnv.cashierUsername === undefined) delete process.env.INITIAL_CASHIER_USERNAME;
+    else process.env.INITIAL_CASHIER_USERNAME = oldBootstrapEnv.cashierUsername;
+    if (oldBootstrapEnv.cashierPassword === undefined) delete process.env.INITIAL_CASHIER_PASSWORD;
+    else process.env.INITIAL_CASHIER_PASSWORD = oldBootstrapEnv.cashierPassword;
+  }
   assert.equal(seeds, 4);
+});
+
+test("credential seed refuses to write without explicit account credentials", async () => {
+  const keys = [
+    "INITIAL_ADMIN_USERNAME",
+    "INITIAL_ADMIN_PASSWORD",
+    "INITIAL_CASHIER_USERNAME",
+    "INITIAL_CASHIER_PASSWORD",
+  ] as const;
+  const oldValues = keys.map(key => process.env[key]);
+  for (const key of keys) delete process.env[key];
+  let writes = 0;
+  try {
+    await assert.rejects(syncCredentials({
+      branch: { upsert: async () => { writes++; } },
+      user: { upsert: async () => { writes++; } },
+      globalConfig: { upsert: async () => { writes++; } },
+    } as any), /explicit INITIAL_ADMIN_\* and INITIAL_CASHIER_\* environment values/);
+    assert.equal(writes, 0);
+  } finally {
+    keys.forEach((key, index) => {
+      if (oldValues[index] === undefined) delete process.env[key];
+      else process.env[key] = oldValues[index];
+    });
+  }
 });

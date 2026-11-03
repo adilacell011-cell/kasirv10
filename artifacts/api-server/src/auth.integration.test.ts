@@ -39,6 +39,7 @@ let branchAId = "";
 let branchBId = "";
 let cashierA: { id: string; username: string; password: string };
 let cashierB: { id: string; username: string; password: string };
+let inactiveCashier: { id: string; username: string; password: string };
 let admin: { id: string; username: string; password: string };
 let productId = "";
 let otherBranchSaleId = "";
@@ -132,6 +133,21 @@ async function expectSocketRejected(auth: Record<string, string>, message: RegEx
   }
 }
 
+async function waitForSocketDisconnect(socket: Socket): Promise<void> {
+  if (!socket.connected) return;
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      socket.off("disconnect", onDisconnect);
+      reject(new Error("Socket.IO session was not revoked after account access changed."));
+    }, 4_000);
+    const onDisconnect = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+    socket.once("disconnect", onDisconnect);
+  });
+}
+
 function waitForEvent(socket: Socket, expectedBranchId: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -161,6 +177,7 @@ before(async () => {
   branchBId = `auth-test-b-${suffix}`;
   cashierA = { id: `auth-cashier-a-${suffix}`, username: `auth-cashier-a-${suffix}`, password: "cashier-a-test-password" };
   cashierB = { id: `auth-cashier-b-${suffix}`, username: `auth-cashier-b-${suffix}`, password: "cashier-b-test-password" };
+  inactiveCashier = { id: `auth-cashier-inactive-${suffix}`, username: `auth-cashier-inactive-${suffix}`, password: "inactive-cashier-test-password" };
   admin = { id: `auth-admin-${suffix}`, username: `auth-admin-${suffix}`, password: "admin-test-password" };
   productId = `auth-product-${suffix}`;
   otherBranchSaleId = `auth-sale-${suffix}`;
@@ -176,6 +193,7 @@ before(async () => {
     data: [
       { id: cashierA.id, username: cashierA.username, password: await passwordHash(cashierA.password), name: "Test Cashier A", role: "CASHIER", branchId: branchAId, status: "Active" },
       { id: cashierB.id, username: cashierB.username, password: await passwordHash(cashierB.password), name: "Test Cashier B", role: "CASHIER", branchId: branchBId, status: "Active" },
+      { id: inactiveCashier.id, username: inactiveCashier.username, password: await passwordHash(inactiveCashier.password), name: "Inactive Test Cashier", role: "CASHIER", branchId: branchAId, status: "Inactive" },
       { id: admin.id, username: admin.username, password: await passwordHash(admin.password), name: "Test Admin", role: "ADMIN", branchId: branchAId, status: "Active" },
     ],
   });
@@ -318,4 +336,83 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.deepEqual(cashierAEvents.map((event) => event.branchId), [branchAId]);
   assert.deepEqual(cashierBEvents.map((event) => event.branchId), [branchBId]);
   assert.deepEqual(adminEvents.map((event) => event.branchId), [branchAId, branchBId]);
+
+  const inactiveLogin = await login(inactiveCashier.username, inactiveCashier.password);
+  assert.equal(inactiveLogin.status, 403);
+
+  const statusDisconnect = waitForSocketDisconnect(cashierBSocket);
+  const disableCashier = await fetch(`${apiUrl}/api/users/${cashierB.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ status: "Inactive" }),
+  });
+  assert.equal(disableCashier.status, 200);
+  await statusDisconnect;
+  const disabledTokenRequest = await fetch(`${apiUrl}/api/transactions`, {
+    headers: { authorization: `Bearer ${cashierBPayload.token}` },
+  });
+  assert.equal(disabledTokenRequest.status, 401);
+  await expectSocketRejected({ token: cashierBPayload.token }, /Invalid or expired token/);
+
+  const reactivateCashier = await fetch(`${apiUrl}/api/users/${cashierB.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ status: "Active" }),
+  });
+  assert.equal(reactivateCashier.status, 200);
+  const reactivatedOldToken = await fetch(`${apiUrl}/api/transactions`, {
+    headers: { authorization: `Bearer ${cashierBPayload.token}` },
+  });
+  assert.equal(reactivatedOldToken.status, 401);
+
+  const branchLogin = await login(cashierB.username, cashierB.password);
+  assert.equal(branchLogin.status, 200);
+  const branchPayload = await branchLogin.json() as { token: string; user: Record<string, unknown> };
+  const branchSocket = await connectSocket({ token: branchPayload.token });
+  const branchDisconnect = waitForSocketDisconnect(branchSocket);
+  const moveCashier = await fetch(`${apiUrl}/api/users/${cashierB.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ branchId: branchAId }),
+  });
+  assert.equal(moveCashier.status, 200);
+  await branchDisconnect;
+  const staleBranchToken = await fetch(`${apiUrl}/api/transactions`, {
+    headers: { authorization: `Bearer ${branchPayload.token}` },
+  });
+  assert.equal(staleBranchToken.status, 401);
+
+  const roleLogin = await login(cashierB.username, cashierB.password);
+  assert.equal(roleLogin.status, 200);
+  const rolePayload = await roleLogin.json() as { token: string; user: Record<string, unknown> };
+  const roleSocket = await connectSocket({ token: rolePayload.token });
+  const roleDisconnect = waitForSocketDisconnect(roleSocket);
+  const changeRole = await fetch(`${apiUrl}/api/users/${cashierB.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ role: "AUDIT" }),
+  });
+  assert.equal(changeRole.status, 200);
+  await roleDisconnect;
+  const staleRoleToken = await fetch(`${apiUrl}/api/transactions`, {
+    headers: { authorization: `Bearer ${rolePayload.token}` },
+  });
+  assert.equal(staleRoleToken.status, 401);
+  const currentRoleLogin = await login(cashierB.username, cashierB.password);
+  assert.equal(currentRoleLogin.status, 200);
+  const currentRolePayload = await currentRoleLogin.json() as { user: Record<string, unknown> };
+  assert.equal(currentRolePayload.user.role, "AUDIT");
+  assert.equal(currentRolePayload.user.branchId, branchAId);
 });
