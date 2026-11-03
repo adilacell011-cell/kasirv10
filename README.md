@@ -1,161 +1,138 @@
 # Alfath Pulsa Manajemen (AlfathPOS)
 
-Aplikasi kasir & manajemen stok/transaksi untuk usaha pulsa multi-cabang.
-Berjalan **sepenuhnya di server sendiri** (tanpa layanan cloud) memakai **Docker**.
-Database, semua tabel, dan user awal dibuat **otomatis** saat pertama kali dijalankan.
+Aplikasi kasir dan manajemen stok/transaksi untuk usaha pulsa multi-cabang.
+Berjalan di server sendiri memakai Docker, dengan PostgreSQL sebagai penyimpanan.
 
 - Frontend: Vite + React (dilayani nginx)
 - Backend: Express + Prisma + Socket.IO
 - Database: PostgreSQL
-- Backup database otomatis ke folder `./backups`
+- Backup berkala ke folder host `./backups`
+
+API memeriksa target database saat startup. Startup tidak menjalankan migrasi,
+seed, arsip, atau backfill otomatis.
 
 ---
 
 ## 1. Kebutuhan server
 
-Cukup install **Docker** (sudah termasuk Docker Compose). Tidak perlu install Node.js,
-database, atau lainnya — semua sudah dibungkus di dalam Docker.
+Install Docker dan Docker Compose pada host Linux atau sistem yang mendukung
+container. Pastikan image aplikasi tersedia untuk arsitektur host yang dipakai.
 
-- Linux (Ubuntu/Debian) — paling umum dipakai:
-  ```bash
-  curl -fsSL https://get.docker.com | sh
-  ```
-- Atau Windows/Mac: pasang **Docker Desktop** dari https://www.docker.com/products/docker-desktop
+---
 
-Cek Docker sudah aktif:
-```bash
-docker --version
-docker compose version
+## 2. Mengirim kode ke GitHub
+
+Sebelum push, tinjau seluruh commit dan file yang akan dikirim. Jangan masukkan
+file `.env`, kredensial, dump database, backup, log, atau data pelanggan.
+
+Repository proyek:
+
+```text
+https://github.com/adilacell011-cell/kasirv10
 ```
 
 ---
 
-## 2. Mengirim kode ke GitHub (dari Replit)
+## 3. Persiapan Dockge/VPS
 
-Repo GitHub sudah terhubung ke proyek ini. Ada **dua cara**, pilih salah satu.
+Gunakan `compose.dockge.yaml` dari repository di atas. Compose membangun API
+dan frontend dari branch `main`; push kode yang sudah ditinjau sebelum
+menjalankan build di server.
 
-### Cara A — lewat tombol (paling mudah, tanpa ngetik)
-1. Di Replit, buka panel **Git** (ikon cabang di sisi kiri).
-2. Tulis pesan singkat di kotak **Commit message** (misal: "update aplikasi").
-3. Klik **Commit & Push**.
+Isi variabel yang diwajibkan di Dockge berdasarkan `.env.example`. Nilai
+`DATABASE_URL` harus menunjuk ke service dan database yang sama dengan
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, dan `POSTGRES_DB`. Nilai `DB_EXPECTED_*`
+harus cocok dengan target tersebut. Jangan menggunakan URL database Replit,
+STB, atau VPS lain secara tidak sengaja.
 
-Selesai — kode otomatis masuk ke GitHub.
+`JWT_SECRET` harus berupa nilai acak kuat, unik untuk instalasi, dan tidak
+boleh disimpan di Git. Compose gagal dibuat bila nilai wajib belum diisi.
 
-### Cara B — lewat terminal (Shell)
-```bash
-git add -A
-git commit -m "update aplikasi"
-git push origin main
-```
-Kalau diminta login, masukkan **username GitHub** dan **Personal Access Token**
-(token dibuat di GitHub → Settings → Developer settings → Personal access tokens).
+Variabel `INITIAL_ADMIN_*` dan `INITIAL_CASHIER_*` hanya untuk proses bootstrap
+akun awal yang disetujui. Tidak ada kredensial bawaan. Jangan menjalankan seed
+pada database yang sudah berisi data tanpa prosedur yang ditinjau. Hapus nilai
+bootstrap dari konfigurasi Dockge setelah proses yang disetujui selesai.
 
----
-
-## 3. Memasang & menjalankan di server (dari GitHub)
-
-Lakukan ini **di server** tempat aplikasi mau dipakai.
-
-```bash
-# 1) Ambil kode dari GitHub
-git clone https://github.com/dmtshop20/AlpathPulsaPossas.git
-cd AlpathPulsaPossas
-
-# 2) Siapkan file pengaturan, lalu ubah password & secret-nya
-cp .env.example .env
-nano .env        # ganti POSTGRES_PASSWORD dan JWT_SECRET (lihat penjelasan di bawah)
-
-# 3) Bangun & jalankan (proses pertama agak lama, sabar ya)
-docker compose up -d --build
-```
-
-Setelah selesai, buka di browser:
-```
-http://ALAMAT-IP-SERVER:8080
-```
-(misal `http://192.168.1.10:8080`. Kalau di komputer yang sama: `http://localhost:8080`)
-
-### Isi file `.env`
-| Pengaturan | Arti | Saran |
-|---|---|---|
-| `POSTGRES_PASSWORD` | Password database | Ganti dengan kata sandi sendiri |
-| `JWT_SECRET` | Kunci rahasia keamanan login | Isi teks acak panjang (≥ 32 karakter) |
-| `WEB_PORT` | Alamat port aplikasi | Default `8080` |
-| `BACKUP_INTERVAL_SECONDS` | Jeda backup otomatis | `21600` = tiap 6 jam |
-| `BACKUP_KEEP_DAYS` | Lama backup disimpan | `14` hari |
-
-> **Penting:** Jangan pakai password contoh. Ganti `POSTGRES_PASSWORD` dan `JWT_SECRET`
-> sebelum dipakai sungguhan.
+Web container memublikasikan HTTP pada port `WEB_PORT` (default 8080). Untuk
+akses internet, tempatkan di belakang reverse proxy HTTPS dan jangan membuka
+akses database PostgreSQL ke publik.
 
 ---
 
-## 4. Login pertama kali
+## 4. Akun dan hak akses
 
-Akun bawaan dibuat otomatis:
+Tidak ada username atau password default yang aman untuk dipakai. Buat akun
+awal dengan kredensial yang dipilih Owner melalui prosedur bootstrap yang
+terkontrol. Akun cabang tetap mengikuti model akun bersama yang digunakan
+aplikasi.
 
-| Peran | Username | Password |
-|---|---|---|
-| Admin (pemilik) | `admin` | `admin123` |
-| Kasir | `cashier` | `cashier123` |
+API memeriksa status dan versi akun dari database pada permintaan serta
+koneksi Socket.IO. Mengubah data akun akan mencabut sesi lama dan meminta
+login kembali; restart API saja tidak mencabut sesi selama database dan
+`JWT_SECRET` tetap sama.
 
-> **Segera ganti password** lewat menu di dalam aplikasi setelah login.
+Hak akses mengikuti implementasi aplikasi:
 
-Hak akses per peran:
-- **Admin** — akses penuh ke semua fitur.
-- **Audit** — semua operasi stok di semua cabang (opname, transfer, voucher) + lihat laporan; tidak bisa kelola produk/cabang/user, refund, atau tarik komisi.
-- **Kasir** — penjualan, tambah & transfer stok, refund — hanya untuk cabangnya sendiri.
-
----
-
-## 5. Mengupdate aplikasi (versi baru dari GitHub)
-
-Di server:
-```bash
-cd AlpathPulsaPossas
-git pull
-docker compose up -d --build
-```
-Data **tidak hilang** saat update — tersimpan aman di volume database.
+- **Admin** — akses administratif sesuai hak yang tersedia.
+- **Audit** — pemeriksaan stok/laporan sesuai otorisasi aplikasi.
+- **Kasir** — operasional cabangnya sesuai shift dan aturan aplikasi.
 
 ---
 
-## 6. Backup & restore database
+## 5. Pembaruan aplikasi
 
-- Backup berjalan **otomatis** ke folder `./backups` (sesuai jadwal di `.env`).
-- **Penting:** salin folder `backups/` ke tempat lain (hard disk/cloud) secara berkala,
-  karena kalau servernya rusak, backup di server yang sama ikut hilang.
+Pembaruan VPS harus dilakukan setelah perubahan kode ditinjau, diuji pada
+lingkungan terpisah, dan mendapat persetujuan Owner. Jangan menjalankan
+migrasi, seed, archive, atau backfill sebagai bagian dari pembaruan tanpa
+persetujuan dan rencana pemulihan yang terpisah.
 
-Backup manual sekarang juga:
-```bash
-docker compose exec -T db pg_dump -U alfath -d alfath | gzip > backup-manual.sql.gz
-```
-
-Restore dari sebuah file backup:
-```bash
-gunzip -c backups/alfath-YYYYMMDD-HHMMSS.sql.gz | docker compose exec -T db psql -U alfath -d alfath
-```
+Volume `pgdata` menyimpan database saat container diperbarui. Ini bukan
+pengganti backup teruji.
 
 ---
 
-## 7. Perintah yang sering dipakai
+## 6. Backup dan pemulihan
+
+- Backup terjadwal disimpan ke bind mount `./backups`.
+- Backup dan database berada pada host yang sama; kerusakan atau kehilangan
+  host dapat menghilangkan keduanya.
+- Salin backup terenkripsi ke lokasi off-host yang terpisah dan pantau hasil
+  backup.
+- Script memeriksa status `pg_dump`, kompresi, file tidak kosong, dan validitas
+  gzip sebelum menerbitkan file akhir.
+
+Backup manual:
 
 ```bash
-docker compose ps                 # lihat status semua layanan
-docker compose logs -f            # lihat log (Ctrl+C untuk keluar)
-docker compose restart            # restart aplikasi
-docker compose down               # matikan aplikasi (data tetap aman)
-docker compose up -d              # nyalakan lagi
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  | gzip > backup-manual.sql.gz
 ```
 
-> Catatan: jangan pakai `docker compose down -v` — opsi `-v` akan **menghapus database**.
+Pulihkan terlebih dahulu ke database QA yang benar-benar terpisah. Cocokkan
+data dan uji aplikasi sebelum menyetujui cutover. Jangan mengalirkan dump
+langsung ke database produksi aktif: opsi pembersihan pada dump dapat
+menghapus atau mengganti objek database.
 
 ---
 
-## 8. Kalau tidak bisa dibuka
+## 7. Perintah operasional umum
 
-- Pastikan port **8080** dibuka di firewall server:
-  ```bash
-  sudo ufw allow 8080
-  ```
-- Cek apakah semua layanan jalan: `docker compose ps` (semua harus `running`).
-- Lihat pesan error: `docker compose logs -f`.
+```bash
+docker compose ps
+docker compose logs -f
+docker compose restart
+docker compose down
+docker compose up -d
+```
+
+Jangan gunakan `docker compose down -v`; opsi `-v` menghapus volume database.
+
+---
+
+## 8. Pengamanan akses
+
+- Gunakan HTTPS melalui reverse proxy.
+- Batasi akses jaringan ke host dan port yang memang diperlukan.
+- Jangan memublikasikan port database.
+- Simpan `.env` di server, dengan izin file terbatas, dan jangan commit ke Git.
+- Uji backup serta restore pada target QA secara berkala.

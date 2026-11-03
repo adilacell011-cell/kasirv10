@@ -70,9 +70,11 @@ timeout membatalkan transaksi. Tidak ada retry otomatis.
 
 Perilaku lama yang dipertahankan:
 
-- `seed`: membuat default yang belum ada, tidak menimpa akun yang sudah ada.
-  Kredensial bawaan lama tetap merupakan risiko; jangan membuka instalasi baru
-  ke publik sebelum akun diamankan. Seed tidak lagi memanggil backfill.
+- `seed`: hanya operasi manual dengan gate persetujuan. Harus diberi
+  `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_CASHIER_USERNAME`,
+  dan `INITIAL_CASHIER_PASSWORD`; tidak ada kredensial bawaan. Upsert tidak
+  menimpa akun yang sudah ada. Hapus variabel bootstrap setelah penggunaan
+  yang disetujui. Seed tidak memanggil backfill.
 - `backfill`: menjumlahkan transaksi sukses tersimpan per cabang/hari WIB 06:00,
   lalu menetapkan nilai ringkasan. Masih berisiko menimpa rekap yang sudah
   mencakup arsip bila sumber tidak lengkap. Perlu audit rekonsiliasi terpisah.

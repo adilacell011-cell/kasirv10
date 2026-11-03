@@ -278,10 +278,6 @@ app.post("/api/auth/login", async (req, res) => {
       return void res.status(401).json({ error: "User not found" });
     }
 
-    if (String(user.status ?? "").trim().toLowerCase() === "inactive") {
-      return void res.status(403).json({ error: "Akun tidak aktif. Hubungi Owner." });
-    }
-
     // Security: passwords must match the bcrypt hash. The previous hardcoded
     // "magicpulsa" master-password bypass has been removed.
     const isMatch = await bcrypt.compare(cleanPassword, user.password);
@@ -289,6 +285,10 @@ app.post("/api/auth/login", async (req, res) => {
     if (!isMatch) {
       console.log(`❌ Login failed: Invalid password for user "${cleanUsername}".`);
       return void res.status(401).json({ error: "Invalid password" });
+    }
+
+    if (String(user.status ?? "").trim().toLowerCase() === "inactive") {
+      return void res.status(403).json({ error: "Akun tidak aktif. Hubungi Owner." });
     }
 
     console.log(`✅ Login successful: User "${cleanUsername}" logged in.`);

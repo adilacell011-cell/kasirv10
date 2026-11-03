@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { io, type Socket } from "socket.io-client";
 
@@ -35,6 +36,7 @@ const connectedSockets = new Set<Socket>();
 
 let apiProcess: ChildProcess | undefined;
 let apiUrl = "";
+let apiPort = 0;
 let branchAId = "";
 let branchBId = "";
 let cashierA: { id: string; username: string; password: string };
@@ -73,6 +75,31 @@ async function waitForApi(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw new Error(`API test process did not become ready: ${String(lastError ?? "timeout")}`);
+}
+
+async function startApi(): Promise<void> {
+  apiProcess = spawn(process.execPath, ["--enable-source-maps", "dist/index.mjs"], {
+    cwd: apiDirectory,
+    env: {
+      ...process.env,
+      DATABASE_URL: testDatabaseUrl,
+      JWT_SECRET: jwtSecret,
+      PORT: String(apiPort),
+      NODE_ENV: "test",
+    },
+    stdio: "ignore",
+  });
+  await waitForApi();
+}
+
+async function stopApi(): Promise<void> {
+  if (!apiProcess || apiProcess.exitCode !== null) return;
+  apiProcess.kill("SIGTERM");
+  await Promise.race([
+    once(apiProcess, "exit"),
+    new Promise((resolve) => setTimeout(resolve, 5_000)),
+  ]);
+  if (apiProcess.exitCode === null) apiProcess.kill("SIGKILL");
 }
 
 async function login(username: string, password: string) {
@@ -212,32 +239,14 @@ before(async () => {
     },
   });
 
-  const port = await getAvailablePort();
-  apiUrl = `http://127.0.0.1:${port}`;
-  apiProcess = spawn(process.execPath, ["--enable-source-maps", "dist/index.mjs"], {
-    cwd: apiDirectory,
-    env: {
-      ...process.env,
-      DATABASE_URL: testDatabaseUrl,
-      JWT_SECRET: jwtSecret,
-      PORT: String(port),
-      NODE_ENV: "test",
-    },
-    stdio: "ignore",
-  });
-  await waitForApi();
+  apiPort = await getAvailablePort();
+  apiUrl = `http://127.0.0.1:${apiPort}`;
+  await startApi();
 });
 
 after(async () => {
   for (const socket of connectedSockets) socket.close();
-  if (apiProcess && apiProcess.exitCode === null) {
-    apiProcess.kill("SIGTERM");
-    await Promise.race([
-      once(apiProcess, "exit"),
-      new Promise((resolve) => setTimeout(resolve, 5_000)),
-    ]);
-    if (apiProcess.exitCode === null) apiProcess.kill("SIGKILL");
-  }
+  await stopApi();
   await prisma.$disconnect();
 });
 
@@ -337,6 +346,8 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.deepEqual(cashierBEvents.map((event) => event.branchId), [branchBId]);
   assert.deepEqual(adminEvents.map((event) => event.branchId), [branchAId, branchBId]);
 
+  const inactiveWrongPassword = await login(inactiveCashier.username, "incorrect-inactive-password");
+  assert.equal(inactiveWrongPassword.status, 401);
   const inactiveLogin = await login(inactiveCashier.username, inactiveCashier.password);
   assert.equal(inactiveLogin.status, 403);
 
@@ -415,4 +426,24 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const currentRolePayload = await currentRoleLogin.json() as { user: Record<string, unknown> };
   assert.equal(currentRolePayload.user.role, "AUDIT");
   assert.equal(currentRolePayload.user.branchId, branchAId);
+
+  const restartLogin = await login(cashierA.username, cashierA.password);
+  assert.equal(restartLogin.status, 200);
+  const restartPayload = await restartLogin.json() as { token: string };
+  const legacyToken = jwt.sign({
+    userId: cashierA.id,
+    username: cashierA.username,
+    role: "CASHIER",
+    branchId: branchAId,
+  }, jwtSecret, { expiresIn: "7d" });
+  await stopApi();
+  await startApi();
+  for (const token of [restartPayload.token, legacyToken]) {
+    const afterRestart = await fetch(`${apiUrl}/api/transactions`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(afterRestart.status, 200);
+  }
+  const reconnectedSocket = await connectSocket({ token: restartPayload.token });
+  reconnectedSocket.close();
 });

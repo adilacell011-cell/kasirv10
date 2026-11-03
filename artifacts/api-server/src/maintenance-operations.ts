@@ -53,10 +53,10 @@ export async function autoArchiveOldSales(prisma: PrismaClient, pinnedTransactio
 
 export async function syncCredentials(prisma: PrismaClient | Prisma.TransactionClient) {
   const adminUsername = process.env.INITIAL_ADMIN_USERNAME?.trim().toLowerCase();
-  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD?.trim();
   const cashierUsername = process.env.INITIAL_CASHIER_USERNAME?.trim().toLowerCase();
-  const cashierPassword = process.env.INITIAL_CASHIER_PASSWORD;
-  if (!adminUsername || !adminPassword?.trim() || !cashierUsername || !cashierPassword?.trim()) {
+  const cashierPassword = process.env.INITIAL_CASHIER_PASSWORD?.trim();
+  if (!adminUsername || !adminPassword || !cashierUsername || !cashierPassword) {
     throw new Error("Seed requires explicit INITIAL_ADMIN_* and INITIAL_CASHIER_* environment values.");
   }
   if (adminUsername === cashierUsername) {

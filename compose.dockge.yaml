@@ -1,50 +1,49 @@
-# AlfathPOS - Dockge / "pull straight from GitHub" deployment.
-#
-# This Compose file builds the app DIRECTLY from the GitHub repository, so you
-# do NOT need to clone anything onto the server. Just paste this whole file into
-# Dockge's compose editor, fill in the .env box, and deploy.
-#
-# Requirements:
-#   - The GitHub repo must be PUBLIC (a git build context cannot log in).
-#     For a private repo, put a token in the URL, e.g.:
-#       https://<TOKEN>@github.com/dmtshop20/AlpathPulsaPossas.git#main
-#   - Push your latest code to GitHub first, otherwise the server builds an old version.
-#
-# After deploy, open:  http://<server-ip>:8080   (login: admin / admin123)
+# AlfathPOS - Dockge deployment.
+# Builds from the approved repository; provide runtime values in Dockge's
+# environment editor. Never put credentials or personal access tokens in this file.
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-alfath}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alfath}
-      POSTGRES_DB: ${POSTGRES_DB:-alfath}
+      POSTGRES_USER: "${POSTGRES_USER:?Set POSTGRES_USER in Dockge}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Dockge}"
+      POSTGRES_DB: "${POSTGRES_DB:?Set POSTGRES_DB in Dockge}"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alfath} -d ${POSTGRES_DB:-alfath}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?Set POSTGRES_USER} -d ${POSTGRES_DB:?Set POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 12
 
   api:
     build:
-      context: https://github.com/dmtshop20/AlpathPulsaPossas.git#main
+      context: https://github.com/adilacell011-cell/kasirv10.git#main
       dockerfile: artifacts/api-server/Dockerfile
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-alfath}:${POSTGRES_PASSWORD:-alfath}@db:5432/${POSTGRES_DB:-alfath}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-string}
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL in Dockge}"
+      JWT_SECRET: "${JWT_SECRET:?Set a strong JWT_SECRET in Dockge}"
+      DB_RUNTIME_ENV: "${DB_RUNTIME_ENV:?Set DB_RUNTIME_ENV=production}"
+      DB_EXPECTED_HOST: "${DB_EXPECTED_HOST:?Set DB_EXPECTED_HOST}"
+      DB_EXPECTED_NAME: "${DB_EXPECTED_NAME:?Set DB_EXPECTED_NAME to POSTGRES_DB}"
+      DB_EXPECTED_PORT: "${DB_EXPECTED_PORT:?Set DB_EXPECTED_PORT}"
+      DB_EXPECTED_SCHEMA: "${DB_EXPECTED_SCHEMA:?Set DB_EXPECTED_SCHEMA}"
+      INITIAL_ADMIN_USERNAME: "${INITIAL_ADMIN_USERNAME:-}"
+      INITIAL_ADMIN_PASSWORD: "${INITIAL_ADMIN_PASSWORD:-}"
+      INITIAL_CASHIER_USERNAME: "${INITIAL_CASHIER_USERNAME:-}"
+      INITIAL_CASHIER_PASSWORD: "${INITIAL_CASHIER_PASSWORD:-}"
       PORT: 8080
       NODE_ENV: production
 
   web:
     build:
-      context: https://github.com/dmtshop20/AlpathPulsaPossas.git#main
+      context: https://github.com/adilacell011-cell/kasirv10.git#main
       dockerfile: artifacts/alfath-pos/Dockerfile
     restart: unless-stopped
     depends_on:
@@ -52,10 +51,10 @@ services:
     ports:
       - "${WEB_PORT:-8080}:80"
 
-  # Automated database backups -> written to ./backups (inside this stack's folder).
-  # The backup script is inlined here so nothing needs to exist on the host.
-  # Restore a dump with:
-  #   gunzip -c backups/alfath-YYYYMMDD-HHMMSS.sql.gz | docker compose exec -T db psql -U alfath -d alfath
+  # Automated database backups are written to ./backups on the host.
+  # Keep an additional, off-host copy; the database and this folder share a host.
+  # Restore only to an isolated QA database first. Do not pipe a dump into the
+  # active production database through this stack.
   backup:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -65,11 +64,11 @@ services:
         condition: service_healthy
     environment:
       PGHOST: db
-      PGUSER: ${POSTGRES_USER:-alfath}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-alfath}
-      PGDATABASE: ${POSTGRES_DB:-alfath}
-      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-21600}
-      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      PGUSER: "${POSTGRES_USER:?Set POSTGRES_USER in Dockge}"
+      PGPASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Dockge}"
+      PGDATABASE: "${POSTGRES_DB:?Set POSTGRES_DB in Dockge}"
+      BACKUP_INTERVAL_SECONDS: "${BACKUP_INTERVAL_SECONDS:-21600}"
+      BACKUP_KEEP_DAYS: "${BACKUP_KEEP_DAYS:-14}"
     volumes:
       - ./backups:/backups
     entrypoint:

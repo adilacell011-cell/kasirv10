@@ -1,26 +1,18 @@
-# AlfathPOS - local server deployment with Docker Compose.
-#
-# Quick start on your local server:
-#   1) git clone <this repo> && cd <repo>
-#   2) cp .env.example .env   (then edit .env and change the passwords/secret)
-#   3) docker compose up -d --build
-#   4) open http://<server-ip>:8080  (login: admin / admin123)
-#
-# The database and all tables are created AUTOMATICALLY on first start.
-# Data is stored in the "pgdata" volume and survives restarts/rebuilds.
+# Local/self-hosted Docker Compose configuration.
+# Copy .env.example to .env and provide every required value before starting.
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-alfath}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alfath}
-      POSTGRES_DB: ${POSTGRES_DB:-alfath}
+      POSTGRES_USER: "${POSTGRES_USER:?Set POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB:?Set POSTGRES_DB}"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alfath} -d ${POSTGRES_DB:-alfath}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?Set POSTGRES_USER} -d ${POSTGRES_DB:?Set POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -34,8 +26,20 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-alfath}:${POSTGRES_PASSWORD:-alfath}@db:5432/${POSTGRES_DB:-alfath}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-string}
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL}"
+      DB_RUNTIME_ENV: "${DB_RUNTIME_ENV:?Set DB_RUNTIME_ENV=production}"
+      DB_EXPECTED_HOST: "${DB_EXPECTED_HOST:?Set DB_EXPECTED_HOST}"
+      DB_EXPECTED_NAME: "${DB_EXPECTED_NAME:?Set DB_EXPECTED_NAME to POSTGRES_DB}"
+      DB_EXPECTED_PORT: "${DB_EXPECTED_PORT:?Set DB_EXPECTED_PORT}"
+      DB_EXPECTED_SCHEMA: "${DB_EXPECTED_SCHEMA:?Set DB_EXPECTED_SCHEMA}"
+      PGHOST: db
+      PGDATABASE: "${POSTGRES_DB:?Set POSTGRES_DB}"
+      PGPORT: 5432
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET}"
+      INITIAL_ADMIN_USERNAME: "${INITIAL_ADMIN_USERNAME:-}"
+      INITIAL_ADMIN_PASSWORD: "${INITIAL_ADMIN_PASSWORD:-}"
+      INITIAL_CASHIER_USERNAME: "${INITIAL_CASHIER_USERNAME:-}"
+      INITIAL_CASHIER_PASSWORD: "${INITIAL_CASHIER_PASSWORD:-}"
       PORT: 8080
       NODE_ENV: production
 
@@ -49,26 +53,22 @@ services:
     ports:
       - "${WEB_PORT:-8080}:80"
 
-  # Automated database backups -> written to ./backups on the host.
-  # Restore a dump with:
-  #   gunzip -c backups/alfath-YYYYMMDD-HHMMSS.sql.gz | docker compose exec -T db psql -U alfath -d alfath
+  # Backup files share the host with pgdata. Copy them to a separate off-host
+  # destination for disaster recovery. Test restores only on an isolated target.
   backup:
     image: postgres:16-alpine
     restart: unless-stopped
-    # Run as root so the container can always write to the ./backups bind mount,
-    # regardless of host directory ownership. pg_dump connects to db over TCP,
-    # so running the client as root is safe here.
     user: "0:0"
     depends_on:
       db:
         condition: service_healthy
     environment:
       PGHOST: db
-      PGUSER: ${POSTGRES_USER:-alfath}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-alfath}
-      PGDATABASE: ${POSTGRES_DB:-alfath}
-      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-21600}
-      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      PGUSER: "${POSTGRES_USER:?Set POSTGRES_USER}"
+      PGPASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}"
+      PGDATABASE: "${POSTGRES_DB:?Set POSTGRES_DB}"
+      BACKUP_INTERVAL_SECONDS: "${BACKUP_INTERVAL_SECONDS:-21600}"
+      BACKUP_KEEP_DAYS: "${BACKUP_KEEP_DAYS:-14}"
     volumes:
       - ./backups:/backups
       - ./docker/db-backup.sh:/db-backup.sh:ro
