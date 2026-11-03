@@ -76,6 +76,7 @@ services:
       - sh
       - -c
       - |
+        set -eu
         INTERVAL="$${BACKUP_INTERVAL_SECONDS:-21600}"
         KEEP_DAYS="$${BACKUP_KEEP_DAYS:-14}"
         BACKUP_DIR="$${BACKUP_DIR:-/backups}"
