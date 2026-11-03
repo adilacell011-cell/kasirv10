@@ -19,6 +19,11 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface BranchTransferTarget {
+  id: string;
+  name: string;
+}
+
 export type GetOwnerDashboardParams = {
 /**
  * Omit for all branches.

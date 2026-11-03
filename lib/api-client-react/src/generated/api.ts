@@ -21,6 +21,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BranchTransferTarget,
   GetOwnerDashboard200,
   GetOwnerDashboardDetails200,
   GetOwnerDashboardDetailsParams,
@@ -145,6 +146,107 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBranchTransferTargetsUrl = () => {
+
+
+
+
+  return `/api/branches/transfer-targets`
+}
+
+/**
+ * @summary List minimal branch destinations for a cashier stock transfer
+ */
+export const getBranchTransferTargets = async ( options?: Parameters<typeof customFetch>[1]): Promise<BranchTransferTarget[]> => {
+
+  return customFetch<BranchTransferTarget[]>(getGetBranchTransferTargetsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBranchTransferTargetsQueryKey = () => {
+    return [
+    `/api/branches/transfer-targets`
+    ] as const;
+    }
+
+
+export const getGetBranchTransferTargetsQueryOptions = <TData = Awaited<ReturnType<typeof getBranchTransferTargets>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBranchTransferTargets>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBranchTransferTargetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBranchTransferTargets>>> = ({ signal }) => getBranchTransferTargets({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBranchTransferTargets>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetBranchTransferTargetsQueryResult = NonNullable<Awaited<ReturnType<typeof getBranchTransferTargets>>>
+export type GetBranchTransferTargetsQueryError = ErrorType<void>
+
+
+export function useGetBranchTransferTargets<TData = Awaited<ReturnType<typeof getBranchTransferTargets>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBranchTransferTargets>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBranchTransferTargets>>,
+          TError,
+          Awaited<ReturnType<typeof getBranchTransferTargets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBranchTransferTargets<TData = Awaited<ReturnType<typeof getBranchTransferTargets>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBranchTransferTargets>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBranchTransferTargets>>,
+          TError,
+          Awaited<ReturnType<typeof getBranchTransferTargets>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBranchTransferTargets<TData = Awaited<ReturnType<typeof getBranchTransferTargets>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBranchTransferTargets>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List minimal branch destinations for a cashier stock transfer
+ */
+
+export function useGetBranchTransferTargets<TData = Awaited<ReturnType<typeof getBranchTransferTargets>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBranchTransferTargets>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBranchTransferTargetsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

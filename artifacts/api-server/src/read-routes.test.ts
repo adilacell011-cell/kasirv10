@@ -70,6 +70,11 @@ function setup(fixtureSummaries = summaries, fixtureSales = liveSales) {
     branch: {
       findMany: async (query: any) => {
         queries.branches.push(query);
+        if (query.where?.id && typeof query.where.id === "object" && "not" in query.where.id) {
+          return branches
+            .filter((branch) => branch.id !== query.where.id.not)
+            .map(({ id, name }) => ({ id, name }));
+        }
         return query.where
           ? branches.filter((branch) => branch.id === query.where.id)
           : branches;
@@ -172,6 +177,35 @@ for (const [branchId, otherBranchId] of [
     assert.ok(summariesResult.body.every((row: any) => row.branchId === branchId));
   });
 }
+
+test("cashier transfer targets contain only other branch IDs and names", async () => {
+  const { request, queries } = setup();
+
+  const result = await request("/api/branches/transfer-targets", {
+    role: "CASHIER",
+    branchId: "branch-a",
+  });
+
+  assert.deepEqual(result.body, [{ id: "branch-b", name: "Cabang B" }]);
+  assert.deepEqual(queries.branches[0], {
+    where: { id: { not: "branch-a" } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  const unassignedResult = await request("/api/branches/transfer-targets", {
+    role: "CASHIER",
+    branchId: null,
+  });
+  assert.deepEqual(unassignedResult.body, []);
+  assert.equal(queries.branches.length, 1);
+
+  const adminResult = await request("/api/branches/transfer-targets", {
+    role: "ADMIN",
+    branchId: null,
+  });
+  assert.equal(adminResult.status, 403);
+});
 
 test("admin retains all-branch access and product cost fields", async () => {
   const { request } = setup();

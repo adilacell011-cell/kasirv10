@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './branchTransferTarget';
 export * from './getOwnerDashboard200';
 export * from './getOwnerDashboardDetails200';
 export * from './getOwnerDashboardDetails200RecentSalesItem';

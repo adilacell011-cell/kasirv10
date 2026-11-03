@@ -91,6 +91,31 @@ export function registerBranchReadRoutes(
     }
   });
 
+  app.get("/api/branches/transfer-targets", authenticate, async (req, res) => {
+    const requester = (req as any).user as Requester;
+    if (requester.role !== "CASHIER") {
+      res.status(403).json({ error: "Cashier access required." });
+      return;
+    }
+
+    const branchId = ownBranchId(requester);
+    if (!branchId) {
+      res.json([]);
+      return;
+    }
+
+    try {
+      const targets = await prisma.branch.findMany({
+        where: { id: { not: branchId } },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      });
+      res.json(targets);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch transfer destinations" });
+    }
+  });
+
   app.get("/api/users", authenticate, async (req, res) => {
     try {
       const requester = (req as any).user as Requester;

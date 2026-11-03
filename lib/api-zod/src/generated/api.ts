@@ -18,6 +18,16 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary List minimal branch destinations for a cashier stock transfer
+ */
+export const GetBranchTransferTargetsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})
+export const GetBranchTransferTargetsResponse = zod.array(GetBranchTransferTargetsResponseItem)
+
+
+/**
  * @summary Read-only owner daily income summaries
  */
 export const GetOwnerDashboardQueryParams = zod.object({

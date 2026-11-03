@@ -24,6 +24,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /branches/transfer-targets:
+    get:
+      operationId: getBranchTransferTargets
+      summary: List minimal branch destinations for a cashier stock transfer
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Other branch identifiers and names available as stock transfer destinations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchTransferTarget"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Cashier access required.
   /owner-dashboard:
     get:
       operationId: getOwnerDashboard
@@ -128,4 +147,12 @@ components:
           type: string
       required:
         - status
+    BranchTransferTarget:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
 

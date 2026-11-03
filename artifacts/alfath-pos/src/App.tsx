@@ -594,11 +594,34 @@ export default function App() {
   const [newPassInput, setNewPassInput] = useState("");
   const [isUpdatingPass, setIsUpdatingPass] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
+  const [transferTargetBranches, setTransferTargetBranches] = useState<any[]>([]);
+  const [transferTargetsLoading, setTransferTargetsLoading] = useState(false);
+  const [transferTargetsError, setTransferTargetsError] = useState<string | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [hasMoreProducts, setHasMoreProducts] = useState(false);
   const [isSearchingProducts, setIsSearchingProducts] = useState(false);
   const loadMoreProducts = async () => {};
   const loadMoreSales = async () => {};
+  const fetchTransferTargetsForRole = useCallback(
+    async (
+      role: string,
+      signal?: AbortSignal,
+    ): Promise<{ data: any[]; error: string | null }> => {
+      if (role !== "CASHIER") return { data: [], error: null };
+      try {
+        return {
+          data: await api.getTransferTargetBranches(signal),
+          error: null,
+        };
+      } catch (error) {
+        return {
+          data: [],
+          error: error instanceof Error ? error.message : "Gagal memuat cabang tujuan.",
+        };
+      }
+    },
+    [],
+  );
 
   const handleFullDatabaseSearch = async () => {
     if (!searchTerm || searchTerm.length < 3) return;
@@ -732,6 +755,9 @@ export default function App() {
     localStorage.removeItem("active_menu");
     clearSyncedReads();
     setBranches([]);
+    setTransferTargetBranches([]);
+    setTransferTargetsLoading(false);
+    setTransferTargetsError(null);
     setProfile(null);
     setAuthLoading(false);
     setActiveMenu("pos");
@@ -1412,7 +1438,8 @@ export default function App() {
           const userData = await api.getMe(controller.signal);
           if (!current()) return;
           setProfile(userData);
-          const [bData, pData, cData] = await Promise.all([
+          setTransferTargetsLoading(userData.role === "CASHIER");
+          const [bData, pData, cData, transferTargetsResult] = await Promise.all([
             api.getBranches(controller.signal),
             api.getProducts(controller.signal),
             fetch("/api/config", {
@@ -1425,6 +1452,7 @@ export default function App() {
               if (!res.ok) throw new ReadError("http", res.status, body.error);
               return body;
             }),
+            fetchTransferTargetsForRole(userData.role, controller.signal),
           ]);
           if (!current()) return;
           setBranches(
@@ -1432,11 +1460,15 @@ export default function App() {
               (a.name || "").localeCompare(b.name || ""),
             ),
           );
+          setTransferTargetBranches(transferTargetsResult.data);
+          setTransferTargetsError(transferTargetsResult.error);
+          setTransferTargetsLoading(false);
           setProducts(pData);
           setAppConfig(cData);
           setAuthLoading(false);
         } catch (err) {
           if (current()) {
+            setTransferTargetsLoading(false);
             if (isSessionError(err)) expireReadSession();
             else {
               needsRetry = true;
@@ -1464,7 +1496,7 @@ export default function App() {
       clearInterval(timer);
       window.removeEventListener("online", retry);
     };
-  }, []);
+  }, [fetchTransferTargetsForRole]);
 
   // NOTE: Real-time socket handling is consolidated in the DATA SYNC useEffect below.
   // A single socket connection per session handles all events (saleProcessed,
@@ -1477,21 +1509,33 @@ export default function App() {
     const epoch = ++readEpoch.current;
     clearSyncedReads();
     setBranches([]);
+    setTransferTargetBranches([]);
+    setTransferTargetsLoading(false);
+    setTransferTargetsError(null);
     setAuthLoading(true);
     try {
       const { user: userData } = await api.login(credentials);
       if (readEpoch.current !== epoch) return;
       const token = localStorage.getItem("token");
       setProfile(userData);
-      const [bData, pData] = await Promise.all([api.getBranches(), api.getProducts()]);
+      setTransferTargetsLoading(userData.role === "CASHIER");
+      const [bData, pData, transferTargetsResult] = await Promise.all([
+        api.getBranches(),
+        api.getProducts(),
+        fetchTransferTargetsForRole(userData.role),
+      ]);
       if (readEpoch.current !== epoch || localStorage.getItem("token") !== token) return;
       setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: 'base' })));
+      setTransferTargetBranches(transferTargetsResult.data);
+      setTransferTargetsError(transferTargetsResult.error);
+      setTransferTargetsLoading(false);
       setProducts(pData);
       if (userData.role === "ADMIN") setActiveMenu("dashboard");
       else if (userData.role === "AUDIT") setActiveMenu("audit");
       else if (userData.role === "CASHIER") setActiveMenu("pos");
     } catch (err: any) {
       if (readEpoch.current === epoch) {
+        setTransferTargetsLoading(false);
         setDataLoadFailed(true);
         alert(err.message);
       }
@@ -8137,7 +8181,9 @@ export default function App() {
                               placeholder="-- PILIH --"
                               options={[
                                 { value: "", label: "-- PILIH --" },
-                                ...branches
+                                ...(profile?.role === "CASHIER"
+                                  ? transferTargetBranches
+                                  : branches)
                                   .filter((b) => b.id !== profile.branchId)
                                   .map((b) => ({
                                     value: b.id,
@@ -8147,6 +8193,18 @@ export default function App() {
                               className="w-full"
                               buttonClassName="w-full bg-slate-50 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight focus:ring-2 focus:ring-blue-500 outline-none text-left"
                             />
+                            {profile?.role === "CASHIER" &&
+                              (transferTargetsLoading ||
+                                transferTargetsError ||
+                                transferTargetBranches.length === 0) && (
+                                <p className="mt-2 text-[9px] font-bold text-slate-500">
+                                  {transferTargetsLoading
+                                    ? "Memuat cabang tujuan..."
+                                    : transferTargetsError
+                                      ? `Cabang tujuan gagal dimuat: ${transferTargetsError}`
+                                      : "Belum ada cabang lain yang dapat dipilih."}
+                                </p>
+                              )}
                           </div>
 
                           <div className="text-left border-t border-slate-100 pt-4">

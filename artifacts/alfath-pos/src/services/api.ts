@@ -195,6 +195,10 @@ export const api = {
     return readJson("/branches", signal);
   },
 
+  async getTransferTargetBranches(signal?: AbortSignal) {
+    return readJson("/branches/transfer-targets", signal);
+  },
+
   async createSale(data: any, idempotencyKey?: string) {
     const key = idempotencyKey || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
     const res = await fetch(`${BASE_URL}/transactions`, {
