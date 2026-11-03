@@ -9,9 +9,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 ## Version comparison context
 
-- Owner reports the STB was last updated on or around 2026-11-02; Replit has received many updates since, while STB remains on that earlier version.
-  **Why:** the STB deployment timeline is distinct from the cached `origin/main` ref date and current Replit workspace HEAD.
-  **How to apply:** compare the STB's November 2 version against current Replit; do not use the October 2 `origin/main` timestamp as the STB baseline.
+- Owner reported an STB update around 2026-11-02, but the later Dockge screenshot shows Kasir V10 API/web containers created on 2026-10-02; the discrepancy is unresolved.
+  **Why:** container creation time does not identify source commit, and the two dates must not be conflated.
+  **How to apply:** report both dates until image revision metadata or an STB source hash establishes the deployed version.
 
 ## Non-obvious decisions
 
