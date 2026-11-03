@@ -8015,13 +8015,15 @@ export default function App() {
                                       </span>
                                     </td>
                                     <td className="py-1 px-2 text-center">
-                                      <button
-                                        onClick={() => handleRefund(sale)}
-                                        disabled={sale.status === "refunded" || sale.items?.every((i: any) => i.refunded)}
-                                        className="px-2 py-0.5 text-[7px] font-black uppercase tracking-widest rounded border border-red-200 text-red-500 bg-white hover:bg-red-50 disabled:opacity-25 disabled:grayscale transition-all whitespace-nowrap"
-                                      >
-                                        {sale.status === "refunded" ? "✓ Done" : "Refund"}
-                                      </button>
+                                      {profile?.role === "CASHIER" && (
+                                        <button
+                                          onClick={() => handleRefund(sale)}
+                                          disabled={sale.status === "refunded" || sale.items?.every((i: any) => i.refunded)}
+                                          className="px-2 py-0.5 text-[7px] font-black uppercase tracking-widest rounded border border-red-200 text-red-500 bg-white hover:bg-red-50 disabled:opacity-25 disabled:grayscale transition-all whitespace-nowrap"
+                                        >
+                                          {sale.status === "refunded" ? "✓ Done" : "Refund"}
+                                        </button>
+                                      )}
                                     </td>
                                   </tr>
                                   {/* Sub-baris per item */}

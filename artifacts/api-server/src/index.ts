@@ -179,13 +179,13 @@ const toNonNegativeNumber = (v: any): number | null => {
 // API Routes
 // Authentication API
 app.post("/api/auth/register", authenticateToken, async (req, res) => {
-  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   const { username, password, name, role, branchId, alternativeNames } = req.body;
   const cleanUsername = username?.trim().toLowerCase();
   const cleanPassword = password?.trim();
   
   if (!cleanUsername || !cleanPassword) {
-    return res.status(400).json({ error: "Username dan password wajib diisi." });
+    return void res.status(400).json({ error: "Username dan password wajib diisi." });
   }
 
   try {
@@ -215,7 +215,7 @@ app.post("/api/auth/login", async (req, res) => {
   const cleanPassword = password?.trim();
   
   if (!cleanUsername || !cleanPassword) {
-    return res.status(400).json({ error: "Username and password are required" });
+    return void res.status(400).json({ error: "Username and password are required" });
   }
 
   try {
@@ -225,7 +225,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (!user) {
       console.log(`❌ Login failed: User "${cleanUsername}" not found.`);
-      return res.status(401).json({ error: "User not found" });
+      return void res.status(401).json({ error: "User not found" });
     }
 
     // Security: passwords must match the bcrypt hash. The previous hardcoded
@@ -234,7 +234,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     if (!isMatch) {
       console.log(`❌ Login failed: Invalid password for user "${cleanUsername}".`);
-      return res.status(401).json({ error: "Invalid password" });
+      return void res.status(401).json({ error: "Invalid password" });
     }
 
     console.log(`✅ Login successful: User "${cleanUsername}" logged in.`);
@@ -261,7 +261,7 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: (req as any).user.userId }
     });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return void res.status(404).json({ error: "User not found" });
 
     const { password: _, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
@@ -280,7 +280,7 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
   for (const f of ["sellingPrice", "discountPrice", "commissionAmount", "buyingPrice"]) {
     const val = (data as any)[f];
     if (val !== undefined && val !== null && val !== "" && toNonNegativeNumber(val) === null) {
-      return res.status(400).json({ error: `Nilai ${f} harus angka >= 0.` });
+      return void res.status(400).json({ error: `Nilai ${f} harus angka >= 0.` });
     }
   }
   // Normalize expiredAt: input type="date" sends "YYYY-MM-DD" but Prisma DateTime needs ISO string.
@@ -353,7 +353,7 @@ app.patch("/api/branches/:id", authenticateToken, requireRole("ADMIN"), async (r
 });
 
 app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
-  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   const branchId = req.params.id;
   try {
     // Check if branch has any transactions to prevent deleting active branches
@@ -366,7 +366,7 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
     const commissionsCount = await prisma.commission.count({ where: { branchId } });
 
     if (salesCount > 0 || shiftsCount > 0 || adjustmentsCount > 0 || commissionsCount > 0) {
-      return res.status(400).json({ 
+      return void res.status(400).json({
         error: "Cabang tidak dapat dihapus karena masih memiliki riwayat operasional atau bonus (penjualan, shift, adjustment, atau komisi)." 
       });
     }
@@ -432,7 +432,7 @@ app.get("/api/config", authenticateToken, async (req, res) => {
 });
 
 app.patch("/api/config", authenticateToken, async (req, res) => {
-  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   const { allowCashierStockInput } = req.body;
   try {
     const config = await prisma.globalConfig.update({
@@ -453,7 +453,7 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
     const cached = idempotencyCache.get(idempKey);
     if (cached && cached.expires > Date.now()) {
       console.log(`↩️  Idempotency hit for key ${idempKey} — returning cached sale`);
-      return res.json(cached.result);
+      return void res.json(cached.result);
     }
   }
 
@@ -463,20 +463,20 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
   // sale for another branch or attribute it to another cashier, regardless of body.
   const actualCashierId = requester.role === "CASHIER" ? requester.userId : (cashierId || requester.userId);
   const actualBranchId = requester.role === "CASHIER" ? requester.branchId : (branchId || requester.branchId);
-  if (!actualBranchId) return res.status(400).json({ error: "Cabang tidak ditentukan untuk transaksi ini." });
+  if (!actualBranchId) return void res.status(400).json({ error: "Cabang tidak ditentukan untuk transaksi ini." });
 
   // Validate payload before touching the DB so a malformed request can never write
   // NaN/negative totals or iterate over a non-array (which would crash or corrupt data).
   if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: "Item transaksi tidak valid atau kosong." });
+    return void res.status(400).json({ error: "Item transaksi tidak valid atau kosong." });
   }
   for (const it of items) {
-    if (!it || !it.productId) return res.status(400).json({ error: "Item transaksi tidak valid (produk tidak ada)." });
-    if (toPositiveInt(it.qty) === null) return res.status(400).json({ error: "Jumlah (qty) setiap item harus bilangan bulat positif." });
-    if (toFiniteNumber(it.price) === null) return res.status(400).json({ error: "Harga item tidak valid." });
+    if (!it || !it.productId) return void res.status(400).json({ error: "Item transaksi tidak valid (produk tidak ada)." });
+    if (toPositiveInt(it.qty) === null) return void res.status(400).json({ error: "Jumlah (qty) setiap item harus bilangan bulat positif." });
+    if (toFiniteNumber(it.price) === null) return void res.status(400).json({ error: "Harga item tidak valid." });
   }
   const safeTotal = toFiniteNumber(total);
-  if (safeTotal === null) return res.status(400).json({ error: "Total transaksi tidak valid." });
+  if (safeTotal === null) return void res.status(400).json({ error: "Total transaksi tidak valid." });
   const safeCommission = toFiniteNumber(totalCommission) ?? 0;
   // Normalize numeric fields up-front so downstream math and Prisma int columns always
   // receive real numbers (a legitimate "2" string is accepted, not rejected at the DB layer).
@@ -619,7 +619,7 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
     res.json(result);
   } catch (error: any) {
     if (error instanceof ShiftConflict) {
-      return res.status(error.status).json({ error: error.message });
+      return void res.status(error.status).json({ error: error.message });
     }
     console.error("Sale Process Error:", error);
     res.status(400).json({ error: error.message || "Gagal memproses penjualan" });
@@ -727,12 +727,12 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
   // Cashiers may only open shifts for their own branch and under their own identity.
   const shiftBranchId = requester.role === "CASHIER" ? requester.branchId : branchId;
   const shiftCashierId = requester.role === "CASHIER" ? requester.userId : cashierId;
-  if (!shiftBranchId) return res.status(400).json({ error: "Cabang shift tidak ditentukan." });
+  if (!shiftBranchId) return void res.status(400).json({ error: "Cabang shift tidak ditentukan." });
   const safeInitialCash = toNonNegativeNumber(initialCash);
-  if (safeInitialCash === null) return res.status(400).json({ error: "Modal awal (initialCash) harus angka >= 0." });
+  if (safeInitialCash === null) return void res.status(400).json({ error: "Modal awal (initialCash) harus angka >= 0." });
   if (typeof shiftType !== "string" || !shiftType.trim() || typeof shiftDate !== "string" ||
       !/^\d{4}-\d{2}-\d{2}$/.test(shiftDate) || !shiftCashierId) {
-    return res.status(400).json({ error: "Identitas dan tanggal shift wajib diisi." });
+    return void res.status(400).json({ error: "Identitas dan tanggal shift wajib diisi." });
   }
   try {
     const shift = await openShiftSafely(prisma, {
@@ -741,7 +741,7 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
     });
     res.json(shift);
   } catch (error) {
-    if (error instanceof ShiftConflict) return res.status(error.status).json({ error: error.message });
+    if (error instanceof ShiftConflict) return void res.status(error.status).json({ error: error.message });
     res.status(500).json({ error: "Failed to open shift" });
   }
 });
@@ -750,25 +750,25 @@ app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"),
   const { actualCash, status } = req.body;
   const requester = (req as any).user;
   // Reopening needs retained correction history, not an arbitrary status patch.
-  if (status !== "closed") return res.status(400).json({ error: "Gunakan proses penutupan shift yang valid." });
+  if (status !== "closed") return void res.status(400).json({ error: "Gunakan proses penutupan shift yang valid." });
   const safeCash = actualCash === undefined ? undefined : toFiniteNumber(actualCash);
-  if (safeCash === null) return res.status(400).json({ error: "Nilai actualCash tidak valid." });
+  if (safeCash === null) return void res.status(400).json({ error: "Nilai actualCash tidak valid." });
 
   try {
     const existing = await prisma.shift.findUnique({
       where: { id: req.params.id },
       select: { branchId: true, openTime: true, initialCash: true }
     });
-    if (!existing) return res.status(404).json({ error: "Shift tidak ditemukan." });
+    if (!existing) return void res.status(404).json({ error: "Shift tidak ditemukan." });
 
     if (requester.role === "CASHIER" && existing.branchId !== requester.branchId) {
-      return res.status(403).json({ error: "Kasir hanya dapat mengubah shift cabangnya sendiri." });
+      return void res.status(403).json({ error: "Kasir hanya dapat mengubah shift cabangnya sendiri." });
     }
 
     const shift = await closeShiftSafely(prisma, req.params.id, existing.branchId, safeCash);
     res.json(shift);
   } catch (error) {
-    if (error instanceof ShiftConflict) return res.status(error.status).json({ error: error.message });
+    if (error instanceof ShiftConflict) return void res.status(error.status).json({ error: error.message });
     res.status(500).json({ error: "Failed to update shift" });
   }
 });
@@ -805,29 +805,29 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
   // removal/destruction (STOCK_OUT / negative qty) are reserved for AUDIT/ADMIN.
   if (requester.role === "CASHIER") {
     if (branchId !== requester.branchId) {
-      return res.status(403).json({ error: "Kasir hanya dapat mengubah stok cabangnya sendiri." });
+      return void res.status(403).json({ error: "Kasir hanya dapat mengubah stok cabangnya sendiri." });
     }
     if (newQty !== undefined || (type && type !== "STOCK_IN") || (qty !== undefined && qty <= 0)) {
-      return res.status(403).json({ error: "Kasir hanya dapat menambah stok, bukan opname atau pengurangan/pemusnahan." });
+      return void res.status(403).json({ error: "Kasir hanya dapat menambah stok, bukan opname atau pengurangan/pemusnahan." });
     }
   }
-  if (!productId || !branchId) return res.status(400).json({ error: "Produk atau cabang tidak ditentukan." });
+  if (!productId || !branchId) return void res.status(400).json({ error: "Produk atau cabang tidak ditentukan." });
   const hasNewQty = newQty !== undefined && newQty !== null;
   const safeNewQty = hasNewQty ? toFiniteNumber(newQty) : null;
   const safeQty = (qty !== undefined && qty !== null) ? toFiniteNumber(qty) : null;
   if (hasNewQty) {
     if (safeNewQty === null || !Number.isInteger(safeNewQty) || safeNewQty < 0) {
-      return res.status(400).json({ error: "Nilai opname (newQty) harus bilangan bulat >= 0." });
+      return void res.status(400).json({ error: "Nilai opname (newQty) harus bilangan bulat >= 0." });
     }
   } else if (safeQty === null || !Number.isInteger(safeQty) || safeQty === 0) {
-    return res.status(400).json({ error: "Jumlah penyesuaian (qty) harus bilangan bulat bukan nol." });
+    return void res.status(400).json({ error: "Jumlah penyesuaian (qty) harus bilangan bulat bukan nol." });
   }
   const safeOldQty = toFiniteNumber(oldQty) ?? 0;
   if (hasNewQty && (
     oldQty === undefined || oldQty === null ||
     toFiniteNumber(oldQty) === null || !Number.isInteger(safeOldQty)
   )) {
-    return res.status(400).json({ error: "Stok awal opname (oldQty) harus bilangan bulat." });
+    return void res.status(400).json({ error: "Stok awal opname (oldQty) harus bilangan bulat." });
   }
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -892,17 +892,17 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
   const requester = (req as any).user;
   // Cashiers may only transfer stock OUT of their own branch; ADMIN/AUDIT may transfer between any branches.
   if (requester.role === "CASHIER" && sourceBranchId !== requester.branchId) {
-    return res.status(403).json({ error: "Kasir hanya dapat transfer stok dari cabangnya sendiri." });
+    return void res.status(403).json({ error: "Kasir hanya dapat transfer stok dari cabangnya sendiri." });
   }
   if (!productId || !sourceBranchId || !targetBranchId) {
-    return res.status(400).json({ error: "Produk atau cabang asal/tujuan tidak lengkap." });
+    return void res.status(400).json({ error: "Produk atau cabang asal/tujuan tidak lengkap." });
   }
   if (sourceBranchId === targetBranchId) {
-    return res.status(400).json({ error: "Cabang asal dan tujuan tidak boleh sama." });
+    return void res.status(400).json({ error: "Cabang asal dan tujuan tidak boleh sama." });
   }
   const safeQty = toPositiveInt(qty);
   if (safeQty === null) {
-    return res.status(400).json({ error: "Jumlah transfer harus bilangan bulat positif." });
+    return void res.status(400).json({ error: "Jumlah transfer harus bilangan bulat positif." });
   }
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -971,7 +971,7 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
     res.json({ success: true });
   } catch (error: any) {
     if (error instanceof ShiftConflict) {
-      return res.status(error.status).json({ error: error.message });
+      return void res.status(error.status).json({ error: error.message });
     }
     console.error("Stock Transfer Error:", error);
     res.status(400).json({ error: error.message || "Failed to transfer stock" });
@@ -981,7 +981,7 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
 app.patch("/api/users/:id", authenticateToken, async (req, res) => {
   // Security: only admins may modify users (role/branch/status/password). Without this
   // check any authenticated user could escalate their own role to ADMIN.
-  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   const { role, branchId, status, name, alternativeNames, password } = req.body;
   try {
     const updateData: any = {};
@@ -1008,11 +1008,11 @@ app.patch("/api/users/:id", authenticateToken, async (req, res) => {
 });
 
 app.delete("/api/users/:id", authenticateToken, async (req, res) => {
-  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   const targetId = req.params.id;
   // Prevent self-deletion — admin cannot lock themselves out.
   if ((req as any).user.userId === targetId) {
-    return res.status(400).json({ error: "Tidak bisa menghapus akun Anda sendiri." });
+    return void res.status(400).json({ error: "Tidak bisa menghapus akun Anda sendiri." });
   }
   try {
     // A user with any operational history (sales, commissions, shifts) cannot be hard-deleted:
@@ -1024,7 +1024,7 @@ app.delete("/api/users/:id", authenticateToken, async (req, res) => {
       prisma.shift.count({ where: { cashierId: targetId } }),
     ]);
     if (salesCount > 0 || commissionsCount > 0 || shiftsCount > 0) {
-      return res.status(400).json({
+      return void res.status(400).json({
         error: `Karyawan tidak dapat dihapus karena memiliki riwayat operasional (${salesCount} penjualan, ${shiftsCount} shift, ${commissionsCount} komisi). Nonaktifkan akun dengan mengubah status menjadi "Inactive" untuk mencabut akses tanpa menghapus riwayat.`
       });
     }
@@ -1040,11 +1040,11 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("CASHIER
   try {
     const requester = (req as any).user;
     const refundTarget = await prisma.sale.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
-    if (!refundTarget) return res.status(404).json({ error: "Transaksi tidak ditemukan." });
+    if (!refundTarget) return void res.status(404).json({ error: "Transaksi tidak ditemukan." });
     // Cashiers may only refund sales belonging to their own branch.
     if (requester.role === "CASHIER") {
       if (refundTarget.branchId !== requester.branchId) {
-        return res.status(403).json({ error: "Kasir hanya dapat me-refund transaksi cabangnya sendiri." });
+        return void res.status(403).json({ error: "Kasir hanya dapat me-refund transaksi cabangnya sendiri." });
       }
     }
     const result = await prisma.$transaction(async (tx) => {
@@ -1120,7 +1120,7 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("CASHIER
     emitBranch((result as any).branchId, "commissionsUpdated", { branchId: (result as any).branchId });
     res.json(result);
   } catch (error: any) {
-    if (error instanceof ShiftConflict) return res.status(error.status).json({ error: error.message });
+    if (error instanceof ShiftConflict) return void res.status(error.status).json({ error: error.message });
     console.error("Refund Sale Error:", error);
     res.status(500).json({ error: error.message || "Failed to refund sale" });
   }
@@ -1129,7 +1129,7 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("CASHIER
 app.post("/api/incentives/withdraw", authenticateToken, requireRole("ADMIN"), async (req, res) => {
   const { branchId } = req.body;
   if (!branchId || typeof branchId !== "string") {
-    return res.status(400).json({ error: "branchId wajib diisi." });
+    return void res.status(400).json({ error: "branchId wajib diisi." });
   }
   try {
     const result = await prisma.commission.updateMany({
@@ -1184,7 +1184,7 @@ app.get("/api/incentives/summary", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/adjustments/cleanup", authenticateToken, async (req, res) => {
-  if ((req as any).user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
+  if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   try {
     const result = await prisma.adjustment.deleteMany({
       where: {
