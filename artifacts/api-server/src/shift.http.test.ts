@@ -149,6 +149,33 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     assert.equal((await request("/stocks/transfer", f.token, "POST", transfer)).status, 409);
     assert.deepEqual(await getStocks(), { source: 9, target: 1 });
   });
+  await t.test("cashier stock intake requires an active shift and does not write when locked", async () => {
+    const f = await fixture("stock-intake-shift-guard");
+    const productId = await product(f);
+    const reason = `${tag}-cashier-stock-intake`;
+    const payload = {
+      productId, branchId: f.branchId, qty: 2, type: "STOCK_IN", reason,
+    };
+    const getStock = async () =>
+      (await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId];
+    const getIntakeLogs = async () =>
+      (await ok<Array<{ productId: string; reason: string }>>("/adjustments", f.token))
+        .filter((row) => row.productId === productId && row.reason === reason).length;
+
+    assert.equal((await request("/stocks/adjust", f.token, "POST", payload)).status, 409);
+    assert.equal(await getStock(), 10);
+    assert.equal(await getIntakeLogs(), 0);
+
+    const shift = await ok("/shifts", f.token, "POST", open(f));
+    assert.equal((await request("/stocks/adjust", f.token, "POST", payload)).status, 200);
+    assert.equal(await getStock(), 12);
+    assert.equal(await getIntakeLogs(), 1);
+
+    await close(f, shift.id);
+    assert.equal((await request("/stocks/adjust", f.token, "POST", payload)).status, 409);
+    assert.equal(await getStock(), 12);
+    assert.equal(await getIntakeLogs(), 1);
+  });
   await t.test("cashier refund is limited to a sale from the currently open shift", async () => {
     const f = await fixture("refund-shift-guard");
     const productId = await product(f);

@@ -47,9 +47,9 @@ row, because visible zero-stock products must remain available for stock intake.
 
 ## Cashier operations require an open shift
 
-Cashiers may access POS transactions, stock transfers, and refunds only while their branch account has an open persisted shift. A refund must be for a sale recorded during that same active shift; a later shift must not take over refunds from a closed shift.
+Cashiers may access POS transactions, branch stock intake, stock transfers, and refunds only while their branch account has an open persisted shift. A refund must be for a sale recorded during that same active shift; a later shift must not take over refunds from a closed shift.
 
-**Why:** the Owner confirmed that a cashier must open a shift to transact, and a closed shift must not retain access to transaction, transfer, or refund actions.
+**Why:** the Owner confirmed that a cashier must open a shift before sales, branch stock intake, transfers, or refunds, and a closed shift must not retain access to those actions.
 
 **How to apply:** show a clear locked state in the cashier UI and enforce the rule again in the API using the verified branch/account identity and database shift state. Preserve the shared branch login and selected keeper name; do not create individual cashier logins.
 

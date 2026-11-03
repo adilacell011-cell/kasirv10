@@ -831,6 +831,21 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
   }
   try {
     const result = await prisma.$transaction(async (tx) => {
+      if (requester.role === "CASHIER") {
+        await lockBranch(tx, requester.branchId);
+        const activeShift = await tx.shift.findFirst({
+          where: {
+            branchId: requester.branchId,
+            cashierId: requester.userId,
+            status: "open",
+          },
+          select: { id: true },
+        });
+        if (!activeShift) {
+          throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup. Input stok tidak dapat diproses.");
+        }
+      }
+
       if (hasNewQty) {
         return applyOpname(tx, {
           productId, branchId, oldQty: safeOldQty,
@@ -855,6 +870,10 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
     emitBranch(branchId, "stockUpdated", { productId, branchId, qty: result.qty });
     res.json(result);
   } catch (error) {
+    if (error instanceof ShiftConflict) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
     if (error instanceof OpnameConflict) {
       res.status(409).json({ error: error.message, code: "OPNAME_STOCK_CHANGED" });
       return;

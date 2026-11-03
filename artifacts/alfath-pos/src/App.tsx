@@ -2338,6 +2338,10 @@ export default function App() {
     supplier?: string,
     targetBranchId?: string,
   ) => {
+    if (profile?.role === "CASHIER" && !shiftOpen) {
+      alert("Shift kasir tidak aktif. Input stok hanya tersedia selama shift masih terbuka.");
+      return;
+    }
     const branchId = targetBranchId || profile?.branchId;
     if (!branchId || qty <= 0 || isProcessingStock) return;
     setIsProcessingStock(true);
@@ -2998,7 +3002,7 @@ export default function App() {
         id: "cashier_stock",
         icon: MdAddBox,
         label: "Stok",
-        locked: !appConfig.allowCashierStockInput,
+        locked: !appConfig.allowCashierStockInput || !shiftOpen,
       });
     } else if (profile?.role === "AUDIT") {
       items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
@@ -3323,6 +3327,7 @@ export default function App() {
                   onClick={() => setActiveMenu("cashier_stock")}
                   locked={
                     !appConfig.allowCashierStockInput ||
+                    !shiftOpen ||
                     branches.find((b) => b.id === profile?.branchId)
                       ?.allowEmployeeInput === false
                   }
@@ -6851,7 +6856,32 @@ export default function App() {
 
             {/* --- 5. CASHIER: POS AREA --- */}
             {/* --- NEW: CASHIER STOCK INPUT --- */}
-            {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && (
+            {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && !shiftOpen && (
+              <div className="flex-1 flex items-center justify-center bg-slate-50 p-4">
+                <div
+                  role="status"
+                  className="w-full max-w-sm rounded-3xl border border-amber-200 bg-white p-6 text-center shadow-xl"
+                >
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                    <Lock className="h-6 w-6" />
+                  </div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">
+                    Input stok terkunci
+                  </h2>
+                  <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">
+                    Shift belum dibuka atau sudah ditutup. Input stok cabang hanya tersedia saat shift aktif.
+                  </p>
+                  <button
+                    onClick={() => setActiveMenu("shift")}
+                    className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-blue-700"
+                  >
+                    Buka halaman shift
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && shiftOpen && (
               <div className="flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
                 {!appConfig.allowCashierStockInput ? (
                   <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white rounded-[32px] border border-slate-200 shadow-sm max-w-md mx-auto my-auto text-center space-y-6">
