@@ -192,6 +192,41 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
       .find((row) => row.saleId === savedSale.id)?.status, "earned");
     await close(f, nextShift.id);
   });
+  await t.test("owner cannot refund; cashier refund access and data remain intact", async () => {
+    const f = await fixture("refund-owner-denied");
+    const productId = await product(f);
+    const shift = await ok("/shifts", f.token, "POST", open(f));
+    const savedSale = await sale(f, productId);
+
+    assert.equal((await request(`/transactions/${savedSale.id}/refund`, owner, "POST")).status, 403);
+    assert.equal((await ok<QaRow[]>("/transactions", f.token))
+      .find((row) => row.id === savedSale.id)?.status, "success");
+    assert.equal((await ok<QaRow[]>("/products", f.token))
+      .find((row) => row.id === productId)?.stocks[f.branchId], 9);
+    assert.equal((await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token))
+      .find((row) => row.saleId === savedSale.id)?.status, "earned");
+
+    assert.equal((await request(`/transactions/${savedSale.id}/refund`, f.token, "POST")).status, 200);
+    assert.equal((await ok<QaRow[]>("/products", f.token))
+      .find((row) => row.id === productId)?.stocks[f.branchId], 10);
+    assert.equal((await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token))
+      .find((row) => row.saleId === savedSale.id)?.status, "refunded");
+    assert.equal((await ok<QaRow[]>("/transactions", f.token))
+      .find((row) => row.id === savedSale.id)?.status, "refunded");
+    const closed = await close(f, shift.id);
+    assert.equal(Number(closed.totalSales), 0);
+    const summary = (await ok<Array<{
+      branchId: string; revenue: number; profit: number; totalCommission: number; count: number;
+    }>>("/daily-summaries", f.token)).find((row) => row.branchId === f.branchId);
+    assert.ok(summary);
+    assert.deepEqual({
+      revenue: Number(summary.revenue),
+      profit: Number(summary.profit),
+      commission: Number(summary.totalCommission),
+      count: Number(summary.count),
+    }, { revenue: 0, profit: 0, commission: 0, count: 0 });
+    assert.equal((await ok<{ total: number }>("/incentives/summary", f.token)).total, 0);
+  });
   await t.test("repeated close never includes sales from next shift or replaces snapshot", async () => {
     const f = await fixture("snapshot");
     const p = await product(f);

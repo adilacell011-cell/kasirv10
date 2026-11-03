@@ -1036,12 +1036,12 @@ app.delete("/api/users/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/transactions/:id/refund", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
+app.post("/api/transactions/:id/refund", authenticateToken, requireRole("CASHIER"), async (req, res) => {
   try {
     const requester = (req as any).user;
     const refundTarget = await prisma.sale.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
     if (!refundTarget) return res.status(404).json({ error: "Transaksi tidak ditemukan." });
-    // Cashiers may only refund sales belonging to their own branch; ADMIN may refund any.
+    // Cashiers may only refund sales belonging to their own branch.
     if (requester.role === "CASHIER") {
       if (refundTarget.branchId !== requester.branchId) {
         return res.status(403).json({ error: "Kasir hanya dapat me-refund transaksi cabangnya sendiri." });
