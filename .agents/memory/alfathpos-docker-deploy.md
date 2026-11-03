@@ -9,9 +9,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 ## Version comparison context
 
-- Owner reports the STB was last updated around 2026-10-02. Treat this as an approximate deployment date, not proof of its commit or exact code version.
-  **Why:** the workspace can be compared with the cached `origin/main` ref from 2026-10-02, but that does not identify what was actually deployed to STB.
-  **How to apply:** use the date only to narrow candidate versions; confirm with a read-only STB commit/hash before claiming equivalence.
+- Owner reports the STB was last updated on or around 2026-11-02; Replit has received many updates since, while STB remains on that earlier version.
+  **Why:** the STB deployment timeline is distinct from the cached `origin/main` ref date and current Replit workspace HEAD.
+  **How to apply:** compare the STB's November 2 version against current Replit; do not use the October 2 `origin/main` timestamp as the STB baseline.
 
 ## Non-obvious decisions
 
