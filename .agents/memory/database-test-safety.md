@@ -7,4 +7,4 @@ Before restarting a service under a no-schema-change or no-data-deletion constra
 
 **Why:** An authorized opname fix required a development API restart, which also invoked pre-existing startup DDL and summary synchronization. Those side effects were outside the intended stock-only test scope and had to be disclosed.
 
-**How to apply:** Establish a safe startup method or request permission before a restricted audit needs a restart. Preserve production isolation; do not silently disable maintenance or alter startup behavior as part of an unrelated fix.
+**How to apply:** Establish a safe startup method or request permission before a restricted audit needs a restart. Preserve production isolation; do not silently disable maintenance or alter startup behavior as part of an unrelated fix. In tests, avoid importing a bundled API entrypoint to obtain a helper: module import may start a server and run startup checks. Import side-effect-free modules instead.
