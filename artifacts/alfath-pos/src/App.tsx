@@ -1087,11 +1087,8 @@ export default function App() {
     if (activeMenu === "shift" && !shiftOpen) {
       const hour = new Date().getHours();
       setShiftType(hour >= 7 && hour < 19 ? "Pagi" : "Malam");
-      if (!cashierName && profile?.name) {
-        setCashierName(profile.name);
-      }
     }
-  }, [activeMenu, shiftOpen, profile, cashierName]);
+  }, [activeMenu, shiftOpen]);
 
   // Form States
   const [newBranch, setNewBranch] = useState("");
@@ -2697,12 +2694,14 @@ export default function App() {
 
     const lastShiftType = localStorage.getItem("last_shift_type");
     const lastShiftDate = localStorage.getItem("last_shift_date");
+    const lastCashierName = localStorage.getItem("last_cashier_name")?.trim();
     const logicalDate = getLogicalShiftDate();
 
     // Logika Lanjutkan Shift
     if (
       lastShiftType === shiftType &&
       lastShiftDate === logicalDate &&
+      lastCashierName === cashierName.trim() &&
       !shiftOpen
     ) {
       const confirmMsg = `Sistem mendeteksi Anda baru saja menutup Shift ${shiftType} hari ini.\n\nApakah Anda ingin MELANJUTKAN shift sebelumnya agar laporan tetap rapi?\n\n(Klik 'OK' untuk Lanjutkan, 'Cancel' untuk Mulai Baru)`;
@@ -8601,35 +8600,14 @@ export default function App() {
                         <div className="space-y-3 mb-6">
                           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                              Personil Aktif (Pilih Nama Anda Jika Operan/Rolling Shift):
+                              Penjaga pada shift ini:
                             </p>
-                            <CustomSelect
-                              value={cashierName}
-                              onChange={(v) => {
-                                setCashierName(v);
-                                localStorage.setItem("cashier_name", v);
-                              }}
-                              placeholder="-- PILIH PERSONIL (ROLLING) --"
-                              options={[
-                                {
-                                  value: "",
-                                  label: "-- PILIH PERSONIL (ROLLING) --",
-                                },
-                                ...users
-                                  .filter(
-                                    (u) => u && u.branchId === profile?.branchId,
-                                  )
-                                  .flatMap((u) =>
-                                    getConfiguredKeeperNames(u).map((n) => ({
-                                      value: n,
-                                      label: n,
-                                    })),
-                                  ),
-                              ]}
-                              className="w-full"
-                              buttonClassName="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-slate-800 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
-                            />
-                            <p className="text-[8px] text-blue-500 font-bold mt-1 uppercase italic">* Nama ini otomatis masuk ke struk & laporan</p>
+                            <div className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-black uppercase text-slate-800">
+                              {cashierName.trim() || "Nama belum tersedia"}
+                            </div>
+                            <p className="text-[8px] text-blue-600 font-bold mt-2 leading-relaxed">
+                              Untuk serah terima, tutup shift ini terlebih dahulu. Penjaga berikutnya memilih namanya saat membuka shift baru.
+                            </p>
                           </div>
                           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
