@@ -24,3 +24,11 @@ Owner menjelaskan bahwa “Lanjutkan Shift” digunakan ketika penjaga tidak sen
 **Why:** Owner secara eksplisit memilih “Gabung dengan shift semula”.
 
 **How to apply:** Pertahankan tujuan pemulihan shift yang sama. Jangan mengubahnya menjadi pergantian penjaga atau shift baru. Pilihan pembukuan ini tidak dengan sendirinya memberi izin perubahan schema, migrasi, atau penghapusan histori penutupan.
+
+## Aplikasi ditutup atau server restart
+
+Owner menghendaki transaksi yang sudah tersimpan tetap aman, identitas penjaga dan shift aktif tetap berlanjut, serta restart server tidak meminta kasir login kembali.
+
+**Why:** Ini kebutuhan operasional yang dinyatakan Owner.
+
+**How to apply:** Bedakan pemulihan shift yang masih terbuka setelah aplikasi ditutup/restart dari “Lanjutkan Shift” setelah salah tutup. Jangan menjanjikan pemulihan transaksi yang belum commit atau sesi tanpa batas waktu hanya dari kebutuhan tahan restart.
