@@ -10,6 +10,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict } from "./shift-safety";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { applyOpname, OpnameConflict } from "./opname";
@@ -490,6 +491,7 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      await lockBranch(tx, actualBranchId);
       let finalTotalProfit = 0;
       const saleItemsData = [];
       const productNames: Record<string, string> = {};
@@ -707,44 +709,29 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
   if (!shiftBranchId) return res.status(400).json({ error: "Cabang shift tidak ditentukan." });
   const safeInitialCash = toNonNegativeNumber(initialCash);
   if (safeInitialCash === null) return res.status(400).json({ error: "Modal awal (initialCash) harus angka >= 0." });
+  if (typeof shiftType !== "string" || !shiftType.trim() || typeof shiftDate !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(shiftDate) || !shiftCashierId) {
+    return res.status(400).json({ error: "Identitas dan tanggal shift wajib diisi." });
+  }
   try {
-    const shift = await prisma.shift.create({
-      data: {
-        branchId: shiftBranchId,
-        cashierId: shiftCashierId,
-        initialCash: safeInitialCash,
-        shiftDate,
-        shiftType,
-        status: "open",
-        totalSales: 0
-      }
+    const shift = await openShiftSafely(prisma, {
+      branchId: shiftBranchId, cashierId: shiftCashierId, initialCash: safeInitialCash,
+      shiftDate, shiftType,
     });
     res.json(shift);
   } catch (error) {
+    if (error instanceof ShiftConflict) return res.status(error.status).json({ error: error.message });
     res.status(500).json({ error: "Failed to open shift" });
   }
 });
 
 app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
-  const { actualCash, difference, status } = req.body;
+  const { actualCash, status } = req.body;
   const requester = (req as any).user;
-
-  const shiftData: any = {
-    status: status || "closed",
-    closeTime: status === "closed" ? new Date() : undefined,
-  };
-
-  // Validate and normalize actualCash & difference if provided.
-  // totalSales is intentionally NOT accepted from the client — it is always
-  // computed server-side from the DB to prevent stale frontend state from
-  // writing an incorrect figure into the shift record.
-  for (const [label, val] of [["actualCash", actualCash], ["difference", difference]] as const) {
-    if (val !== undefined && val !== null) {
-      const n = toFiniteNumber(val);
-      if (n === null) return res.status(400).json({ error: `Nilai ${label} tidak valid.` });
-      shiftData[label] = n;
-    }
-  }
+  // Reopening needs retained correction history, not an arbitrary status patch.
+  if (status !== "closed") return res.status(400).json({ error: "Gunakan proses penutupan shift yang valid." });
+  const safeCash = actualCash === undefined ? undefined : toFiniteNumber(actualCash);
+  if (safeCash === null) return res.status(400).json({ error: "Nilai actualCash tidak valid." });
 
   try {
     const existing = await prisma.shift.findUnique({
@@ -757,77 +744,10 @@ app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"),
       return res.status(403).json({ error: "Kasir hanya dapat mengubah shift cabangnya sendiri." });
     }
 
-    // When closing a shift, always compute totalSales from the DB using the actual
-    // sales records, so the figure is accurate even if the frontend state was stale.
-    if (status === "closed") {
-      const salesAgg = await prisma.sale.aggregate({
-        where: {
-          branchId: existing.branchId,
-          status: "success",
-          createdAt: { gte: existing.openTime }
-        },
-        _sum: { total: true }
-      });
-      const serverTotalSales = Number(salesAgg._sum.total ?? 0);
-      shiftData.totalSales = serverTotalSales;
-
-      // Recalculate difference using server total if actualCash was provided
-      if (shiftData.actualCash !== undefined) {
-        const expectedCash = Number(existing.initialCash) + serverTotalSales;
-        shiftData.difference = shiftData.actualCash - expectedCash;
-      }
-    }
-
-    const shift = await prisma.shift.update({
-      where: { id: req.params.id },
-      data: shiftData
-    });
-
-    // Setelah shift ditutup: recompute dan simpan DailyIncomeSummary untuk hari itu.
-    // Ini adalah fondasi optimasi laporan — laporan membaca summary (1 baris/hari),
-    // bukan scan seluruh tabel Sale. Idempoten: bisa dijalankan berulang kali.
-    if (status === "closed") {
-      try {
-        const logicalDate = getLogicalShiftDate(existing.openTime);
-        const [ly, lm, ld] = logicalDate.split("-").map(Number);
-        const dayStart = new Date(Date.UTC(ly, lm - 1, ld - 1, 23, 0, 0, 0));
-        const dayEnd   = new Date(Date.UTC(ly, lm - 1, ld,     23, 0, 0, 0));
-
-        const dayAgg = await prisma.sale.aggregate({
-          where: {
-            branchId: existing.branchId,
-            status: "success",
-            createdAt: { gte: dayStart, lt: dayEnd }
-          },
-          _sum: { total: true, totalProfit: true, totalCommission: true },
-          _count: { id: true }
-        });
-
-        await prisma.dailyIncomeSummary.upsert({
-          where: { branchId_date: { branchId: existing.branchId, date: logicalDate } },
-          create: {
-            date: logicalDate,
-            branchId: existing.branchId,
-            revenue: Number(dayAgg._sum.total ?? 0),
-            totalProfit: Number(dayAgg._sum.totalProfit ?? 0),
-            totalCommission: Number(dayAgg._sum.totalCommission ?? 0),
-            salesCount: dayAgg._count.id,
-          },
-          update: {
-            revenue: Number(dayAgg._sum.total ?? 0),
-            totalProfit: Number(dayAgg._sum.totalProfit ?? 0),
-            totalCommission: Number(dayAgg._sum.totalCommission ?? 0),
-            salesCount: dayAgg._count.id,
-          }
-        });
-      } catch (summaryErr) {
-        // Non-fatal — shift sudah tersimpan. Log saja, jangan gagalkan response.
-        console.error("⚠️ Gagal update DailyIncomeSummary saat tutup shift:", summaryErr);
-      }
-    }
-
+    const shift = await closeShiftSafely(prisma, req.params.id, existing.branchId, safeCash);
     res.json(shift);
   } catch (error) {
+    if (error instanceof ShiftConflict) return res.status(error.status).json({ error: error.message });
     res.status(500).json({ error: "Failed to update shift" });
   }
 });
@@ -1061,28 +981,31 @@ app.delete("/api/users/:id", authenticateToken, async (req, res) => {
 app.post("/api/transactions/:id/refund", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
   try {
     const requester = (req as any).user;
+    const refundTarget = await prisma.sale.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
+    if (!refundTarget) return res.status(404).json({ error: "Transaksi tidak ditemukan." });
     // Cashiers may only refund sales belonging to their own branch; ADMIN may refund any.
     if (requester.role === "CASHIER") {
-      const existing = await prisma.sale.findUnique({ where: { id: req.params.id }, select: { branchId: true } });
-      if (!existing) return res.status(404).json({ error: "Transaksi tidak ditemukan." });
-      if (existing.branchId !== requester.branchId) {
+      if (refundTarget.branchId !== requester.branchId) {
         return res.status(403).json({ error: "Kasir hanya dapat me-refund transaksi cabangnya sendiri." });
       }
     }
     const result = await prisma.$transaction(async (tx) => {
+      await lockBranch(tx, refundTarget.branchId);
       const sale = await tx.sale.findUnique({
         where: { id: req.params.id },
         include: { items: true, commissions: true }
       });
 
       if (!sale) throw new Error("Sale not found");
-      if (sale.status === "refunded") throw new Error("Sale already refunded");
+      if (sale.status === "refunded") throw new ShiftConflict("Transaksi sudah diproses refund. Muat ulang data.");
 
       // 1. Update Sale Status
-      const updatedSale = await tx.sale.update({
-        where: { id: sale.id },
-        data: { status: "refunded" }
+      const claimed = await tx.sale.updateMany({
+        where: { id: sale.id, status: sale.status },
+        data: { status: "refunded" },
       });
+      if (claimed.count !== 1) throw new ShiftConflict("Transaksi sudah diproses refund. Muat ulang data.");
+      const updatedSale = await tx.sale.findUniqueOrThrow({ where: { id: sale.id } });
 
       // 2. Restore Stock
       for (const item of sale.items) {
@@ -1120,6 +1043,7 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("ADMIN",
     emitBranch((result as any).branchId, "commissionsUpdated", { branchId: (result as any).branchId });
     res.json(result);
   } catch (error: any) {
+    if (error instanceof ShiftConflict) return res.status(error.status).json({ error: error.message });
     console.error("Refund Sale Error:", error);
     res.status(500).json({ error: error.message || "Failed to refund sale" });
   }

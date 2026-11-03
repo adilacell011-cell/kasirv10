@@ -67,6 +67,7 @@ import {
 import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api, createReadRefresh, isSessionError, ReadError } from "./services/api";
+import { isShiftOverdue } from "./services/shift-time";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
 import { OperatorBadge } from "./components/OperatorLogo";
@@ -1381,7 +1382,12 @@ export default function App() {
     let disposed = false;
     const controller = new AbortController();
     const epoch = readEpoch.current;
+    let running = false;
+    let needsRetry = false;
     const initAuth = async () => {
+      if (running || disposed) return;
+      running = true;
+      needsRetry = false;
       const token = localStorage.getItem("token");
       const current = () => !disposed && readEpoch.current === epoch && localStorage.getItem("token") === token;
       if (token) {
@@ -1415,17 +1421,32 @@ export default function App() {
         } catch (err) {
           if (current()) {
             if (isSessionError(err)) expireReadSession();
-            else setDataLoadFailed(true);
+            else {
+              needsRetry = true;
+              setDataLoadFailed(true);
+            }
           }
         } finally {
-          if (current()) setAuthLoading(false);
+          if (current()) setAuthLoading(needsRetry);
         }
       } else {
         setAuthLoading(false);
       }
+      running = false;
     };
     initAuth();
-    return () => { disposed = true; controller.abort(); };
+    // A temporary API restart must not turn a stored session into a login prompt.
+    const retry = () => {
+      if (needsRetry && readEpoch.current === epoch) void initAuth();
+    };
+    const timer = setInterval(retry, 5_000);
+    window.addEventListener("online", retry);
+    return () => {
+      disposed = true;
+      controller.abort();
+      clearInterval(timer);
+      window.removeEventListener("online", retry);
+    };
   }, []);
 
   // NOTE: Real-time socket handling is consolidated in the DATA SYNC useEffect below.
@@ -2476,21 +2497,13 @@ export default function App() {
     }
 
     if (shiftOpen && shiftType) {
-      const nowHour = new Date().getHours();
-      let isOverdue = false;
       let cleanedShiftType = shiftType;
       // Handle the case where shiftType is combined with name (e.g., "Pagi - Budi")
       if (typeof shiftType === 'string' && shiftType.includes(" - ")) {
           cleanedShiftType = shiftType.split(" - ")[0] as any;
       }
 
-      if (cleanedShiftType === "Pagi" && (nowHour >= 19 || nowHour < 7)) {
-          isOverdue = true;
-      } else if (cleanedShiftType === "Malam" && (nowHour >= 7 && nowHour < 19)) {
-          isOverdue = true;
-      }
-
-      if (isOverdue) {
+      if (isShiftOverdue(cleanedShiftType, shiftStartTime)) {
           if (!(await triggerConfirm(`Waktu shift ${cleanedShiftType} telah berakhir. Transaksi akan tetap masuk ke shift aktif saat ini, namun disarankan untuk segera tutup shift. Lanjut Transaksi?`))) {
               return;
           }
@@ -2704,6 +2717,8 @@ export default function App() {
         shiftType: `${shiftType} - ${cashierName.trim() || profile?.name || "Kasir"}`
       });
       localStorage.setItem("current_shift_id", shift.id);
+      setShiftStartTime(shift.openTime);
+      localStorage.setItem("shift_start_time", shift.openTime);
     } catch (e) {
       console.error("Shift Open Error:", e);
       alert("Gagal membuka shift. Periksa koneksi ke server lalu coba lagi.");
@@ -2711,14 +2726,16 @@ export default function App() {
     }
 
     // Berhasil tercatat di server — baru aktifkan shift di layar
-    setShiftStartTime(startTime);
+    // The server's persisted timestamp is authoritative, including opening retries.
+    const persistedStart = localStorage.getItem("shift_start_time") || startTime;
+    setShiftStartTime(persistedStart);
     setShiftLogicalDate(activeLogicalDate);
     setShiftOpen(true);
 
     // Simpan untuk backup/lanjutkan nanti
     localStorage.setItem("last_shift_type", shiftType);
     localStorage.setItem("last_shift_date", logicalDate);
-    localStorage.setItem("last_shift_start_time", startTime);
+    localStorage.setItem("last_shift_start_time", persistedStart);
     localStorage.setItem("last_cashier_name", cashierName);
     localStorage.setItem("last_shift_logical_date", activeLogicalDate);
   };
@@ -2775,6 +2792,9 @@ export default function App() {
     const closingTime = new Date().toISOString();
 
     try {
+      if (actualInput === undefined || !sId) {
+        throw new Error("Identitas shift belum terkonfirmasi. Muat ulang untuk memulihkan shift dari server; penutupan belum dilakukan.");
+      }
       // 1. If actualInput is provided, update the shift record
       if (actualInput !== undefined && sId) {
         const actual = parseInt(actualInput) || 0;
@@ -2805,7 +2825,7 @@ export default function App() {
       alert("Shift berhasil ditutup & dipatenkan.");
     } catch (e) {
       console.error("Shift Closing Error:", e);
-      alert("Gagal menutup shift. Silakan coba lagi.");
+      alert(e instanceof Error ? e.message : "Gagal menutup shift. Muat ulang untuk memeriksa status sebelum mencoba lagi.");
     } finally {
       setIsClosingShift(false);
     }
