@@ -122,6 +122,49 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     const commissions = await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token);
     assert.deepEqual(commissions.filter((commission) => commission.saleId === savedSale.id).map((commission) => commission.status), ["earned"]);
   });
+  await t.test("cashier stock transfer requires an active shift and changes neither branch when locked", async () => {
+    const f = await fixture("transfer-shift-guard");
+    const target = await ok("/branches", owner, "POST", { name: `${tag}-transfer-target` });
+    const productId = await product(f);
+    const transfer = {
+      productId, qty: 1, sourceBranchId: f.branchId, targetBranchId: target.id,
+    };
+    const allProducts = () => ok<Array<{ id: string; stocks: Record<string, number> }>>("/products", owner);
+    const getStocks = async () => {
+      const row = (await allProducts()).find((item) => item.id === productId);
+      return {
+        source: row?.stocks?.[f.branchId] ?? 0,
+        target: row?.stocks?.[target.id] ?? 0,
+      };
+    };
+
+    assert.equal((await request("/stocks/transfer", f.token, "POST", transfer)).status, 409);
+    assert.deepEqual(await getStocks(), { source: 10, target: 0 });
+
+    const shift = await ok("/shifts", f.token, "POST", open(f));
+    assert.equal((await request("/stocks/transfer", f.token, "POST", transfer)).status, 200);
+    assert.deepEqual(await getStocks(), { source: 9, target: 1 });
+
+    await close(f, shift.id);
+    assert.equal((await request("/stocks/transfer", f.token, "POST", transfer)).status, 409);
+    assert.deepEqual(await getStocks(), { source: 9, target: 1 });
+  });
+  await t.test("cashier refund is limited to a sale from the currently open shift", async () => {
+    const f = await fixture("refund-shift-guard");
+    const productId = await product(f);
+    const firstShift = await ok("/shifts", f.token, "POST", open(f));
+    const savedSale = await sale(f, productId);
+    await close(f, firstShift.id, 15000);
+
+    assert.equal((await request(`/transactions/${savedSale.id}/refund`, f.token, "POST")).status, 409);
+    const nextShift = await ok("/shifts", f.token, "POST", open(f, "QA Malam"));
+    assert.equal((await request(`/transactions/${savedSale.id}/refund`, f.token, "POST")).status, 409);
+    assert.equal((await ok<QaRow[]>("/transactions", f.token)).find((row) => row.id === savedSale.id)?.status, "success");
+    assert.equal((await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId], 9);
+    assert.equal((await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token))
+      .find((row) => row.saleId === savedSale.id)?.status, "earned");
+    await close(f, nextShift.id);
+  });
   await t.test("repeated close never includes sales from next shift or replaces snapshot", async () => {
     const f = await fixture("snapshot");
     const p = await product(f);

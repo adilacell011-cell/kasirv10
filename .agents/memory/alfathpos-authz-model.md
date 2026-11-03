@@ -14,7 +14,7 @@ inline own-branch checks inside handlers. The owner's authoritative role matrix:
 - **AUDIT** — all stock ops on ANY branch (adjust/opname/destroy, transfer, voucher
   bulk import) + reads. NOT product/branch/user/config CRUD, NOT refund, NOT withdraw.
 - **CASHIER** — create sales, ADD stock, transfer stock, refund — all scoped to their
-  OWN branch only.
+  OWN branch only; POS, transfer, and refund require an open persisted shift.
 
 **Server-side scoping rules that must not regress:**
 - Cashier READS are branch-scoped too, not just writes: `GET /api/transactions`,
@@ -44,6 +44,14 @@ breaks compatibility, while the owner explicitly forbids cross-branch cashier re
 An unassigned cashier must not fall back to global or unassigned-user results.
 Products use the existing branch-visibility rule; do not require an existing stock
 row, because visible zero-stock products must remain available for stock intake.
+
+## Cashier operations require an open shift
+
+Cashiers may access POS transactions, stock transfers, and refunds only while their branch account has an open persisted shift. A refund must be for a sale recorded during that same active shift; a later shift must not take over refunds from a closed shift.
+
+**Why:** the Owner confirmed that a cashier must open a shift to transact, and a closed shift must not retain access to transaction, transfer, or refund actions.
+
+**How to apply:** show a clear locked state in the cashier UI and enforce the rule again in the API using the verified branch/account identity and database shift state. Preserve the shared branch login and selected keeper name; do not create individual cashier logins.
 
 Cashiers may transfer stock between branches. Keep the general branch directory
 scoped to the cashier's own branch; the transfer picker may receive only other

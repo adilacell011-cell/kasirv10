@@ -2265,6 +2265,10 @@ export default function App() {
   };
 
   const handleRefund = async (sale: any) => {
+    if (profile?.role === "CASHIER" && !shiftOpen) {
+      alert("Shift kasir tidak aktif. Refund hanya tersedia selama shift masih terbuka.");
+      return;
+    }
     if (!sale) {
        alert("Error: Data penjualan tidak ditemukan. Hubungi pengembang.");
        return;
@@ -2364,6 +2368,9 @@ export default function App() {
     targetBranchId: string,
     sourceBranchIdParam?: string,
   ) => {
+    if (profile?.role === "CASHIER" && !shiftOpen) {
+      return alert("Shift kasir tidak aktif. Transfer stok hanya tersedia selama shift masih terbuka.");
+    }
     const sourceBranchId = sourceBranchIdParam || profile?.branchId;
     if (
       !sourceBranchId ||
@@ -7166,7 +7173,32 @@ export default function App() {
               </div>
             )}
 
-            {activeMenu === "pos" && profile?.role === "CASHIER" && (
+            {activeMenu === "pos" && profile?.role === "CASHIER" && !shiftOpen && (
+              <div className="flex-1 flex items-center justify-center bg-slate-50 p-4">
+                <div
+                  role="status"
+                  className="w-full max-w-sm rounded-3xl border border-amber-200 bg-white p-6 text-center shadow-xl"
+                >
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                    <Lock className="h-6 w-6" />
+                  </div>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">
+                    Menu kasir terkunci
+                  </h2>
+                  <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">
+                    Shift belum dibuka atau sudah ditutup. Transaksi, transfer stok, dan refund hanya tersedia saat shift aktif.
+                  </p>
+                  <button
+                    onClick={() => setActiveMenu("shift")}
+                    className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-blue-700"
+                  >
+                    Buka halaman shift
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeMenu === "pos" && profile?.role === "CASHIER" && shiftOpen && (
               <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
                 <div className="p-2 bg-white shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
@@ -7473,28 +7505,6 @@ export default function App() {
 
                         {/* 3. SHELF GRID UTAMA: PRODUK DAFTAR DI CABANG INI */}
                         <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50 relative">
-                          {!shiftOpen && profile?.branchId && (
-                            <div className="absolute inset-0 bg-slate-900/40 z-[55] flex items-center justify-center p-4">
-                              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xl text-center max-w-[280px] w-full transform transition-all animate-in fade-in zoom-in-95">
-                                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                                  <Clock className="w-6 h-6 animate-pulse" />
-                                </div>
-                                <h3 className="text-sm font-black mb-1 tracking-tight text-slate-800 uppercase text-center">
-                                  Shift Kasir Terkunci
-                                </h3>
-                                <p className="text-[9px] text-slate-400 mb-5 font-bold uppercase tracking-wider px-2 opacity-80 text-center leading-normal">
-                                  Silakan buka shift dan set saldo modal untuk memulai transaksi penjualan.
-                                </p>
-                                <button
-                                  onClick={() => setActiveMenu("shift")}
-                                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-[9px] uppercase tracking-widest transition-colors shadow-lg shadow-blue-200"
-                                >
-                                  Mulai Buka Shift
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <p className="text-[8px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1">

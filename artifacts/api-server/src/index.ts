@@ -887,6 +887,21 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
   }
   try {
     const result = await prisma.$transaction(async (tx) => {
+      if (requester.role === "CASHIER") {
+        await lockBranch(tx, requester.branchId);
+        const activeShift = await tx.shift.findFirst({
+          where: {
+            branchId: requester.branchId,
+            cashierId: requester.userId,
+            status: "open",
+          },
+          select: { id: true },
+        });
+        if (!activeShift) {
+          throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup. Buka shift sebelum transfer stok.");
+        }
+      }
+
       // 1. Kurangi dari asal — guard atomik agar stok asal tidak bisa minus walau
       // ada transfer/penjualan bersamaan. UPDATE hanya jalan bila stok masih cukup.
       const decremented = await tx.productStock.updateMany({
@@ -936,6 +951,9 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
     emitBranch(targetBranchId, "stockUpdated", { productId, branchId: targetBranchId, qty: result.targetStock.qty });
     res.json({ success: true });
   } catch (error: any) {
+    if (error instanceof ShiftConflict) {
+      return res.status(error.status).json({ error: error.message });
+    }
     console.error("Stock Transfer Error:", error);
     res.status(400).json({ error: error.message || "Failed to transfer stock" });
   }
@@ -1012,12 +1030,31 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("ADMIN",
     }
     const result = await prisma.$transaction(async (tx) => {
       await lockBranch(tx, refundTarget.branchId);
+      let activeShift: { openTime: Date } | null = null;
+      if (requester.role === "CASHIER") {
+        activeShift = await tx.shift.findFirst({
+          where: {
+            branchId: requester.branchId,
+            cashierId: requester.userId,
+            status: "open",
+          },
+          select: { openTime: true },
+        });
+        if (!activeShift) {
+          throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup. Refund tidak dapat diproses.");
+        }
+      }
+
       const sale = await tx.sale.findUnique({
         where: { id: req.params.id },
         include: { items: true, commissions: true }
       });
 
       if (!sale) throw new Error("Sale not found");
+      if (requester.role === "CASHIER" &&
+          (sale.cashierId !== requester.userId || sale.createdAt < activeShift!.openTime)) {
+        throw new ShiftConflict("Refund hanya dapat dilakukan untuk transaksi pada shift kasir yang masih aktif.");
+      }
       if (sale.status === "refunded") throw new ShiftConflict("Transaksi sudah diproses refund. Muat ulang data.");
 
       // 1. Update Sale Status
