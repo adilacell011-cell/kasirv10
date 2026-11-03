@@ -7,6 +7,12 @@ description: How the docker-compose self-host setup is wired and the non-obvious
 
 Setup lets the owner `git clone` + `docker compose up -d --build` on a local server. Three services: `db` (postgres:16-alpine + `pgdata` volume + healthcheck), `api`, `web` (nginx).
 
+## Version comparison context
+
+- Owner reports the STB was last updated around 2026-10-02. Treat this as an approximate deployment date, not proof of its commit or exact code version.
+  **Why:** the workspace can be compared with the cached `origin/main` ref from 2026-10-02, but that does not identify what was actually deployed to STB.
+  **How to apply:** use the date only to narrow candidate versions; confirm with a read-only STB commit/hash before claiming equivalence.
+
 ## Non-obvious decisions
 
 - **API image is single-stage and keeps the WHOLE monorepo + node_modules intact.**
