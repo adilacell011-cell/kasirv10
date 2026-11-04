@@ -7,9 +7,11 @@ set -eu
 INTERVAL="${BACKUP_INTERVAL_SECONDS:-21600}"   # default: every 6 hours
 KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"            # default: keep 14 days
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
+BACKUP_ONCE="${BACKUP_ONCE:-0}"
 
 case "$INTERVAL" in ''|*[!0-9]*|0) echo "[backup] invalid BACKUP_INTERVAL_SECONDS" >&2; exit 2 ;; esac
 case "$KEEP_DAYS" in ''|*[!0-9]*|0) echo "[backup] invalid BACKUP_KEEP_DAYS" >&2; exit 2 ;; esac
+case "$BACKUP_ONCE" in 0|1) ;; *) echo "[backup] invalid BACKUP_ONCE (use 0 or 1)" >&2; exit 2 ;; esac
 
 umask 077
 mkdir -p "$BACKUP_DIR"
@@ -52,7 +54,7 @@ while true; do
       gzip -c < "$FIFO" > "$TMP" &
       GZIP_PID=$!
       DUMP_STATUS=0
-      if pg_dump --clean --if-exists --no-owner --no-privileges > "$FIFO"; then
+      if pg_dump --no-owner --no-privileges > "$FIFO"; then
         :
       else
         DUMP_STATUS=$?
@@ -66,15 +68,20 @@ while true; do
       GZIP_PID=""
 
       if [ "$DUMP_STATUS" -eq 0 ] && [ "$GZIP_STATUS" -eq 0 ] &&
-         [ -s "$TMP" ] && gzip -t "$TMP"; then
+         [ -s "$TMP" ] && gzip -t "$TMP" &&
+         gzip -cd "$TMP" | awk '
+           NR <= 10 && $0 == "-- PostgreSQL database dump" { header = 1 }
+           $0 == "-- PostgreSQL database dump complete" { footer = 1 }
+           END { exit (header && footer) ? 0 : 1 }
+         '; then
         if mv "$TMP" "$FILE"; then
           BACKUP_OK=1
-          echo "[backup] ok: ${FILE} ($(du -h "${FILE}" | cut -f1))"
+          echo "[backup] $(date -u '+%Y-%m-%dT%H:%M:%SZ') status=SUCCESS file=${FILE} size=$(du -h "${FILE}" | cut -f1)"
         else
-          echo "[backup] FAILED: cannot publish completed dump at ${TS}" >&2
+          echo "[backup] $(date -u '+%Y-%m-%dT%H:%M:%SZ') status=FAILED reason=publish_failed timestamp=${TS}" >&2
         fi
       else
-        echo "[backup] FAILED dump/compression/verification at ${TS} (pg_dump=${DUMP_STATUS}, gzip=${GZIP_STATUS})" >&2
+        echo "[backup] $(date -u '+%Y-%m-%dT%H:%M:%SZ') status=FAILED reason=dump_compression_or_content_verification timestamp=${TS} pg_dump=${DUMP_STATUS} gzip=${GZIP_STATUS}" >&2
       fi
     fi
   fi
@@ -91,6 +98,11 @@ while true; do
     fi
   else
     echo "[backup] retention skipped because the new backup failed" >&2
+  fi
+
+  if [ "$BACKUP_ONCE" -eq 1 ]; then
+    [ "$BACKUP_OK" -eq 1 ] && exit 0
+    exit 1
   fi
 
   sleep "${INTERVAL}"

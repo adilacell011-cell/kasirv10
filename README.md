@@ -97,22 +97,70 @@ pengganti backup teruji.
 - Backup terjadwal disimpan ke bind mount `./backups`.
 - Backup dan database berada pada host yang sama; kerusakan atau kehilangan
   host dapat menghilangkan keduanya.
-- Salin backup terenkripsi ke lokasi off-host yang terpisah dan pantau hasil
-  backup.
-- Script memeriksa status `pg_dump`, kompresi, file tidak kosong, dan validitas
-  gzip sebelum menerbitkan file akhir.
+- `docker/db-backup.sh` memeriksa status `pg_dump` dan `gzip` secara terpisah,
+  validitas gzip, penanda awal/akhir dump SQL, dan ukuran hasil sebelum
+  menerbitkan file akhir secara atomik. Kegagalan dicatat tanpa mencetak
+  credential. Backup otomatis bukan bukti bahwa restore berhasil.
+- Backup off-host **belum dikonfigurasi**. Rancangan yang disarankan: salin
+  hanya file backup yang telah selesai ke repository Restic terenkripsi pada
+  object storage terpisah, gunakan credential khusus backup dengan hak minimum,
+  simpan secret melalui secret manager/credential file berizin terbatas, dan
+  pantau waktu backup serta upload sukses terakhir. Jangan menaruh credential
+  provider di Git, Compose, atau log. Aktifkan retensi remote hanya setelah
+  restore QA berkala berhasil; konfigurasi provider dan credential sengaja
+  belum dibuat karena tujuan storage belum dipilih.
 
-Backup manual:
+Backup satu kali dengan konfigurasi `docker-compose.yml` (database harus sudah
+berjalan). Mode ini memakai validasi dan file sementara yang sama dengan backup
+terjadwal:
 
 ```bash
-docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
-  | gzip > backup-manual.sql.gz
+docker compose run --rm --no-deps -e BACKUP_ONCE=1 backup
 ```
 
-Pulihkan terlebih dahulu ke database QA yang benar-benar terpisah. Cocokkan
-data dan uji aplikasi sebelum menyetujui cutover. Jangan mengalirkan dump
-langsung ke database produksi aktif: opsi pembersihan pada dump dapat
-menghapus atau mengganti objek database.
+### Restore manual dengan target terjaga
+
+`docker/db-restore.sh` secara default hanya melakukan dry-run baca-saja. Target
+host, port, database, dan schema harus diberikan eksplisit dan harus sama dengan
+allowlist `RESTORE_ALLOWED_HOST`, `RESTORE_ALLOWED_PORT`, `RESTORE_ALLOWED_DB`,
+dan `RESTORE_ALLOWED_SCHEMA`. Pemeriksaan menghubungkan ke target, memeriksa
+identitas koneksi, memastikan schema ada, dan menolak database yang sudah berisi
+objek aplikasi. Arsip juga diperiksa dengan `gzip -t`, penanda dump lengkap,
+serta penolakan perintah `CREATE DATABASE`, `DROP DATABASE`, atau `\connect`.
+
+Contoh berikut hanya pola QA dan **bukan perintah untuk database aktif**.
+Jalankan dry-run dahulu dari runner QA yang memiliki `psql` dan `gzip`; sediakan
+kredensial melalui mekanisme libpq/secret manager, bukan argumen command line:
+
+```bash
+export RESTORE_ALLOWED_HOST='<QA_HOST>'
+export RESTORE_ALLOWED_PORT='<QA_PORT>'
+export RESTORE_ALLOWED_DB='<QA_DATABASE>'
+export RESTORE_ALLOWED_SCHEMA='<QA_SCHEMA>'
+export PGUSER='<QA_RESTORE_USER>'
+# PGPASSWORD/PGPASSFILE harus disediakan dari secret manager, jangan dicetak.
+
+sh docker/db-restore.sh \
+  --backup '<PATH_TO_VERIFIED_BACKUP.sql.gz>' \
+  --target-host "$RESTORE_ALLOWED_HOST" \
+  --target-port "$RESTORE_ALLOWED_PORT" \
+  --target-db "$RESTORE_ALLOWED_DB" \
+  --target-schema "$RESTORE_ALLOWED_SCHEMA"
+```
+
+Restore SQL hanya berjalan jika ditambahkan `--execute` dan persetujuan target
+eksplisit dalam format `restore:HOST:PORT/DB/SCHEMA`. Script mengulang pemeriksaan
+identitas dan memastikan database masih kosong tepat sebelum restore. Dump
+diproses dalam satu transaksi sehingga kegagalan SQL membatalkan restore.
+Pulihkan ke database QA kosong yang benar-benar terpisah, cocokkan data dan uji
+aplikasi sebelum menyetujui cutover. Jangan mengalirkan dump ke database aktif:
+backup lama yang dibuat dengan `--clean` dapat berisi perintah penghapusan objek.
+
+Uji backup/restore lokal yang membuat PostgreSQL sementara terisolasi:
+
+```bash
+bash docker/backup-restore.test.sh
+```
 
 ---
 
