@@ -1,3 +1,5 @@
+import { clearPendingSaleKey, getPendingSaleKey } from "./sale-idempotency";
+
 const BASE_URL = "/api";
 
 const getHeaders = () => {
@@ -7,6 +9,12 @@ const getHeaders = () => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
+
+function newIdempotencyKey(): string {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}-${Math.random()}`;
+}
 
 export class ReadError extends Error {
   constructor(
@@ -200,14 +208,29 @@ export const api = {
   },
 
   async createSale(data: any, idempotencyKey?: string) {
-    const key = idempotencyKey || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+    let pending: { key: string; storageKey: string | null };
+    let pendingStore: Storage | null = null;
+    try {
+      pendingStore = localStorage;
+      pending = getPendingSaleKey(data, pendingStore, newIdempotencyKey, idempotencyKey);
+    } catch {
+      pending = { key: newIdempotencyKey(), storageKey: null };
+    }
     const res = await fetch(`${BASE_URL}/transactions`, {
       method: "POST",
-      headers: { ...getHeaders(), "X-Idempotency-Key": key },
+      headers: { ...getHeaders(), "X-Idempotency-Key": pending.key },
       body: JSON.stringify(data),
     });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to create sale: ${res.status} ${txt}`); }
-    return res.json();
+    if (!res.ok) {
+      const txt = await res.text();
+      if (res.status < 500 && res.status !== 409) {
+        if (pendingStore) clearPendingSaleKey(pendingStore, pending.storageKey, pending.key);
+      }
+      throw new Error(`Failed to create sale: ${res.status} ${txt}`);
+    }
+    const sale = await res.json();
+    if (pendingStore) clearPendingSaleKey(pendingStore, pending.storageKey, pending.key);
+    return sale;
   },
 
   async getSales(params: any = {}, signal?: AbortSignal) {

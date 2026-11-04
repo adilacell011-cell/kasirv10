@@ -83,6 +83,13 @@ async function startApi(): Promise<void> {
     env: {
       ...process.env,
       DATABASE_URL: testDatabaseUrl,
+      DB_RUNTIME_ENV: "test",
+      PGHOST: parsedDatabaseUrl.hostname,
+      PGPORT: parsedDatabaseUrl.port || "5432",
+      PGDATABASE: decodeURIComponent(parsedDatabaseUrl.pathname.slice(1)),
+      DB_EXPECTED_HOST: parsedDatabaseUrl.hostname,
+      DB_EXPECTED_PORT: parsedDatabaseUrl.port || "5432",
+      DB_EXPECTED_NAME: decodeURIComponent(parsedDatabaseUrl.pathname.slice(1)),
       JWT_SECRET: jwtSecret,
       PORT: String(apiPort),
       NODE_ENV: "test",
@@ -225,7 +232,13 @@ before(async () => {
     ],
   });
   await prisma.product.create({
-    data: { id: productId, name: "Auth Integration Test Product", buyingPrice: 1, sellingPrice: 2 },
+    data: {
+      id: productId,
+      name: "Auth Integration Test Product",
+      buyingPrice: 10000,
+      sellingPrice: 15000,
+      commissionAmount: 1000,
+    },
   });
   await prisma.sale.create({
     data: {
@@ -395,11 +408,58 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   await new Promise((resolve) => setTimeout(resolve, 100));
   assert.equal(cashierBEvents.length, 0);
 
-  const saleAfterRosterEdits = await fetch(`${apiUrl}/api/transactions`, {
+  const cashierProductsResponse = await fetch(`${apiUrl}/api/products`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(cashierProductsResponse.status, 200);
+  const cashierProducts = await cashierProductsResponse.json() as Array<Record<string, unknown> & { id: string }>;
+  const cashierProduct = cashierProducts.find((product) => product.id === productId);
+  assert.ok(cashierProduct);
+  assert.equal("buyingPrice" in cashierProduct, false);
+  assert.equal("purchasePrice" in cashierProduct, false);
+
+  const productUpdatePromise = new Promise<Record<string, unknown>>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("No productUpdated event received.")), 4_000);
+    cashierASocket.once("productUpdated", (payload: Record<string, unknown>) => {
+      clearTimeout(timeout);
+      resolve(payload);
+    });
+  });
+  const productUpdateResponse = await fetch(`${apiUrl}/api/products`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ id: productId, name: "Auth Integration Test Product" }),
+  });
+  assert.equal(productUpdateResponse.status, 200);
+  assert.deepEqual(await productUpdatePromise, { id: productId });
+
+  const missingIdempotencyKeyResponse = await fetch(`${apiUrl}/api/transactions`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${cashierPayload.token}`,
       "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      items: [{ productId, qty: 1, price: 15000, subtotal: 15000, commission: 1000 }],
+      total: 15000,
+      totalCommission: 1000,
+    }),
+  });
+  assert.equal(missingIdempotencyKeyResponse.status, 400);
+  assert.equal(
+    (await missingIdempotencyKeyResponse.json() as { code: string }).code,
+    "IDEMPOTENCY_KEY_REQUIRED",
+  );
+
+  const maliciousSaleResponse = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": crypto.randomUUID(),
     },
     body: JSON.stringify({
       items: [{ productId, qty: 1, price: 2, subtotal: 2, commission: 0 }],
@@ -407,10 +467,119 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
       totalCommission: 0,
     }),
   });
-  assert.equal(saleAfterRosterEdits.status, 200);
-  const retainedSessionSale = await saleAfterRosterEdits.json() as { branchId: string; cashierId: string };
+  assert.equal(maliciousSaleResponse.status, 409);
+  assert.equal((await maliciousSaleResponse.json() as { code: string }).code, "SALE_AMOUNT_MISMATCH");
+
+  const saleKey = crypto.randomUUID();
+  const salePayload = {
+    items: [{ productId, qty: 1, price: 15000, subtotal: 15000, commission: 1000 }],
+    total: 15000,
+    totalCommission: 1000,
+  };
+  const stockBeforeSale = await prisma.productStock.findFirst({ where: { productId, branchId: branchAId } });
+  assert.ok(stockBeforeSale);
+  const createSaleWithSameKey = () => fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": saleKey,
+    },
+    body: JSON.stringify(salePayload),
+  });
+  const [saleResponseA, saleResponseB] = await Promise.all([
+    createSaleWithSameKey(),
+    createSaleWithSameKey(),
+  ]);
+  assert.equal(saleResponseA.status, 200);
+  assert.equal(saleResponseB.status, 200);
+  const createdSale = await saleResponseA.json() as {
+    id: string;
+    branchId: string;
+    cashierId: string;
+    total: number;
+    totalCommission: number;
+    totalProfit: number;
+    items: Array<Record<string, unknown>>;
+    idempotencyKeyHash?: string;
+    idempotencyPayloadHash?: string;
+  };
+  const replayedSale = await saleResponseB.json() as { id: string };
+  assert.equal(replayedSale.id, createdSale.id);
+  assert.equal(createdSale.items[0].costPrice, undefined);
+  assert.equal(createdSale.idempotencyKeyHash, undefined);
+  assert.equal(createdSale.idempotencyPayloadHash, undefined);
+  assert.equal(createdSale.total, 15000);
+  assert.equal(createdSale.totalCommission, 1000);
+  assert.equal(createdSale.totalProfit, 4000);
+  const retainedSessionSale = createdSale;
   assert.equal(retainedSessionSale.branchId, branchAId);
   assert.equal(retainedSessionSale.cashierId, cashierA.id);
+  const stockAfterSale = await prisma.productStock.findFirst({ where: { productId, branchId: branchAId } });
+  assert.equal(stockAfterSale?.qty, stockBeforeSale.qty - 1);
+  const commissionCountAfterSale = await prisma.commission.count({ where: { saleId: createdSale.id } });
+  assert.equal(commissionCountAfterSale, 1);
+  const commissionAfterSale = await prisma.commission.findFirst({ where: { saleId: createdSale.id } });
+  assert.equal(commissionAfterSale?.amount, 1000);
+  assert.equal(commissionAfterSale?.status, "earned");
+
+  const reusedKeyWithDifferentPayload = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": saleKey,
+    },
+    body: JSON.stringify({
+      ...salePayload,
+      items: [{ productId, qty: 2, price: 15000, subtotal: 30000, commission: 2000 }],
+      total: 30000,
+      totalCommission: 2000,
+    }),
+  });
+  assert.equal(reusedKeyWithDifferentPayload.status, 409);
+  assert.equal((await reusedKeyWithDifferentPayload.json() as { code: string }).code, "IDEMPOTENCY_KEY_REUSED");
+
+  const cashierSaleHistoryResponse = await fetch(`${apiUrl}/api/transactions?branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(cashierSaleHistoryResponse.status, 200);
+  const cashierSaleHistory = await cashierSaleHistoryResponse.json() as Array<{
+    id: string;
+    items: Array<{ costPrice?: number; product?: { buyingPrice?: number; purchasePrice?: number } }>;
+  }>;
+  const cashierSale = cashierSaleHistory.find((sale) => sale.id === createdSale.id);
+  assert.ok(cashierSale);
+  assert.equal(cashierSale.items[0].costPrice, undefined);
+  assert.equal(cashierSale.items[0].product?.buyingPrice, undefined);
+
+  const cashierCommissionResponse = await fetch(`${apiUrl}/api/incentives?branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(cashierCommissionResponse.status, 200);
+  const cashierCommissions = await cashierCommissionResponse.json() as Array<{
+    saleId: string;
+    product?: { buyingPrice?: number; purchasePrice?: number };
+    sale?: { idempotencyKeyHash?: string; idempotencyPayloadHash?: string };
+  }>;
+  const cashierCommission = cashierCommissions.find((commission) => commission.saleId === createdSale.id);
+  assert.ok(cashierCommission);
+  assert.equal(cashierCommission.product?.buyingPrice, undefined);
+  assert.equal(cashierCommission.product?.purchasePrice, undefined);
+  assert.equal(cashierCommission.sale?.idempotencyKeyHash, undefined);
+  assert.equal(cashierCommission.sale?.idempotencyPayloadHash, undefined);
+
+  const ownerSaleHistoryResponse = await fetch(`${apiUrl}/api/transactions?branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${adminPayload.token}` },
+  });
+  const ownerSaleHistory = await ownerSaleHistoryResponse.json() as Array<{
+    id: string;
+    items: Array<{ costPrice?: number; product?: { buyingPrice?: number } }>;
+  }>;
+  const ownerSale = ownerSaleHistory.find((sale) => sale.id === createdSale.id);
+  assert.equal(ownerSale?.items[0].costPrice, 10000);
+  assert.equal(ownerSale?.items[0].product?.buyingPrice, 10000);
+
   const closeAfterRosterEdits = await fetch(`${apiUrl}/api/shifts/${activeShift.id}`, {
     method: "PATCH",
     headers: {
@@ -579,6 +748,25 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     });
     assert.equal(afterRestart.status, 200);
   }
+  const replayAfterRestart = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${restartPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": saleKey,
+    },
+    body: JSON.stringify(salePayload),
+  });
+  assert.equal(replayAfterRestart.status, 200);
+  assert.equal((await replayAfterRestart.json() as { id: string }).id, createdSale.id);
+  const stockAfterRestartReplay = await prisma.productStock.findFirst({
+    where: { productId, branchId: branchAId },
+  });
+  assert.equal(stockAfterRestartReplay?.qty, stockAfterSale?.qty);
+  assert.equal(
+    await prisma.commission.count({ where: { saleId: createdSale.id } }),
+    commissionCountAfterSale,
+  );
   const reconnectedSocket = await connectSocket({ token: restartPayload.token });
   reconnectedSocket.close();
 });

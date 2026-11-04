@@ -25,8 +25,15 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
   const owner = (await login.json() as { token: string }).token;
   const tag = `QA-SHIFT-${Date.now()}-${randomUUID().slice(0, 6)}`;
   async function request(path: string, token: string, method = "GET", body?: unknown) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+    if (method === "POST" && path === "/transactions") {
+      headers["X-Idempotency-Key"] = randomUUID();
+    }
     return fetch(`${base}${path}`, {
-      method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      method, headers,
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   }

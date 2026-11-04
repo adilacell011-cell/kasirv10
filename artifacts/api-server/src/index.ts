@@ -18,6 +18,16 @@ import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment
 import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
+import { hashIdempotencyScope, hashSaleRequest, idempotencyPayloadMatches } from "./idempotency";
+import {
+  assertSaleTotalsMatch,
+  deriveTrustedSaleLine,
+  productUpdatedPayload,
+  redactCommissionProductCosts,
+  redactSaleCosts,
+  SaleAmountMismatch,
+  type TrustedSaleLine,
+} from "./sale-security";
 
 // Validate before constructing Prisma. Never log connection-string errors.
 let databaseTarget: ReturnType<typeof validateDatabaseTarget>;
@@ -35,17 +45,6 @@ const io = new Server(httpServer, {
     origin: "*",
   }
 });
-
-// Idempotency cache: prevents duplicate sales when the client retries due to
-// network instability. Key = X-Idempotency-Key header (UUID from client).
-// Entries expire after 90 seconds — long enough to cover any realistic retry window.
-const idempotencyCache = new Map<string, { result: any; expires: number }>();
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of idempotencyCache) {
-    if (entry.expires <= now) idempotencyCache.delete(key);
-  }
-}, 30_000);
 
 // Emit an event to the given branch's room plus the global (admin/audit) room.
 // When branchId is missing we fall back to a global broadcast so nothing is lost.
@@ -357,7 +356,9 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
       : await prisma.product.create({ data: data as any });
     
     // Broadcast product change
-    io.emit("productUpdated", product);
+    // The existing event is a refresh signal; clients fetch their role-scoped
+    // product list after it. Never broadcast modal/cost fields in the event.
+    io.emit("productUpdated", productUpdatedPayload(product));
     
     res.json(product);
   } catch (error) {
@@ -512,19 +513,16 @@ app.patch("/api/config", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
-  // Idempotency guard: if the client sends the same key twice (network retry),
-  // return the cached result immediately without touching the DB again.
-  const idempKey = (req.headers["x-idempotency-key"] as string | undefined)?.trim();
-  if (idempKey) {
-    const cached = idempotencyCache.get(idempKey);
-    if (cached && cached.expires > Date.now()) {
-      console.log(`↩️  Idempotency hit for key ${idempKey} — returning cached sale`);
-      return void res.json(cached.result);
-    }
-  }
-
   const { branchId, cashierId, items, customerName, total, totalCommission } = req.body;
   const requester = (req as any).user;
+  const idempHeader = req.headers["x-idempotency-key"];
+  const idempKey = typeof idempHeader === "string" ? idempHeader.trim() : "";
+  if (!/^[A-Za-z0-9._:-]{8,128}$/.test(idempKey)) {
+    return void res.status(400).json({
+      error: "Kunci idempotensi transaksi tidak valid atau belum dikirim.",
+      code: "IDEMPOTENCY_KEY_REQUIRED",
+    });
+  }
   // Cashiers are locked to their own branch and identity: a cashier can never post a
   // sale for another branch or attribute it to another cashier, regardless of body.
   const actualCashierId = requester.role === "CASHIER" ? requester.userId : (cashierId || requester.userId);
@@ -537,27 +535,59 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
     return void res.status(400).json({ error: "Item transaksi tidak valid atau kosong." });
   }
   for (const it of items) {
-    if (!it || !it.productId) return void res.status(400).json({ error: "Item transaksi tidak valid (produk tidak ada)." });
+    if (!it || typeof it.productId !== "string" || !it.productId) {
+      return void res.status(400).json({ error: "Item transaksi tidak valid (produk tidak ada)." });
+    }
     if (toPositiveInt(it.qty) === null) return void res.status(400).json({ error: "Jumlah (qty) setiap item harus bilangan bulat positif." });
-    if (toFiniteNumber(it.price) === null) return void res.status(400).json({ error: "Harga item tidak valid." });
   }
   const safeTotal = toFiniteNumber(total);
   if (safeTotal === null) return void res.status(400).json({ error: "Total transaksi tidak valid." });
-  const safeCommission = toFiniteNumber(totalCommission) ?? 0;
+  const safeCommission = totalCommission === undefined || totalCommission === null
+    ? undefined
+    : toFiniteNumber(totalCommission);
+  if (totalCommission !== undefined && totalCommission !== null && safeCommission === null) {
+    return void res.status(400).json({ error: "Total komisi transaksi tidak valid." });
+  }
   // Normalize numeric fields up-front so downstream math and Prisma int columns always
   // receive real numbers (a legitimate "2" string is accepted, not rejected at the DB layer).
   const normItems = items.map((it: any) => ({
-    productId: it.productId,
+    productId: it.productId as string,
     qty: toPositiveInt(it.qty) as number,
-    price: toFiniteNumber(it.price) as number,
-    commission: toFiniteNumber(it.commission) ?? 0,
-    subtotal: toFiniteNumber(it.subtotal) ?? ((toFiniteNumber(it.price) as number) * (toPositiveInt(it.qty) as number)),
-    sn: it.sn,
+    price: it.price,
+    commission: it.commission,
+    subtotal: it.subtotal,
+    sn: typeof it.sn === "string" ? it.sn : null,
   }));
+  const idempotencyKeyHash = hashIdempotencyScope({
+    accountId: requester.userId,
+    branchId: actualBranchId,
+    key: idempKey,
+  });
+  const idempotencyPayloadHash = hashSaleRequest({
+    branchId: actualBranchId,
+    cashierId: actualCashierId,
+    customerName: customerName ?? null,
+    items: normItems,
+    total,
+    totalCommission: totalCommission ?? null,
+  });
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const transactionResult = await prisma.$transaction(async (tx) => {
       await lockBranch(tx, actualBranchId);
+      // Persistent lookup happens under the same branch lock as stock and shift
+      // operations. It survives API restarts and prevents same-key parallel writes.
+      const previousSale = await tx.sale.findUnique({
+        where: { idempotencyKeyHash },
+        include: { items: true },
+      });
+      if (previousSale) {
+        if (!idempotencyPayloadMatches(previousSale.idempotencyPayloadHash, idempotencyPayloadHash)) {
+          throw new IdempotencyKeyConflict();
+        }
+        return { sale: previousSale, replay: true };
+      }
+
       // A cashier sale must belong to a persisted, currently open shift for this
       // verified branch/account. Sharing the branch lock with open/close keeps the
       // check atomic against a shift being closed concurrently. Do not apply this
@@ -576,39 +606,48 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
         }
       }
 
-      let finalTotalProfit = 0;
-      const saleItemsData = [];
+      const trustedItems: TrustedSaleLine[] = [];
+      const saleItemsData: Array<{
+        productId: string;
+        qty: number;
+        price: number;
+        costPrice: number;
+        subtotal: number;
+        sn: string | null;
+      }> = [];
       const productNames: Record<string, string> = {};
 
-      // 1. Validate All Stocks and Collect Cost Prices First
+      // 1. Derive all prices, costs and commissions from the stored catalog.
       for (const item of normItems) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
           include: { stocks: { where: { branchId: actualBranchId } } }
         });
 
-        if (!product) throw new Error(`Produk dengan ID ${item.productId} tidak ditemukan.`);
+        if (!product) throw new SaleRejected(`Produk dengan ID ${item.productId} tidak ditemukan.`);
         
         productNames[item.productId] = product.name;
 
+        const trustedItem = deriveTrustedSaleLine(item, product);
+        trustedItems.push(trustedItem);
         const currentStock = product.stocks[0]?.qty || 0;
         if (currentStock < item.qty) {
-          throw new Error(`Stok tidak cukup untuk ${product.name}. Tersedia: ${currentStock}, Diminta: ${item.qty}`);
+          throw new SaleRejected(`Stok tidak cukup untuk ${product.name}. Tersedia: ${currentStock}, Diminta: ${item.qty}`);
         }
 
-        const costPrice = Number(product.buyingPrice || 0);
-        const itemProfit = (item.price * item.qty) - (costPrice * item.qty) - (item.commission || 0);
-        finalTotalProfit += itemProfit;
-
         saleItemsData.push({
-          productId: item.productId,
-          qty: item.qty,
-          price: item.price,
-          costPrice: costPrice,
-          subtotal: item.subtotal,
-          sn: item.sn || product.masterSN || null
+          productId: trustedItem.productId,
+          qty: trustedItem.qty,
+          price: trustedItem.price,
+          costPrice: trustedItem.costPrice,
+          subtotal: trustedItem.subtotal,
+          sn: trustedItem.sn,
         });
       }
+      const authoritativeTotal = trustedItems.reduce((sum, item) => sum + item.subtotal, 0);
+      const authoritativeCommission = trustedItems.reduce((sum, item) => sum + item.commission, 0);
+      const authoritativeProfit = trustedItems.reduce((sum, item) => sum + item.profit, 0);
+      assertSaleTotalsMatch(safeTotal, safeCommission, authoritativeTotal, authoritativeCommission);
 
       // 2. Create the Sale
       const sale = await tx.sale.create({
@@ -616,10 +655,12 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
           branchId: actualBranchId,
           cashierId: actualCashierId,
           customerName,
-          total: safeTotal,
-          totalCommission: safeCommission,
-          totalProfit: finalTotalProfit,
+          total: authoritativeTotal,
+          totalCommission: authoritativeCommission,
+          totalProfit: authoritativeProfit,
           status: "success",
+          idempotencyKeyHash,
+          idempotencyPayloadHash,
           items: {
             create: saleItemsData
           }
@@ -643,11 +684,11 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
           }
         });
         if (decremented.count === 0) {
-          throw new Error(`Stok tidak cukup untuk ${productNames[item.productId] || item.productId}. Stok mungkin baru saja terjual.`);
+          throw new SaleRejected(`Stok tidak cukup untuk ${productNames[item.productId] || item.productId}. Stok mungkin baru saja terjual.`);
         }
 
-        if (item.productId && (normItems.find((i) => i.productId === item.productId)?.commission || 0) > 0) {
-          const commAmt = normItems.find((i) => i.productId === item.productId)!.commission;
+        if (item.productId && (trustedItems.find((i) => i.productId === item.productId)?.commission || 0) > 0) {
+          const commAmt = trustedItems.find((i) => i.productId === item.productId)!.commission;
           await tx.commission.create({
             data: {
               saleId: sale.id,
@@ -667,30 +708,77 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       // per-branch claimable balance is derived from it, so there is no separate counter
       // to keep in sync.
 
-      return sale;
+      return { sale, replay: false };
     });
 
-    // CRITICAL: Emit real-time stock update notification (scoped to this branch + admins)
-    emitBranch(actualBranchId, "saleProcessed", {
-      saleId: result.id,
-      items: normItems.map((i) => ({ productId: i.productId, branchId: actualBranchId, qty: i.qty }))
-    });
-
-    // Store result in idempotency cache so a network-retry from the same client
-    // returns the same sale without re-processing (no duplicate stock decrement).
-    if (idempKey) {
-      idempotencyCache.set(idempKey, { result, expires: Date.now() + 90_000 });
+    if (!transactionResult.replay) {
+      // CRITICAL: Emit real-time stock update notification (scoped to this branch + admins)
+      emitBranch(actualBranchId, "saleProcessed", {
+        saleId: transactionResult.sale.id,
+        items: transactionResult.sale.items.map((item) => ({
+          productId: item.productId,
+          branchId: actualBranchId,
+          qty: item.qty,
+        }))
+      });
     }
 
-    res.json(result);
+    res.json(redactSaleCosts(transactionResult.sale, requester.role));
   } catch (error: any) {
     if (error instanceof ShiftConflict) {
       return void res.status(error.status).json({ error: error.message });
     }
+    if (error instanceof IdempotencyKeyConflict) {
+      return void res.status(409).json({
+        error: "Kunci idempotensi sudah digunakan untuk isi transaksi yang berbeda.",
+        code: "IDEMPOTENCY_KEY_REUSED",
+      });
+    }
+    if (error instanceof SaleAmountMismatch) {
+      return void res.status(409).json({
+        error: "Harga atau jumlah pada transaksi berubah. Muat ulang produk sebelum mencoba lagi.",
+        code: "SALE_AMOUNT_MISMATCH",
+      });
+    }
+    if (error instanceof SaleRejected) {
+      return void res.status(400).json({ error: error.message });
+    }
+    if (error?.code === "P2002") {
+      const existingSale = await prisma.sale.findUnique({
+        where: { idempotencyKeyHash },
+        include: { items: true },
+      }).catch(() => null);
+      if (existingSale) {
+        if (!idempotencyPayloadMatches(existingSale.idempotencyPayloadHash, idempotencyPayloadHash)) {
+          return void res.status(409).json({
+            error: "Kunci idempotensi sudah digunakan untuk isi transaksi yang berbeda.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+        return void res.json(redactSaleCosts(existingSale, requester.role));
+      }
+    }
     console.error("Sale Process Error:", error);
-    res.status(400).json({ error: error.message || "Gagal memproses penjualan" });
+    res.status(500).json({
+      error: "Gagal memproses penjualan. Ulangi permintaan yang sama untuk memeriksa statusnya.",
+      code: "SALE_PROCESSING_ERROR",
+    });
   }
 });
+
+class IdempotencyKeyConflict extends Error {
+  constructor() {
+    super("Idempotency key reused with a different transaction payload.");
+    this.name = "IdempotencyKeyConflict";
+  }
+}
+
+class SaleRejected extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SaleRejected";
+  }
+}
 
 app.get("/api/transactions", authenticateToken, async (req, res) => {
   const { branchId, startDate, endDate } = req.query;
@@ -729,7 +817,10 @@ app.get("/api/transactions", authenticateToken, async (req, res) => {
       },
       orderBy: { createdAt: "desc" }
     });
-    res.json(sales.map((s: any) => ({ ...s, cashier: stripPw(s.cashier) })));
+    res.json(sales.map((sale: any) => redactSaleCosts(
+      { ...sale, cashier: stripPw(sale.cashier) },
+      requester.role,
+    )));
   } catch (error: any) {
     console.error("Fetch Sales Error [Full]:", {
       code: error.code,
@@ -760,7 +851,10 @@ app.get("/api/incentives", authenticateToken, async (req, res) => {
       include: { product: true, cashier: true, branch: true, sale: true },
       orderBy: { createdAt: "desc" }
     });
-    res.json(commissions.map((c: any) => ({ ...c, cashier: stripPw(c.cashier) })));
+    res.json(commissions.map((commission: any) => redactCommissionProductCosts(
+      { ...commission, cashier: stripPw(commission.cashier) },
+      requester.role,
+    )));
   } catch (error) {
     console.error("Commissions Fetch Error:", error);
     res.status(500).json({ error: "Failed to fetch commissions" });
@@ -1211,9 +1305,10 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("CASHIER
       return updatedSale;
     });
 
-    emitBranch((result as any).branchId, "saleUpdated", result);
+    const safeResult = redactSaleCosts(result as Record<string, unknown>, requester.role);
+    emitBranch((result as any).branchId, "saleUpdated", safeResult);
     emitBranch((result as any).branchId, "commissionsUpdated", { branchId: (result as any).branchId });
-    res.json(result);
+    res.json(safeResult);
   } catch (error: any) {
     if (error instanceof ShiftConflict) return void res.status(error.status).json({ error: error.message });
     console.error("Refund Sale Error:", error);

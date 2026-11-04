@@ -114,6 +114,8 @@ model Sale {
   totalCommission Float
   totalProfit     Float    @default(0)
   status          String   // success, refunded, cancelled
+  idempotencyKeyHash    String? @unique
+  idempotencyPayloadHash String?
   createdAt       DateTime @default(now())
 
   items       SaleItem[]
