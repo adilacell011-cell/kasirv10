@@ -7,6 +7,7 @@ services:
     image: postgres:16-alpine
     container_name: kasirv10-staging-db
     restart: unless-stopped
+    mem_limit: 576m
     environment:
       POSTGRES_USER: kasirv10_staging
       POSTGRES_PASSWORD: "${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}"
@@ -22,10 +23,11 @@ services:
       retries: 12
 
   api:
-    image: ghcr.io/adilacell011-cell/kasirv10-api:sha-01e25e5b2b04b09d1d69c0df1af0d8bc43b3ca44
+    image: ghcr.io/adilacell011-cell/kasirv10-api:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
     pull_policy: always
     container_name: kasirv10-staging-api
     restart: unless-stopped
+    mem_limit: 512m
     depends_on:
       db:
         condition: service_healthy
@@ -55,10 +57,11 @@ services:
       start_period: 30s
 
   web:
-    image: ghcr.io/adilacell011-cell/kasirv10-web:sha-01e25e5b2b04b09d1d69c0df1af0d8bc43b3ca44
+    image: ghcr.io/adilacell011-cell/kasirv10-web:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
     pull_policy: always
     container_name: kasirv10-staging-web
     restart: unless-stopped
+    mem_limit: 96m
     depends_on:
       api:
         condition: service_healthy
@@ -74,6 +77,7 @@ services:
     container_name: kasirv10-staging-backup
     profiles: ["manual-backup"]
     restart: "no"
+    mem_limit: 192m
     user: "0:0"
     depends_on:
       db:

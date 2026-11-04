@@ -1,11 +1,12 @@
-# AlfathPOS - Dockge deployment.
-# Builds from the approved repository; provide runtime values in Dockge's
-# environment editor. Never put credentials or personal access tokens in this file.
+# Kasir V10 - Dockge deployment.
+# Pulls immutable candidate images; both services must use the same approved commit SHA.
+# Provide runtime values in Dockge's environment editor, never commit credentials.
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    mem_limit: 576m
     environment:
       POSTGRES_USER: "${POSTGRES_USER:?Set POSTGRES_USER in Dockge}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in Dockge}"
@@ -19,10 +20,10 @@ services:
       retries: 12
 
   api:
-    build:
-      context: https://github.com/adilacell011-cell/kasirv10.git#main
-      dockerfile: artifacts/api-server/Dockerfile
+    image: ghcr.io/adilacell011-cell/kasirv10-api:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
+    pull_policy: always
     restart: unless-stopped
+    mem_limit: 512m
     depends_on:
       db:
         condition: service_healthy
@@ -42,10 +43,10 @@ services:
       NODE_ENV: production
 
   web:
-    build:
-      context: https://github.com/adilacell011-cell/kasirv10.git#main
-      dockerfile: artifacts/alfath-pos/Dockerfile
+    image: ghcr.io/adilacell011-cell/kasirv10-web:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
+    pull_policy: always
     restart: unless-stopped
+    mem_limit: 96m
     depends_on:
       - api
     ports:
@@ -58,6 +59,7 @@ services:
   backup:
     image: postgres:16-alpine
     restart: unless-stopped
+    mem_limit: 192m
     user: "0:0"
     depends_on:
       db:
