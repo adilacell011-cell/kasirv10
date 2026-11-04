@@ -84,7 +84,9 @@ Perilaku lama yang dipertahankan:
   atau penulisan. Tetap periksa target dan persetujuan secara manual sebelum
   menjalankan perintah. Nilai environment `production` pada allowlist staging
   hanya menandakan mode runtime Node; target databasenya tetap
-  `db:5432/kasirv10_staging/public`.
+  `db:5432/kasirv10_staging/public`. Nama database juga harus memiliki segmen
+  `staging`, `stage`, `qa`, atau `test`; nama produksi biasa tanpa penanda itu
+  ditolak meskipun allowlist ikut salah diatur.
 - `seed`: hanya operasi manual dengan gate persetujuan. Harus diberi
   `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_CASHIER_USERNAME`,
   dan `INITIAL_CASHIER_PASSWORD`; tidak ada kredensial bawaan. Upsert tidak
