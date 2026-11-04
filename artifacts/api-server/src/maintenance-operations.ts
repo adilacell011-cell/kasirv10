@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { assertOwnerBootstrapTarget, type DatabaseTarget } from "./database-target";
 import { getLogicalShiftDate } from "./business-date";
 import { createSaleIdempotencySnapshot } from "./idempotency";
 
@@ -223,7 +224,11 @@ export async function syncCredentials(prisma: PrismaClient | Prisma.TransactionC
   console.log("Credentials and Global Config synchronized.");
 }
 
-export async function bootstrapOwner(prisma: PrismaClient | Prisma.TransactionClient) {
+export async function bootstrapOwner(
+  prisma: PrismaClient | Prisma.TransactionClient,
+  target: DatabaseTarget,
+) {
+  assertOwnerBootstrapTarget(target, process.env);
   const username = process.env.STAGING_OWNER_USERNAME?.trim().toLowerCase();
   const password = process.env.STAGING_OWNER_PASSWORD?.trim();
   const name = process.env.STAGING_OWNER_NAME?.trim() || "Owner";

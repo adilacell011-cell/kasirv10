@@ -19,6 +19,11 @@ test("manual Owner bootstrap supports an Owner without branch and startup is rea
   assert.equal(target.host, "127.0.0.1");
   assert.equal(target.database, "kasirv10_owner_qa");
   assert.equal(target.schema, "public");
+  assert.equal(
+    process.env.STAGING_OWNER_BOOTSTRAP_TARGET,
+    `${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`,
+    "the independent Owner-bootstrap target allowlist must match this QA database",
+  );
 
   const ownerUsername = process.env.STAGING_OWNER_USERNAME;
   const ownerPassword = process.env.STAGING_OWNER_PASSWORD;

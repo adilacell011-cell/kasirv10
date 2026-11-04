@@ -1,17 +1,22 @@
 import { PrismaClient } from "@prisma/client";
-import { validateDatabaseTarget, type DatabaseTarget } from "./database-target";
+import { assertOwnerBootstrapTarget, validateDatabaseTarget, type DatabaseTarget } from "./database-target";
 import { inspectDatabase } from "./database-readiness";
 
 const operations = ["bootstrap-owner", "seed", "backfill", "archive"] as const;
 type Operation = typeof operations[number];
 
-export function approveMaintenance(args: string[], target: DatabaseTarget): Operation {
+export function approveMaintenance(
+  args: string[],
+  target: DatabaseTarget,
+  env: NodeJS.ProcessEnv = process.env,
+): Operation {
   const operation = args[0] as Operation;
   const approval = `--approve=${operation}:${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
   if (!operations.includes(operation) || !args.includes("--execute") ||
       !args.includes("--acknowledge-legacy-risks") || !args.includes(approval)) {
     throw new Error("Maintenance blocked. Explicit operation, --execute, target-specific --approve and --acknowledge-legacy-risks are required. See STARTUP-SAFETY.md.");
   }
+  if (operation === "bootstrap-owner") assertOwnerBootstrapTarget(target, env);
   return operation;
 }
 
@@ -35,7 +40,7 @@ export async function runMaintenance(args = process.argv.slice(2)) {
         bootstrapOwner,
         syncCredentials,
       } = await import("./maintenance-operations");
-      if (operation === "bootstrap-owner") await bootstrapOwner(tx);
+      if (operation === "bootstrap-owner") await bootstrapOwner(tx, target);
       if (operation === "seed") await syncCredentials(tx);
       if (operation === "backfill") await backfillDailySummaries(tx);
       if (operation === "archive") await autoArchiveOldSales(prisma, tx);

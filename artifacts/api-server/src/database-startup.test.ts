@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
-import { validateDatabaseTarget } from "./database-target";
+import { assertOwnerBootstrapTarget, validateDatabaseTarget } from "./database-target";
 import { approveMaintenance } from "./maintenance-cli";
 import {
   assertCompatibleSchema, createReadiness, inspectDatabase, prepareDatabase, type SchemaSnapshot,
@@ -65,6 +65,28 @@ test("production needs explicit target configuration and matching environment", 
   assert.equal(validateDatabaseTarget({
     ...env, DB_EXPECTED_HOST: "dev-db", DB_EXPECTED_NAME: "isolated", DB_EXPECTED_PORT: "5432",
   }).environment, "production");
+});
+test("Owner bootstrap requires a separate exact staging-target allowlist", () => {
+  const stagingTarget = {
+    environment: "production" as const,
+    host: "db",
+    port: "5432",
+    database: "kasirv10_staging",
+    schema: "public",
+  };
+  const allowed = {
+    STAGING_OWNER_BOOTSTRAP_TARGET: "production:db:5432/kasirv10_staging/public",
+  };
+  assert.doesNotThrow(() => assertOwnerBootstrapTarget(stagingTarget, allowed));
+  assert.throws(() => assertOwnerBootstrapTarget(stagingTarget, {}), /STAGING_OWNER_BOOTSTRAP_TARGET/);
+  assert.throws(() => assertOwnerBootstrapTarget(
+    { ...stagingTarget, database: "kasirv10" },
+    allowed,
+  ), /STAGING_OWNER_BOOTSTRAP_TARGET/);
+  assert.throws(() => assertOwnerBootstrapTarget(
+    { ...stagingTarget, host: "production-db", database: "kasirv10" },
+    { STAGING_OWNER_BOOTSTRAP_TARGET: "production:production-db:5432/kasirv10/public" },
+  ), /STAGING_OWNER_BOOTSTRAP_TARGET/);
 });
 test("target overrides, duplicate parameters and invalid URLs are rejected without leaking credentials", () => {
   for (const suffix of ["?host=production.invalid", "?schema=other", "?schema=public&schema=other", "#fragment"]) {
@@ -149,10 +171,28 @@ test("administration requires action, execution, risk acknowledgement and exact 
   assert.equal(approveMaintenance(args, target), "archive");
   assert.throws(() => approveMaintenance(args, { ...target, database: "production" }));
   assert.throws(() => approveMaintenance(["backfill", ...args.slice(1)], target));
-  const ownerArgs = ["bootstrap-owner", "--execute", "--acknowledge-legacy-risks",
-    "--approve=bootstrap-owner:development:dev-db:5432/isolated/public"];
-  assert.equal(approveMaintenance(ownerArgs, target), "bootstrap-owner");
-  assert.throws(() => approveMaintenance(ownerArgs, { ...target, database: "production" }));
+  const stagingTarget = {
+    environment: "production" as const,
+    host: "db",
+    port: "5432",
+    database: "kasirv10_staging",
+    schema: "public",
+  };
+  const stagingOwnerArgs = ["bootstrap-owner", "--execute", "--acknowledge-legacy-risks",
+    "--approve=bootstrap-owner:production:db:5432/kasirv10_staging/public"];
+  const stagingOwnerAllowlist = {
+    STAGING_OWNER_BOOTSTRAP_TARGET: "production:db:5432/kasirv10_staging/public",
+  };
+  assert.throws(() => approveMaintenance(stagingOwnerArgs, stagingTarget, {}), /STAGING_OWNER_BOOTSTRAP_TARGET/);
+  assert.equal(approveMaintenance(stagingOwnerArgs, stagingTarget, stagingOwnerAllowlist), "bootstrap-owner");
+  const mistakenProductionTarget = { ...stagingTarget, host: "production-db", database: "kasirv10" };
+  const mistakenProductionArgs = ["bootstrap-owner", "--execute", "--acknowledge-legacy-risks",
+    "--approve=bootstrap-owner:production:production-db:5432/kasirv10/public"];
+  assert.throws(() => approveMaintenance(
+    mistakenProductionArgs,
+    mistakenProductionTarget,
+    stagingOwnerAllowlist,
+  ), /STAGING_OWNER_BOOTSTRAP_TARGET/);
 });
 test("normal entrypoint and hooks have no DDL, maintenance calls or automatic schema push", () => {
   const api = fs.readFileSync(new URL("./index.ts", import.meta.url), "utf8");
@@ -160,6 +200,15 @@ test("normal entrypoint and hooks have no DDL, maintenance calls or automatic sc
   for (const path of ["../docker-entrypoint.sh", "../../../scripts/post-merge.sh"]) {
     assert.doesNotMatch(fs.readFileSync(new URL(path, import.meta.url), "utf8"), /prisma\s+db\s+push|--filter\s+db\s+push/);
   }
+});
+test("Owner bootstrap target allowlist exists only in the isolated staging Compose", () => {
+  const stagingCompose = fs.readFileSync(new URL("../../../compose.staging.yaml", import.meta.url), "utf8");
+  const dockgeCompose = fs.readFileSync(new URL("../../../compose.dockge.yaml", import.meta.url), "utf8");
+  assert.match(
+    stagingCompose,
+    /STAGING_OWNER_BOOTSTRAP_TARGET:\s*"production:db:5432\/kasirv10_staging\/public"/,
+  );
+  assert.doesNotMatch(dockgeCompose, /STAGING_OWNER_BOOTSTRAP_TARGET/);
 });
 test("logical day remains WIB 06:00, including the 06:00–07:00 interval", () => {
   assert.equal(getLogicalShiftDate(new Date("2026-11-02T05:59:00+07:00")), "2026-11-01");
@@ -275,11 +324,21 @@ test("Owner bootstrap creates only one branchless ADMIN and preserves the global
     username: process.env.STAGING_OWNER_USERNAME,
     password: process.env.STAGING_OWNER_PASSWORD,
     name: process.env.STAGING_OWNER_NAME,
+    target: process.env.STAGING_OWNER_BOOTSTRAP_TARGET,
+  };
+  const ownerTarget = {
+    environment: "production" as const,
+    host: "db",
+    port: "5432",
+    database: "kasirv10_staging",
+    schema: "public",
   };
   process.env.STAGING_OWNER_USERNAME = "owner.qa";
   const ownerPassword = randomBytes(24).toString("base64url");
   process.env.STAGING_OWNER_PASSWORD = ownerPassword;
   process.env.STAGING_OWNER_NAME = "Owner QA";
+  process.env.STAGING_OWNER_BOOTSTRAP_TARGET =
+    "production:db:5432/kasirv10_staging/public";
   const createdUsers: any[] = [];
   const configWrites: any[] = [];
   const fake: any = {
@@ -293,7 +352,12 @@ test("Owner bootstrap creates only one branchless ADMIN and preserves the global
     },
   };
   try {
-    await bootstrapOwner(fake);
+    await assert.rejects(
+      bootstrapOwner(fake, { ...ownerTarget, database: "kasirv10" }),
+      /STAGING_OWNER_BOOTSTRAP_TARGET/,
+    );
+    assert.equal(createdUsers.length, 0, "mismatched target must be rejected before creating an Owner");
+    await bootstrapOwner(fake, ownerTarget);
     assert.equal(createdUsers.length, 1);
     assert.deepEqual(
       { username: createdUsers[0].username, name: createdUsers[0].name, role: createdUsers[0].role,
@@ -304,12 +368,12 @@ test("Owner bootstrap creates only one branchless ADMIN and preserves the global
     assert.deepEqual(configWrites[0].create, { id: "default", allowCashierStockInput: true });
 
     fake.user.count = async () => 1;
-    await assert.rejects(bootstrapOwner(fake), /an ADMIN account already exists/);
+    await assert.rejects(bootstrapOwner(fake, ownerTarget), /an ADMIN account already exists/);
     assert.equal(createdUsers.length, 1, "a second Owner must not be created");
 
     fake.user.count = async () => 0;
     fake.user.findUnique = async () => ({ id: "existing-cashier" });
-    await assert.rejects(bootstrapOwner(fake), /username already exists/);
+    await assert.rejects(bootstrapOwner(fake, ownerTarget), /username already exists/);
     assert.equal(createdUsers.length, 1, "an existing username must not be changed");
   } finally {
     if (oldValues.username === undefined) delete process.env.STAGING_OWNER_USERNAME;
@@ -318,5 +382,7 @@ test("Owner bootstrap creates only one branchless ADMIN and preserves the global
     else process.env.STAGING_OWNER_PASSWORD = oldValues.password;
     if (oldValues.name === undefined) delete process.env.STAGING_OWNER_NAME;
     else process.env.STAGING_OWNER_NAME = oldValues.name;
+    if (oldValues.target === undefined) delete process.env.STAGING_OWNER_BOOTSTRAP_TARGET;
+    else process.env.STAGING_OWNER_BOOTSTRAP_TARGET = oldValues.target;
   }
 });

@@ -6,6 +6,20 @@ export type DatabaseTarget = {
   schema: string;
 };
 
+export function assertOwnerBootstrapTarget(
+  target: DatabaseTarget,
+  env: NodeJS.ProcessEnv,
+): void {
+  const allowed = env.STAGING_OWNER_BOOTSTRAP_TARGET?.trim();
+  const actual = `${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
+  const isNonProductionDatabase = /(?:^|[_-])(?:staging|stage|qa|test)(?:[_-]|$)/i.test(target.database);
+  if (!isNonProductionDatabase || !allowed || allowed !== actual) {
+    throw new Error(
+      "Owner bootstrap blocked: the target database must be marked staging/QA/test and STAGING_OWNER_BOOTSTRAP_TARGET must match it exactly.",
+    );
+  }
+}
+
 // Never include the connection string, URL parser error, username or password
 // in an error/log. Validate BEFORE constructing/connecting a database client.
 export function validateDatabaseTarget(env: NodeJS.ProcessEnv): DatabaseTarget {

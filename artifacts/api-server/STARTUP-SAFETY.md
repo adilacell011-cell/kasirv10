@@ -76,7 +76,15 @@ Perilaku lama yang dipertahankan:
   ADMIN dengan `branchId` null dan memastikan GlobalConfig memakai default
   `allowCashierStockInput=true`. Operasi ini tidak membuat cabang atau akun
   Kasir. Owner membuat cabang dan akun cabang melalui aplikasi setelah login.
-  Persetujuan harus menunjuk target database staging secara tepat.
+  Selain `--approve`, bootstrap juga mewajibkan `STAGING_OWNER_BOOTSTRAP_TARGET`
+  dengan format `<environment>:<host>:<port>/<database>/<schema>` yang cocok
+  persis dengan target tervalidasi. Hanya Compose staging yang mengisi
+  allowlist ini; Compose Dockge reguler tidak menyediakannya. Perubahan keliru
+  pada `DATABASE_URL` atau `DB_EXPECTED_*` saja akan ditolak sebelum koneksi
+  atau penulisan. Tetap periksa target dan persetujuan secara manual sebelum
+  menjalankan perintah. Nilai environment `production` pada allowlist staging
+  hanya menandakan mode runtime Node; target databasenya tetap
+  `db:5432/kasirv10_staging/public`.
 - `seed`: hanya operasi manual dengan gate persetujuan. Harus diberi
   `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_CASHIER_USERNAME`,
   dan `INITIAL_CASHIER_PASSWORD`; tidak ada kredensial bawaan. Upsert tidak
