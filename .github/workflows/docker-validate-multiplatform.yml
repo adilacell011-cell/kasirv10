@@ -1,6 +1,8 @@
 name: Validate multi-platform Docker images
 
 on:
+  push:
+    branches: [validate/multiplatform-arm64]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -64,3 +66,11 @@ jobs:
             }
             console.log("Local OCI manifest includes linux/amd64 and linux/arm64.");
           '
+
+      - name: Save OCI archive for Owner review
+        uses: actions/upload-artifact@v4
+        with:
+          name: kasirv10-${{ matrix.image }}-oci-${{ github.sha }}
+          path: /tmp/kasirv10-${{ matrix.image }}.tar
+          if-no-files-found: error
+          retention-days: 7

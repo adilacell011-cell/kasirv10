@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   build:
+    # Never publish images from validation or feature branches, including a
+    # manually dispatched workflow run using a non-main ref.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
