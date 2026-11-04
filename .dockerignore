@@ -3,6 +3,7 @@
 .local
 .agents
 .migration-backup
+**/.env*
 artifacts/api-server/dist
 artifacts/alfath-pos/dist
 **/.turbo

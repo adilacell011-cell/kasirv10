@@ -43,31 +43,130 @@ jobs:
           push: false
           outputs: type=oci,dest=/tmp/kasirv10-${{ matrix.image }}.tar
 
-      - name: Verify local OCI manifest
+      - name: Inspect OCI archive and verify platforms
+        id: inspect
         env:
           OCI_ARCHIVE: /tmp/kasirv10-${{ matrix.image }}.tar
         run: |
           set -euo pipefail
-          node -e '
-            const { execFileSync } = require("node:child_process");
-            const index = JSON.parse(execFileSync(
+          node <<'NODE'
+          const fs = require("node:fs");
+          const { execFileSync } = require("node:child_process");
+
+          const archive = process.env.OCI_ARCHIVE;
+          const outputFile = process.env.GITHUB_OUTPUT;
+
+          function readTarMember(member) {
+            return execFileSync(
               "tar",
-              ["-xOf", process.env.OCI_ARCHIVE, "index.json"],
-              { encoding: "utf8" }
-            ));
-            const platforms = new Set((index.manifests || []).map((item) =>
-              `${item.platform?.os}/${item.platform?.architecture}`
-            ));
-            for (const expected of ["linux/amd64", "linux/arm64"]) {
-              if (!platforms.has(expected)) {
-                console.error(`Missing ${expected} in local OCI image manifest`);
-                process.exit(1);
-              }
+              ["-xOf", archive, member],
+              { encoding: "buffer", maxBuffer: 64 * 1024 * 1024 }
+            );
+          }
+
+          function readBlob(descriptor) {
+            const match = /^([a-z0-9]+):([a-f0-9]+)$/i.exec(descriptor?.digest || "");
+            if (!match) throw new Error(`Invalid OCI digest: ${descriptor?.digest}`);
+            return readTarMember(`blobs/${match[1]}/${match[2]}`);
+          }
+
+          function readBlobJson(descriptor) {
+            return JSON.parse(readBlob(descriptor).toString("utf8"));
+          }
+
+          const index = JSON.parse(readTarMember("index.json").toString("utf8"));
+          console.log("OCI index.json (complete):");
+          console.log(JSON.stringify(index, null, 2));
+          if (!Array.isArray(index.manifests)) {
+            throw new Error("OCI index.json has no manifests array");
+          }
+
+          const summaries = [];
+          const platforms = new Set();
+          const sensitiveEnvKeys = [];
+          const visitedIndexes = new Set();
+          const sensitiveName = /(^|_)(SECRET|PASSWORD|TOKEN|PRIVATE_KEY|API_KEY|DATABASE_URL|CREDENTIALS?)(_|$)/i;
+
+          function inspectDescriptor(descriptor, path, depth = 0) {
+            if (depth > 8) throw new Error("OCI manifest nesting exceeds 8 levels");
+            if (!descriptor || !descriptor.digest) {
+              throw new Error(`Descriptor at ${path} has no digest`);
             }
-            console.log("Local OCI manifest includes linux/amd64 and linux/arm64.");
-          '
+
+            const parsed = readBlobJson(descriptor);
+            const declaredPlatform = descriptor.platform || {};
+            const entry = {
+              path,
+              mediaType: descriptor.mediaType || parsed.mediaType || null,
+              digest: descriptor.digest,
+              size: descriptor.size ?? null,
+              os: declaredPlatform.os || null,
+              architecture: declaredPlatform.architecture || null,
+              variant: declaredPlatform.variant || null,
+            };
+
+            if (Array.isArray(parsed.manifests)) {
+              entry.kind = "index";
+              summaries.push(entry);
+              if (visitedIndexes.has(descriptor.digest)) return;
+              visitedIndexes.add(descriptor.digest);
+              parsed.manifests.forEach((child, i) =>
+                inspectDescriptor(child, `${path}.manifests[${i}]`, depth + 1)
+              );
+              return;
+            }
+
+            if (parsed.config?.digest) {
+              entry.kind = "image-manifest";
+              const config = readBlobJson(parsed.config);
+              entry.os ||= config.os || null;
+              entry.architecture ||= config.architecture || null;
+              entry.variant ||= config.variant || null;
+              summaries.push(entry);
+
+              const platform = `${entry.os}/${entry.architecture}`;
+              if (entry.os && entry.architecture && platform !== "unknown/unknown") {
+                platforms.add(platform);
+              }
+
+              for (const value of config.config?.Env || []) {
+                const key = value.split("=", 1)[0];
+                if (sensitiveName.test(key)) sensitiveEnvKeys.push(key);
+              }
+              return;
+            }
+
+            entry.kind = "other";
+            summaries.push(entry);
+          }
+
+          index.manifests.forEach((descriptor, i) =>
+            inspectDescriptor(descriptor, `index.manifests[${i}]`)
+          );
+
+          console.log("OCI descriptor summary (values of image environment variables are not printed):");
+          console.log(JSON.stringify(summaries, null, 2));
+
+          if (sensitiveEnvKeys.length) {
+            console.error("Refusing to upload archive: sensitive environment variable names found in image config:");
+            console.error([...new Set(sensitiveEnvKeys)].join(", "));
+            process.exit(1);
+          }
+
+          fs.appendFileSync(outputFile, "safe_for_upload=true\n");
+          console.log("Image config contains no environment variables with secret-like names.");
+
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              console.error(`Missing ${expected} in OCI descriptors/configs.`);
+              process.exit(1);
+            }
+          }
+          console.log("OCI archive includes linux/amd64 and linux/arm64.");
+          NODE
 
       - name: Save OCI archive for Owner review
+        if: ${{ always() && steps.inspect.outputs.safe_for_upload == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: kasirv10-${{ matrix.image }}-oci-${{ github.sha }}
