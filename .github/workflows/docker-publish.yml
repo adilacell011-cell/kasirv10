@@ -3,7 +3,13 @@ name: Build and publish Docker images
 on:
   push:
     branches: [main]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      publish_validated_candidate:
+        description: Publish the validated Kasir V10 candidate SHA from the validation branch
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,9 +17,13 @@ permissions:
 
 jobs:
   build:
-    # Never publish images from validation or feature branches, including a
-    # manually dispatched workflow run using a non-main ref.
-    if: github.ref == 'refs/heads/main'
+    # Main keeps its existing release flow. Validation-branch publication is
+    # manual, explicitly confirmed, and pinned to the previously validated SHA.
+    if: >-
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref == 'refs/heads/validate/multiplatform-arm64' &&
+       inputs.publish_validated_candidate == true)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,8 +34,31 @@ jobs:
           - name: web
             dockerfile: artifacts/alfath-pos/Dockerfile
     steps:
+      - name: Select authorized source commit
+        id: source
+        env:
+          VALIDATED_CANDIDATE_SHA: 01e25e5b2b04b09d1d69c0df1af0d8bc43b3ca44
+          CONFIRM_CANDIDATE_PUBLISH: ${{ inputs.publish_validated_candidate }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" == "refs/heads/validate/multiplatform-arm64" ]]; then
+            if [[ "$CONFIRM_CANDIDATE_PUBLISH" != "true" ]]; then
+              echo "Candidate publication requires explicit confirmation."
+              exit 1
+            fi
+            source_sha="$VALIDATED_CANDIDATE_SHA"
+            publish_latest=false
+          else
+            source_sha="$GITHUB_SHA"
+            publish_latest=true
+          fi
+          echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "publish_latest=$publish_latest" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -36,40 +69,71 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Compute lowercase image name
+      - name: Compute image name and tags
         id: img
-        run: echo "name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          PUBLISH_LATEST: ${{ steps.source.outputs.publish_latest }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')-${{ matrix.name }}"
+          {
+            echo "name=$image"
+            echo "tags<<EOF"
+            echo "$image:sha-$SOURCE_SHA"
+            if [[ "$PUBLISH_LATEST" == "true" ]]; then
+              echo "$image:latest"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Image: $image"
+          echo "Source SHA tag: sha-$SOURCE_SHA"
+          if [[ "$PUBLISH_LATEST" == "true" ]]; then echo "Main release also updates latest."; fi
       - name: Build and push
+        id: push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ steps.img.outputs.name }}:latest
-            ${{ steps.img.outputs.name }}:sha-${{ github.sha }}
+          tags: ${{ steps.img.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Verify published multi-platform manifest
         env:
           IMAGE: ${{ steps.img.outputs.name }}
-          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_TAG: sha-${{ steps.source.outputs.sha }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
         run: |
           set -euo pipefail
           docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
-          node -e '
-            const fs = require("node:fs");
-            const manifest = JSON.parse(fs.readFileSync("/tmp/manifest.json", "utf8"));
-            const platforms = new Set((manifest.manifests || []).map((item) =>
-              `${item.platform?.os}/${item.platform?.architecture}`
-            ));
-            for (const expected of ["linux/amd64", "linux/arm64"]) {
-              if (!platforms.has(expected)) {
-                console.error(`Missing ${expected} in published image manifest`);
-                process.exit(1);
-              }
+          node <<'NODE'
+          const fs = require("node:fs");
+          const manifest = JSON.parse(fs.readFileSync("/tmp/manifest.json", "utf8"));
+          const summaries = (manifest.manifests || []).map((item) => ({
+            mediaType: item.mediaType || null,
+            digest: item.digest || null,
+            size: item.size ?? null,
+            os: item.platform?.os || null,
+            architecture: item.platform?.architecture || null,
+            variant: item.platform?.variant || null,
+          }));
+          console.log("Published manifest descriptors:");
+          console.log(JSON.stringify(summaries, null, 2));
+          const platforms = new Set(summaries.map((item) => `${item.os}/${item.architecture}`));
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              console.error(`Missing ${expected} in published image manifest`);
+              process.exit(1);
             }
-            console.log("Published image manifest includes linux/amd64 and linux/arm64.");
-          '
+          }
+          if (!process.env.IMAGE_DIGEST) {
+            console.error("Build action did not return the published manifest digest.");
+            process.exit(1);
+          }
+          console.log(`Image: ${process.env.IMAGE}:${process.env.IMAGE_TAG}`);
+          console.log(`Digest: ${process.env.IMAGE_DIGEST}`);
+          console.log("Published manifest includes linux/amd64 and linux/arm64.");
+          NODE
