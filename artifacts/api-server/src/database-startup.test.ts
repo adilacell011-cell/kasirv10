@@ -157,27 +157,38 @@ test("logical day remains WIB 06:00, including the 06:00–07:00 interval", () =
   assert.equal(getLogicalShiftDate(new Date("2026-11-02T06:59:00+07:00")), "2026-11-02");
 });
 test("legacy maintenance totals and archive selection preserved using in-memory records only", async () => {
-  const rows = [
-    { id: "s1", branchId: "a", createdAt: new Date("2026-01-01T08:00:00+07:00"), status: "success", total: 15000, totalProfit: 4000, totalCommission: 1000 },
-    { id: "s2", branchId: "a", createdAt: new Date("2026-01-01T08:00:00+07:00"), status: "refunded", total: 8000, totalProfit: 2500, totalCommission: 500 },
+  const allRows = [
+    { id: "s1", branchId: "a", cashierId: "cashier-a", createdAt: new Date("2026-01-01T08:00:00+07:00"), status: "success", total: 15000, totalProfit: 4000, totalCommission: 1000, idempotencyKeyHash: null, idempotencyPayloadHash: null },
+    { id: "s2", branchId: "a", cashierId: "cashier-a", createdAt: new Date("2026-01-01T08:00:00+07:00"), status: "refunded", total: 8000, totalProfit: 2500, totalCommission: 500, idempotencyKeyHash: null, idempotencyPayloadHash: null },
   ];
+  const archiveRows = [...allRows];
   const writes: any[] = [];
   const tx: any = {
     dailyIncomeSummary: { upsert: async (x: any) => { writes.push(x); } },
     commission: { updateMany: async (x: any) => { assert.equal(x.data.saleId, null); } },
     saleItem: { deleteMany: async (x: any) => { assert.deepEqual(x.where.saleId.in, ["s1", "s2"]); } },
     voucherSN: { updateMany: async (x: any) => { assert.equal(x.data.saleId, null); } },
-    sale: { deleteMany: async (x: any) => { assert.deepEqual(x.where.id.in, ["s1", "s2"]); } },
+    saleIdempotency: { findUnique: async () => null },
+    $queryRaw: async () => archiveRows.map((sale) => ({ id: sale.id })),
+    sale: {
+      findMany: async ({ where, take }: any) => {
+        if (where.createdAt) {
+          assert.ok(Math.abs(Date.now() - where.createdAt.lt.getTime() - 30 * 86400000) < 5000);
+          return archiveRows.slice(0, take);
+        }
+        if (where.id?.in) return archiveRows.filter((sale) => where.id.in.includes(sale.id));
+        return allRows.filter((sale) => sale.status === "success");
+      },
+      deleteMany: async (x: any) => {
+        assert.deepEqual(x.where.id.in, ["s1", "s2"]);
+        for (let index = archiveRows.length - 1; index >= 0; index--) {
+          if (x.where.id.in.includes(archiveRows[index].id)) archiveRows.splice(index, 1);
+        }
+      },
+    },
   };
   const fake: any = {
-    sale: { findMany: async ({ where }: any) => {
-      if (where.createdAt) {
-        assert.ok(Math.abs(Date.now() - where.createdAt.lt.getTime() - 30 * 86400000) < 5000);
-        return rows;
-      }
-      assert.equal(where.status, "success");
-      return rows.filter(r => r.status === "success");
-    } },
+    sale: tx.sale,
     dailyIncomeSummary: tx.dailyIncomeSummary,
     $transaction: async (run: any) => run(tx),
   };
@@ -193,7 +204,7 @@ test("legacy maintenance totals and archive selection preserved using in-memory 
     sale: { findMany: async () => { throw Error("must use pinned transaction"); } },
     $transaction: async () => { throw Error("must not open another transaction"); },
   } as any, tx);
-  assert.deepEqual(writes[2], writes[0]);
+  assert.equal(writes.length, 2, "a second archive pass must not increment the summary again");
   let seeds = 0;
   const oldBootstrapEnv = {
     adminUsername: process.env.INITIAL_ADMIN_USERNAME,

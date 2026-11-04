@@ -825,9 +825,35 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   // Archive more than one batch, then ensure the ledger retains the exact
   // server-calculated summary and repeated archive/retry does not write twice.
   const archivedAt = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+  const originalSaleTimestamp = await prisma.sale.findUnique({
+    where: { id: createdSale.id },
+    select: { createdAt: true },
+  });
+  assert.ok(originalSaleTimestamp);
   await prisma.sale.update({
     where: { id: createdSale.id },
     data: { createdAt: archivedAt },
+  });
+  const originalSaleHashes = await prisma.sale.findUnique({
+    where: { id: createdSale.id },
+    select: { idempotencyPayloadHash: true },
+  });
+  assert.ok(originalSaleHashes?.idempotencyPayloadHash);
+  const legacyKey = crypto.randomUUID();
+  const legacySaleId = `legacy-archive-${crypto.randomUUID()}`;
+  await prisma.sale.create({
+    data: {
+      id: legacySaleId,
+      branchId: branchAId,
+      cashierId: cashierA.id,
+      total: createdSale.total,
+      totalCommission: createdSale.totalCommission,
+      totalProfit: createdSale.totalProfit,
+      status: "refunded",
+      createdAt: archivedAt,
+      idempotencyKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: legacyKey }),
+      idempotencyPayloadHash: originalSaleHashes.idempotencyPayloadHash,
+    },
   });
   await prisma.sale.createMany({
     data: Array.from({ length: 500 }, (_, index) => ({
@@ -845,10 +871,18 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const commissionsBeforeArchive = await prisma.commission.count({
     where: { productId, branchId: branchAId, cashierId: cashierA.id },
   });
+  const commissionRowsBeforeArchive = await prisma.commission.findMany({
+    where: { productId, branchId: branchAId, cashierId: cashierA.id },
+    select: { amount: true, status: true },
+  });
   const stockBeforeArchive = await prisma.productStock.findFirst({
     where: { productId, branchId: branchAId },
   });
   assert.ok(stockBeforeArchive);
+  const saleLedgerBeforeArchive = await prisma.saleIdempotency.findUnique({
+    where: { scopeKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: saleKey }) },
+  });
+  assert.ok(saleLedgerBeforeArchive);
   await autoArchiveOldSales(prisma);
   assert.equal(await prisma.sale.count({ where: { createdAt: { lt: new Date(Date.now() - 30 * 86400000) } } }), 0);
   assert.equal(await prisma.saleItem.count({ where: { saleId: createdSale.id } }), 0);
@@ -869,6 +903,22 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     status: "success",
     createdAt: archivedAt.toISOString(),
   });
+  const legacyArchivedLedger = await prisma.saleIdempotency.findUnique({
+    where: { scopeKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: legacyKey }) },
+  });
+  assert.ok(legacyArchivedLedger);
+  assert.equal(legacyArchivedLedger.state, "ARCHIVED");
+  assert.equal(legacyArchivedLedger.originalSaleId, legacySaleId);
+  assert.deepEqual(legacyArchivedLedger.resultSnapshot, {
+    id: legacySaleId,
+    branchId: branchAId,
+    cashierId: cashierA.id,
+    total: createdSale.total,
+    totalCommission: createdSale.totalCommission,
+    totalProfit: createdSale.totalProfit,
+    status: "refunded",
+    createdAt: archivedAt.toISOString(),
+  });
   const archivedSummary = await prisma.dailyIncomeSummary.findUnique({
     where: { branchId_date: { branchId: branchAId, date: summaryDate } },
   });
@@ -879,6 +929,15 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(await prisma.commission.count({
     where: { productId, branchId: branchAId, cashierId: cashierA.id },
   }), commissionsBeforeArchive);
+  const commissionRowsAfterArchive = await prisma.commission.findMany({
+    where: { productId, branchId: branchAId, cashierId: cashierA.id },
+    select: { amount: true, status: true, saleId: true },
+  });
+  assert.deepEqual(
+    commissionRowsAfterArchive.map(({ amount, status }) => ({ amount, status })),
+    commissionRowsBeforeArchive,
+  );
+  assert.ok(commissionRowsAfterArchive.every((commission) => commission.saleId === null));
   assert.equal((await prisma.productStock.findFirst({
     where: { productId, branchId: branchAId },
   }))?.qty, stockBeforeArchive.qty);
@@ -902,14 +961,32 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   });
   assert.equal(archivedReplay.status, 200);
   const archivedReplayResult = await archivedReplay.json() as {
-    id: string; total: number; totalCommission: number; totalProfit: number; archived?: boolean; replay?: boolean;
+    id: string; total: number; totalCommission: number; totalProfit: number; createdAt: string; archived?: boolean; replay?: boolean;
   };
   assert.equal(archivedReplayResult.id, createdSale.id);
   assert.equal(archivedReplayResult.total, createdSale.total);
   assert.equal(archivedReplayResult.totalCommission, createdSale.totalCommission);
   assert.equal(archivedReplayResult.totalProfit, createdSale.totalProfit);
+  assert.equal(archivedReplayResult.createdAt, archivedAt.toISOString());
   assert.equal(archivedReplayResult.archived, true);
   assert.equal(archivedReplayResult.replay, true);
+  const legacyArchivedReplay = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${restartPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": legacyKey,
+    },
+    body: JSON.stringify(salePayload),
+  });
+  assert.equal(legacyArchivedReplay.status, 200);
+  const legacyReplayResult = await legacyArchivedReplay.json() as {
+    id: string; status: string; archived?: boolean; replay?: boolean;
+  };
+  assert.equal(legacyReplayResult.id, legacySaleId);
+  assert.equal(legacyReplayResult.status, "refunded");
+  assert.equal(legacyReplayResult.archived, true);
+  assert.equal(legacyReplayResult.replay, true);
   const archivedPayloadMismatch = await fetch(`${apiUrl}/api/transactions`, {
     method: "POST",
     headers: {

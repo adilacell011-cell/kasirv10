@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getLogicalShiftDate } from "./business-date";
-import { createSaleIdempotencySnapshot, parseSaleIdempotencySnapshot } from "./idempotency";
+import { createSaleIdempotencySnapshot } from "./idempotency";
 
 // Legacy business operations, deliberately not imported by the API entrypoint.
 // No formula, retention threshold or record-selection rule is changed here.
@@ -10,6 +10,7 @@ const ARCHIVE_BATCH_SIZE = 500;
 type ArchiveSale = {
   id: string;
   branchId: string;
+  cashierId: string;
   createdAt: Date;
   total: number;
   totalProfit: number;
@@ -40,6 +41,7 @@ export async function autoArchiveOldSales(
         select: {
           id: true,
           branchId: true,
+          cashierId: true,
           createdAt: true,
           total: true,
           totalProfit: true,
@@ -67,6 +69,7 @@ export async function autoArchiveOldSales(
         select: {
           id: true,
           branchId: true,
+          cashierId: true,
           createdAt: true,
           total: true,
           totalProfit: true,
@@ -134,10 +137,10 @@ export async function autoArchiveOldSales(
           throw new Error("Sale and idempotency ledger payload hashes do not match.");
         }
 
-        const snapshot = existing
-          ? parseSaleIdempotencySnapshot(existing.resultSnapshot) ||
-            createSaleIdempotencySnapshot(sale)
-          : createSaleIdempotencySnapshot(sale);
+        // Capture the Sale's current server-side state at archival time. This
+        // keeps replay summaries aligned with the record (including a valid
+        // refund status) while retaining no item or cost-price details.
+        const snapshot = createSaleIdempotencySnapshot(sale);
         if (sale.idempotencyKeyHash && !existing && !sale.idempotencyPayloadHash) {
           // Do not destroy the only known replay marker if its payload binding
           // cannot be reconstructed safely.
