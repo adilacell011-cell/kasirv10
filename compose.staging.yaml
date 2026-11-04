@@ -1,0 +1,104 @@
+name: kasirv10-staging
+
+# Isolated staging stack. This file pulls the validated multi-platform image
+# tags and does not build from main or mount any existing application data.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kasirv10-staging-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kasirv10_staging
+      POSTGRES_PASSWORD: "${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}"
+      POSTGRES_DB: kasirv10_staging
+    volumes:
+      - staging_db_data:/var/lib/postgresql/data
+    networks:
+      - kasirv10_staging_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kasirv10_staging -d kasirv10_staging"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    image: ghcr.io/adilacell011-cell/kasirv10-api:sha-01e25e5b2b04b09d1d69c0df1af0d8bc43b3ca44
+    pull_policy: always
+    container_name: kasirv10-staging-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      DB_RUNTIME_ENV: production
+      DATABASE_URL: "postgresql://kasirv10_staging:${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}@db:5432/kasirv10_staging?schema=public"
+      DB_EXPECTED_HOST: db
+      DB_EXPECTED_NAME: kasirv10_staging
+      DB_EXPECTED_PORT: "5432"
+      DB_EXPECTED_SCHEMA: public
+      JWT_SECRET: "${KASIRV10_STAGING_JWT_SECRET:?Set a unique staging JWT secret}"
+    networks:
+      - kasirv10_staging_net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/api/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    image: ghcr.io/adilacell011-cell/kasirv10-web:sha-01e25e5b2b04b09d1d69c0df1af0d8bc43b3ca44
+    pull_policy: always
+    container_name: kasirv10-staging-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Local-only: access through an SSH tunnel or a separately reviewed proxy.
+      # Check this port on the VPS before starting the stack.
+      - "127.0.0.1:${KASIRV10_STAGING_WEB_PORT:-18081}:80"
+    networks:
+      - kasirv10_staging_net
+
+  backup:
+    image: postgres:16-alpine
+    container_name: kasirv10-staging-backup
+    profiles: ["manual-backup"]
+    restart: "no"
+    user: "0:0"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: kasirv10_staging
+      PGPASSWORD: "${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}"
+      PGDATABASE: kasirv10_staging
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_SECONDS: "${KASIRV10_STAGING_BACKUP_INTERVAL_SECONDS:-21600}"
+      BACKUP_KEEP_DAYS: "${KASIRV10_STAGING_BACKUP_KEEP_DAYS:-14}"
+    volumes:
+      - /srv/kasirv10-staging/backups:/backups
+      - ./docker/db-backup.sh:/db-backup.sh:ro
+    entrypoint: ["sh", "/db-backup.sh"]
+    networks:
+      - kasirv10_staging_net
+
+volumes:
+  staging_db_data:
+    name: kasirv10-staging-db-data
+
+networks:
+  kasirv10_staging_net:
+    name: kasirv10-staging-net
+    driver: bridge
