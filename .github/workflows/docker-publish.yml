@@ -43,6 +43,30 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.img.outputs.name }}:latest
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify published multi-platform manifest
+        env:
+          IMAGE: ${{ steps.img.outputs.name }}
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
+          node -e '
+            const fs = require("node:fs");
+            const manifest = JSON.parse(fs.readFileSync("/tmp/manifest.json", "utf8"));
+            const platforms = new Set((manifest.manifests || []).map((item) =>
+              `${item.platform?.os}/${item.platform?.architecture}`
+            ));
+            for (const expected of ["linux/amd64", "linux/arm64"]) {
+              if (!platforms.has(expected)) {
+                console.error(`Missing ${expected} in published image manifest`);
+                process.exit(1);
+              }
+            }
+            console.log("Published image manifest includes linux/amd64 and linux/arm64.");
+          '

@@ -3,6 +3,11 @@
 #   docker build -f artifacts/api-server/Dockerfile .
 FROM node:20-bookworm-slim
 
+# BuildKit supplies TARGETARCH for each requested platform. Fail early if QEMU
+# or the builder is executing dependencies for the host instead of the target.
+ARG TARGETARCH
+RUN node -e "const expected = process.env.TARGETARCH === 'amd64' ? 'x64' : process.env.TARGETARCH; if (process.arch !== expected) throw new Error('Node architecture does not match target: ' + process.arch + ' != ' + process.env.TARGETARCH)"
+
 # Prisma needs openssl at runtime.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -15,6 +20,8 @@ WORKDIR /app
 
 # Copy the whole monorepo (node_modules are excluded via .dockerignore) and install.
 COPY . .
+# The lockfile contains the optional native packages for both supported targets;
+# pnpm selects the current target's package while keeping resolution reproducible.
 RUN pnpm install --frozen-lockfile
 
 # Bundle the server and generate the Prisma client.

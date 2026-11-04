@@ -5,19 +5,16 @@
 
 # --- Build stage ---
 FROM node:20-bookworm-slim AS build
+ARG TARGETARCH
+RUN node -e "const expected = process.env.TARGETARCH === 'amd64' ? 'x64' : process.env.TARGETARCH; if (process.arch !== expected) throw new Error('Node architecture does not match target: ' + process.arch + ' != ' + process.env.TARGETARCH)"
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 WORKDIR /app
 
 COPY . .
 
-# This Replit workspace excludes every non-linux-x64 native binary in
-# pnpm-workspace.yaml (overrides set to "-") to keep x64 installs small.
-# That breaks arm64 image builds because rollup, lightningcss and
-# @tailwindcss/oxide have no JS fallback and hard-require their platform's
-# native package. Strip those platform-exclusion overrides so pnpm installs
-# the native binaries for whatever platform this image is being built for.
-RUN sed -i -E "/>.*:[[:space:]]*['\"]-['\"][[:space:]]*$/d" pnpm-workspace.yaml
-RUN pnpm install --no-frozen-lockfile
+# Install from the same committed lockfile on AMD64 and ARM64. pnpm selects
+# platform-specific optional native packages for the target architecture.
+RUN pnpm install --frozen-lockfile
 
 # vite.config.ts requires PORT and BASE_PATH even at build time.
 # BASE_PATH=/ makes the app load from the site root (served by nginx).
