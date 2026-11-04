@@ -18,6 +18,7 @@ async function buildAll() {
       path.resolve(artifactDir, "src/index.ts"),
       path.resolve(artifactDir, "src/maintenance-main.ts"),
       path.resolve(artifactDir, "src/database-check-cli.ts"),
+      path.resolve(artifactDir, "src/schema-init-main.ts"),
     ],
     platform: "node",
     bundle: true,

@@ -20,6 +20,25 @@ export function assertOwnerBootstrapTarget(
   }
 }
 
+export function assertStagingSchemaInitTarget(
+  target: DatabaseTarget,
+  env: NodeJS.ProcessEnv,
+): void {
+  const allowed = env.STAGING_SCHEMA_INIT_TARGET?.trim();
+  const actual = `${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
+  const isStagingDatabase = /(?:^|[_-])(?:staging|stage|qa|test)(?:[_-]|$)/i.test(target.database);
+  const isApprovedEndpoint = target.environment === "production"
+    ? target.host === "db" && target.port === "5432" && target.database === "kasirv10_staging"
+    : target.environment === "test" &&
+      ["127.0.0.1", "localhost", "::1"].includes(target.host) && isStagingDatabase;
+  if (!isApprovedEndpoint ||
+      target.schema !== "public" || !isStagingDatabase || !allowed || allowed !== actual) {
+    throw new Error(
+      "Schema initialization blocked: require an exact staging/QA target, public schema, and matching STAGING_SCHEMA_INIT_TARGET.",
+    );
+  }
+}
+
 // Never include the connection string, URL parser error, username or password
 // in an error/log. Validate BEFORE constructing/connecting a database client.
 export function validateDatabaseTarget(env: NodeJS.ProcessEnv): DatabaseTarget {

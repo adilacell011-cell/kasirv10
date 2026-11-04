@@ -35,9 +35,15 @@ https://github.com/adilacell011-cell/kasirv10
 
 ## 3. Persiapan Dockge/VPS
 
-Gunakan `compose.dockge.yaml` dari repository di atas. Compose membangun API
-dan frontend dari branch `main`; push kode yang sudah ditinjau sebelum
-menjalankan build di server.
+Untuk instalasi Kasir V10 baru dan terisolasi, gunakan `compose.staging.yaml`
+dengan `KASIRV10_IMAGE_SHA` yang sudah disetujui. Compose ini menarik image API
+dan Web dari GHCR dengan SHA yang sama; jangan menggantinya dengan `main` atau
+`latest`. Provisioning schema kosong dan bootstrap Owner adalah langkah manual
+terpisah yang dijelaskan di `artifacts/api-server/STARTUP-SAFETY.md`.
+
+`compose.dockge.yaml` adalah konfigurasi instalasi reguler yang terpisah, bukan
+Compose staging. Jangan gunakan stack, database, volume, atau backup milik
+aplikasi lain untuk instalasi baru.
 
 Isi variabel yang diwajibkan di Dockge berdasarkan `.env.example`. Nilai
 `DATABASE_URL` harus menunjuk ke service dan database yang sama dengan

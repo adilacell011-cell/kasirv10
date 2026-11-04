@@ -35,10 +35,49 @@ Identitas host/nama bukan bukti isi data: operator tetap harus memastikan DNS,
 volume, kredensial, dan database yang dipilih benar.
 
 Docker entrypoint tidak lagi menjalankan `prisma db push`. Instalasi database
-kosong memerlukan provisioning schema administratif terpisah dengan persetujuan,
-backup, dan pemeriksaan target; tidak dilakukan otomatis.
+kosong memerlukan provisioning schema administratif terpisah dengan persetujuan
+dan pemeriksaan target; tidak dilakukan otomatis. Operasi provisioning hanya
+menerima schema kosong. Database berisi data tidak boleh dipaksa lewat prosedur ini.
 Hook post-merge hanya memasang dependensi, tidak menjalankan Prisma/Drizzle push.
 `prisma generate` hanya menghasilkan klien dan tidak mengubah schema database.
+
+## Provisioning pertama kali untuk staging kosong
+
+API normal hanya memeriksa schema; database baru tanpa tabel akan membuat startup
+berhenti dengan HTTP/API tidak siap. Tidak ada schema yang diperbaiki otomatis.
+Untuk stack staging gunakan operasi satu kali `db:init-schema`, bukan seed,
+archive, backfill, atau `db:push` langsung.
+
+Urutan manual setelah PostgreSQL staging sehat:
+
+1. Pastikan `DATABASE_URL`, `DB_EXPECTED_*`, dan status container menunjuk tepat
+   ke `db:5432/kasirv10_staging/public`. Jangan menyalin URL dari STB, ZETAS,
+   produksi, atau instalasi lain.
+2. `compose.staging.yaml` menyediakan allowlist terpisah
+   `STAGING_SCHEMA_INIT_TARGET=production:db:5432/kasirv10_staging/public`.
+   Perintah juga memerlukan persetujuan target yang sama secara eksplisit.
+3. Jalankan satu kali pada container API staging (API boleh sedang gagal health
+   karena schema belum ada):
+
+       docker compose -f compose.staging.yaml run --rm --no-deps --entrypoint node api \
+         /app/artifacts/api-server/dist/schema-init-main.mjs \
+         --execute --acknowledge-empty-schema \
+         --approve=schema-init:production:db:5432/kasirv10_staging/public
+
+4. Operasi menolak target selain database bernama staging/QA/test, schema selain
+   `public`, allowlist yang tidak sama persis, argumen tanpa persetujuan, database
+   yang identitasnya berbeda, atau schema yang sudah memiliki relation, routine,
+   atau custom type. Ia memakai advisory lock administratif yang sama, menjalankan
+   Prisma `db push` dari datamodel yang dibundel pada image, tanpa
+   `--accept-data-loss`, lalu memeriksa ulang kecocokan kolom, tipe, nullability,
+   indeks unik, dan foreign key.
+5. Jika provisioning gagal, jangan ulangi dengan menghapus objek. Periksa hanya
+   database QA staging yang disetujui; percobaan mungkin meninggalkan DDL parsial.
+   Jika schema tidak lagi kosong, operasi sengaja menolak retry dan perlu
+   pemeriksaan manual sebelum langkah pemulihan yang disetujui.
+6. Setelah `db:check` lulus dan API sehat, jalankan bootstrap Owner secara manual
+   menggunakan prosedur di bawah. Schema provisioning tidak membuat pengguna,
+   cabang, transaksi, atau data contoh.
 
 ## Pemeriksaan baca-saja
 

@@ -41,6 +41,7 @@ services:
       DB_EXPECTED_NAME: kasirv10_staging
       DB_EXPECTED_PORT: "5432"
       DB_EXPECTED_SCHEMA: public
+      STAGING_SCHEMA_INIT_TARGET: "production:db:5432/kasirv10_staging/public"
       STAGING_OWNER_BOOTSTRAP_TARGET: "production:db:5432/kasirv10_staging/public"
       JWT_SECRET: "${KASIRV10_STAGING_JWT_SECRET:?Set a unique staging JWT secret}"
     networks:
