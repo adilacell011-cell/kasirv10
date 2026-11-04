@@ -17,21 +17,43 @@ services:
       timeout: 5s
       retries: 12
 
+  schema-init:
+    image: kasirv10-api:local
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_RUNTIME_ENV: production
+      DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL}"
+      DB_EXPECTED_HOST: db
+      DB_EXPECTED_NAME: "${POSTGRES_DB:?Set POSTGRES_DB}"
+      DB_EXPECTED_PORT: "5432"
+      DB_EXPECTED_SCHEMA: public
+      SCHEMA_INIT_AUTO_TARGET: "production:db:5432/${POSTGRES_DB:?Set POSTGRES_DB}/public"
+    entrypoint: ["node", "--enable-source-maps", "/app/artifacts/api-server/dist/schema-init-main.mjs"]
+    command: ["--compose-auto-if-empty"]
+
   api:
+    image: kasirv10-api:local
     build:
       context: .
       dockerfile: artifacts/api-server/Dockerfile
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      schema-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: "${DATABASE_URL:?Set DATABASE_URL}"
-      DB_RUNTIME_ENV: "${DB_RUNTIME_ENV:?Set DB_RUNTIME_ENV=production}"
-      DB_EXPECTED_HOST: "${DB_EXPECTED_HOST:?Set DB_EXPECTED_HOST}"
-      DB_EXPECTED_NAME: "${DB_EXPECTED_NAME:?Set DB_EXPECTED_NAME to POSTGRES_DB}"
-      DB_EXPECTED_PORT: "${DB_EXPECTED_PORT:?Set DB_EXPECTED_PORT}"
-      DB_EXPECTED_SCHEMA: "${DB_EXPECTED_SCHEMA:?Set DB_EXPECTED_SCHEMA}"
+      DB_RUNTIME_ENV: production
+      DB_EXPECTED_HOST: db
+      DB_EXPECTED_NAME: "${POSTGRES_DB:?Set POSTGRES_DB}"
+      DB_EXPECTED_PORT: "5432"
+      DB_EXPECTED_SCHEMA: public
       PGHOST: db
       PGDATABASE: "${POSTGRES_DB:?Set POSTGRES_DB}"
       PGPORT: 5432

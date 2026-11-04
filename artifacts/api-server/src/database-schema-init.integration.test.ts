@@ -9,12 +9,19 @@ import { inspectDatabase } from "./database-readiness";
 import { validateDatabaseTarget } from "./database-target";
 
 const enabled = process.env.RUN_SCHEMA_INIT_INTEGRATION === "1";
+const partialEnabled = process.env.RUN_SCHEMA_INIT_PARTIAL_INTEGRATION === "1";
 
-test("fresh isolated PostgreSQL schema can be initialized once and API startup stays read-only", {
+test("fresh isolated PostgreSQL schema initializes once, compatible schema is skipped, and API restart stays read-only", {
   skip: !enabled,
   timeout: 180_000,
 }, async () => {
-  const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: "test", DB_RUNTIME_ENV: "test" };
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    NODE_ENV: "test",
+    DB_RUNTIME_ENV: "test",
+    SCHEMA_INIT_AUTO_TARGET:
+      "test:127.0.0.1:5432/kasirv10_schema_init_qa/public",
+  };
   const target = validateDatabaseTarget(env);
   assert.equal(target.environment, "test");
   assert.equal(target.host, "127.0.0.1");
@@ -36,9 +43,13 @@ test("fresh isolated PostgreSQL schema can be initialized once and API startup s
       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`;
     assert.equal(emptyBefore[0]?.table_count, 0, "integration DB must start without tables");
 
-    const approval = `--approve=schema-init:${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
-    await initializeEmptyStagingSchema(["--execute", "--acknowledge-empty-schema", approval], env);
+    await initializeEmptyStagingSchema(["--compose-auto-if-empty"], env);
     await inspectDatabase(prisma, target);
+    const tableCounts = await prisma.$queryRaw<{ table_count: number }[]>`
+      SELECT COUNT(*)::int AS table_count
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`;
+    assert.equal(tableCounts[0]?.table_count, 15, "the current Prisma schema must provision 15 tables");
     const schemaFingerprint = await prisma.$queryRaw<{ digest: string | null }[]>`
       SELECT md5(string_agg(row_to_json(c)::text, '' ORDER BY table_name, ordinal_position)) AS digest
       FROM information_schema.columns c WHERE table_schema = 'public'`;
@@ -56,10 +67,14 @@ test("fresh isolated PostgreSQL schema can be initialized once and API startup s
     const emptyCounts = await dataCounts();
     assert.ok(Object.values(emptyCounts).every(count => count === 0), "schema provisioning must create no records");
 
-    await assert.rejects(
-      initializeEmptyStagingSchema(["--execute", "--acknowledge-empty-schema", approval], env),
-      /target schema is not empty/,
-      "a second provisioning attempt must refuse instead of changing the existing schema",
+    await initializeEmptyStagingSchema(["--compose-auto-if-empty"], env);
+    await inspectDatabase(prisma, target);
+    assert.deepEqual(
+      await prisma.$queryRaw<{ digest: string | null }[]>`
+        SELECT md5(string_agg(row_to_json(c)::text, '' ORDER BY table_name, ordinal_position)) AS digest
+        FROM information_schema.columns c WHERE table_schema = 'public'`,
+      schemaFingerprint,
+      "a complete compatible schema must be skipped without DDL",
     );
 
     for (let restart = 0; restart < 2; restart++) {
@@ -102,6 +117,51 @@ test("fresh isolated PostgreSQL schema can be initialized once and API startup s
       api.kill("SIGTERM");
       await once(api, "exit");
     }
+    await prisma.$disconnect();
+  }
+});
+
+test("partial isolated PostgreSQL schema is refused and left untouched", {
+  skip: !partialEnabled,
+  timeout: 30_000,
+}, async () => {
+  const databaseUrl = process.env.SCHEMA_INIT_PARTIAL_DATABASE_URL;
+  assert.ok(databaseUrl, "provide a dedicated temporary QA database URL for the partial-schema case");
+  const parsed = new URL(databaseUrl);
+  const database = decodeURIComponent(parsed.pathname.slice(1));
+  assert.match(database, /(?:^|[_-])(?:qa|test|staging)(?:[_-]|$)/i);
+  assert.ok(["127.0.0.1", "localhost", "::1"].includes(parsed.hostname));
+  const targetEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    NODE_ENV: "test",
+    DB_RUNTIME_ENV: "test",
+    DATABASE_URL: databaseUrl,
+    PGHOST: parsed.hostname,
+    PGPORT: parsed.port || "5432",
+    PGDATABASE: database,
+    DB_EXPECTED_HOST: parsed.hostname,
+    DB_EXPECTED_NAME: database,
+    DB_EXPECTED_PORT: parsed.port || "5432",
+    DB_EXPECTED_SCHEMA: "public",
+    SCHEMA_INIT_AUTO_TARGET:
+      `test:${parsed.hostname}:${parsed.port || "5432"}/${database}/public`,
+  };
+  const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+  try {
+    await prisma.$connect();
+    const before = await prisma.$queryRaw<{ table_name: string }[]>`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'kasirv10_partial_sentinel'`;
+    assert.equal(before.length, 1, "the isolated test database must contain its sentinel table");
+    await assert.rejects(
+      initializeEmptyStagingSchema(["--compose-auto-if-empty"], targetEnv, prisma),
+      /non-empty but incomplete or incompatible; no schema changes were made/,
+    );
+    const after = await prisma.$queryRaw<{ table_name: string }[]>`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'kasirv10_partial_sentinel'`;
+    assert.deepEqual(after, before, "refusal must preserve the existing partial schema");
+  } finally {
     await prisma.$disconnect();
   }
 });

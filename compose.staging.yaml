@@ -23,6 +23,28 @@ services:
       timeout: 5s
       retries: 12
 
+  schema-init:
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
+    pull_policy: always
+    container_name: kasirv10-staging-schema-init
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_RUNTIME_ENV: production
+      DATABASE_URL: "postgresql://kasirv10_staging:${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}@db:5432/kasirv10_staging?schema=public"
+      DB_EXPECTED_HOST: db
+      DB_EXPECTED_NAME: kasirv10_staging
+      DB_EXPECTED_PORT: "5432"
+      DB_EXPECTED_SCHEMA: public
+      SCHEMA_INIT_AUTO_TARGET: "production:db:5432/kasirv10_staging/public"
+    entrypoint: ["node", "--enable-source-maps", "/app/artifacts/api-server/dist/schema-init-main.mjs"]
+    command: ["--compose-auto-if-empty"]
+    networks:
+      - kasirv10_staging_net
+
   api:
     image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
     pull_policy: always
@@ -30,8 +52,8 @@ services:
     restart: unless-stopped
     mem_limit: 512m
     depends_on:
-      db:
-        condition: service_healthy
+      schema-init:
+        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       PORT: "8080"

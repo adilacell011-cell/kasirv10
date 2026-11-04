@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaClient, type Prisma } from "@prisma/client";
 import {
+  assertComposeSchemaInitTarget,
   assertStagingSchemaInitTarget,
   validateDatabaseTarget,
   type DatabaseTarget,
@@ -66,6 +67,43 @@ export async function assertSchemaIsEmpty(
   }
 }
 
+export async function getSchemaInitializationState(
+  client: SchemaQueryClient | Prisma.TransactionClient,
+  target: DatabaseTarget,
+): Promise<"empty" | "compatible"> {
+  const rows = await client.$queryRaw<EmptySchemaSnapshot[]>`
+    SELECT current_database() AS database_name,
+      EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = ${target.schema}) AS schema_exists,
+      (SELECT COUNT(*)::int FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = ${target.schema}) AS relation_count,
+      (SELECT COUNT(*)::int FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = ${target.schema}) AS routine_count,
+      (SELECT COUNT(*)::int FROM pg_type t
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        WHERE n.nspname = ${target.schema} AND t.typtype IN ('d', 'e', 'r')) AS custom_type_count`;
+  const snapshot = rows[0];
+  if (!snapshot || snapshot.database_name !== target.database) {
+    throw new Error("Schema initialization refused: connected database identity does not match the approved target.");
+  }
+  if (!snapshot.schema_exists) {
+    throw new Error("Schema initialization refused: the explicitly approved schema does not exist.");
+  }
+  if (!snapshot.relation_count && !snapshot.routine_count && !snapshot.custom_type_count) {
+    return "empty";
+  }
+
+  try {
+    await inspectDatabase(client as Pick<PrismaClient, "$queryRaw">, target);
+    return "compatible";
+  } catch {
+    throw new Error(
+      "Schema initialization refused: target is non-empty but incomplete or incompatible; no schema changes were made.",
+    );
+  }
+}
+
 function runPrismaSchemaPush(): void {
   const require = createRequire(import.meta.url);
   const prismaCli = require.resolve("prisma/build/index.js");
@@ -97,20 +135,34 @@ export async function initializeEmptyStagingSchema(
   prisma = new PrismaClient(),
 ): Promise<void> {
   const target = validateDatabaseTarget(env);
-  approveSchemaInitialization(args, target, env);
+  const composeAutoMode = args.includes("--compose-auto-if-empty");
+  if (composeAutoMode) {
+    if (args.length !== 1) {
+      throw new Error("Automatic schema initialization accepts only --compose-auto-if-empty.");
+    }
+    assertComposeSchemaInitTarget(target, env);
+  } else {
+    approveSchemaInitialization(args, target, env);
+  }
   try {
     await prisma.$connect();
-    await prisma.$transaction(async tx => {
+    const result = await prisma.$transaction(async tx => {
       const locks = await tx.$queryRaw<{ locked: boolean }[]>`
         SELECT pg_try_advisory_xact_lock(180043211, 1) AS locked`;
       if (!locks[0]?.locked) {
         throw new Error("Schema initialization refused: another administrative operation is active.");
       }
-      await assertSchemaIsEmpty(tx, target);
+      const state = await getSchemaInitializationState(tx, target);
+      if (state === "compatible") return state;
       runPrismaSchemaPush();
       await inspectDatabase(tx, target);
+      return "initialized";
     }, { timeout: 10 * 60 * 1000, maxWait: 5000 });
-    console.log("Empty staging database schema initialized and verified against the built Prisma datamodel.");
+    if (result === "compatible") {
+      console.log("Database schema is already compatible. No schema changes performed.");
+    } else {
+      console.log("Empty database schema initialized and verified against the built Prisma datamodel.");
+    }
   } finally {
     await prisma.$disconnect();
   }

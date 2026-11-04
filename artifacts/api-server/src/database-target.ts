@@ -39,6 +39,31 @@ export function assertStagingSchemaInitTarget(
   }
 }
 
+export function assertComposeSchemaInitTarget(
+  target: DatabaseTarget,
+  env: NodeJS.ProcessEnv,
+): void {
+  const allowed = env.SCHEMA_INIT_AUTO_TARGET?.trim();
+  const actual = `${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
+  const isIsolatedComposeTarget =
+    target.environment === "production" &&
+    target.host === "db" &&
+    target.port === "5432" &&
+    target.schema === "public" &&
+    ["kasirv10", "kasirv10_staging"].includes(target.database);
+  const isIsolatedQaTarget =
+    target.environment === "test" &&
+    ["127.0.0.1", "localhost", "::1"].includes(target.host) &&
+    target.schema === "public" &&
+    /(?:^|[_-])(?:staging|stage|qa|test)(?:[_-]|$)/i.test(target.database);
+
+  if ((!isIsolatedComposeTarget && !isIsolatedQaTarget) || !allowed || allowed !== actual) {
+    throw new Error(
+      "Automatic schema initialization blocked: require an exact approved Compose or isolated QA database target.",
+    );
+  }
+}
+
 // Never include the connection string, URL parser error, username or password
 // in an error/log. Validate BEFORE constructing/connecting a database client.
 export function validateDatabaseTarget(env: NodeJS.ProcessEnv): DatabaseTarget {
