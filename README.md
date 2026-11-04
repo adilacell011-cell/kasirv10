@@ -156,6 +156,23 @@ Pulihkan ke database QA kosong yang benar-benar terpisah, cocokkan data dan uji
 aplikasi sebelum menyetujui cutover. Jangan mengalirkan dump ke database aktif:
 backup lama yang dibuat dengan `--clean` dapat berisi perintah penghapusan objek.
 
+Setelah meninjau keluaran `DRY_RUN_OK` dan memastikan target QA kosong, jalankan
+ulang dengan persetujuan eksplisit yang dibentuk dari target yang sama:
+
+```bash
+sh docker/db-restore.sh \
+  --backup '<PATH_TO_VERIFIED_BACKUP.sql.gz>' \
+  --target-host "$RESTORE_ALLOWED_HOST" \
+  --target-port "$RESTORE_ALLOWED_PORT" \
+  --target-db "$RESTORE_ALLOWED_DB" \
+  --target-schema "$RESTORE_ALLOWED_SCHEMA" \
+  --execute \
+  --approve-target "restore:${RESTORE_ALLOWED_HOST}:${RESTORE_ALLOWED_PORT}/${RESTORE_ALLOWED_DB}/${RESTORE_ALLOWED_SCHEMA}"
+```
+
+Jangan menyalin perintah ini ke lingkungan produksi tanpa proses persetujuan
+dan verifikasi target yang terpisah.
+
 Uji backup/restore lokal yang membuat PostgreSQL sementara terisolasi:
 
 ```bash

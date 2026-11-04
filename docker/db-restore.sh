@@ -131,6 +131,8 @@ SELECT current_database(),
            JOIN pg_namespace n ON n.oid = t.typnamespace
           WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema')
          +
+         (SELECT count(*) FROM pg_largeobject_metadata)
+         +
          (SELECT count(*) FROM pg_namespace n
           WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
             AND n.nspname <> :'target_schema')
