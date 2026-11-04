@@ -9,6 +9,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { io, type Socket } from "socket.io-client";
+import { autoArchiveOldSales } from "./maintenance-operations";
+import { getLogicalShiftDate } from "./business-date";
+import { hashIdempotencyScope } from "./idempotency";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 if (!testDatabaseUrl) {
@@ -540,6 +543,55 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(reusedKeyWithDifferentPayload.status, 409);
   assert.equal((await reusedKeyWithDifferentPayload.json() as { code: string }).code, "IDEMPOTENCY_KEY_REUSED");
 
+  // A failure after the stock decrement must roll back Sale, stock, Commission
+  // and the separate idempotency record as one database transaction.
+  const rollbackKey = crypto.randomUUID();
+  const stockBeforeRollback = await prisma.productStock.findFirst({
+    where: { productId, branchId: branchAId },
+  });
+  assert.ok(stockBeforeRollback);
+  const commissionsBeforeRollback = await prisma.commission.count({
+    where: { productId, branchId: branchAId, cashierId: cashierA.id },
+  });
+  await prisma.$executeRawUnsafe(`CREATE OR REPLACE FUNCTION public.kasir_test_fail_commission()
+    RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF NEW.sn = 'rollback-trigger' THEN RAISE EXCEPTION 'forced isolated QA failure'; END IF;
+      RETURN NEW;
+    END; $$`);
+  await prisma.$executeRawUnsafe(`CREATE TRIGGER kasir_test_fail_commission
+    BEFORE INSERT ON "Commission" FOR EACH ROW
+    EXECUTE FUNCTION public.kasir_test_fail_commission()`);
+  try {
+    const failedAtomicSale = await fetch(`${apiUrl}/api/transactions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${cashierPayload.token}`,
+        "content-type": "application/json",
+        "x-idempotency-key": rollbackKey,
+      },
+      body: JSON.stringify({
+        ...salePayload,
+        items: [{ ...salePayload.items[0], sn: "rollback-trigger" }],
+      }),
+    });
+    assert.equal(failedAtomicSale.status, 500);
+    assert.equal(await prisma.sale.count({
+      where: { idempotencyKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: rollbackKey }) },
+    }), 0);
+    assert.equal(await prisma.saleIdempotency.count({
+      where: { scopeKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: rollbackKey }) },
+    }), 0);
+    assert.equal((await prisma.productStock.findFirst({
+      where: { productId, branchId: branchAId },
+    }))?.qty, stockBeforeRollback.qty);
+    assert.equal(await prisma.commission.count({
+      where: { productId, branchId: branchAId, cashierId: cashierA.id },
+    }), commissionsBeforeRollback);
+  } finally {
+    await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS kasir_test_fail_commission ON "Commission"`);
+    await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS public.kasir_test_fail_commission()`);
+  }
+
   const cashierSaleHistoryResponse = await fetch(`${apiUrl}/api/transactions?branchId=${branchAId}`, {
     headers: { authorization: `Bearer ${cashierPayload.token}` },
   });
@@ -769,4 +821,115 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   );
   const reconnectedSocket = await connectSocket({ token: restartPayload.token });
   reconnectedSocket.close();
+
+  // Archive more than one batch, then ensure the ledger retains the exact
+  // server-calculated summary and repeated archive/retry does not write twice.
+  const archivedAt = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+  await prisma.sale.update({
+    where: { id: createdSale.id },
+    data: { createdAt: archivedAt },
+  });
+  await prisma.sale.createMany({
+    data: Array.from({ length: 500 }, (_, index) => ({
+      id: `archive-batch-${index}-${crypto.randomUUID()}`,
+      branchId: branchAId,
+      cashierId: cashierA.id,
+      total: 1,
+      totalCommission: 0,
+      totalProfit: 0,
+      status: "success",
+      createdAt: archivedAt,
+    })),
+  });
+  const summaryDate = getLogicalShiftDate(archivedAt);
+  const commissionsBeforeArchive = await prisma.commission.count({
+    where: { productId, branchId: branchAId, cashierId: cashierA.id },
+  });
+  const stockBeforeArchive = await prisma.productStock.findFirst({
+    where: { productId, branchId: branchAId },
+  });
+  assert.ok(stockBeforeArchive);
+  await autoArchiveOldSales(prisma);
+  assert.equal(await prisma.sale.count({ where: { createdAt: { lt: new Date(Date.now() - 30 * 86400000) } } }), 0);
+  assert.equal(await prisma.saleItem.count({ where: { saleId: createdSale.id } }), 0);
+  const archivedLedger = await prisma.saleIdempotency.findUnique({
+    where: { scopeKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: saleKey }) },
+  });
+  assert.ok(archivedLedger);
+  assert.equal(archivedLedger.state, "ARCHIVED");
+  assert.equal(archivedLedger.saleId, null);
+  assert.equal(archivedLedger.originalSaleId, createdSale.id);
+  assert.deepEqual(archivedLedger.resultSnapshot, {
+    id: createdSale.id,
+    branchId: branchAId,
+    cashierId: cashierA.id,
+    total: createdSale.total,
+    totalCommission: createdSale.totalCommission,
+    totalProfit: createdSale.totalProfit,
+    status: "success",
+    createdAt: archivedAt.toISOString(),
+  });
+  const archivedSummary = await prisma.dailyIncomeSummary.findUnique({
+    where: { branchId_date: { branchId: branchAId, date: summaryDate } },
+  });
+  assert.equal(archivedSummary?.revenue, createdSale.total + 500);
+  assert.equal(archivedSummary?.totalProfit, createdSale.totalProfit);
+  assert.equal(archivedSummary?.totalCommission, createdSale.totalCommission);
+  assert.equal(archivedSummary?.salesCount, 501);
+  assert.equal(await prisma.commission.count({
+    where: { productId, branchId: branchAId, cashierId: cashierA.id },
+  }), commissionsBeforeArchive);
+  assert.equal((await prisma.productStock.findFirst({
+    where: { productId, branchId: branchAId },
+  }))?.qty, stockBeforeArchive.qty);
+
+  await autoArchiveOldSales(prisma);
+  const archivedSummaryAfterRepeat = await prisma.dailyIncomeSummary.findUnique({
+    where: { branchId_date: { branchId: branchAId, date: summaryDate } },
+  });
+  assert.deepEqual(archivedSummaryAfterRepeat, archivedSummary);
+
+  await stopApi();
+  await startApi();
+  const archivedReplay = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${restartPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": saleKey,
+    },
+    body: JSON.stringify(salePayload),
+  });
+  assert.equal(archivedReplay.status, 200);
+  const archivedReplayResult = await archivedReplay.json() as {
+    id: string; total: number; totalCommission: number; totalProfit: number; archived?: boolean; replay?: boolean;
+  };
+  assert.equal(archivedReplayResult.id, createdSale.id);
+  assert.equal(archivedReplayResult.total, createdSale.total);
+  assert.equal(archivedReplayResult.totalCommission, createdSale.totalCommission);
+  assert.equal(archivedReplayResult.totalProfit, createdSale.totalProfit);
+  assert.equal(archivedReplayResult.archived, true);
+  assert.equal(archivedReplayResult.replay, true);
+  const archivedPayloadMismatch = await fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${restartPayload.token}`,
+      "content-type": "application/json",
+      "x-idempotency-key": saleKey,
+    },
+    body: JSON.stringify({ ...salePayload, total: 16000 }),
+  });
+  assert.equal(archivedPayloadMismatch.status, 409);
+  assert.equal((await archivedPayloadMismatch.json() as { code: string }).code, "IDEMPOTENCY_KEY_REUSED");
+  assert.equal(await prisma.sale.count({ where: { id: createdSale.id } }), 0);
+  assert.equal(await prisma.saleIdempotency.count({
+    where: { scopeKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: saleKey }) },
+  }), 1);
+  assert.deepEqual(
+    await prisma.dailyIncomeSummary.findUnique({ where: { branchId_date: { branchId: branchAId, date: summaryDate } } }),
+    archivedSummary,
+  );
+  assert.equal((await prisma.productStock.findFirst({
+    where: { productId, branchId: branchAId },
+  }))?.qty, stockBeforeArchive.qty);
 });

@@ -1,54 +1,190 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getLogicalShiftDate } from "./business-date";
+import { createSaleIdempotencySnapshot, parseSaleIdempotencySnapshot } from "./idempotency";
 
 // Legacy business operations, deliberately not imported by the API entrypoint.
 // No formula, retention threshold or record-selection rule is changed here.
-export async function autoArchiveOldSales(prisma: PrismaClient, pinnedTransaction?: Prisma.TransactionClient) {
-  const database = pinnedTransaction || prisma;
+const ARCHIVE_BATCH_SIZE = 500;
+
+type ArchiveSale = {
+  id: string;
+  branchId: string;
+  createdAt: Date;
+  total: number;
+  totalProfit: number;
+  totalCommission: number;
+  status: string;
+  idempotencyKeyHash: string | null;
+  idempotencyPayloadHash: string | null;
+};
+
+export async function autoArchiveOldSales(
+  prisma: PrismaClient,
+  pinnedTransaction?: Prisma.TransactionClient,
+  batchSize = ARCHIVE_BATCH_SIZE,
+) {
+  if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 5000) {
+    throw new Error("Archive batch size must be an integer between 1 and 5000.");
+  }
   const date30DaysAgo = new Date();
   date30DaysAgo.setDate(date30DaysAgo.getDate() - 30);
-  const oldSales = await database.sale.findMany({
-    where: { createdAt: { lt: date30DaysAgo } },
-  });
-  if (oldSales.length === 0) return;
-  const groups: Record<string, { revenue: number; profit: number; commissions: number; count: number }> = {};
-  for (const sale of oldSales) {
-    const key = `${sale.branchId}_${getLogicalShiftDate(sale.createdAt)}`;
-    if (!groups[key]) groups[key] = { revenue: 0, profit: 0, commissions: 0, count: 0 };
-    if (sale.status === "success") {
-      groups[key].revenue += sale.total;
-      groups[key].profit += sale.totalProfit;
-      groups[key].commissions += sale.totalCommission;
-      groups[key].count += 1;
-    }
-  }
+
   const persist = async (tx: Prisma.TransactionClient) => {
-    for (const [key, delta] of Object.entries(groups)) {
-      const [branchId, date] = key.split("_");
-      await tx.dailyIncomeSummary.upsert({
-        where: { branchId_date: { branchId, date } },
-        update: {
-          revenue: { increment: delta.revenue },
-          totalProfit: { increment: delta.profit },
-          totalCommission: { increment: delta.commissions },
-          salesCount: { increment: delta.count },
-        },
-        create: {
-          branchId, date, revenue: delta.revenue, totalProfit: delta.profit,
-          totalCommission: delta.commissions, salesCount: delta.count,
+    let processed = 0;
+    for (;;) {
+      const candidates = await tx.sale.findMany({
+        where: { createdAt: { lt: date30DaysAgo } },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: batchSize,
+        select: {
+          id: true,
+          branchId: true,
+          createdAt: true,
+          total: true,
+          totalProfit: true,
+          totalCommission: true,
+          status: true,
+          idempotencyKeyHash: true,
+          idempotencyPayloadHash: true,
         },
       });
+      if (candidates.length === 0) break;
+
+      // Lock only the current bounded batch. Re-read after locking so a refund
+      // that committed while this batch was being selected is archived by its
+      // current status, not by a stale pre-refund snapshot.
+      const lockedRows = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Sale"
+        WHERE id = ANY(${candidates.map((sale) => sale.id)}::text[])
+        ORDER BY id
+        FOR UPDATE`;
+      const lockedIds = lockedRows.map((row) => row.id);
+      if (lockedIds.length === 0) continue;
+      const oldSales = await tx.sale.findMany({
+        where: { id: { in: lockedIds }, createdAt: { lt: date30DaysAgo } },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          branchId: true,
+          createdAt: true,
+          total: true,
+          totalProfit: true,
+          totalCommission: true,
+          status: true,
+          idempotencyKeyHash: true,
+          idempotencyPayloadHash: true,
+        },
+      }) as ArchiveSale[];
+      if (oldSales.length === 0) continue;
+
+      const groups = new Map<string, {
+        branchId: string; date: string; revenue: number; profit: number; commissions: number; count: number;
+      }>();
+      for (const sale of oldSales) {
+        const date = getLogicalShiftDate(sale.createdAt);
+        const key = JSON.stringify([sale.branchId, date]);
+        if (!groups.has(key)) {
+          groups.set(key, { branchId: sale.branchId, date, revenue: 0, profit: 0, commissions: 0, count: 0 });
+        }
+        if (sale.status === "success") {
+          const group = groups.get(key)!;
+          group.revenue += sale.total;
+          group.profit += sale.totalProfit;
+          group.commissions += sale.totalCommission;
+          group.count += 1;
+        }
+      }
+
+      for (const group of groups.values()) {
+        await tx.dailyIncomeSummary.upsert({
+          where: { branchId_date: { branchId: group.branchId, date: group.date } },
+          update: {
+            revenue: { increment: group.revenue },
+            totalProfit: { increment: group.profit },
+            totalCommission: { increment: group.commissions },
+            salesCount: { increment: group.count },
+          },
+          create: {
+            branchId: group.branchId,
+            date: group.date,
+            revenue: group.revenue,
+            totalProfit: group.profit,
+            totalCommission: group.commissions,
+            salesCount: group.count,
+          },
+        });
+      }
+
+      const archivedAt = new Date();
+      for (const sale of oldSales) {
+        const bySale = await tx.saleIdempotency.findUnique({ where: { saleId: sale.id } });
+        const byKey = sale.idempotencyKeyHash
+          ? await tx.saleIdempotency.findUnique({ where: { scopeKeyHash: sale.idempotencyKeyHash } })
+          : null;
+        if (bySale && byKey && bySale.id !== byKey.id) {
+          throw new Error("Conflicting idempotency ledger records prevent safe Sale archival.");
+        }
+        const existing = byKey || bySale;
+        if (existing && sale.idempotencyKeyHash && existing.scopeKeyHash !== sale.idempotencyKeyHash) {
+          throw new Error("Sale and idempotency ledger key hashes do not match.");
+        }
+        if (existing && sale.idempotencyPayloadHash &&
+            existing.payloadHash !== sale.idempotencyPayloadHash) {
+          throw new Error("Sale and idempotency ledger payload hashes do not match.");
+        }
+
+        const snapshot = existing
+          ? parseSaleIdempotencySnapshot(existing.resultSnapshot) ||
+            createSaleIdempotencySnapshot(sale)
+          : createSaleIdempotencySnapshot(sale);
+        if (sale.idempotencyKeyHash && !existing && !sale.idempotencyPayloadHash) {
+          // Do not destroy the only known replay marker if its payload binding
+          // cannot be reconstructed safely.
+          throw new Error("Sale with a legacy idempotency key has no payload hash; archive stopped safely.");
+        }
+
+        if (existing) {
+          await tx.saleIdempotency.update({
+            where: { id: existing.id },
+            data: {
+              state: "ARCHIVED",
+              saleId: null,
+              originalSaleId: sale.id,
+              resultSnapshot: snapshot,
+              completedAt: existing.completedAt || sale.createdAt,
+              archivedAt,
+            },
+          });
+        } else if (sale.idempotencyKeyHash && sale.idempotencyPayloadHash) {
+          // Convert a pre-ledger Sale marker before deleting its source row.
+          await tx.saleIdempotency.create({
+            data: {
+              scopeKeyHash: sale.idempotencyKeyHash,
+              payloadHash: sale.idempotencyPayloadHash,
+              state: "ARCHIVED",
+              originalSaleId: sale.id,
+              resultSnapshot: snapshot,
+              completedAt: sale.createdAt,
+              archivedAt,
+            },
+          });
+        }
+      }
+
+      const oldSaleIds = oldSales.map((sale) => sale.id);
+      await tx.commission.updateMany({ where: { saleId: { in: oldSaleIds } }, data: { saleId: null } });
+      await tx.saleItem.deleteMany({ where: { saleId: { in: oldSaleIds } } });
+      await tx.voucherSN.updateMany({ where: { saleId: { in: oldSaleIds } }, data: { saleId: null } });
+      await tx.sale.deleteMany({ where: { id: { in: oldSaleIds } } });
+      processed += oldSales.length;
     }
-    const oldSaleIds = oldSales.map(s => s.id);
-    await tx.commission.updateMany({ where: { saleId: { in: oldSaleIds } }, data: { saleId: null } });
-    await tx.saleItem.deleteMany({ where: { saleId: { in: oldSaleIds } } });
-    await tx.voucherSN.updateMany({ where: { saleId: { in: oldSaleIds } }, data: { saleId: null } });
-    await tx.sale.deleteMany({ where: { id: { in: oldSaleIds } } });
+    return processed;
   };
-  if (pinnedTransaction) await persist(pinnedTransaction);
-  else await prisma.$transaction(persist);
-  console.log(`Auto-archive completed: ${oldSales.length} transactions processed.`);
+  const processed = pinnedTransaction
+    ? await persist(pinnedTransaction)
+    : await prisma.$transaction(persist, { timeout: 600_000, maxWait: 5000 });
+  console.log(`Auto-archive completed: ${processed} transactions processed in batches.`);
 }
 
 export async function syncCredentials(prisma: PrismaClient | Prisma.TransactionClient) {

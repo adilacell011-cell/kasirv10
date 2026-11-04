@@ -18,7 +18,14 @@ import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment
 import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
-import { hashIdempotencyScope, hashSaleRequest, idempotencyPayloadMatches } from "./idempotency";
+import {
+  archivedSaleReplay,
+  createSaleIdempotencySnapshot,
+  hashIdempotencyScope,
+  hashSaleRequest,
+  idempotencyPayloadMatches,
+  parseSaleIdempotencySnapshot,
+} from "./idempotency";
 import {
   assertSaleTotalsMatch,
   deriveTrustedSaleLine,
@@ -575,8 +582,35 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
   try {
     const transactionResult = await prisma.$transaction(async (tx) => {
       await lockBranch(tx, actualBranchId);
-      // Persistent lookup happens under the same branch lock as stock and shift
-      // operations. It survives API restarts and prevents same-key parallel writes.
+      // The separate ledger survives Sale archival. Lookup stays under the same
+      // branch lock as stock and shift operations to prevent parallel duplicates.
+      const previousLedger = await tx.saleIdempotency.findUnique({
+        where: { scopeKeyHash: idempotencyKeyHash },
+      });
+      if (previousLedger) {
+        if (!idempotencyPayloadMatches(previousLedger.payloadHash, idempotencyPayloadHash)) {
+          throw new IdempotencyKeyConflict();
+        }
+        if (previousLedger.state === "PROCESSING") {
+          throw new IdempotencyStillProcessing();
+        }
+        const previousSaleId = previousLedger.saleId || previousLedger.originalSaleId;
+        if (previousLedger.state === "COMPLETED" && previousSaleId) {
+          const previousSale = await tx.sale.findUnique({
+            where: { id: previousSaleId },
+            include: { items: true },
+          });
+          if (previousSale) return { sale: previousSale, replay: true };
+        }
+        const archivedSnapshot = parseSaleIdempotencySnapshot(previousLedger.resultSnapshot);
+        if (archivedSnapshot && previousLedger.state === "ARCHIVED") {
+          return { sale: archivedSaleReplay(archivedSnapshot), replay: true };
+        }
+        // Fail closed if a committed ledger row cannot resolve to its prior result.
+        throw new IdempotencyResultUnavailable();
+      }
+
+      // Compatibility path for Sale rows written before the separate ledger.
       const previousSale = await tx.sale.findUnique({
         where: { idempotencyKeyHash },
         include: { items: true },
@@ -585,6 +619,17 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
         if (!idempotencyPayloadMatches(previousSale.idempotencyPayloadHash, idempotencyPayloadHash)) {
           throw new IdempotencyKeyConflict();
         }
+        await tx.saleIdempotency.create({
+          data: {
+            scopeKeyHash: idempotencyKeyHash,
+            payloadHash: idempotencyPayloadHash,
+            state: "COMPLETED",
+            saleId: previousSale.id,
+            originalSaleId: previousSale.id,
+            completedAt: previousSale.createdAt,
+            resultSnapshot: createSaleIdempotencySnapshot(previousSale),
+          },
+        });
         return { sale: previousSale, replay: true };
       }
 
@@ -649,6 +694,16 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       const authoritativeProfit = trustedItems.reduce((sum, item) => sum + item.profit, 0);
       assertSaleTotalsMatch(safeTotal, safeCommission, authoritativeTotal, authoritativeCommission);
 
+      // This row, the Sale, stock decrements and commission rows commit or roll
+      // back together. PROCESSING is never committed as an intermediate state.
+      const idempotencyRecord = await tx.saleIdempotency.create({
+        data: {
+          scopeKeyHash: idempotencyKeyHash,
+          payloadHash: idempotencyPayloadHash,
+          state: "PROCESSING",
+        },
+      });
+
       // 2. Create the Sale
       const sale = await tx.sale.create({
         data: {
@@ -708,6 +763,17 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       // per-branch claimable balance is derived from it, so there is no separate counter
       // to keep in sync.
 
+      await tx.saleIdempotency.update({
+        where: { id: idempotencyRecord.id },
+        data: {
+          state: "COMPLETED",
+          saleId: sale.id,
+          originalSaleId: sale.id,
+          completedAt: sale.createdAt,
+          resultSnapshot: createSaleIdempotencySnapshot(sale),
+        },
+      });
+
       return { sale, replay: false };
     });
 
@@ -734,6 +800,18 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
         code: "IDEMPOTENCY_KEY_REUSED",
       });
     }
+    if (error instanceof IdempotencyStillProcessing) {
+      return void res.status(409).json({
+        error: "Permintaan dengan kunci ini masih diproses. Ulangi dengan kunci yang sama.",
+        code: "IDEMPOTENCY_IN_PROGRESS",
+      });
+    }
+    if (error instanceof IdempotencyResultUnavailable) {
+      return void res.status(409).json({
+        error: "Transaksi dengan kunci ini sudah tercatat, tetapi ringkasan tidak tersedia.",
+        code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
+      });
+    }
     if (error instanceof SaleAmountMismatch) {
       return void res.status(409).json({
         error: "Harga atau jumlah pada transaksi berubah. Muat ulang produk sebelum mencoba lagi.",
@@ -744,6 +822,35 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
       return void res.status(400).json({ error: error.message });
     }
     if (error?.code === "P2002") {
+      const existingLedger = await prisma.saleIdempotency.findUnique({
+        where: { scopeKeyHash: idempotencyKeyHash },
+      }).catch(() => null);
+      if (existingLedger) {
+        if (!idempotencyPayloadMatches(existingLedger.payloadHash, idempotencyPayloadHash)) {
+          return void res.status(409).json({
+            error: "Kunci idempotensi sudah digunakan untuk isi transaksi yang berbeda.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+        const existingSaleId = existingLedger.saleId || existingLedger.originalSaleId;
+        if (existingLedger.state === "COMPLETED" && existingSaleId) {
+          const existingSale = await prisma.sale.findUnique({
+            where: { id: existingSaleId },
+            include: { items: true },
+          }).catch(() => null);
+          if (existingSale) return void res.json(redactSaleCosts(existingSale, requester.role));
+        }
+        const archivedSnapshot = parseSaleIdempotencySnapshot(existingLedger.resultSnapshot);
+        if (existingLedger.state === "ARCHIVED" && archivedSnapshot) {
+          return void res.json(redactSaleCosts(archivedSaleReplay(archivedSnapshot), requester.role));
+        }
+        return void res.status(409).json({
+          error: "Transaksi dengan kunci ini sudah tercatat, tetapi ringkasan tidak tersedia.",
+          code: "IDEMPOTENCY_RESULT_UNAVAILABLE",
+        });
+      }
+      // Legacy Sale-only records may be encountered while compatibility columns
+      // remain in the schema.
       const existingSale = await prisma.sale.findUnique({
         where: { idempotencyKeyHash },
         include: { items: true },
@@ -770,6 +877,20 @@ class IdempotencyKeyConflict extends Error {
   constructor() {
     super("Idempotency key reused with a different transaction payload.");
     this.name = "IdempotencyKeyConflict";
+  }
+}
+
+class IdempotencyStillProcessing extends Error {
+  constructor() {
+    super("Idempotency record is unexpectedly still processing.");
+    this.name = "IdempotencyStillProcessing";
+  }
+}
+
+class IdempotencyResultUnavailable extends Error {
+  constructor() {
+    super("Idempotency record has no recoverable response snapshot.");
+    this.name = "IdempotencyResultUnavailable";
   }
 }
 

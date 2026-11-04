@@ -120,9 +120,27 @@ model Sale {
 
   items       SaleItem[]
   commissions Commission[]
+  idempotencyRecord SaleIdempotency?
 
   @@index([branchId, status, createdAt])
   @@index([status, createdAt])
+  @@index([createdAt, id])
+}
+
+model SaleIdempotency {
+  id               String   @id @default(uuid())
+  scopeKeyHash     String   @unique
+  payloadHash      String
+  state            String
+  saleId           String?  @unique
+  sale              Sale?   @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  originalSaleId   String?
+  resultSnapshot   Json?
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+  archivedAt       DateTime?
+
+  @@index([state, createdAt])
 }
 
 model SaleItem {
