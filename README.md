@@ -8,8 +8,10 @@ Berjalan di server sendiri memakai Docker, dengan PostgreSQL sebagai penyimpanan
 - Database: PostgreSQL
 - Backup berkala ke folder host `./backups`
 
-API memeriksa target database saat startup. Startup tidak menjalankan migrasi,
-seed, arsip, atau backfill otomatis.
+API memeriksa target database saat startup dan tidak menjalankan seed, arsip,
+atau backfill. Pada instalasi Docker Compose baru, layanan `schema-init` hanya
+membuat schema Prisma bila database internal yang diizinkan benar-benar kosong;
+schema yang sudah kompatibel dilewati dan schema parsial menghentikan startup.
 
 ---
 
@@ -38,8 +40,9 @@ https://github.com/adilacell011-cell/kasirv10
 Untuk instalasi Kasir V10 baru dan terisolasi, gunakan `compose.staging.yaml`
 dengan `KASIRV10_IMAGE_SHA` yang sudah disetujui. Compose ini menarik image API
 dan Web dari GHCR dengan SHA yang sama; jangan menggantinya dengan `main` atau
-`latest`. Provisioning schema kosong dan bootstrap Owner adalah langkah manual
-terpisah yang dijelaskan di `artifacts/api-server/STARTUP-SAFETY.md`.
+`latest`. Compose memprovisikan schema kosong dengan guard target khusus;
+bootstrap Owner tetap manual. Detailnya ada di
+`artifacts/api-server/STARTUP-SAFETY.md`.
 
 `compose.dockge.yaml` adalah konfigurasi instalasi reguler yang terpisah, bukan
 Compose staging. Jangan gunakan stack, database, volume, atau backup milik

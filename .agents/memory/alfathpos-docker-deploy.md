@@ -24,9 +24,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
   **How to apply:** keep `COPY . .` + `pnpm install` in the same image you run from; don't "optimize" into a copy-only runtime stage without testing Prisma resolution.
 
-- **The earlier zero-step database initialization assumption is superseded.**
-  **Why:** the owner explicitly required database changes and historical maintenance to require separate approval, rather than occur as a side effect of booting an API.
-  **How to apply:** do not reuse old deployment advice promising automatic database initialization. Follow the current startup safety contract documented in `artifacts/api-server/STARTUP-SAFETY.md`; first installation now requires a separately approved, empty-staging-only procedure. Never expose a direct unguarded `db:push` script; the legacy script name must route through the same target and approval checks.
+- **Compose may provision schema only on an explicitly allowlisted, empty local Kasir database.**
+  **Why:** the owner explicitly authorized first-install schema creation after VPS startup failed on a database without tables, while requiring existing/incompatible data to remain untouched.
+  **How to apply:** run the guarded one-shot Compose schema initializer after the internal `db` service is healthy; skip a compatible schema, reject a partial/incompatible one, and keep API startup itself read-only with `db:check`. Never run an unguarded `prisma db push`, seed, archive, or backfill at startup.
 
 - **Web is nginx serving the Vite static build + proxying `/api` and `/socket.io` to `api:8080`.**
   **Why:** frontend uses same-origin `BASE_URL='/api'` and `io({auth:{token}})` (default path `/socket.io`). nginx must preserve those paths (`proxy_pass http://api:8080;` with NO path segment) and send WebSocket upgrade headers on `/socket.io/`.

@@ -1,6 +1,13 @@
 import { initializeEmptyStagingSchema } from "./database-schema-init";
 
-initializeEmptyStagingSchema().catch(() => {
-  console.error("Staging schema initialization refused or failed. No automatic retry; verify the isolated target and inspect it before any retry.");
+const safePartialSchemaMessage =
+  "Schema initialization refused: target is non-empty but incomplete or incompatible; no schema changes were made.";
+
+initializeEmptyStagingSchema().catch(error => {
+  if (error instanceof Error && error.message === safePartialSchemaMessage) {
+    console.error(safePartialSchemaMessage);
+  } else {
+    console.error("Schema initialization refused or failed. No retry was attempted; verify the approved target and inspect it before retrying.");
+  }
   process.exitCode = 1;
 });

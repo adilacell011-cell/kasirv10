@@ -27,6 +27,8 @@ test("fresh isolated PostgreSQL schema initializes once, compatible schema is sk
   assert.equal(target.host, "127.0.0.1");
   assert.equal(target.database, "kasirv10_schema_init_qa");
   assert.equal(target.schema, "public");
+  env.SCHEMA_INIT_AUTO_TARGET =
+    `${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
   assert.equal(
     env.STAGING_SCHEMA_INIT_TARGET,
     `test:127.0.0.1:${target.port}/kasirv10_schema_init_qa/public`,

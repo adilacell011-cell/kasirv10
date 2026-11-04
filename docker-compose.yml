@@ -19,10 +19,9 @@ services:
 
   schema-init:
     image: kasirv10-api:local
-    build:
-      context: .
-      dockerfile: artifacts/api-server/Dockerfile
+    pull_policy: never
     restart: "no"
+    mem_limit: 512m
     depends_on:
       db:
         condition: service_healthy

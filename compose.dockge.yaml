@@ -24,6 +24,7 @@ services:
     image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
     pull_policy: always
     restart: "no"
+    mem_limit: 512m
     depends_on:
       db:
         condition: service_healthy

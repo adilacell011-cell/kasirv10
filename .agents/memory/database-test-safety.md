@@ -8,3 +8,10 @@ Before restarting a service under a no-schema-change or no-data-deletion constra
 **Why:** An authorized opname fix required a development API restart, which also invoked pre-existing startup DDL and summary synchronization. Those side effects were outside the intended stock-only test scope and had to be disclosed.
 
 **How to apply:** Establish a safe startup method or request permission before a restricted audit needs a restart. Preserve production isolation; do not silently disable maintenance or alter startup behavior as part of an unrelated fix. In tests, avoid importing a bundled API entrypoint to obtain a helper: module import may start a server and run startup checks. Import side-effect-free modules instead.
+
+### Compose QA environment precedence
+Unset inherited database-related shell variables when a test is meant to use values from `docker compose --env-file`; the shell environment takes precedence over that file.
+
+**Why:** A QA Compose run inherited Replit's database URL instead of the temporary QA URL. The database-target guard correctly rejected it before provisioning, but the test harness had to be isolated more explicitly.
+
+**How to apply:** For disposable Compose tests, invoke Compose with database and secret variables unset from the parent process, then verify the effective target using only non-secret host, port, database, and schema fields before any initializer runs.
