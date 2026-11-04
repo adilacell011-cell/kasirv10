@@ -19,7 +19,7 @@
     "db:check": "tsx src/database-check-cli.ts",
     "db:admin": "tsx src/maintenance-main.ts",
     "db:init-schema": "tsx src/schema-init-main.ts",
-    "db:push": "prisma db push",
+    "db:push": "tsx src/schema-init-main.ts",
     "db:studio": "prisma studio",
     "test:auth": "pnpm run build && node --import tsx --test src/auth.integration.test.ts",
     "postinstall": "prisma generate",

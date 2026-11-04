@@ -26,7 +26,7 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 - **The earlier zero-step database initialization assumption is superseded.**
   **Why:** the owner explicitly required database changes and historical maintenance to require separate approval, rather than occur as a side effect of booting an API.
-  **How to apply:** do not reuse old deployment advice promising automatic database initialization. Follow the current startup safety contract documented in `artifacts/api-server/STARTUP-SAFETY.md`; first installation now requires a separately approved procedure.
+  **How to apply:** do not reuse old deployment advice promising automatic database initialization. Follow the current startup safety contract documented in `artifacts/api-server/STARTUP-SAFETY.md`; first installation now requires a separately approved, empty-staging-only procedure. Never expose a direct unguarded `db:push` script; the legacy script name must route through the same target and approval checks.
 
 - **Web is nginx serving the Vite static build + proxying `/api` and `/socket.io` to `api:8080`.**
   **Why:** frontend uses same-origin `BASE_URL='/api'` and `io({auth:{token}})` (default path `/socket.io`). nginx must preserve those paths (`proxy_pass http://api:8080;` with NO path segment) and send WebSocket upgrade headers on `/socket.io/`.

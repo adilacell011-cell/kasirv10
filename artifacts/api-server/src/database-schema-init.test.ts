@@ -111,3 +111,12 @@ test("schema initialization allowlist exists only on the isolated staging Compos
   assert.match(staging, /STAGING_SCHEMA_INIT_TARGET:\s*"production:db:5432\/kasirv10_staging\/public"/);
   assert.doesNotMatch(regular, /STAGING_SCHEMA_INIT_TARGET/);
 });
+
+test("db:push cannot bypass the guarded schema initialization command", () => {
+  const packageJson = JSON.parse(
+    fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  ) as { scripts: Record<string, string> };
+  assert.equal(packageJson.scripts["db:push"], packageJson.scripts["db:init-schema"]);
+  assert.equal(packageJson.scripts["db:init-schema"], "tsx src/schema-init-main.ts");
+  assert.doesNotMatch(packageJson.scripts["db:push"], /prisma\s+db\s+push/);
+});

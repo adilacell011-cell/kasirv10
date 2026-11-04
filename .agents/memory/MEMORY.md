@@ -2,7 +2,7 @@
 - [Prisma dual-schema pitfall](prisma-dual-schema.md) — Prisma prefers `./schema.prisma` over `./prisma/schema.prisma`; a stray root copy silently overrides edits.
 - [AlfathPOS authz & realtime model](alfathpos-authz-model.md) — role matrix, verified branch scoping, open-shift cashier gates, socket rooms, and no-oversell guards.
 - [AlfathPOS session revocation](alfathpos-session-revocation.md) — preserve sessions across API restarts; account-record edits revoke existing tokens without schema changes.
-- [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — pnpm runtime-resolution and backup tradeoffs; the previous zero-step database initialization assumption is superseded.
+- [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — pnpm runtime-resolution, backup tradeoffs, and schema provisioning only through an explicit empty-staging guard.
 - [AlfathPOS frontend UI conventions](alfath-pos-ui.md) — fragile dark-mode palette, ALL browser dialogs replaced by in-app modals/toasts, opt-in .mobile-cards, ImageMagick not sharp.
 - [AlfathPOS dark-mode styling](alfathpos-dark-mode-styling.md) — restyle dark panels with the app standard LIGHT utility classes; dark-mode CSS overrides only match exact class names (opacity/hover variants need explicit dark:).
 - [AlfathPOS app-wide theme remap](alfathpos-theme-remap.md) — re-skin whole app via @theme ramp remaps (blue/indigo/slate) in index.css; inline recharts hex, .dark hardcoded hex & the login PNG icon bypass it; never put `*/` in an @theme comment.

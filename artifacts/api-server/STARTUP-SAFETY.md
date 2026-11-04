@@ -45,8 +45,10 @@ Hook post-merge hanya memasang dependensi, tidak menjalankan Prisma/Drizzle push
 
 API normal hanya memeriksa schema; database baru tanpa tabel akan membuat startup
 berhenti dengan HTTP/API tidak siap. Tidak ada schema yang diperbaiki otomatis.
-Untuk stack staging gunakan operasi satu kali `db:init-schema`, bukan seed,
-archive, backfill, atau `db:push` langsung.
+Untuk stack staging gunakan operasi satu kali `db:init-schema`. Script lama
+`db:push` kini hanya menjadi alias ke wrapper yang sama dan juga membutuhkan
+target staging kosong serta persetujuan eksplisit. Jangan memanggil Prisma CLI
+secara langsung untuk melewati wrapper. Ini bukan seed, archive, atau backfill.
 
 Urutan manual setelah PostgreSQL staging sehat:
 
