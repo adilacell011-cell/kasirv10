@@ -1,5 +1,6 @@
 # Kasir V10 - Dockge deployment.
-# Pulls immutable candidate images; both services must use the same approved commit SHA.
+# Pulls immutable candidate images; set KASIRV10_IMAGE_SHA to the full SHA
+# published by the approved GitHub Actions workflow.
 # Provide runtime values in Dockge's environment editor, never commit credentials.
 
 services:
@@ -20,7 +21,7 @@ services:
       retries: 12
 
   api:
-    image: ghcr.io/adilacell011-cell/kasirv10-api:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
     pull_policy: always
     restart: unless-stopped
     mem_limit: 512m
@@ -43,7 +44,7 @@ services:
       NODE_ENV: production
 
   web:
-    image: ghcr.io/adilacell011-cell/kasirv10-web:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
+    image: "ghcr.io/adilacell011-cell/kasirv10-web:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
     pull_policy: always
     restart: unless-stopped
     mem_limit: 96m

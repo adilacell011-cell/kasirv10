@@ -37,20 +37,25 @@ jobs:
       - name: Select authorized source commit
         id: source
         env:
-          VALIDATED_CANDIDATE_SHA: 01e25e5b2b04b09d1d69c0df1af0d8bc43b3ca44
           CONFIRM_CANDIDATE_PUBLISH: ${{ inputs.publish_validated_candidate }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" == "refs/heads/validate/multiplatform-arm64" ]]; then
+          source_sha="$GITHUB_SHA"
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            publish_latest=true
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" == "refs/heads/validate/multiplatform-arm64" ]]; then
             if [[ "$CONFIRM_CANDIDATE_PUBLISH" != "true" ]]; then
               echo "Candidate publication requires explicit confirmation."
               exit 1
             fi
-            source_sha="$VALIDATED_CANDIDATE_SHA"
             publish_latest=false
           else
-            source_sha="$GITHUB_SHA"
-            publish_latest=true
+            echo "Refusing to publish from an unauthorized branch or event."
+            exit 1
+          fi
+          if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Workflow event did not provide a full commit SHA."
+            exit 1
           fi
           echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
           echo "publish_latest=$publish_latest" >> "$GITHUB_OUTPUT"

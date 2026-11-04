@@ -1,7 +1,8 @@
 name: kasirv10-staging
 
-# Isolated staging stack. This file pulls the validated multi-platform image
-# tags and does not build from main or mount any existing application data.
+# Isolated staging stack. Set KASIRV10_IMAGE_SHA to the full SHA published by
+# the approved workflow. The stack does not build from main or mount existing
+# application data.
 services:
   db:
     image: postgres:16-alpine
@@ -23,7 +24,7 @@ services:
       retries: 12
 
   api:
-    image: ghcr.io/adilacell011-cell/kasirv10-api:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
     pull_policy: always
     container_name: kasirv10-staging-api
     restart: unless-stopped
@@ -57,7 +58,7 @@ services:
       start_period: 30s
 
   web:
-    image: ghcr.io/adilacell011-cell/kasirv10-web:sha-f3d20f1dfc93fb996cef13ba7ff92d689d96d8f6
+    image: "ghcr.io/adilacell011-cell/kasirv10-web:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
     pull_policy: always
     container_name: kasirv10-staging-web
     restart: unless-stopped
