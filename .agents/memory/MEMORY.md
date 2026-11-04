@@ -22,3 +22,4 @@
 - [Browser diagnostic evidence](browser-diagnostic-evidence.md) — correlate page-scoped failures with API logs; no HTTP response differs from HTTP errors; induced outages do not explain past incidents.
 - [Temporary PostgreSQL test lifecycle](temporary-postgres-tests.md) — start an ephemeral local PostgreSQL instance and its dependent tests in the same shell invocation.
 - [Transaction idempotency ledger](transaction-idempotency-ledger.md) — retain retry protection and minimal transaction summaries after Sale archival; no TTL without Owner policy.
+- [Staging Owner bootstrap](staging-owner-bootstrap.md) — keep the legacy two-account seed intact; use a separate guarded operation for a branchless first Owner.

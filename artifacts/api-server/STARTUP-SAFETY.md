@@ -57,7 +57,7 @@ operasi, lingkungan, host, port, nama database dan schema.
 
 Format (placeholder, bukan instruksi untuk langsung menjalankan):
 
-    pnpm --filter @workspace/api-server run db:admin <seed|backfill|archive> \
+    pnpm --filter @workspace/api-server run db:admin <bootstrap-owner|seed|backfill|archive> \
       --execute --acknowledge-legacy-risks \
       --approve=<operasi>:<lingkungan>:<host>:<port>/<database>/<schema>
 
@@ -70,6 +70,13 @@ timeout membatalkan transaksi. Tidak ada retry otomatis.
 
 Perilaku lama yang dipertahankan:
 
+- `bootstrap-owner`: operasi manual terpisah untuk bootstrap awal staging.
+  Memerlukan `STAGING_OWNER_USERNAME` dan `STAGING_OWNER_PASSWORD`, menolak
+  jika sudah ada akun ADMIN atau username yang sama, lalu membuat satu akun
+  ADMIN dengan `branchId` null dan memastikan GlobalConfig memakai default
+  `allowCashierStockInput=true`. Operasi ini tidak membuat cabang atau akun
+  Kasir. Owner membuat cabang dan akun cabang melalui aplikasi setelah login.
+  Persetujuan harus menunjuk target database staging secara tepat.
 - `seed`: hanya operasi manual dengan gate persetujuan. Harus diberi
   `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_PASSWORD`, `INITIAL_CASHIER_USERNAME`,
   dan `INITIAL_CASHIER_PASSWORD`; tidak ada kredensial bawaan. Upsert tidak

@@ -223,6 +223,45 @@ export async function syncCredentials(prisma: PrismaClient | Prisma.TransactionC
   console.log("Credentials and Global Config synchronized.");
 }
 
+export async function bootstrapOwner(prisma: PrismaClient | Prisma.TransactionClient) {
+  const username = process.env.STAGING_OWNER_USERNAME?.trim().toLowerCase();
+  const password = process.env.STAGING_OWNER_PASSWORD?.trim();
+  const name = process.env.STAGING_OWNER_NAME?.trim() || "Owner";
+  if (!username || !password) {
+    throw new Error("Owner bootstrap requires explicit STAGING_OWNER_USERNAME and STAGING_OWNER_PASSWORD.");
+  }
+
+  const existingAdmins = await prisma.user.count({ where: { role: "ADMIN" } });
+  if (existingAdmins > 0) {
+    throw new Error("Owner bootstrap refused: an ADMIN account already exists.");
+  }
+  const usernameConflict = await prisma.user.findUnique({
+    where: { username },
+    select: { id: true },
+  });
+  if (usernameConflict) {
+    throw new Error("Owner bootstrap refused: the requested username already exists.");
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.user.create({
+    data: {
+      username,
+      password: passwordHash,
+      name,
+      role: "ADMIN",
+      branchId: null,
+      status: "Active",
+    },
+  });
+  await prisma.globalConfig.upsert({
+    where: { id: "default" },
+    update: {},
+    create: { id: "default", allowCashierStockInput: true },
+  });
+  console.log("Staging Owner bootstrap completed.");
+}
+
 export async function backfillDailySummaries(prisma: PrismaClient | Prisma.TransactionClient) {
   const allSales = await prisma.sale.findMany({
     where: { status: "success" },

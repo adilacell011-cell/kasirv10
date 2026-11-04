@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { validateDatabaseTarget, type DatabaseTarget } from "./database-target";
 import { inspectDatabase } from "./database-readiness";
 
-const operations = ["seed", "backfill", "archive"] as const;
+const operations = ["bootstrap-owner", "seed", "backfill", "archive"] as const;
 type Operation = typeof operations[number];
 
 export function approveMaintenance(args: string[], target: DatabaseTarget): Operation {
@@ -29,7 +29,13 @@ export async function runMaintenance(args = process.argv.slice(2)) {
       const rows = await tx.$queryRaw<{ locked: boolean }[]>`
         SELECT pg_try_advisory_xact_lock(180043211, 1) AS locked`;
       if (!rows[0]?.locked) throw new Error("Another administrative maintenance operation is active.");
-      const { autoArchiveOldSales, backfillDailySummaries, syncCredentials } = await import("./maintenance-operations");
+      const {
+        autoArchiveOldSales,
+        backfillDailySummaries,
+        bootstrapOwner,
+        syncCredentials,
+      } = await import("./maintenance-operations");
+      if (operation === "bootstrap-owner") await bootstrapOwner(tx);
       if (operation === "seed") await syncCredentials(tx);
       if (operation === "backfill") await backfillDailySummaries(tx);
       if (operation === "archive") await autoArchiveOldSales(prisma, tx);

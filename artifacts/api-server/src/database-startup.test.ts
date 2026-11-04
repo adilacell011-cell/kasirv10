@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
+import { randomBytes } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 import { validateDatabaseTarget } from "./database-target";
@@ -9,7 +10,12 @@ import {
   assertCompatibleSchema, createReadiness, inspectDatabase, prepareDatabase, type SchemaSnapshot,
 } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
-import { autoArchiveOldSales, backfillDailySummaries, syncCredentials } from "./maintenance-operations";
+import {
+  autoArchiveOldSales,
+  backfillDailySummaries,
+  bootstrapOwner,
+  syncCredentials,
+} from "./maintenance-operations";
 
 const development: NodeJS.ProcessEnv = {
   NODE_ENV: "development", DB_RUNTIME_ENV: "development",
@@ -143,6 +149,10 @@ test("administration requires action, execution, risk acknowledgement and exact 
   assert.equal(approveMaintenance(args, target), "archive");
   assert.throws(() => approveMaintenance(args, { ...target, database: "production" }));
   assert.throws(() => approveMaintenance(["backfill", ...args.slice(1)], target));
+  const ownerArgs = ["bootstrap-owner", "--execute", "--acknowledge-legacy-risks",
+    "--approve=bootstrap-owner:development:dev-db:5432/isolated/public"];
+  assert.equal(approveMaintenance(ownerArgs, target), "bootstrap-owner");
+  assert.throws(() => approveMaintenance(ownerArgs, { ...target, database: "production" }));
 });
 test("normal entrypoint and hooks have no DDL, maintenance calls or automatic schema push", () => {
   const api = fs.readFileSync(new URL("./index.ts", import.meta.url), "utf8");
@@ -257,5 +267,56 @@ test("credential seed refuses to write without explicit account credentials", as
       if (oldValues[index] === undefined) delete process.env[key];
       else process.env[key] = oldValues[index];
     });
+  }
+});
+
+test("Owner bootstrap creates only one branchless ADMIN and preserves the global default", async () => {
+  const oldValues = {
+    username: process.env.STAGING_OWNER_USERNAME,
+    password: process.env.STAGING_OWNER_PASSWORD,
+    name: process.env.STAGING_OWNER_NAME,
+  };
+  process.env.STAGING_OWNER_USERNAME = "owner.qa";
+  const ownerPassword = randomBytes(24).toString("base64url");
+  process.env.STAGING_OWNER_PASSWORD = ownerPassword;
+  process.env.STAGING_OWNER_NAME = "Owner QA";
+  const createdUsers: any[] = [];
+  const configWrites: any[] = [];
+  const fake: any = {
+    user: {
+      count: async () => 0,
+      findUnique: async () => null,
+      create: async ({ data }: any) => { createdUsers.push(data); return data; },
+    },
+    globalConfig: {
+      upsert: async (args: any) => { configWrites.push(args); return args.create; },
+    },
+  };
+  try {
+    await bootstrapOwner(fake);
+    assert.equal(createdUsers.length, 1);
+    assert.deepEqual(
+      { username: createdUsers[0].username, name: createdUsers[0].name, role: createdUsers[0].role,
+        branchId: createdUsers[0].branchId, status: createdUsers[0].status },
+      { username: "owner.qa", name: "Owner QA", role: "ADMIN", branchId: null, status: "Active" },
+    );
+    assert.notEqual(createdUsers[0].password, ownerPassword);
+    assert.deepEqual(configWrites[0].create, { id: "default", allowCashierStockInput: true });
+
+    fake.user.count = async () => 1;
+    await assert.rejects(bootstrapOwner(fake), /an ADMIN account already exists/);
+    assert.equal(createdUsers.length, 1, "a second Owner must not be created");
+
+    fake.user.count = async () => 0;
+    fake.user.findUnique = async () => ({ id: "existing-cashier" });
+    await assert.rejects(bootstrapOwner(fake), /username already exists/);
+    assert.equal(createdUsers.length, 1, "an existing username must not be changed");
+  } finally {
+    if (oldValues.username === undefined) delete process.env.STAGING_OWNER_USERNAME;
+    else process.env.STAGING_OWNER_USERNAME = oldValues.username;
+    if (oldValues.password === undefined) delete process.env.STAGING_OWNER_PASSWORD;
+    else process.env.STAGING_OWNER_PASSWORD = oldValues.password;
+    if (oldValues.name === undefined) delete process.env.STAGING_OWNER_NAME;
+    else process.env.STAGING_OWNER_NAME = oldValues.name;
   }
 });
