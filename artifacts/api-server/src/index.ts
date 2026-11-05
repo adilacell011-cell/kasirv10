@@ -8,6 +8,7 @@ import morgan from "morgan";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict } from "./shift-safety";
@@ -18,6 +19,11 @@ import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment
 import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
+import {
+  buildSaleReadQuery,
+  finishSalePage,
+  parseSalePageInput,
+} from "./sale-pagination";
 import {
   archivedSaleReplay,
   createSaleIdempotencySnapshot,
@@ -902,13 +908,18 @@ class SaleRejected extends Error {
 }
 
 app.get("/api/transactions", authenticateToken, async (req, res) => {
-  const { branchId, startDate, endDate } = req.query;
+  const { branchId, startDate, endDate, limit, cursor } = req.query;
   const requester = (req as any).user;
   try {
     const where: any = {};
     // CASHIER reads are locked to their own branch; client-supplied branchId is ignored.
     // ADMIN/AUDIT may read any/all branches.
-    if (requester.role === "CASHIER") where.branchId = requester.branchId;
+    if (requester.role === "CASHIER") {
+      if (!requester.branchId) {
+        return res.status(403).json({ error: "Akun kasir belum terikat ke cabang." });
+      }
+      where.branchId = requester.branchId;
+    }
     else if (branchId) where.branchId = branchId as string;
     
     if (startDate || endDate) {
@@ -925,23 +936,20 @@ app.get("/api/transactions", authenticateToken, async (req, res) => {
       if (Object.keys(where.createdAt).length === 0) delete where.createdAt;
     }
 
-    const sales = await prisma.sale.findMany({
-      where,
-      include: { 
-        items: { 
-          include: { 
-            product: true 
-          } 
-        }, 
-        cashier: true, 
-        branch: true 
-      },
-      orderBy: { createdAt: "desc" }
-    });
-    res.json(sales.map((sale: any) => redactSaleCosts(
+    const pageInput = parseSalePageInput(limit, cursor);
+    if (!pageInput.ok) return res.status(400).json({ error: pageInput.error });
+
+    const sales = await prisma.sale.findMany(
+      buildSaleReadQuery(where, pageInput) as Prisma.SaleFindManyArgs,
+    );
+    const page = finishSalePage(sales, pageInput.limit);
+    return res.json({
+      items: page.items.map((sale: any) => redactSaleCosts(
       { ...sale, cashier: stripPw(sale.cashier) },
       requester.role,
-    )));
+      )),
+      nextCursor: page.nextCursor,
+    });
   } catch (error: any) {
     console.error("Fetch Sales Error [Full]:", {
       code: error.code,
@@ -950,11 +958,39 @@ app.get("/api/transactions", authenticateToken, async (req, res) => {
       stack: error.stack,
       query: { branchId, startDate, endDate }
     });
-    res.status(500).json({ 
+    return res.status(500).json({
       error: "Failed to fetch sales", 
       details: error?.message,
       code: error?.code 
     });
+  }
+});
+
+app.get("/api/products/sales-quantities", authenticateToken, requireRole("ADMIN", "AUDIT", "CASHIER"), async (req, res) => {
+  const requester = (req as any).user;
+  try {
+    let branchId = typeof req.query.branchId === "string" ? req.query.branchId : undefined;
+    if (requester.role === "CASHIER") {
+      if (!requester.branchId) {
+        return res.status(403).json({ error: "Akun kasir belum terikat ke cabang." });
+      }
+      branchId = requester.branchId;
+    }
+    const saleFilter: Prisma.SaleWhereInput = { status: { not: "refunded" } };
+    if (branchId) saleFilter.branchId = branchId;
+    const rows = await prisma.saleItem.groupBy({
+      by: ["productId"],
+      where: { sale: { is: saleFilter } },
+      _sum: { qty: true },
+      orderBy: [{ _sum: { qty: "desc" } }, { productId: "asc" }],
+    });
+    return res.json(rows.map((row) => ({ productId: row.productId, qty: row._sum.qty ?? 0 })));
+  } catch (error: any) {
+    console.error("Fetch Product Sales Quantities Error:", {
+      code: error.code,
+      message: error.message,
+    });
+    return res.status(500).json({ error: "Failed to fetch product sales summary" });
   }
 });
 

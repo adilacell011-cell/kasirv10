@@ -67,6 +67,7 @@ import {
 import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api, createReadRefresh, isSessionError, ReadError } from "./services/api";
+import { makeSalesReadWindows } from "./services/sales-read-scope";
 import { isShiftOverdue } from "./services/shift-time";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
@@ -668,6 +669,7 @@ export default function App() {
     return result;
   }, [products]);
   const [sales, setSales] = useState<any[]>([]);
+  const [productSalesQuantities, setProductSalesQuantities] = useState<Record<string, number>>({});
   const [appConfig, setAppConfig] = useState<any>({
     allowCashierStockInput: true,
   });
@@ -831,31 +833,26 @@ export default function App() {
   // dataLoadFailed = true when loadData() encounters a non-auth server error,
   // so the cashier sees a visible warning instead of silently working with stale data.
   const [readLoadFailed, setDataLoadFailed] = useState(false);
+  const [salesReadFailed, setSalesReadFailed] = useState(false);
   const usesOwnerSync = profile?.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory";
   const dataLoadFailed = usesOwnerSync
     ? Boolean(ownerDashboard.error || ownerDashboard.detailsError || ownerDashboard.stockError)
-    : readLoadFailed;
+    : readLoadFailed || salesReadFailed;
   const fullRefreshRef = useRef<() => void>(() => {});
+  const salesRefreshRef = useRef<() => void>(() => {});
   const previousReadScope = useRef("");
   // Incrementing this forces the data-sync useEffect to re-run (manual refresh).
   const [refreshTick, setRefreshTick] = useState(0);
 
   const bestSellers = useMemo(() => {
-    const salesMap = new Map<string, number>();
-    sales.filter(s => s.status !== "refunded").forEach(s => {
-      s.items?.forEach((it: any) => {
-        salesMap.set(it.productId, (salesMap.get(it.productId) || 0) + it.qty);
-      });
-    });
-
     return products
       .filter(p => !p.visibleBranchIds || p.visibleBranchIds === "*" || (profile?.branchId && p.visibleBranchIds.split(",").map((id: string) => id.trim()).includes(profile.branchId)))
-      .map(p => ({ ...p, totalSold: salesMap.get(p.id) || 0 }))
+      .map(p => ({ ...p, totalSold: productSalesQuantities[p.id] || 0 }))
       .filter(p => p.totalSold > 0)
       .sort((a, b) => b.totalSold - a.totalSold)
       .slice(0, 6)
       .sort((a, b) => a.sellingPrice - b.sellingPrice);
-  }, [products, sales, profile?.branchId]);
+  }, [products, productSalesQuantities, profile?.branchId]);
   const [showShiftSummary, setShowShiftSummary] = useState<number | null>(null);
   const [actualCashInput, setActualCashInput] = useState<string>("");
   const [globalAlerts, setGlobalAlerts] = useState<{ id: string; message: string; type: "info" | "warning" | "success" }[]>([]);
@@ -1608,6 +1605,8 @@ export default function App() {
   function clearSyncedReads() {
     setProducts([]);
     setSales([]);
+    setProductSalesQuantities({});
+    setSalesReadFailed(true);
     setCommissions([]);
     setShifts([]);
     setUsers([]);
@@ -1638,6 +1637,9 @@ export default function App() {
     let disposed = false;
     const controller = new AbortController();
     const epoch = readEpoch.current;
+    setSales([]);
+    setProductSalesQuantities({});
+    setSalesReadFailed(true);
     const current = () => !disposed && !controller.signal.aborted &&
       liveSyncKey.current === syncKey && readEpoch.current === epoch &&
       localStorage.getItem("token") === syncToken;
@@ -1648,6 +1650,7 @@ export default function App() {
 
     const loadData = async () => {
       if (!current()) return;
+      salesRefreshRef.current();
       let failed = false;
       const read = async (request: () => Promise<any>, apply: (data: any[]) => void) => {
         if (!current()) return undefined;
@@ -1672,7 +1675,6 @@ export default function App() {
       try {
         // Memuat sebagian secara parallel, sebagian berurutan agar tidak overload koneksi
         await read(() => api.getProducts(controller.signal), setProducts);
-        await read(() => api.getSales({ branchId: effectiveBranchId }, controller.signal), setSales);
         await read(() => api.getCommissions({ branchId: effectiveBranchId }, controller.signal), setCommissions);
         
         const [shData] = await Promise.all([
@@ -1777,8 +1779,100 @@ export default function App() {
 
   useEffect(() => { fullRefreshRef.current(); }, [refreshTick]);
 
+  const salesSyncKey = JSON.stringify([
+    profile?.id,
+    profile?.role,
+    profile?.branchId,
+    effectiveReadBranch,
+    fullSyncEnabled,
+    activeMenu,
+    reportStartDate,
+    reportEndDate,
+    shiftOpen,
+    shiftStartTime,
+    shiftLogicalDate,
+  ]);
+  const liveSalesSyncKey = useRef(salesSyncKey);
+  liveSalesSyncKey.current = salesSyncKey;
 
+  useEffect(() => {
+    const needsSales = fullSyncEnabled && (activeMenu === "reports" || activeMenu === "pos");
+    if (!needsSales || !syncToken) {
+      setSales([]);
+      setProductSalesQuantities({});
+      setSalesReadFailed(false);
+      salesRefreshRef.current = () => {};
+      return;
+    }
 
+    let disposed = false;
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
+    const current = () => !disposed && !controller.signal.aborted &&
+      liveSalesSyncKey.current === salesSyncKey &&
+      readEpoch.current === epoch &&
+      localStorage.getItem("token") === syncToken;
+    const loadSales = async () => {
+      if (!current()) return;
+      try {
+        const branchParams = effectiveReadBranch && effectiveReadBranch !== "N/A"
+          ? { branchId: effectiveReadBranch }
+          : {};
+        const windows = makeSalesReadWindows({
+          view: activeMenu as "pos" | "reports",
+          reportStartDate,
+          reportEndDate,
+          shiftOpen,
+          shiftStartTime,
+          shiftLogicalDate,
+        });
+        const saleLists = await Promise.all(windows.map((window) => api.getSales({
+          ...branchParams,
+          startDate: window.start.toISOString(),
+          endDate: window.end.toISOString(),
+        }, controller.signal)));
+        if (!current()) return;
+        const uniqueSales = new Map<string, any>();
+        saleLists.flat().forEach((sale: any) => uniqueSales.set(sale.id, sale));
+        setSales([...uniqueSales.values()]);
+
+        if (activeMenu === "pos") {
+          const counts = await api.getProductSalesQuantities(
+            effectiveReadBranch && effectiveReadBranch !== "N/A" ? effectiveReadBranch : undefined,
+            controller.signal,
+          );
+          if (!current()) return;
+          if (!Array.isArray(counts)) throw new ReadError("invalid-response");
+          setProductSalesQuantities(Object.fromEntries(
+            counts.filter((row: any) => typeof row?.productId === "string")
+              .map((row: any) => [row.productId, Number(row.qty) || 0]),
+          ));
+        } else {
+          setProductSalesQuantities({});
+        }
+        setSalesReadFailed(false);
+      } catch (error) {
+        if (!current()) return;
+        if (isSessionError(error)) {
+          expireReadSession();
+          controller.abort();
+        } else if ((error as Error)?.name !== "AbortError") {
+          setSalesReadFailed(true);
+          console.error("Transaction read failed:", error);
+        }
+      }
+    };
+
+    const refresh = createReadRefresh(loadSales);
+    salesRefreshRef.current = refresh.schedule;
+    refresh.schedule();
+    return () => {
+      disposed = true;
+      refresh.dispose();
+      controller.abort();
+      if (liveSalesSyncKey.current === salesSyncKey) salesRefreshRef.current = () => {};
+    };
+  }, [salesSyncKey, syncToken]);
 
   const syncCommissionsSummary = async (
     targetBranchId?: string,
@@ -2430,20 +2524,9 @@ export default function App() {
       return isVisible;
     });
 
-    sales.forEach((s) => {
-      if (s.branchId !== branchId || s.status === "refunded") return;
-      (s.items || []).forEach((item: any) => {
-        const pId = item.productId || item.id;
-        if (!pId) return;
-        if (!itemStats[pId]) {
-          const product = branchProducts.find((p) => p.id === pId);
-          if (!product) return;
-          itemStats[pId] = { qty: 0, product };
-        }
-        if (itemStats[pId]) {
-          itemStats[pId].qty += (item.qty || 0);
-        }
-      });
+    if (branchId) Object.entries(productSalesQuantities).forEach(([pId, qty]) => {
+      const product = branchProducts.find((p) => p.id === pId);
+      if (product && qty > 0) itemStats[pId] = { qty, product };
     });
 
     const sorted = Object.values(itemStats)
@@ -2462,7 +2545,7 @@ export default function App() {
       });
 
     return [...sorted, ...unsorted];
-  }, [sales, products, profile?.branchId]);
+  }, [productSalesQuantities, products, profile?.branchId]);
 
   const fastAccessProducts = React.useMemo(() => {
     return sortedProductsBySales.slice(0, 24);

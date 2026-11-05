@@ -11,6 +11,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test:authz": "tsx --test src/read-routes.test.ts",
+    "test:sale-pagination": "tsx --test src/sale-pagination.test.ts",
+    "test:sales-read-scope": "TZ=Asia/Jakarta tsx --test ../../artifacts/alfath-pos/src/services/sales-read-scope.test.ts",
     "test:startup": "tsx --test src/database-startup.test.ts",
     "test:startup:integration": "tsx --test src/database-startup.integration.test.ts",
     "test:owner-bootstrap:integration": "tsx --test src/owner-bootstrap.integration.test.ts",

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:net";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
@@ -78,6 +79,17 @@ async function waitForApi(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw new Error(`API test process did not become ready: ${String(lastError ?? "timeout")}`);
+}
+
+async function readApiRssKb(): Promise<number | null> {
+  if (!apiProcess?.pid) return null;
+  try {
+    const status = await readFile(`/proc/${apiProcess.pid}/status`, "utf8");
+    const match = status.match(/^VmRSS:\s+(\d+)\s+kB$/m);
+    return match ? Number(match[1]) : null;
+  } catch {
+    return null;
+  }
 }
 
 async function startApi(): Promise<void> {
@@ -285,7 +297,13 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     headers: { authorization: `Bearer ${cashierPayload.token}` },
   });
   assert.equal(cashierTransactions.status, 200);
-  const cashierSales = await cashierTransactions.json() as Array<{ id: string; branchId: string }>;
+  const cashierSalePage = await cashierTransactions.json() as {
+    items: Array<{ id: string; branchId: string }>;
+    nextCursor: string | null;
+  };
+  assert.ok(Array.isArray(cashierSalePage.items));
+  assert.ok(cashierSalePage.nextCursor === null || typeof cashierSalePage.nextCursor === "string");
+  const cashierSales = cashierSalePage.items;
   assert.equal(cashierSales.some((sale) => sale.id === otherBranchSaleId || sale.branchId === branchBId), false);
 
   const adminLogin = await login(admin.username, admin.password);
@@ -295,7 +313,9 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     headers: { authorization: `Bearer ${adminPayload.token}` },
   });
   assert.equal(adminTransactions.status, 200);
-  const adminSales = await adminTransactions.json() as Array<{ id: string; branchId: string }>;
+  const adminSales = (await adminTransactions.json() as {
+    items: Array<{ id: string; branchId: string }>;
+  }).items;
   assert.ok(adminSales.some((sale) => sale.id === otherBranchSaleId && sale.branchId === branchBId));
 
   await expectSocketRejected({ role: "ADMIN", branchId: branchBId }, /Unauthorized/);
@@ -596,14 +616,46 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     headers: { authorization: `Bearer ${cashierPayload.token}` },
   });
   assert.equal(cashierSaleHistoryResponse.status, 200);
-  const cashierSaleHistory = await cashierSaleHistoryResponse.json() as Array<{
-    id: string;
-    items: Array<{ costPrice?: number; product?: { buyingPrice?: number; purchasePrice?: number } }>;
-  }>;
+  const cashierSaleHistory = (await cashierSaleHistoryResponse.json() as {
+    items: Array<{
+      id: string;
+      items: Array<{ costPrice?: number; product?: { buyingPrice?: number; purchasePrice?: number } }>;
+    }>;
+  }).items;
   const cashierSale = cashierSaleHistory.find((sale) => sale.id === createdSale.id);
   assert.ok(cashierSale);
   assert.equal(cashierSale.items[0].costPrice, undefined);
   assert.equal(cashierSale.items[0].product?.buyingPrice, undefined);
+
+  const productSalesResponse = await fetch(`${apiUrl}/api/products/sales-quantities?branchId=${branchBId}`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(productSalesResponse.status, 200);
+  const productSales = await productSalesResponse.json() as Array<{ productId: string; qty: number }>;
+  assert.deepEqual(productSales, [{ productId, qty: 1 }]);
+
+  const firstTransactionPage = await fetch(`${apiUrl}/api/transactions?limit=1`, {
+    headers: { authorization: `Bearer ${adminPayload.token}` },
+  });
+  assert.equal(firstTransactionPage.status, 200);
+  const firstPage = await firstTransactionPage.json() as {
+    items: Array<{ id: string }>;
+    nextCursor: string | null;
+  };
+  assert.equal(firstPage.items.length, 1);
+  assert.ok(firstPage.nextCursor);
+  const secondTransactionPage = await fetch(
+    `${apiUrl}/api/transactions?limit=1&cursor=${encodeURIComponent(firstPage.nextCursor!)}`,
+    { headers: { authorization: `Bearer ${adminPayload.token}` } },
+  );
+  assert.equal(secondTransactionPage.status, 200);
+  const secondPage = await secondTransactionPage.json() as {
+    items: Array<{ id: string }>;
+    nextCursor: string | null;
+  };
+  assert.equal(secondPage.items.length, 1);
+  assert.notEqual(secondPage.items[0].id, firstPage.items[0].id);
+  assert.equal(secondPage.nextCursor, null);
 
   const cashierCommissionResponse = await fetch(`${apiUrl}/api/incentives?branchId=${branchAId}`, {
     headers: { authorization: `Bearer ${cashierPayload.token}` },
@@ -624,10 +676,12 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const ownerSaleHistoryResponse = await fetch(`${apiUrl}/api/transactions?branchId=${branchAId}`, {
     headers: { authorization: `Bearer ${adminPayload.token}` },
   });
-  const ownerSaleHistory = await ownerSaleHistoryResponse.json() as Array<{
-    id: string;
-    items: Array<{ costPrice?: number; product?: { buyingPrice?: number } }>;
-  }>;
+  const ownerSaleHistory = (await ownerSaleHistoryResponse.json() as {
+    items: Array<{
+      id: string;
+      items: Array<{ costPrice?: number; product?: { buyingPrice?: number } }>;
+    }>;
+  }).items;
   const ownerSale = ownerSaleHistory.find((sale) => sale.id === createdSale.id);
   assert.equal(ownerSale?.items[0].costPrice, 10000);
   assert.equal(ownerSale?.items[0].product?.buyingPrice, 10000);
@@ -867,6 +921,71 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
       createdAt: archivedAt,
     })),
   });
+
+  // Read the 500-row QA batch in small cursor pages repeatedly. Compare the
+  // returned rows/totals with the same unpaged QA query, and sample API RSS.
+  const expectedReadRows = await prisma.sale.findMany({
+    where: { branchId: branchAId },
+    select: { id: true, status: true, total: true, totalCommission: true },
+  });
+  const expectedReadTotals = expectedReadRows
+    .filter((sale) => sale.status !== "refunded")
+    .reduce((totals, sale) => ({
+      revenue: totals.revenue + sale.total,
+      commission: totals.commission + sale.totalCommission,
+    }), { revenue: 0, commission: 0 });
+  const rssBaseline = await readApiRssKb();
+  const passRss: number[] = [];
+  let requestsPerPass = 0;
+  for (let pass = 0; pass < 3; pass++) {
+    const received: Array<{ id: string; status: string; total: number; totalCommission: number }> = [];
+    let cursor: string | null = null;
+    let pages = 0;
+    do {
+      const params = new URLSearchParams({
+        branchId: branchAId,
+        limit: "100",
+      });
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`${apiUrl}/api/transactions?${params}`, {
+        headers: { authorization: `Bearer ${adminPayload.token}` },
+      });
+      assert.equal(response.status, 200);
+      const page = await response.json() as {
+        items: Array<{ id: string; status: string; total: number; totalCommission: number }>;
+        nextCursor: string | null;
+      };
+      assert.ok(page.items.length <= 100);
+      received.push(...page.items);
+      pages++;
+      cursor = page.nextCursor;
+      const rss = await readApiRssKb();
+      if (rss !== null) passRss.push(rss);
+    } while (cursor);
+    requestsPerPass = pages;
+    assert.equal(received.length, expectedReadRows.length);
+    assert.deepEqual(
+      received.map((sale) => sale.id).sort(),
+      expectedReadRows.map((sale) => sale.id).sort(),
+    );
+    const actualReadTotals = received
+      .filter((sale) => sale.status !== "refunded")
+      .reduce((totals, sale) => ({
+        revenue: totals.revenue + sale.total,
+        commission: totals.commission + sale.totalCommission,
+      }), { revenue: 0, commission: 0 });
+    assert.deepEqual(actualReadTotals, expectedReadTotals);
+  }
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const rssFinal = await readApiRssKb();
+  const rssPeak = passRss.length ? Math.max(...passRss) : null;
+  console.log(
+    `API_SALES_READ_RSS_KB baseline=${rssBaseline ?? "unavailable"} peak=${rssPeak ?? "unavailable"} final=${rssFinal ?? "unavailable"} pages_per_pass=${requestsPerPass} passes=3`,
+  );
+  if (rssBaseline !== null && rssFinal !== null) {
+    assert.ok(rssFinal - rssBaseline < 96 * 1024, "API RSS grew by more than 96 MiB during repeated paged reads.");
+  }
+
   const summaryDate = getLogicalShiftDate(archivedAt);
   const commissionsBeforeArchive = await prisma.commission.count({
     where: { productId, branchId: branchAId, cashierId: cashierA.id },

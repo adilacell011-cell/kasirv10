@@ -31,7 +31,7 @@ export class ReadError extends Error {
 export const isSessionError = (error: unknown) => error instanceof ReadError &&
   (error.status === 401 || (error.status === 403 && error.serverError === "Invalid or expired token"));
 
-async function readJson(path: string, signal?: AbortSignal): Promise<any> {
+async function readJsonWithResponse(path: string, signal?: AbortSignal): Promise<{ data: any; response: Response }> {
   let response: Response;
   try {
     response = await fetch(`${BASE_URL}${path}`, { headers: getHeaders(), signal });
@@ -44,11 +44,15 @@ async function readJson(path: string, signal?: AbortSignal): Promise<any> {
     throw new ReadError("http", response.status, typeof body.error === "string" ? body.error : undefined);
   }
   try {
-    return await response.json();
+    return { data: await response.json(), response };
   } catch (error) {
     if (signal?.aborted || (error as Error)?.name === "AbortError") throw error;
     throw new ReadError("invalid-response", response.status);
   }
+}
+
+async function readJson(path: string, signal?: AbortSignal): Promise<any> {
+  return (await readJsonWithResponse(path, signal)).data;
 }
 
 // One read cycle at a time. Events arriving DURING a read require a trailing
@@ -234,8 +238,44 @@ export const api = {
   },
 
   async getSales(params: any = {}, signal?: AbortSignal) {
-    const query = new URLSearchParams(params).toString();
-    return readJson(`/transactions?${query}`, signal);
+    const allSales: any[] = [];
+    const seenCursors = new Set<string>();
+    let cursor: string | null = null;
+
+    do {
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          queryParams.set(key, String(value));
+        }
+      });
+      queryParams.set("limit", "100");
+      if (cursor) queryParams.set("cursor", cursor);
+
+      const { data } = await readJsonWithResponse(`/transactions?${queryParams}`, signal);
+      if (!data || !Array.isArray(data.items) ||
+          !(data.nextCursor === null || typeof data.nextCursor === "string")) {
+        throw new ReadError("invalid-response");
+      }
+      allSales.push(...data.items);
+
+      if (data.nextCursor === null) {
+        cursor = null;
+      } else {
+        if (seenCursors.has(data.nextCursor) || data.items.length === 0) {
+          throw new ReadError("invalid-response");
+        }
+        seenCursors.add(data.nextCursor);
+        cursor = data.nextCursor;
+      }
+    } while (cursor !== null);
+
+    return allSales;
+  },
+
+  async getProductSalesQuantities(branchId?: string, signal?: AbortSignal) {
+    const query = branchId ? `?branchId=${encodeURIComponent(branchId)}` : "";
+    return readJson(`/products/sales-quantities${query}`, signal);
   },
 
   async getCommissions(params: any = {}, signal?: AbortSignal) {
