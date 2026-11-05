@@ -2,14 +2,14 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/alfath-dashboard/Dashboard.tsx": () => import("../components/mockups/alfath-dashboard/Dashboard.tsx"),
+  "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
+  "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx"),
+  "./components/mockups/operator-logos/OperatorLogoPreview.tsx": () => import("../components/mockups/operator-logos/OperatorLogoPreview.tsx"),
   "./components/mockups/alfath-redesign/Aurora.tsx": () => import("../components/mockups/alfath-redesign/Aurora.tsx"),
   "./components/mockups/alfath-redesign/CleanPro.tsx": () => import("../components/mockups/alfath-redesign/CleanPro.tsx"),
   "./components/mockups/alfath-redesign/DarkCommand.tsx": () => import("../components/mockups/alfath-redesign/DarkCommand.tsx"),
   "./components/mockups/alfath-redesign/FreshFriendly.tsx": () => import("../components/mockups/alfath-redesign/FreshFriendly.tsx"),
   "./components/mockups/alfath-redesign/MidnightLuxe.tsx": () => import("../components/mockups/alfath-redesign/MidnightLuxe.tsx"),
   "./components/mockups/alfath-redesign/PeachSorbet.tsx": () => import("../components/mockups/alfath-redesign/PeachSorbet.tsx"),
-  "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
-  "./components/mockups/operator-logos/OperatorLogoPreview.tsx": () => import("../components/mockups/operator-logos/OperatorLogoPreview.tsx"),
-  "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
-  "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
+  "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx")
 };
