@@ -1,0 +1,541 @@
+name: Promote shift-close validated OCI artifacts to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_source_sha:
+        description: Type the full validated candidate SHA to confirm publication
+        required: true
+        type: string
+        default: b7cc08ffa46e975901ec8f5d38725971691ba7db
+
+permissions:
+  actions: read
+  packages: write
+
+concurrency:
+  group: promote-shift-close-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.repository == 'adilacell011-cell/kasirv10' &&
+      github.ref == 'refs/heads/validate/shift-close-income'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CANDIDATE_SHA: b7cc08ffa46e975901ec8f5d38725971691ba7db
+      SOURCE_RUN_ID: "42040517747"
+      API_ARTIFACT_ID: "13421175955"
+      API_ARTIFACT_NAME: kasirv10-api-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+      WEB_ARTIFACT_ID: "13420926881"
+      WEB_ARTIFACT_NAME: kasirv10-web-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+      OCI_REF: candidate
+
+    steps:
+      - name: Verify pinned source run, jobs, and artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRM_SOURCE_SHA: ${{ inputs.confirm_source_sha }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "adilacell011-cell/kasirv10"
+          test "$GITHUB_REF" = "refs/heads/validate/shift-close-income"
+          test "$CONFIRM_SOURCE_SHA" = "$CANDIDATE_SHA"
+
+          run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}")"
+          jq -e \
+            --arg sha "$CANDIDATE_SHA" \
+            --arg branch "validate/shift-close-income" \
+            --arg repository "adilacell011-cell/kasirv10" \
+            '
+              .head_sha == $sha and
+              .head_branch == $branch and
+              .head_repository.full_name == $repository and
+              .status == "completed" and
+              .conclusion == "success" and
+              .path == ".github/workflows/docker-validate-multiplatform.yml" and
+              .event == "workflow_dispatch"
+            ' <<< "$run_json" >/dev/null
+
+          jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/jobs?per_page=100")"
+          jq -e \
+            --arg api "validate (api, artifacts/api-server/Dockerfile)" \
+            --arg web "validate (web, artifacts/alfath-pos/Dockerfile)" \
+            '
+              ([.jobs[] | select(.name == $api and .conclusion == "success")] | length) == 1 and
+              ([.jobs[] | select(.name == $web and .conclusion == "success")] | length) == 1
+            ' <<< "$jobs_json" >/dev/null
+
+          artifacts_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/artifacts?per_page=100")"
+          jq -e \
+            --arg api_id "$API_ARTIFACT_ID" \
+            --arg api_name "$API_ARTIFACT_NAME" \
+            --arg web_id "$WEB_ARTIFACT_ID" \
+            --arg web_name "$WEB_ARTIFACT_NAME" \
+            '
+              any(.artifacts[];
+                (.id | tostring) == $api_id and .name == $api_name and .expired == false
+              ) and
+              any(.artifacts[];
+                (.id | tostring) == $web_id and .name == $web_name and .expired == false
+              )
+            ' <<< "$artifacts_json" >/dev/null
+
+          echo "Pinned repository, branch, SHA, validation run, jobs, and OCI artifacts verified."
+
+      - name: Download API OCI artifact from the pinned run
+        uses: actions/download-artifact@v4
+        with:
+          name: kasirv10-api-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+          path: ${{ runner.temp }}/kasirv10-api
+          repository: adilacell011-cell/kasirv10
+          run-id: 42040517747
+          github-token: ${{ github.token }}
+
+      - name: Download Web OCI artifact from the pinned run
+        uses: actions/download-artifact@v4
+        with:
+          name: kasirv10-web-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+          path: ${{ runner.temp }}/kasirv10-web
+          repository: adilacell011-cell/kasirv10
+          run-id: 42040517747
+          github-token: ${{ github.token }}
+
+      - name: Verify both OCI archives and prepare candidate references without rebuilding
+        id: preflight
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP" "$OCI_REF" "$GITHUB_OUTPUT" <<'PY'
+          import copy
+          import hashlib
+          import io
+          import json
+          import pathlib
+          import re
+          import sys
+          import tarfile
+
+          root = pathlib.Path(sys.argv[1])
+          reference = sys.argv[2]
+          output_file = pathlib.Path(sys.argv[3])
+          archives = [
+              ("api", root / "kasirv10-api" / "kasirv10-api.tar",
+               root / "kasirv10-api" / "kasirv10-api-tagged.tar"),
+              ("web", root / "kasirv10-web" / "kasirv10-web.tar",
+               root / "kasirv10-web" / "kasirv10-web-tagged.tar"),
+          ]
+          secret_name = re.compile(
+              r"(^|_)(SECRET|PASSWORD|TOKEN|PRIVATE_KEY|API_KEY|DATABASE_URL|CREDENTIALS?)(_|$)",
+              re.IGNORECASE,
+          )
+
+          for image, source, destination in archives:
+              if not source.is_file() or source.stat().st_size == 0:
+                  raise SystemExit(f"Missing or empty pinned OCI archive: {source.name}")
+
+              with tarfile.open(source, "r:*") as src:
+                  members = {member.name: member for member in src.getmembers()}
+                  verified = {}
+
+                  def verified_blob(descriptor, want_bytes=False):
+                      digest = descriptor.get("digest", "")
+                      match = re.fullmatch(r"sha256:([0-9a-f]{64})", digest)
+                      if not match:
+                          raise ValueError(f"{source.name} contains an unsupported OCI digest")
+                      expected_size = descriptor.get("size")
+                      if not isinstance(expected_size, int) or expected_size < 0:
+                          raise ValueError(f"{source.name} contains an invalid descriptor size")
+                      member = members.get(f"blobs/sha256/{match.group(1)}")
+                      if member is None or not member.isfile():
+                          raise ValueError(f"{source.name} is missing an OCI blob")
+                      if member.size != expected_size:
+                          raise ValueError(f"{source.name} blob size differs from its descriptor")
+
+                      cached = verified.get(digest)
+                      if cached is None:
+                          stream = src.extractfile(member)
+                          if stream is None:
+                              raise ValueError(f"{source.name} contains an unreadable OCI blob")
+                          hasher = hashlib.sha256()
+                          chunks = [] if want_bytes else None
+                          actual_size = 0
+                          while True:
+                              chunk = stream.read(1024 * 1024)
+                              if not chunk:
+                                  break
+                              hasher.update(chunk)
+                              actual_size += len(chunk)
+                              if chunks is not None:
+                                  chunks.append(chunk)
+                          if actual_size != expected_size or hasher.hexdigest() != match.group(1):
+                              raise ValueError(f"{source.name} OCI blob digest verification failed")
+                          cached = b"".join(chunks) if chunks is not None else True
+                          verified[digest] = cached
+                      elif want_bytes and cached is True:
+                          stream = src.extractfile(member)
+                          cached = stream.read() if stream is not None else None
+                          if cached is None:
+                              raise ValueError(f"{source.name} contains an unreadable OCI blob")
+                          verified[digest] = cached
+
+                      if want_bytes:
+                          if cached is True:
+                              raise ValueError(f"{source.name} OCI JSON blob was not read")
+                          return cached
+                      return None
+
+                  platforms = set()
+                  visited_indexes = set()
+
+                  def inspect_descriptor(descriptor, depth=0):
+                      if depth > 8:
+                          raise ValueError(f"{source.name} OCI index nesting is too deep")
+                      parsed = json.loads(verified_blob(descriptor, want_bytes=True))
+                      if isinstance(parsed.get("manifests"), list):
+                          index_digest = descriptor.get("digest")
+                          if index_digest in visited_indexes:
+                              return
+                          visited_indexes.add(index_digest)
+                          for child in parsed["manifests"]:
+                              inspect_descriptor(child, depth + 1)
+                          return
+
+                      config_descriptor = parsed.get("config")
+                      layers = parsed.get("layers")
+                      if not isinstance(config_descriptor, dict) or not isinstance(layers, list):
+                          raise ValueError(f"{source.name} contains an unsupported OCI manifest")
+                      config = json.loads(verified_blob(config_descriptor, want_bytes=True))
+                      os_name = config.get("os")
+                      architecture = config.get("architecture")
+                      platform = f"{os_name}/{architecture}"
+                      if os_name and architecture and platform != "unknown/unknown":
+                          platforms.add(platform)
+
+                      for entry in config.get("config", {}).get("Env", []):
+                          key = entry.split("=", 1)[0]
+                          if secret_name.search(key):
+                              raise ValueError(
+                                  f"{source.name} image config contains a secret-like environment key"
+                              )
+                      for layer in layers:
+                          verified_blob(layer)
+
+                  index_member = src.getmember("index.json")
+                  index_stream = src.extractfile(index_member)
+                  if index_stream is None:
+                      raise SystemExit(f"{source.name} has no readable index.json")
+                  index = json.load(index_stream)
+                  descriptors = index.get("manifests")
+                  if not isinstance(descriptors, list) or len(descriptors) != 1:
+                      raise SystemExit(f"{source.name} must have exactly one root descriptor")
+                  descriptor = descriptors[0]
+                  if descriptor.get("mediaType") != "application/vnd.oci.image.index.v1+json":
+                      raise SystemExit(f"{source.name} root descriptor is not an OCI image index")
+
+                  source_digest = descriptor.get("digest", "")
+                  inspect_descriptor(descriptor)
+                  for expected in ("linux/amd64", "linux/arm64"):
+                      if expected not in platforms:
+                          raise ValueError(f"{source.name} is missing verified platform {expected}")
+
+                  annotations = descriptor.setdefault("annotations", {})
+                  existing = annotations.get("org.opencontainers.image.ref.name")
+                  if existing and existing != reference:
+                      raise SystemExit(f"{source.name} has an unexpected OCI reference annotation")
+                  annotations["org.opencontainers.image.ref.name"] = reference
+                  rewritten_index = json.dumps(index, separators=(",", ":")).encode("utf-8")
+
+                  with tarfile.open(destination, "w") as dst:
+                      for member in src.getmembers():
+                          if member.name == "index.json":
+                              updated = copy.copy(member)
+                              updated.size = len(rewritten_index)
+                              dst.addfile(updated, io.BytesIO(rewritten_index))
+                          else:
+                              content = src.extractfile(member) if member.isfile() else None
+                              dst.addfile(member, content)
+
+              with output_file.open("a", encoding="utf-8") as output:
+                  output.write(f"{image}_digest={source_digest}\n")
+              print(f"{image}: pinned archive digest {source_digest}; both platforms verified.")
+          PY
+
+      - name: Select unique temporary and candidate tags
+        id: tags
+        run: |
+          set -euo pipefail
+          temp_tag="candidate-tmp-${CANDIDATE_SHA}-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}"
+          final_tag="candidate-${CANDIDATE_SHA}-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}"
+          echo "temp_tag=$temp_tag" >> "$GITHUB_OUTPUT"
+          echo "final_tag=$final_tag" >> "$GITHUB_OUTPUT"
+          echo "Temporary tag and final candidate tag selected for this publication run."
+
+      - name: Install Skopeo for OCI archive transfer
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends skopeo
+
+      - name: Verify both archive digests and platforms before publishing
+        env:
+          API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
+          WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
+        run: |
+          set -euo pipefail
+          for image in api web; do
+            archive="$RUNNER_TEMP/kasirv10-${image}/kasirv10-${image}-tagged.tar"
+            source="oci-archive:${archive}:${OCI_REF}"
+            source_index="$RUNNER_TEMP/${image}-source-index.json"
+            expected_digest="$API_SOURCE_DIGEST"
+            if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
+
+            skopeo inspect --raw "$source" > "$source_index"
+            actual_digest="sha256:$(sha256sum "$source_index" | cut -d' ' -f1)"
+            test "$actual_digest" = "$expected_digest"
+            node - "$source_index" "$image" <<'NODE'
+          const fs = require("node:fs");
+          const [file, image] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+          const platforms = new Set((manifest.manifests || [])
+            .map((item) => `${item.platform?.os}/${item.platform?.architecture}`));
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              throw new Error(`${image} source OCI index is missing ${expected}`);
+            }
+          }
+          console.log(`${image} source digest and both platforms verified before publication.`);
+          NODE
+          done
+
+      - name: Refuse existing temporary and final GHCR tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.tags.outputs.temp_tag }}
+          FINAL_TAG: ${{ steps.tags.outputs.final_tag }}
+        run: |
+          set -euo pipefail
+
+          check_tag_absent() {
+            local package="$1"
+            local tag="$2"
+            local existing_tags
+
+            existing_tags="$(gh api --paginate --jq '.[].metadata.container.tags[]?' \
+              "orgs/adilacell011-cell/packages/container/${package}/versions?per_page=100")"
+            if printf '%s\n' "$existing_tags" | grep -Fqx -- "$tag"; then
+              echo "Refusing to overwrite existing GHCR tag ghcr.io/adilacell011-cell/${package}:${tag}." >&2
+              return 1
+            fi
+            echo "Confirmed destination tag is absent: ghcr.io/adilacell011-cell/${package}:${tag}"
+          }
+
+          check_tag_absent kasirv10-api "$TEMP_TAG"
+          check_tag_absent kasirv10-api "$FINAL_TAG"
+          check_tag_absent kasirv10-web "$TEMP_TAG"
+          check_tag_absent kasirv10-web "$FINAL_TAG"
+
+      - name: Publish both images to the unique temporary tag
+        id: publish_temporary
+        continue-on-error: true
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.tags.outputs.temp_tag }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          api_status=failed
+          web_status=failed
+          api_source="oci-archive:$RUNNER_TEMP/kasirv10-api/kasirv10-api-tagged.tar:$OCI_REF"
+          web_source="oci-archive:$RUNNER_TEMP/kasirv10-web/kasirv10-web-tagged.tar:$OCI_REF"
+          api_destination="docker://ghcr.io/adilacell011-cell/kasirv10-api:$TEMP_TAG"
+          web_destination="docker://ghcr.io/adilacell011-cell/kasirv10-web:$TEMP_TAG"
+
+          if skopeo copy --all --preserve-digests --dest-authfile "$authfile" \
+            "$api_source" "$api_destination"; then
+            api_status=published
+          fi
+          if skopeo copy --all --preserve-digests --dest-authfile "$authfile" \
+            "$web_source" "$web_destination"; then
+            web_status=published
+          fi
+
+          {
+            echo "api_status=$api_status"
+            echo "web_status=$web_status"
+          } >> "$GITHUB_OUTPUT"
+          echo "Temporary API status: $api_status (tag: $TEMP_TAG)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Temporary Web status: $web_status (tag: $TEMP_TAG)" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$api_status" != "published" ] || [ "$web_status" != "published" ]; then
+            echo "Temporary publication is partial or failed; final candidate tags will not be promoted."
+            exit 1
+          fi
+
+      - name: Verify both temporary manifests against source digests
+        id: verify_temporary
+        if: ${{ steps.publish_temporary.outcome == 'success' }}
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.tags.outputs.temp_tag }}
+          API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
+          WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          for image in api web; do
+            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:$TEMP_TAG"
+            manifest_file="$RUNNER_TEMP/${image}-temporary-manifest.json"
+            expected_digest="$API_SOURCE_DIGEST"
+            if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
+            skopeo inspect --raw --authfile "$authfile" "$destination" > "$manifest_file"
+            actual_digest="sha256:$(sha256sum "$manifest_file" | cut -d' ' -f1)"
+            test "$actual_digest" = "$expected_digest"
+            node - "$manifest_file" "$image" <<'NODE'
+          const fs = require("node:fs");
+          const [file, image] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+          const platforms = new Set((manifest.manifests || [])
+            .map((item) => `${item.platform?.os}/${item.platform?.architecture}`));
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              throw new Error(`${image} temporary manifest is missing ${expected}`);
+            }
+          }
+          console.log(`${image} temporary digest and both platforms verified.`);
+          NODE
+          done
+
+      - name: Promote both images to the unique final candidate tag
+        id: promote_final
+        if: ${{ steps.verify_temporary.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.tags.outputs.temp_tag }}
+          FINAL_TAG: ${{ steps.tags.outputs.final_tag }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          api_status=failed
+          web_status=failed
+          api_source="docker://ghcr.io/adilacell011-cell/kasirv10-api:$TEMP_TAG"
+          web_source="docker://ghcr.io/adilacell011-cell/kasirv10-web:$TEMP_TAG"
+          api_destination="docker://ghcr.io/adilacell011-cell/kasirv10-api:$FINAL_TAG"
+          web_destination="docker://ghcr.io/adilacell011-cell/kasirv10-web:$FINAL_TAG"
+
+          if skopeo copy --all --preserve-digests --src-authfile "$authfile" --dest-authfile "$authfile" \
+            "$api_source" "$api_destination"; then
+            api_status=promoted
+          fi
+          if skopeo copy --all --preserve-digests --src-authfile "$authfile" --dest-authfile "$authfile" \
+            "$web_source" "$web_destination"; then
+            web_status=promoted
+          fi
+
+          {
+            echo "api_status=$api_status"
+            echo "web_status=$web_status"
+          } >> "$GITHUB_OUTPUT"
+          echo "Final API status: $api_status (tag: $FINAL_TAG)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Final Web status: $web_status (tag: $FINAL_TAG)" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$api_status" != "promoted" ] || [ "$web_status" != "promoted" ]; then
+            echo "Final promotion is partial or failed; no image/tag will be deleted."
+            exit 1
+          fi
+
+      - name: Verify both final candidate manifests
+        id: verify_final
+        if: ${{ steps.promote_final.outcome == 'success' }}
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          FINAL_TAG: ${{ steps.tags.outputs.final_tag }}
+          API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
+          WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          for image in api web; do
+            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:$FINAL_TAG"
+            manifest_file="$RUNNER_TEMP/${image}-final-manifest.json"
+            expected_digest="$API_SOURCE_DIGEST"
+            if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
+            skopeo inspect --raw --authfile "$authfile" "$destination" > "$manifest_file"
+            actual_digest="sha256:$(sha256sum "$manifest_file" | cut -d' ' -f1)"
+            test "$actual_digest" = "$expected_digest"
+            node - "$manifest_file" "$image" "$GITHUB_STEP_SUMMARY" "$destination" "$actual_digest" <<'NODE'
+          const fs = require("node:fs");
+          const [file, image, summaryFile, ref, digest] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+          const platforms = new Set((manifest.manifests || [])
+            .map((item) => `${item.platform?.os}/${item.platform?.architecture}`));
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              throw new Error(`${image} final manifest is missing ${expected}`);
+            }
+          }
+          fs.appendFileSync(summaryFile, [
+            `### ${image.toUpperCase()} final candidate image verified`,
+            `- Reference: \`${ref}\``,
+            `- Digest: \`${digest}\``,
+            `- Platforms: linux/amd64, linux/arm64`,
+            "",
+          ].join("\n"));
+          console.log(`${image} final digest matches source and both platforms are present.`);
+          NODE
+          done
+
+      - name: Report publication and partial state
+        if: always()
+        env:
+          TEMP_TAG: ${{ steps.tags.outputs.temp_tag }}
+          FINAL_TAG: ${{ steps.tags.outputs.final_tag }}
+          API_TEMP_STATUS: ${{ steps.publish_temporary.outputs.api_status }}
+          WEB_TEMP_STATUS: ${{ steps.publish_temporary.outputs.web_status }}
+          API_FINAL_STATUS: ${{ steps.promote_final.outputs.api_status }}
+          WEB_FINAL_STATUS: ${{ steps.promote_final.outputs.web_status }}
+          TEMP_OUTCOME: ${{ steps.publish_temporary.outcome }}
+          TEMP_VERIFY_OUTCOME: ${{ steps.verify_temporary.outcome }}
+          PROMOTE_OUTCOME: ${{ steps.promote_final.outcome }}
+          FINAL_VERIFY_OUTCOME: ${{ steps.verify_final.outcome }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## GHCR publication status"
+            echo "- Source: \`${GITHUB_REPOSITORY}@${CANDIDATE_SHA}\`"
+            echo "- Source validation run: \`${SOURCE_RUN_ID}\`"
+            echo "- Temporary tag: \`${TEMP_TAG:-not-selected}\`"
+            echo "- Final candidate tag: \`${FINAL_TAG:-not-selected}\`"
+            echo "- Temporary publication: API \`${API_TEMP_STATUS:-not-confirmed}\`, Web \`${WEB_TEMP_STATUS:-not-confirmed}\` (\`${TEMP_OUTCOME:-skipped}\`)"
+            echo "- Temporary verification: \`${TEMP_VERIFY_OUTCOME:-skipped}\`"
+            echo "- Final promotion: API \`${API_FINAL_STATUS:-not-confirmed}\`, Web \`${WEB_FINAL_STATUS:-not-confirmed}\` (\`${PROMOTE_OUTCOME:-skipped}\`)"
+            echo "- Final verification: \`${FINAL_VERIFY_OUTCOME:-skipped}\`"
+            echo "- No latest tag is created. Temporary tags and partial publications are not deleted automatically."
+            echo "- Two image publications are not atomic; a successful API copy can remain if Web publication fails."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$TEMP_OUTCOME" != "success" ] ||
+             [ "$TEMP_VERIFY_OUTCOME" != "success" ] ||
+             [ "$PROMOTE_OUTCOME" != "success" ] ||
+             [ "$FINAL_VERIFY_OUTCOME" != "success" ]; then
+            echo "Publication is incomplete or not fully verified. Rerun this workflow with the same pinned artifacts; no rebuild is required."
+            exit 1
+          fi
