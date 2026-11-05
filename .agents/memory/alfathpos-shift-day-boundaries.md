@@ -16,11 +16,25 @@ Two DIFFERENT hour thresholds coexist on purpose in the frontend shift logic:
 
 ## Checkout requires an opened shift
 
-The owner confirms that normal cashier operation must require opening a shift before completing a sale. Shift closure requires confirmation and entering the actual cash amount, so accidental closure is considered unlikely. Preserve this user-facing workflow; a direct API request bypassing that UI gate is a separate server-side security concern, not evidence that the normal cashier flow permits sales without opening a shift.
+The owner confirms that normal cashier operation must require opening a shift before completing a sale. Shift closure requires confirmation and entering reported total income, so accidental closure is considered unlikely. Preserve this user-facing workflow; a direct API request bypassing that UI gate is a separate server-side security concern, not evidence that the normal cashier flow permits sales without opening a shift.
 
 **Why:** the owner clarified this is the required on-the-ground cashier workflow.
 
 **How to apply:** do not redesign the cashier flow. Treat app/server/network interruption as recovery of the still-open server shift; keep correction of a genuinely closed shift separate. If strengthening security, enforce the same requirement at the API boundary without changing shift timing or handover rules.
+
+## Shift-close sales total
+
+At checkout, the sale is paid and recorded as a completed transaction; the cashier flow does not record a separate payment method. The shift-close total must include successful transactions created from that shift's actual opening through its actual closing, and exclude failed, cancelled, or refunded transactions.
+
+**Why:** the owner clarified that checkout is complete when products are entered and paid, and the shift total must be accurate for the actual shift interval.
+
+**How to apply:** do not introduce payment-type splits or change revenue formulas. Preserve the success-only, actual-open-to-actual-close basis when auditing shift totals and reports.
+
+At API closure, the cashier reports total income (`reportedIncome`), not physical cash in the drawer. The report is required and must be a finite non-negative amount; zero is valid. There is no opening cash for a shift.
+
+**Why:** the owner explicitly clarified that the cashier enters total income, which must be compared with the server's successful-sale total; the former "physical cash" label and opening-drawer calculation were incorrect.
+
+**How to apply:** enforce the reported total at the API boundary and calculate difference as `reportedIncome - totalSales`; keep the database column compatibility mapping if needed, do not add payment-type splits, and do not rewrite historical rows.
 
 Do not require keepers to wait until 07:00 / 19:00, or close shifts automatically at those hours or at the 06:00 day reset. Late-shift transactions remain allowed with a warning; early handover must not be confused with an overdue shift.
 

@@ -7,7 +7,7 @@
 - [AlfathPOS dark-mode styling](alfathpos-dark-mode-styling.md) — restyle dark panels with the app standard LIGHT utility classes; dark-mode CSS overrides only match exact class names (opacity/hover variants need explicit dark:).
 - [AlfathPOS app-wide theme remap](alfathpos-theme-remap.md) — re-skin whole app via @theme ramp remaps (blue/indigo/slate) in index.css; inline recharts hex, .dark hardcoded hex & the login PNG icon bypass it; never put `*/` in an @theme comment.
 - [AlfathPOS product naming](alfathpos-product-naming.md) — add-product name is built per-category by buildProductName(); Parfum aroma/size live only inside the name string, not DB columns.
-- [AlfathPOS shift & day boundaries](alfathpos-shift-day-boundaries.md) — day resets at 6 AM but shift-overdue boundary is 7 AM ON PURPOSE; 06:00–07:00 txns stay in night shift. Do not harmonize.
+- [AlfathPOS shift & day boundaries](alfathpos-shift-day-boundaries.md) — 6 AM day reset differs from 7 AM handover reminders; close totals are successful paid sales within actual open-close times.
 - [AlfathPOS sidebar z-index & PWA cache](alfathpos-z-index-pwa.md) — drawer must be z-[80]/[90] above content bars at z-50; PWA SW caches bundle so device shows stale UI until full reopen/republish.
 - [AlfathPOS stock & SN model](alfathpos-stock-model.md) — one masterSN per product for recall + plain Pcs qty stock; per-unit Voucher SN intake removed (dead code); VoucherSN model kept for legacy cleanup only.
 - [AlfathPOS crash hardening](alfathpos-crash-hardening.md) — process error handlers log-and-stay-alive (POS uptime); numeric inputs must be validated AND normalized before DB writes, never written raw.

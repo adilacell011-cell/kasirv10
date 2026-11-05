@@ -31,16 +31,36 @@ function snapshot(): SchemaSnapshot {
   for (const model of Prisma.dmmf.datamodel.models) {
     for (const field of model.fields.filter(f => f.kind === "scalar")) {
       result.columns.push({
-        table_name: model.name, column_name: field.name,
+        table_name: model.dbName || model.name, column_name: field.dbName || field.name,
         udt_name: types[field.type]!, is_nullable: field.isRequired ? "NO" : "YES",
       });
-      if (field.isId || field.isUnique) result.indexes.push({ table_name: model.name, columns: [field.name] });
+      if (field.isId || field.isUnique) {
+        result.indexes.push({ table_name: model.dbName || model.name, columns: [field.dbName || field.name] });
+      }
     }
-    for (const fields of model.uniqueFields) result.indexes.push({ table_name: model.name, columns: [...fields] });
+    for (const fields of model.uniqueFields) {
+      result.indexes.push({
+        table_name: model.dbName || model.name,
+        columns: fields.map(name => {
+          const field = model.fields.find(candidate => candidate.name === name)!;
+          return field.dbName || field.name;
+        }),
+      });
+    }
     for (const field of model.fields.filter(f => f.relationFromFields?.length)) {
+      const referenced = Prisma.dmmf.datamodel.models.find(candidate => candidate.name === field.type)!;
       result.foreign_keys.push({
-        table_name: model.name, columns: [...field.relationFromFields!],
-        target_table: field.type, target_schema: "public", target_columns: [...field.relationToFields!],
+        table_name: model.dbName || model.name,
+        columns: field.relationFromFields!.map(name => {
+          const current = model.fields.find(candidate => candidate.name === name)!;
+          return current.dbName || current.name;
+        }),
+        target_table: referenced.dbName || referenced.name,
+        target_schema: "public",
+        target_columns: field.relationToFields!.map(name => {
+          const current = referenced.fields.find(candidate => candidate.name === name)!;
+          return current.dbName || current.name;
+        }),
         delete_action: field.relationOnDelete === "SetNull" || (!field.relationOnDelete && !field.isRequired) ? "n" : "r",
         update_action: "c",
       });

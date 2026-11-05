@@ -747,7 +747,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
       authorization: `Bearer ${cashierPayload.token}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ status: "closed", actualCash: 2 }),
+    body: JSON.stringify({ status: "closed", reportedIncome: 2 }),
   });
   assert.equal(closeAfterRosterEdits.status, 200);
   const closedShift = await closeAfterRosterEdits.json() as { id: string; status: string };

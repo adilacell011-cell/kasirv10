@@ -11,7 +11,7 @@ import { PrismaClient } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict } from "./shift-safety";
+import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict, validateReportedIncome } from "./shift-safety";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { applyOpname, OpnameConflict } from "./opname";
@@ -1054,7 +1054,7 @@ app.get("/api/shifts", authenticateToken, async (req, res) => {
         closeTime: true,
         initialCash: true,
         totalSales: true,
-        actualCash: true,
+        reportedIncome: true,
         difference: true,
         shiftDate: true,
         shiftType: true,
@@ -1070,6 +1070,38 @@ app.get("/api/shifts", authenticateToken, async (req, res) => {
   }
 });
 
+app.get("/api/shifts/:id/close-summary", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
+  const requester = (req as any).user;
+  try {
+    const shift = await prisma.shift.findUnique({
+      where: { id: req.params.id },
+      select: { branchId: true, openTime: true, status: true },
+    });
+    if (!shift) return void res.status(404).json({ error: "Shift tidak ditemukan." });
+    if (requester.role === "CASHIER" && shift.branchId !== requester.branchId) {
+      return void res.status(403).json({ error: "Kasir hanya dapat melihat ringkasan shift cabangnya sendiri." });
+    }
+    if (shift.status !== "open") return void res.status(409).json({ error: "Shift sudah tidak aktif." });
+
+    const asOf = new Date();
+    const aggregate = await prisma.sale.aggregate({
+      where: {
+        branchId: shift.branchId,
+        status: "success",
+        createdAt: { gte: shift.openTime, lte: asOf },
+      },
+      _sum: { total: true },
+    });
+    res.json({
+      shiftId: req.params.id,
+      asOf: asOf.toISOString(),
+      totalSales: Number(aggregate._sum.total ?? 0),
+    });
+  } catch {
+    res.status(500).json({ error: "Gagal menghitung ringkasan pendapatan shift." });
+  }
+});
+
 app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
   const { branchId, cashierId, initialCash, shiftDate, shiftType } = req.body;
   const requester = (req as any).user;
@@ -1077,8 +1109,11 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
   const shiftBranchId = requester.role === "CASHIER" ? requester.branchId : branchId;
   const shiftCashierId = requester.role === "CASHIER" ? requester.userId : cashierId;
   if (!shiftBranchId) return void res.status(400).json({ error: "Cabang shift tidak ditentukan." });
-  const safeInitialCash = toNonNegativeNumber(initialCash);
-  if (safeInitialCash === null) return void res.status(400).json({ error: "Modal awal (initialCash) harus angka >= 0." });
+  const safeInitialCash = initialCash === undefined ? 0 : toNonNegativeNumber(initialCash);
+  if (safeInitialCash === null) return void res.status(400).json({ error: "Nilai initialCash tidak valid." });
+  if (safeInitialCash !== 0) {
+    return void res.status(400).json({ error: "Modal awal kasir tidak digunakan; initialCash harus 0." });
+  }
   if (typeof shiftType !== "string" || !shiftType.trim() || typeof shiftDate !== "string" ||
       !/^\d{4}-\d{2}-\d{2}$/.test(shiftDate) || !shiftCashierId) {
     return void res.status(400).json({ error: "Identitas dan tanggal shift wajib diisi." });
@@ -1096,17 +1131,23 @@ app.post("/api/shifts", authenticateToken, requireRole("ADMIN", "CASHIER"), asyn
 });
 
 app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"), async (req, res) => {
-  const { actualCash, status } = req.body;
+  const { reportedIncome, status } = req.body;
   const requester = (req as any).user;
   // Reopening needs retained correction history, not an arbitrary status patch.
   if (status !== "closed") return void res.status(400).json({ error: "Gunakan proses penutupan shift yang valid." });
-  const safeCash = actualCash === undefined ? undefined : toFiniteNumber(actualCash);
-  if (safeCash === null) return void res.status(400).json({ error: "Nilai actualCash tidak valid." });
+  const reportedIncomeValidation = validateReportedIncome(reportedIncome);
+  if (!reportedIncomeValidation.ok) {
+    const error = reportedIncomeValidation.reason === "missing"
+      ? "Total pendapatan (reportedIncome) wajib diisi saat menutup shift."
+      : "Nilai reportedIncome harus berupa angka >= 0.";
+    return void res.status(400).json({ error });
+  }
+  const safeReportedIncome = reportedIncomeValidation.value;
 
   try {
     const existing = await prisma.shift.findUnique({
       where: { id: req.params.id },
-      select: { branchId: true, openTime: true, initialCash: true }
+      select: { branchId: true }
     });
     if (!existing) return void res.status(404).json({ error: "Shift tidak ditemukan." });
 
@@ -1114,7 +1155,7 @@ app.patch("/api/shifts/:id", authenticateToken, requireRole("ADMIN", "CASHIER"),
       return void res.status(403).json({ error: "Kasir hanya dapat mengubah shift cabangnya sendiri." });
     }
 
-    const shift = await closeShiftSafely(prisma, req.params.id, existing.branchId, safeCash);
+    const shift = await closeShiftSafely(prisma, req.params.id, existing.branchId, safeReportedIncome);
     res.json(shift);
   } catch (error) {
     if (error instanceof ShiftConflict) return void res.status(error.status).json({ error: error.message });

@@ -5,6 +5,22 @@ export class ShiftConflict extends Error {
   readonly status = 409;
 }
 
+export type ReportedIncomeValidation =
+  | { ok: true; value: number }
+  | { ok: false; reason: "missing" | "invalid" };
+
+export function validateReportedIncome(value: unknown): ReportedIncomeValidation {
+  if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) {
+    return { ok: false, reason: "missing" };
+  }
+  if (typeof value !== "number" && typeof value !== "string") {
+    return { ok: false, reason: "invalid" };
+  }
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount) || amount < 0) return { ok: false, reason: "invalid" };
+  return { ok: true, value: amount };
+}
+
 // Transaction-scoped, shared across API processes; no schema changes.
 export async function lockBranch(tx: Prisma.TransactionClient, branchId: string) {
   await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${`alfath-shift:${branchId}`}, 0))`;
@@ -29,7 +45,7 @@ export function openShiftSafely(prisma: PrismaClient, input: OpenInput) {
   });
 }
 
-export function closeShiftSafely(prisma: PrismaClient, id: string, branchId: string, actualCash?: number) {
+export function closeShiftSafely(prisma: PrismaClient, id: string, branchId: string, reportedIncome: number) {
   return prisma.$transaction(async (tx) => {
     await lockBranch(tx, branchId);
     const shift = await tx.shift.findUnique({ where: { id } });
@@ -47,9 +63,8 @@ export function closeShiftSafely(prisma: PrismaClient, id: string, branchId: str
       where: { id },
       data: {
         status: "closed", closeTime, totalSales,
-        ...(actualCash === undefined ? {} : {
-          actualCash, difference: actualCash - (Number(shift.initialCash) + totalSales),
-        }),
+        reportedIncome,
+        difference: reportedIncome - totalSales,
       },
     });
 

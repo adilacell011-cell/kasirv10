@@ -5,21 +5,28 @@ import { validateDatabaseTarget } from "./database-target";
 import { getLogicalShiftDate } from "./business-date";
 
 type QaRow = {
-  id: string; status: string; totalSales: number; total: number;
+  id: string; branchId: string; status: string; totalSales: number; total: number;
   stocks: Record<string, number>; saleId: string;
 };
 
-// Opt-in only. Writes NEW retained QA fixtures, never deletes or modifies existing fixtures.
+// Opt-in only. Writes NEW fixtures only to an explicitly verified development/test database.
 // No migration, seed, maintenance or arbitrary remote target.
-test("shift/refund regression on isolated development PostgreSQL over HTTP", {
+test("shift/refund regression on isolated PostgreSQL over HTTP", {
   skip: process.env.RUN_SHIFT_HTTP_TESTS !== "1",
 }, async (t) => {
   const target = validateDatabaseTarget(process.env);
-  assert.equal(target.environment, "development");
-  const base = "http://localhost:80/api";
+  assert.ok(target.environment === "development" || target.environment === "test");
+  if (target.environment === "test") {
+    assert.match(target.host, /^(127\.0\.0\.1|localhost)$/);
+    assert.match(target.database, /(?:qa|test)/i);
+  }
+  const base = (process.env.QA_API_BASE || "http://localhost:80/api").replace(/\/$/, "");
   const login = await fetch(`${base}/auth/login`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "admin", password: "admin123" }),
+    body: JSON.stringify({
+      username: process.env.QA_OWNER_USERNAME || "admin",
+      password: process.env.QA_OWNER_PASSWORD || "admin123",
+    }),
   });
   assert.equal(login.status, 200);
   const owner = (await login.json() as { token: string }).token;
@@ -42,6 +49,10 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     assert.equal(r.status, 200, `${method} ${path}: expected success`);
     return await r.json() as T;
   }
+  async function transactionRows(token: string): Promise<QaRow[]> {
+    const page = await ok<{ items: QaRow[] }>("/transactions?limit=100", token);
+    return page.items;
+  }
   async function fixture(suffix: string) {
     const branch = await ok("/branches", owner, "POST", { name: `${tag}-${suffix}` });
     const username = `${tag}-${suffix}`.toLowerCase();
@@ -59,11 +70,11 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
   }
   type Fixture = Awaited<ReturnType<typeof fixture>>;
   const open = (f: Fixture, name = "QA Pagi") => ({
-    branchId: f.branchId, cashierId: f.userId, initialCash: 0,
+    branchId: f.branchId, cashierId: f.userId,
     shiftDate: getLogicalShiftDate(), shiftType: `Pagi - ${name}`,
   });
   const close = (f: Fixture, id: string, cash = 0) =>
-    ok(`/shifts/${id}`, f.token, "PATCH", { status: "closed", actualCash: cash });
+    ok(`/shifts/${id}`, f.token, "PATCH", { status: "closed", reportedIncome: cash });
   async function product(f: Fixture) {
     const p = await ok("/products", owner, "POST", {
       name: `${tag}-product-${randomUUID().slice(0, 6)}`, buyingPrice: 10000,
@@ -91,7 +102,7 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     const b = await fixture("branch-b");
     const first = await ok("/shifts", a.token, "POST", open(a));
     assert.equal((await request("/shifts", a.token, "POST", open(a, "QA Malam"))).status, 409);
-    assert.equal((await request(`/shifts/${first.id}`, b.token, "PATCH", { status: "closed", actualCash: 0 })).status, 403);
+    assert.equal((await request(`/shifts/${first.id}`, b.token, "PATCH", { status: "closed", reportedIncome: 0 })).status, 403);
     await ok("/shifts", b.token, "POST", open(b));
     await close(a, first.id);
     const next = await ok("/shifts", a.token, "POST", open(a, "QA Malam"));
@@ -111,7 +122,7 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     const beforeOpen = await request("/transactions", f.token, "POST", salePayload);
     assert.equal(beforeOpen.status, 409);
     assert.match((await beforeOpen.json() as { error: string }).error, /shift/i);
-    assert.equal((await ok<QaRow[]>("/transactions", f.token)).length, 0);
+    assert.equal((await transactionRows(f.token)).filter((row) => row.branchId === f.branchId).length, 0);
     assert.equal((await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId], 10);
     assert.equal((await ok<Array<{ saleId: string }>>("/incentives", f.token)).length, 0);
 
@@ -124,10 +135,54 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     const afterClose = await request("/transactions", f.token, "POST", salePayload);
     assert.equal(afterClose.status, 409);
     assert.match((await afterClose.json() as { error: string }).error, /shift/i);
-    assert.equal((await ok<QaRow[]>("/transactions", f.token)).filter((row) => row.id === savedSale.id).length, 1);
+    assert.equal((await transactionRows(f.token)).filter((row) => row.id === savedSale.id).length, 1);
     assert.equal((await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId], 9);
     const commissions = await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token);
     assert.deepEqual(commissions.filter((commission) => commission.saleId === savedSale.id).map((commission) => commission.status), ["earned"]);
+  });
+  await t.test("shift closure compares cashier-reported income with the server total and accepts zero", async () => {
+    const f = await fixture("close-cash-required");
+    const productId = await product(f);
+    assert.equal((await request("/shifts", f.token, "POST", { ...open(f), initialCash: 25000 })).status, 400);
+    const shift = await ok<{ id: string }>("/shifts", f.token, "POST", open(f));
+    const opened = (await ok<Array<{ id: string; initialCash: number }>>("/shifts", f.token))
+      .find((row) => row.id === shift.id);
+    assert.equal(opened?.initialCash, 0);
+    await sale(f, productId);
+    const preview = await ok<{ totalSales: number }>(`/shifts/${shift.id}/close-summary`, f.token);
+    assert.equal(preview.totalSales, 15000);
+
+    assert.equal((await request(`/shifts/${shift.id}`, f.token, "PATCH", { status: "closed" })).status, 400);
+    assert.equal((await request(`/shifts/${shift.id}`, f.token, "PATCH", { status: "closed", reportedIncome: null })).status, 400);
+    assert.equal((await request(`/shifts/${shift.id}`, f.token, "PATCH", { status: "closed", reportedIncome: "" })).status, 400);
+    assert.equal((await request(`/shifts/${shift.id}`, f.token, "PATCH", { status: "closed", reportedIncome: -1 })).status, 400);
+    assert.equal((await request(`/shifts/${shift.id}`, f.token, "PATCH", { status: "closed", actualCash: 17000 })).status, 400);
+    const stillOpen = await ok<Array<{ id: string; status: string }>>("/shifts", f.token);
+    assert.equal(stillOpen.find((row) => row.id === shift.id)?.status, "open");
+
+    const closed = await ok<{ status: string; totalSales: number; reportedIncome: number; difference: number }>(
+      `/shifts/${shift.id}`,
+      f.token,
+      "PATCH",
+      { status: "closed", reportedIncome: 17000 },
+    );
+    assert.equal(closed.status, "closed");
+    assert.equal(closed.totalSales, 15000);
+    assert.equal(closed.reportedIncome, 17000);
+    assert.equal(closed.difference, 2000);
+
+    const zero = await fixture("close-zero-cash");
+    const zeroShift = await ok<{ id: string }>("/shifts", zero.token, "POST", open(zero));
+    const zeroClosed = await ok<{ status: string; totalSales: number; reportedIncome: number; difference: number }>(
+      `/shifts/${zeroShift.id}`,
+      zero.token,
+      "PATCH",
+      { status: "closed", reportedIncome: 0 },
+    );
+    assert.equal(zeroClosed.status, "closed");
+    assert.equal(zeroClosed.totalSales, 0);
+    assert.equal(zeroClosed.reportedIncome, 0);
+    assert.equal(zeroClosed.difference, 0);
   });
   await t.test("cashier stock transfer requires an active shift and changes neither branch when locked", async () => {
     const f = await fixture("transfer-shift-guard");
@@ -193,7 +248,7 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     assert.equal((await request(`/transactions/${savedSale.id}/refund`, f.token, "POST")).status, 409);
     const nextShift = await ok("/shifts", f.token, "POST", open(f, "QA Malam"));
     assert.equal((await request(`/transactions/${savedSale.id}/refund`, f.token, "POST")).status, 409);
-    assert.equal((await ok<QaRow[]>("/transactions", f.token)).find((row) => row.id === savedSale.id)?.status, "success");
+    assert.equal((await transactionRows(f.token)).find((row) => row.id === savedSale.id)?.status, "success");
     assert.equal((await ok<QaRow[]>("/products", f.token)).find((row) => row.id === productId)?.stocks[f.branchId], 9);
     assert.equal((await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token))
       .find((row) => row.saleId === savedSale.id)?.status, "earned");
@@ -206,8 +261,7 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
     const savedSale = await sale(f, productId);
 
     assert.equal((await request(`/transactions/${savedSale.id}/refund`, owner, "POST")).status, 403);
-    assert.equal((await ok<QaRow[]>("/transactions", f.token))
-      .find((row) => row.id === savedSale.id)?.status, "success");
+    assert.equal((await transactionRows(f.token)).find((row) => row.id === savedSale.id)?.status, "success");
     assert.equal((await ok<QaRow[]>("/products", f.token))
       .find((row) => row.id === productId)?.stocks[f.branchId], 9);
     assert.equal((await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token))
@@ -218,8 +272,7 @@ test("shift/refund regression on isolated development PostgreSQL over HTTP", {
       .find((row) => row.id === productId)?.stocks[f.branchId], 10);
     assert.equal((await ok<Array<{ saleId: string; status: string }>>("/incentives", f.token))
       .find((row) => row.saleId === savedSale.id)?.status, "refunded");
-    assert.equal((await ok<QaRow[]>("/transactions", f.token))
-      .find((row) => row.id === savedSale.id)?.status, "refunded");
+    assert.equal((await transactionRows(f.token)).find((row) => row.id === savedSale.id)?.status, "refunded");
     const closed = await close(f, shift.id);
     assert.equal(Number(closed.totalSales), 0);
     const summary = (await ok<Array<{

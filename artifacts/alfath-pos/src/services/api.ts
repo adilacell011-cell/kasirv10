@@ -288,6 +288,10 @@ export const api = {
     return readJson(`/shifts?${query}`, signal);
   },
 
+  async getShiftCloseSummary(id: string, signal?: AbortSignal) {
+    return readJson(`/shifts/${encodeURIComponent(id)}/close-summary`, signal);
+  },
+
   async openShift(data: any) {
     const res = await fetch(`${BASE_URL}/shifts`, {
       method: "POST",

@@ -201,10 +201,11 @@ model Shift {
   cashierId   String
   openTime    DateTime @default(now())
   closeTime   DateTime?
-  initialCash Float
-  totalSales  Float    @default(0)
-  actualCash  Float?
-  difference  Float?
+  initialCash     Float
+  totalSales      Float    @default(0)
+  // Legacy database column stores the cashier-reported total income.
+  reportedIncome  Float?   @map("actualCash")
+  difference      Float?
   shiftDate   String
   shiftType   String?
   status      String   // open, closed
