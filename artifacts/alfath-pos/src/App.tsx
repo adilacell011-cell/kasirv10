@@ -568,6 +568,25 @@ function CustomSelect({
   );
 }
 
+function buildShiftReadQueryParams(
+  reportView: boolean,
+  branchId: string | undefined,
+  startDate: string,
+  endDate: string,
+): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (branchId) params.branchId = branchId;
+  if (reportView) {
+    if (startDate && endDate) {
+      params.shiftDateFrom = startDate;
+      params.shiftDateTo = endDate;
+    }
+  } else {
+    params.status = "open";
+  }
+  return params;
+}
+
 export default function App() {
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("theme");
@@ -1662,6 +1681,11 @@ export default function App() {
   const fullSyncEnabled = Boolean(profile && profile.role !== "PENDING" && !authLoading && !usesOwnerSync);
   const syncKey = `${readScope}:${fullSyncEnabled}`;
   const syncToken = localStorage.getItem("token");
+  const shiftReadScope = JSON.stringify([
+    syncToken, fullSyncEnabled, activeMenu, effectiveReadBranch,
+    reportStartDate, reportEndDate, profile?.id, profile?.role, profile?.branchId,
+  ]);
+  const previousShiftReadScope = useRef("");
   const liveSyncKey = useRef(syncKey);
   liveSyncKey.current = syncKey;
 
@@ -1714,50 +1738,11 @@ export default function App() {
         await read(() => api.getProducts(controller.signal), setProducts);
         await read(() => api.getCommissions({ branchId: effectiveBranchId }, controller.signal), setCommissions);
         
-        const [shData] = await Promise.all([
-          read(() => api.getShifts({ branchId: effectiveBranchId }, controller.signal), setShifts),
+        await Promise.all([
           read(() => api.getUsers(controller.signal), setUsers),
           read(() => api.getAdjustments(controller.signal), setAdjustments),
         ]);
         if (!current()) return;
-        
-        // --- RESTORE OPEN SHIFT FROM DATABASE ---
-        if (shData && profile?.branchId) {
-          const openShift = shData.find((s: any) => s.status === "open" && s.branchId === profile?.branchId);
-          
-          if (openShift) {
-             setShiftOpen(true);
-             const type = openShift.shiftType || "Pagi";
-             let parsedType = type;
-             let parsedName = openShift.cashier?.name || "Kasir";
-             if (type.includes(" - ")) {
-                 const parts = type.split(" - ");
-                 parsedType = parts[0];
-                 parsedName = parts[1];
-             }
-             setShiftType(parsedType as any);
-             setCashierName(parsedName);
-             setShiftStartTime(openShift.openTime);
-             setShiftLogicalDate(openShift.shiftDate);
-             
-             localStorage.setItem("shift_open", "true");
-             localStorage.setItem("current_shift_id", openShift.id);
-             localStorage.setItem("shift_type", parsedType);
-             localStorage.setItem("cashier_name", parsedName);
-             localStorage.setItem("shift_start_time", openShift.openTime);
-             localStorage.setItem("shift_logical_date", openShift.shiftDate);
-          } else {
-             // Jika di lokal buka pencatuman, tapi di DB sudah tutup/hapus, maka sinkronisasi paksa
-             if (localStorage.getItem("shift_open") === "true") {
-                 setShiftOpen(false);
-                 setCashierName("");
-                 setShiftType(null);
-                 setShiftStartTime(null);
-                 localStorage.removeItem("shift_open");
-                 localStorage.removeItem("current_shift_id");
-             }
-          }
-        }
         
         // Also sync commission summaries
         const summaryOk = await syncCommissionsSummary(isAdmin ? undefined : profile?.branchId || undefined, {
@@ -1813,6 +1798,104 @@ export default function App() {
   }, [syncKey, syncToken]);
 
   useEffect(() => {
+    if (previousShiftReadScope.current !== shiftReadScope) {
+      setShifts([]);
+      previousShiftReadScope.current = shiftReadScope;
+    }
+    if (!fullSyncEnabled || !syncToken) {
+      setShifts([]);
+      return;
+    }
+
+    let disposed = false;
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
+    const reportView = activeMenu === "reports";
+    const current = () =>
+      !disposed &&
+      !controller.signal.aborted &&
+      readEpoch.current === epoch &&
+      localStorage.getItem("token") === syncToken;
+
+    const loadShifts = async () => {
+      const params = buildShiftReadQueryParams(
+        reportView,
+        effectiveReadBranch,
+        reportStartDate,
+        reportEndDate,
+      );
+      const shiftsPromise = api.getShifts(params, controller.signal);
+      const openShiftsPromise = reportView && profile?.branchId
+        ? api.getShifts({ branchId: profile.branchId, status: "open" }, controller.signal)
+        : shiftsPromise;
+      try {
+        const [rows, openRows] = await Promise.all([shiftsPromise, openShiftsPromise]);
+        if (!current()) return;
+        if (!Array.isArray(rows) || !Array.isArray(openRows)) {
+          setDataLoadFailed(true);
+          return;
+        }
+        const merged = new Map<string, any>();
+        for (const shift of [...rows, ...openRows]) merged.set(shift.id, shift);
+        setShifts([...merged.values()]);
+
+        if (profile?.branchId) {
+          const openShift = openRows.find(
+            (shift: any) => shift.status === "open" && shift.branchId === profile.branchId,
+          );
+          if (openShift) {
+            setShiftOpen(true);
+            const type = openShift.shiftType || "Pagi";
+            let parsedType = type;
+            let parsedName = openShift.cashier?.name || "Kasir";
+            if (type.includes(" - ")) {
+              const parts = type.split(" - ");
+              parsedType = parts[0];
+              parsedName = parts[1];
+            }
+            setShiftType(parsedType as any);
+            setCashierName(parsedName);
+            setShiftStartTime(openShift.openTime);
+            setShiftLogicalDate(openShift.shiftDate);
+            localStorage.setItem("shift_open", "true");
+            localStorage.setItem("current_shift_id", openShift.id);
+            localStorage.setItem("shift_type", parsedType);
+            localStorage.setItem("cashier_name", parsedName);
+            localStorage.setItem("shift_start_time", openShift.openTime);
+            localStorage.setItem("shift_logical_date", openShift.shiftDate);
+          } else if (localStorage.getItem("shift_open") === "true") {
+            setShiftOpen(false);
+            setCashierName("");
+            setShiftType(null);
+            setShiftStartTime(null);
+            localStorage.removeItem("shift_open");
+            localStorage.removeItem("current_shift_id");
+          }
+        }
+      } catch (error) {
+        if (!current()) return;
+        if (isSessionError(error)) expireReadSession();
+        else {
+          console.error("Shift data read failed:", error);
+          setDataLoadFailed(true);
+        }
+      }
+    };
+
+    void loadShifts();
+    return () => {
+      disposed = true;
+      controller.abort();
+    };
+  }, [
+    fullSyncEnabled,
+    profile?.branchId,
+    shiftReadScope,
+    refreshTick,
+    syncToken,
+  ]);
+
+  useEffect(() => {
     if (!syncToken || profile?.role !== "ADMIN" || activeMenu !== "shopping_list") {
       setShoppingPlans([]);
       return;
@@ -1820,6 +1903,7 @@ export default function App() {
 
     const controller = new AbortController();
     const epoch = readEpoch.current;
+    setShoppingPlans([]);
     const context = liveSyncKey.current;
     const current = () =>
       !controller.signal.aborted &&
@@ -4459,8 +4543,13 @@ export default function App() {
                                                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                                                   }
                                                 });
-                                                const sData = await api.getShifts();
-                                                setShifts(sData.sort((a: any, b: any) => new Date(b.openTime).getTime() - new Date(a.openTime).getTime()));
+                                                const sData = await api.getShifts(buildShiftReadQueryParams(
+                                                  true,
+                                                  effectiveReadBranch,
+                                                  reportStartDate,
+                                                  reportEndDate,
+                                                ));
+                                                setShifts(sData);
                                               } catch (err) {
                                                 alert("Gagal menghapus: " + err);
                                               }

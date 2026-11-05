@@ -20,6 +20,7 @@ import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
 import { startApiMemoryDiagnostics } from "./memory-diagnostics";
+import { parseShiftReadRange } from "./shift-read-range";
 import {
   buildSaleReadQuery,
   finishSalePage,
@@ -1031,10 +1032,14 @@ app.get("/api/incentives", authenticateToken, async (req, res) => {
 });
 
 app.get("/api/shifts", authenticateToken, async (req, res) => {
-  const { branchId, status } = req.query;
+  const { branchId, status, shiftDateFrom, shiftDateTo } = req.query;
   const requester = (req as any).user;
+  const dateRange = parseShiftReadRange(shiftDateFrom, shiftDateTo);
+  if (!dateRange.ok) {
+    return void res.status(400).json({ error: "Rentang tanggal shift tidak valid." });
+  }
   try {
-    const where: any = {};
+    const where: any = { ...dateRange.where };
     // CASHIER reads are locked to their own branch; client-supplied branchId is ignored.
     if (requester.role === "CASHIER") where.branchId = requester.branchId;
     else if (branchId) where.branchId = branchId as string;
