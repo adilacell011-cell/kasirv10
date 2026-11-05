@@ -679,7 +679,6 @@ export default function App() {
   const [branchSummaries, setBranchSummaries] = useState<Record<string, any>>({});
   const [shoppingPlans, setShoppingPlans] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
-  const [dailySummaries, setDailySummaries] = useState<any[]>([]);
 
   // Navigation State
   const [activeMenu, setActiveMenu] = useState<
@@ -788,6 +787,11 @@ export default function App() {
 
   const getMyCommissions = () => {
     return commissions.filter(c => c.branchId === profile?.branchId);
+  };
+  const getMyCommissionTotal = (status: "withdrawn" | "refunded") => {
+    const branchId = profile?.branchId;
+    if (!branchId) return 0;
+    return Number(commissionsSummary?.byBranchStatus?.[branchId]?.[status] || 0);
   };
 
   const [shiftOpen, setShiftOpen] = useState(() => {
@@ -1027,6 +1031,40 @@ export default function App() {
     const interval = setInterval(checkConn, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Opt-in, local-only browser memory sampling for Chromium diagnostics.
+  // Enable from DevTools with:
+  // localStorage.setItem("kasirv10:memory-diagnostics", "1")
+  useEffect(() => {
+    let enabled = false;
+    try {
+      enabled = localStorage.getItem("kasirv10:memory-diagnostics") === "1";
+    } catch {
+      return;
+    }
+    if (!enabled) return;
+
+    type ChromiumPerformance = Performance & {
+      memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number };
+    };
+    const sample = () => {
+      const memory = (performance as ChromiumPerformance).memory;
+      if (!memory) {
+        console.info("KASIRV10_BROWSER_MEMORY_UNAVAILABLE", { activeMenu });
+        return;
+      }
+      console.info("KASIRV10_BROWSER_MEMORY_SAMPLE", {
+        activeMenu,
+        usedJSHeapMiB: Math.round(memory.usedJSHeapSize / 1024 / 1024 * 100) / 100,
+        totalJSHeapMiB: Math.round(memory.totalJSHeapSize / 1024 / 1024 * 100) / 100,
+        heapLimitMiB: Math.round(memory.jsHeapSizeLimit / 1024 / 1024 * 100) / 100,
+        sampledAt: new Date().toISOString(),
+      });
+    };
+    sample();
+    const timer = window.setInterval(sample, 30_000);
+    return () => window.clearInterval(timer);
+  }, [activeMenu]);
 
   // Persist Shift
   useEffect(() => {
@@ -1611,7 +1649,6 @@ export default function App() {
     setShifts([]);
     setUsers([]);
     setAdjustments([]);
-    setDailySummaries([]);
     setShoppingPlans([]);
     setCommissionsSummary(null);
     setBranchSummaries({});
@@ -1681,8 +1718,6 @@ export default function App() {
           read(() => api.getShifts({ branchId: effectiveBranchId }, controller.signal), setShifts),
           read(() => api.getUsers(controller.signal), setUsers),
           read(() => api.getAdjustments(controller.signal), setAdjustments),
-          read(() => api.getDailySummaries(controller.signal), setDailySummaries),
-          read(() => api.getShoppingPlans(controller.signal), setShoppingPlans),
         ]);
         if (!current()) return;
         
@@ -1776,6 +1811,40 @@ export default function App() {
       socket.disconnect();
     };
   }, [syncKey, syncToken]);
+
+  useEffect(() => {
+    if (!syncToken || profile?.role !== "ADMIN" || activeMenu !== "shopping_list") {
+      setShoppingPlans([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
+    const context = liveSyncKey.current;
+    const current = () =>
+      !controller.signal.aborted &&
+      readEpoch.current === epoch &&
+      liveSyncKey.current === context &&
+      localStorage.getItem("token") === syncToken;
+
+    api.getShoppingPlans(controller.signal).then((plans) => {
+      if (!current()) return;
+      if (!Array.isArray(plans)) {
+        setDataLoadFailed(true);
+        return;
+      }
+      setShoppingPlans(plans);
+    }).catch((error) => {
+      if (!current()) return;
+      if (isSessionError(error)) expireReadSession();
+      else {
+        console.error("Shopping plans read failed:", error);
+        setDataLoadFailed(true);
+      }
+    });
+
+    return () => controller.abort();
+  }, [activeMenu, profile?.branchId, profile?.role, syncToken]);
 
   useEffect(() => { fullRefreshRef.current(); }, [refreshTick]);
 
@@ -2629,19 +2698,14 @@ export default function App() {
 
   const handleSyncOldSales = async () => {
     if (!profile || profile.role !== "ADMIN") return;
-    if (!(await triggerConfirm("Sinkronisasi riwayat penjualan ke ringkasan permanen? Ini akan memastikan statistik dashboard lengkap."))) return;
+    if (!(await triggerConfirm("Muat ulang ringkasan pendapatan? Tindakan ini hanya membaca data dan tidak mengubah transaksi atau rekap permanen."))) return;
     
     setIsSyncingOldSales(true);
     try {
         if (activeMenu === "dashboard") {
           await ownerDashboard.refresh();
-          return;
         }
-        // The backend now computes daily summaries directly from local sales data,
-        // so "syncing" simply re-fetches the up-to-date summaries from the API.
-        const dsData = await api.getDailySummaries();
-        setDailySummaries(dsData || []);
-        alert("Sinkronisasi selesai! Data ringkasan berhasil diperbarui.");
+        alert("Ringkasan pendapatan berhasil dimuat ulang.");
     } catch (e) {
         console.error("Sync Old Sales Error:", e);
         alert("Gagal sinkronisasi data lama.");
@@ -8696,13 +8760,13 @@ export default function App() {
                           <div className="flex-1 border-b sm:border-b-0 sm:border-r border-white/20 pb-2 sm:pb-0">
                             <p className="text-[9px] font-bold uppercase tracking-widest opacity-60 mb-0.5">Sudah Dicairkan</p>
                             <p className="text-[11px] md:text-xs font-black tracking-tight">
-                              Rp {(getMyCommissions().filter(c => c.status === "withdrawn").reduce((s, c) => s + (c.amount || 0), 0) || 0).toLocaleString("id-ID")}
+                            Rp {getMyCommissionTotal("withdrawn").toLocaleString("id-ID")}
                             </p>
                           </div>
                           <div className="flex-1 sm:pl-2">
                             <p className="text-[9px] font-bold uppercase tracking-widest opacity-60 mb-0.5">Bonus Hangus (Refund)</p>
                             <p className="text-[11px] md:text-xs font-black tracking-tight text-rose-200">
-                              Rp {(getMyCommissions().filter(c => c.status === "refunded").reduce((s, c) => s + (c.amount || 0), 0) || 0).toLocaleString("id-ID")}
+                            Rp {getMyCommissionTotal("refunded").toLocaleString("id-ID")}
                             </p>
                           </div>
                         </div>
@@ -9128,7 +9192,7 @@ export default function App() {
                           className="bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl px-4 py-2 text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center gap-2 disabled:opacity-50"
                         >
                           <RefreshCw className={`w-3 h-3 ${isSyncingOldSales ? 'animate-spin' : ''}`} />
-                          {isSyncingOldSales ? 'Menyinkronkan...' : 'Sinkron Data Lama'}
+                          {isSyncingOldSales ? 'Memuat ulang...' : 'Muat Ulang Ringkasan'}
                         </button>
                       )}
 

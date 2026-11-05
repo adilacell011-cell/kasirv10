@@ -41,6 +41,15 @@ const connectedSockets = new Set<Socket>();
 let apiProcess: ChildProcess | undefined;
 let apiUrl = "";
 let apiPort = 0;
+type ApiMemorySample = {
+  sampledAt: string;
+  rssMiB: number;
+  heapTotalMiB: number;
+  heapUsedMiB: number;
+  externalMiB: number;
+  arrayBuffersMiB: number;
+};
+const apiMemorySamples: ApiMemorySample[] = [];
 let branchAId = "";
 let branchBId = "";
 let cashierA: { id: string; username: string; password: string };
@@ -108,9 +117,28 @@ async function startApi(): Promise<void> {
       JWT_SECRET: jwtSecret,
       PORT: String(apiPort),
       NODE_ENV: "test",
+      KASIRV10_MEMORY_DIAGNOSTICS: "true",
+      KASIRV10_MEMORY_DIAGNOSTICS_INTERVAL_MS: "1000",
     },
-    stdio: "ignore",
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  let stdoutBuffer = "";
+  apiProcess.stdout?.setEncoding("utf8");
+  apiProcess.stdout?.on("data", (chunk: string) => {
+    stdoutBuffer += chunk;
+    const lines = stdoutBuffer.split(/\r?\n/);
+    stdoutBuffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const marker = "KASIRV10_API_MEMORY_SAMPLE ";
+      if (!line.startsWith(marker)) continue;
+      try {
+        apiMemorySamples.push(JSON.parse(line.slice(marker.length)) as ApiMemorySample);
+      } catch {
+        // Invalid diagnostic lines are ignored; API behavior is tested separately.
+      }
+    }
+  });
+  apiProcess.stderr?.on("data", () => {});
   await waitForApi();
 }
 
@@ -663,15 +691,42 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(cashierCommissionResponse.status, 200);
   const cashierCommissions = await cashierCommissionResponse.json() as Array<{
     saleId: string;
+    branchId: string;
     product?: { buyingPrice?: number; purchasePrice?: number };
     sale?: { idempotencyKeyHash?: string; idempotencyPayloadHash?: string };
   }>;
+  assert.ok(cashierCommissions.length <= 50);
+  assert.ok(cashierCommissions.every((commission) => commission.branchId === branchAId));
   const cashierCommission = cashierCommissions.find((commission) => commission.saleId === createdSale.id);
   assert.ok(cashierCommission);
   assert.equal(cashierCommission.product?.buyingPrice, undefined);
   assert.equal(cashierCommission.product?.purchasePrice, undefined);
-  assert.equal(cashierCommission.sale?.idempotencyKeyHash, undefined);
-  assert.equal(cashierCommission.sale?.idempotencyPayloadHash, undefined);
+  assert.equal(cashierCommission.sale, undefined);
+
+  const commissionSummaryResponse = await fetch(`${apiUrl}/api/incentives/summary?branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(commissionSummaryResponse.status, 200);
+  const commissionSummary = await commissionSummaryResponse.json() as {
+    total: number;
+    byBranch: Record<string, number>;
+    byBranchStatus: Record<string, { earned: number; withdrawn: number; refunded: number }>;
+  };
+  const branchCommissionLedger = await prisma.commission.findMany({
+    where: { branchId: branchAId },
+    select: { amount: true, status: true },
+  });
+  const expectedBranchStatuses = { earned: 0, withdrawn: 0, refunded: 0 };
+  for (const row of branchCommissionLedger) {
+    if (row.status === "earned" || row.status === "withdrawn" || row.status === "refunded") {
+      expectedBranchStatuses[row.status] += Number(row.amount);
+    }
+  }
+  assert.equal(commissionSummary.byBranchStatus[branchAId].earned, expectedBranchStatuses.earned);
+  assert.equal(commissionSummary.byBranchStatus[branchAId].withdrawn, expectedBranchStatuses.withdrawn);
+  assert.equal(commissionSummary.byBranchStatus[branchAId].refunded, expectedBranchStatuses.refunded);
+  assert.equal(commissionSummary.byBranch[branchAId], expectedBranchStatuses.earned);
+  assert.equal(commissionSummary.total, expectedBranchStatuses.earned);
 
   const ownerSaleHistoryResponse = await fetch(`${apiUrl}/api/transactions?branchId=${branchAId}`, {
     headers: { authorization: `Bearer ${adminPayload.token}` },
@@ -1128,4 +1183,66 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal((await prisma.productStock.findFirst({
     where: { productId, branchId: branchAId },
   }))?.qty, stockBeforeArchive.qty);
+
+  await prisma.commission.createMany({
+    data: Array.from({ length: 55 }, (_, index) => ({
+      productId,
+      cashierId: cashierA.id,
+      branchId: branchAId,
+      qty: 1,
+      amount: index + 1,
+      status: index % 3 === 0 ? "withdrawn" : index % 3 === 1 ? "refunded" : "earned",
+      createdAt: new Date(Date.now() + index * 1_000),
+    })),
+  });
+  const latestCommissionResponse = await fetch(`${apiUrl}/api/incentives?branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(latestCommissionResponse.status, 200);
+  const latestCommissionRows = await latestCommissionResponse.json() as Array<Record<string, any>>;
+  assert.equal(latestCommissionRows.length, 50);
+  assert.ok(latestCommissionRows.every((row) => row.sale === undefined));
+  assert.ok(latestCommissionRows.every((row) => row.product?.buyingPrice === undefined));
+
+  const completeCommissionLedger = await prisma.commission.findMany({
+    where: { branchId: branchAId },
+    select: { amount: true, status: true },
+  });
+  const completeTotals = { earned: 0, withdrawn: 0, refunded: 0 };
+  for (const row of completeCommissionLedger) {
+    if (row.status === "earned" || row.status === "withdrawn" || row.status === "refunded") {
+      completeTotals[row.status] += Number(row.amount);
+    }
+  }
+  const completeSummaryResponse = await fetch(`${apiUrl}/api/incentives/summary?branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  const completeSummary = await completeSummaryResponse.json() as {
+    total: number;
+    byBranch: Record<string, number>;
+    byBranchStatus: Record<string, { earned: number; withdrawn: number; refunded: number }>;
+  };
+  assert.equal(completeSummaryResponse.status, 200);
+  assert.equal(completeSummary.total, completeTotals.earned);
+  assert.equal(completeSummary.byBranch[branchAId], completeTotals.earned);
+  assert.deepEqual(completeSummary.byBranchStatus[branchAId], completeTotals);
+
+  await new Promise((resolve) => setTimeout(resolve, 1_100));
+  assert.ok(apiMemorySamples.length >= 2, "API emitted memory samples across startup/restart.");
+  for (const sample of apiMemorySamples) {
+    for (const value of [
+      sample.rssMiB,
+      sample.heapTotalMiB,
+      sample.heapUsedMiB,
+      sample.externalMiB,
+      sample.arrayBuffersMiB,
+    ]) {
+      assert.ok(Number.isFinite(value) && value >= 0, "memory sample contains valid non-negative metrics");
+    }
+  }
+  console.info("API_MEMORY_DIAGNOSTICS_TEST", JSON.stringify({
+    samples: apiMemorySamples.length,
+    first: apiMemorySamples[0],
+    last: apiMemorySamples.at(-1),
+  }));
 });

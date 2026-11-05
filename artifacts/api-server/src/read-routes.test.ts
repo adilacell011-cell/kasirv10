@@ -97,11 +97,26 @@ function setup(fixtureSummaries = summaries, fixtureSales = liveSales) {
       },
     },
     sale: {
-      findMany: async (query: any) => {
+      groupBy: async (query: any) => {
         queries.sales.push(query);
-        return Object.hasOwn(query.where, "branchId")
+        const matchingSales = Object.hasOwn(query.where, "branchId")
           ? fixtureSales.filter((sale) => sale.branchId === query.where.branchId)
           : fixtureSales;
+        const byBranch = new Map<string, typeof fixtureSales>();
+        for (const sale of matchingSales) {
+          const bucket = byBranch.get(sale.branchId) ?? [];
+          bucket.push(sale);
+          byBranch.set(sale.branchId, bucket);
+        }
+        return [...byBranch.entries()].map(([branchId, sales]) => ({
+          branchId,
+          _sum: {
+            total: sales.reduce((sum, sale) => sum + sale.total, 0),
+            totalProfit: sales.reduce((sum, sale) => sum + sale.totalProfit, 0),
+            totalCommission: sales.reduce((sum, sale) => sum + sale.totalCommission, 0),
+          },
+          _count: { _all: sales.length },
+        }));
       },
     },
   };
@@ -257,6 +272,13 @@ test("admin daily summaries remain global and preserve history/live aggregation"
   assert.equal(queries.sales[0].where.createdAt.gte.toISOString(), "2026-11-01T23:00:00.000Z");
   assert.equal(queries.sales[0].where.createdAt.lt.toISOString(), "2026-11-02T23:00:00.000Z");
   assert.equal(queries.sales[0].where.status, "success");
+  assert.deepEqual(queries.sales[0].by, ["branchId"]);
+  assert.deepEqual(queries.sales[0]._sum, {
+    total: true,
+    totalProfit: true,
+    totalCommission: true,
+  });
+  assert.deepEqual(queries.sales[0]._count, { _all: true });
 });
 
 test("today's live summary replaces the stored row without double counting", async () => {

@@ -19,6 +19,7 @@ import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment
 import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
+import { startApiMemoryDiagnostics } from "./memory-diagnostics";
 import {
   buildSaleReadQuery,
   finishSalePage,
@@ -36,7 +37,6 @@ import {
   assertSaleTotalsMatch,
   deriveTrustedSaleLine,
   productUpdatedPayload,
-  redactCommissionProductCosts,
   redactSaleCosts,
   SaleAmountMismatch,
   type TrustedSaleLine,
@@ -1005,13 +1005,25 @@ app.get("/api/incentives", authenticateToken, async (req, res) => {
     else if (branchId) where.branchId = branchId as string;
     const commissions = await prisma.commission.findMany({
       where,
-      include: { product: true, cashier: true, branch: true, sale: true },
-      orderBy: { createdAt: "desc" }
+      select: {
+        id: true,
+        saleId: true,
+        productId: true,
+        cashierId: true,
+        branchId: true,
+        qty: true,
+        amount: true,
+        status: true,
+        createdAt: true,
+        product: { select: { id: true, name: true } },
+        cashier: { select: { id: true, name: true } },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      // The UI displays only the latest 50 entries. Full-ledger totals are
+      // served by the aggregate endpoint below, not by materializing every row.
+      take: 50,
     });
-    res.json(commissions.map((commission: any) => redactCommissionProductCosts(
-      { ...commission, cashier: stripPw(commission.cashier) },
-      requester.role,
-    )));
+    res.json(commissions);
   } catch (error) {
     console.error("Commissions Fetch Error:", error);
     res.status(500).json({ error: "Failed to fetch commissions" });
@@ -1029,10 +1041,25 @@ app.get("/api/shifts", authenticateToken, async (req, res) => {
     if (status) where.status = status as string;
     const shifts = await prisma.shift.findMany({
       where,
-      include: { cashier: true, branch: true },
-      orderBy: { openTime: "desc" }
+      select: {
+        id: true,
+        branchId: true,
+        cashierId: true,
+        openTime: true,
+        closeTime: true,
+        initialCash: true,
+        totalSales: true,
+        actualCash: true,
+        difference: true,
+        shiftDate: true,
+        shiftType: true,
+        status: true,
+        cashier: { select: { id: true, name: true } },
+        branch: { select: { id: true, name: true } },
+      },
+      orderBy: [{ openTime: "desc" }, { id: "desc" }],
     });
-    res.json(shifts.map((s: any) => ({ ...s, cashier: stripPw(s.cashier) })));
+    res.json(shifts);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch shifts" });
   }
@@ -1501,30 +1528,41 @@ app.get("/api/incentives/summary", authenticateToken, async (req, res) => {
   const { branchId } = req.query;
   const user = (req as any).user;
   try {
-    const where: any = { status: "earned" };
+    const branchWhere: any = {};
     // Branch isolation: CASHIER is always scoped to their own branch and cannot
     // request other branches or global totals. ADMIN/AUDIT may filter by branch.
     if (user.role === "CASHIER") {
-      where.branchId = user.branchId;
+      branchWhere.branchId = user.branchId;
     } else if (branchId) {
-      where.branchId = branchId as string;
+      branchWhere.branchId = branchId as string;
     }
 
-    const commissions = await prisma.commission.findMany({
-      where,
-      select: {
-        amount: true,
-        branchId: true
+    const [earnedTotal, grouped] = await Promise.all([
+      prisma.commission.aggregate({
+        where: { ...branchWhere, status: "earned" },
+        _sum: { amount: true },
+      }),
+      prisma.commission.groupBy({
+        by: ["branchId", "status"],
+        where: branchWhere,
+        _sum: { amount: true },
+      }),
+    ]);
+    const byBranch: Record<string, number> = {};
+    const byBranchStatus: Record<string, { earned: number; withdrawn: number; refunded: number }> = {};
+    for (const row of grouped) {
+      const amount = Number(row._sum.amount ?? 0);
+      const branchTotals = byBranchStatus[row.branchId] ??= { earned: 0, withdrawn: 0, refunded: 0 };
+      if (row.status === "earned" || row.status === "withdrawn" || row.status === "refunded") {
+        branchTotals[row.status] = amount;
       }
+      if (row.status === "earned") byBranch[row.branchId] = amount;
+    }
+    res.json({
+      total: Number(earnedTotal._sum.amount ?? 0),
+      byBranch,
+      byBranchStatus,
     });
-
-    const total = commissions.reduce((sum, c) => sum + Number(c.amount), 0);
-    const byBranch = commissions.reduce((acc: any, c) => {
-      acc[c.branchId] = (acc[c.branchId] || 0) + Number(c.amount);
-      return acc;
-    }, {});
-
-    res.json({ total, byBranch });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch commission summary" });
   }
@@ -1614,6 +1652,7 @@ async function startServer() {
     httpServer.once("error", reject);
     httpServer.listen(PORT, "0.0.0.0", () => {
       httpServer.removeListener("error", reject);
+      startApiMemoryDiagnostics();
       console.log(`Server running on http://localhost:${PORT}; database and schema ready; automatic maintenance disabled.`);
       resolve();
     });

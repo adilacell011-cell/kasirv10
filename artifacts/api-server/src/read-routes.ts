@@ -149,39 +149,25 @@ export function registerBranchReadRoutes(
       const [year, month, day] = today.split("-").map(Number);
       const todayStart = new Date(Date.UTC(year, month - 1, day - 1, 23));
       const todayEnd = new Date(Date.UTC(year, month - 1, day, 23));
-      const todaySales = await prisma.sale.findMany({
+      const todaySales = await prisma.sale.groupBy({
+        by: ["branchId"],
         where: {
           ...branchFilter,
           status: "success",
           createdAt: { gte: todayStart, lt: todayEnd },
         },
+        _sum: { total: true, totalProfit: true, totalCommission: true },
+        _count: { _all: true },
       });
 
-      const todayLive: Record<string, {
-        date: string;
-        branchId: string;
-        revenue: number;
-        profit: number;
-        totalCommission: number;
-        count: number;
-      }> = {};
-      for (const sale of todaySales as any[]) {
-        const key = sale.branchId;
-        if (!todayLive[key]) {
-          todayLive[key] = {
-            date: today,
-            branchId: sale.branchId,
-            revenue: 0,
-            profit: 0,
-            totalCommission: 0,
-            count: 0,
-          };
-        }
-        todayLive[key].revenue += Number(sale.total);
-        todayLive[key].profit += Number(sale.totalProfit);
-        todayLive[key].totalCommission += Number(sale.totalCommission);
-        todayLive[key].count += 1;
-      }
+      const todayLive = Object.fromEntries(todaySales.map((row) => [row.branchId, {
+        date: today,
+        branchId: row.branchId,
+        revenue: Number(row._sum.total ?? 0),
+        profit: Number(row._sum.totalProfit ?? 0),
+        totalCommission: Number(row._sum.totalCommission ?? 0),
+        count: row._count._all,
+      }]));
 
       const merged: Record<string, any> = {};
       for (const summary of archivedSummaries as any[]) {
