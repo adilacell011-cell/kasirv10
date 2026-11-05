@@ -42,9 +42,11 @@ jobs:
           test "$CONFIRM_SOURCE_SHA" = "$CANDIDATE_SHA"
 
           run_metadata="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${VALIDATION_RUN_ID}" \
-            --jq '[.head_sha, .conclusion, .path, .event] | @tsv')"
-          IFS=$'\t' read -r source_sha conclusion workflow_path event <<< "$run_metadata"
+            --jq '[.head_sha, .head_branch, .head_repository.full_name, .conclusion, .path, .event] | @tsv')"
+          IFS=$'\t' read -r source_sha source_branch source_repository conclusion workflow_path event <<< "$run_metadata"
           test "$source_sha" = "$CANDIDATE_SHA"
+          test "$source_branch" = "validate/multiplatform-arm64"
+          test "$source_repository" = "adilacell011-cell/kasirv10"
           test "$conclusion" = "success"
           test "$workflow_path" = ".github/workflows/docker-validate-multiplatform.yml"
           test "$event" = "push"
@@ -68,31 +70,126 @@ jobs:
           run-id: 41989913895
           github-token: ${{ github.token }}
 
-      - name: Prepare tagged OCI archive copies without rebuilding
+      - name: Verify both OCI artifacts and prepare tagged copies without rebuilding
+        id: preflight
         run: |
           set -euo pipefail
-          python3 - "$RUNNER_TEMP" "$OCI_REF" <<'PY'
+          python3 - "$RUNNER_TEMP" "$OCI_REF" "$GITHUB_OUTPUT" <<'PY'
           import copy
+          import hashlib
           import io
           import json
           import pathlib
+          import re
           import sys
           import tarfile
 
           root = pathlib.Path(sys.argv[1])
           reference = sys.argv[2]
+          output_file = pathlib.Path(sys.argv[3])
           archives = [
-              (root / "kasirv10-api" / "kasirv10-api.tar",
+              ("api", root / "kasirv10-api" / "kasirv10-api.tar",
                root / "kasirv10-api" / "kasirv10-api-tagged.tar"),
-              (root / "kasirv10-web" / "kasirv10-web.tar",
+              ("web", root / "kasirv10-web" / "kasirv10-web.tar",
                root / "kasirv10-web" / "kasirv10-web-tagged.tar"),
           ]
 
-          for source, destination in archives:
+          secret_name = re.compile(
+              r"(^|_)(SECRET|PASSWORD|TOKEN|PRIVATE_KEY|API_KEY|DATABASE_URL|CREDENTIALS?)(_|$)",
+              re.IGNORECASE,
+          )
+
+          for image, source, destination in archives:
               if not source.is_file() or source.stat().st_size == 0:
                   raise SystemExit(f"Missing or empty validated archive: {source.name}")
 
               with tarfile.open(source, "r:*") as src:
+                  members = {member.name: member for member in src.getmembers()}
+                  verified = {}
+
+                  def verified_blob(descriptor, want_bytes=False):
+                      digest = descriptor.get("digest", "")
+                      match = re.fullmatch(r"sha256:([0-9a-f]{64})", digest)
+                      if not match:
+                          raise ValueError(f"{source.name} contains an unsupported OCI digest")
+                      expected_size = descriptor.get("size")
+                      if not isinstance(expected_size, int) or expected_size < 0:
+                          raise ValueError(f"{source.name} contains an invalid descriptor size")
+                      member_name = f"blobs/sha256/{match.group(1)}"
+                      member = members.get(member_name)
+                      if member is None or not member.isfile():
+                          raise ValueError(f"{source.name} is missing an OCI blob")
+                      if member.size != expected_size:
+                          raise ValueError(f"{source.name} OCI blob size does not match its descriptor")
+
+                      cached = verified.get(digest)
+                      if cached is None:
+                          stream = src.extractfile(member)
+                          if stream is None:
+                              raise ValueError(f"{source.name} contains an unreadable OCI blob")
+                          hasher = hashlib.sha256()
+                          chunks = [] if want_bytes else None
+                          actual_size = 0
+                          while True:
+                              chunk = stream.read(1024 * 1024)
+                              if not chunk:
+                                  break
+                              hasher.update(chunk)
+                              actual_size += len(chunk)
+                              if chunks is not None:
+                                  chunks.append(chunk)
+                          if actual_size != expected_size or hasher.hexdigest() != match.group(1):
+                              raise ValueError(f"{source.name} OCI blob digest verification failed")
+                          cached = b"".join(chunks) if chunks is not None else True
+                          verified[digest] = cached
+                      elif want_bytes and cached is True:
+                          stream = src.extractfile(member)
+                          cached = stream.read() if stream is not None else None
+                          if cached is None:
+                              raise ValueError(f"{source.name} contains an unreadable OCI blob")
+                          verified[digest] = cached
+
+                      if want_bytes:
+                          if cached is True:
+                              raise ValueError(f"{source.name} OCI JSON blob was not read")
+                          return cached
+                      return None
+
+                  seen_indexes = set()
+                  platforms = set()
+
+                  def inspect_descriptor(descriptor, depth=0):
+                      if depth > 8:
+                          raise ValueError(f"{source.name} OCI index nesting is too deep")
+                      parsed = json.loads(verified_blob(descriptor, want_bytes=True))
+                      if isinstance(parsed.get("manifests"), list):
+                          index_digest = descriptor.get("digest")
+                          if index_digest in seen_indexes:
+                              return
+                          seen_indexes.add(index_digest)
+                          for child in parsed["manifests"]:
+                              inspect_descriptor(child, depth + 1)
+                          return
+
+                      config_descriptor = parsed.get("config")
+                      layers = parsed.get("layers")
+                      if not isinstance(config_descriptor, dict) or not isinstance(layers, list):
+                          raise ValueError(f"{source.name} contains an unsupported OCI manifest")
+                      config = json.loads(verified_blob(config_descriptor, want_bytes=True))
+                      os_name = config.get("os")
+                      architecture = config.get("architecture")
+                      platform = f"{os_name}/{architecture}"
+                      if os_name and architecture and platform != "unknown/unknown":
+                          platforms.add(platform)
+                      for entry in config.get("config", {}).get("Env", []):
+                          key = entry.split("=", 1)[0]
+                          if secret_name.search(key):
+                              raise ValueError(
+                                  f"{source.name} image config contains a secret-like environment key"
+                              )
+                      for layer in layers:
+                          verified_blob(layer)
+
                   index_member = src.getmember("index.json")
                   index_file = src.extractfile(index_member)
                   if index_file is None:
@@ -105,6 +202,12 @@ jobs:
                       raise SystemExit(f"{source.name} root descriptor is not an OCI image index")
 
                   descriptor = descriptors[0]
+                  source_digest = descriptor.get("digest", "")
+                  inspect_descriptor(descriptor)
+                  for expected in ("linux/amd64", "linux/arm64"):
+                      if expected not in platforms:
+                          raise ValueError(f"{source.name} is missing verified platform {expected}")
+
                   annotations = descriptor.setdefault("annotations", {})
                   existing = annotations.get("org.opencontainers.image.ref.name")
                   if existing and existing != reference:
@@ -122,6 +225,12 @@ jobs:
                               content = src.extractfile(member) if member.isfile() else None
                               dst.addfile(member, content)
 
+              output_file.write_text(
+                  output_file.read_text() + f"{image}_digest={source_digest}\n"
+                  if output_file.exists()
+                  else f"{image}_digest={source_digest}\n"
+              )
+              print(f"{image}: source digest {source_digest}; linux/amd64 and linux/arm64 verified.")
               print(f"Tagged OCI archive prepared: {source.name}")
           PY
 
@@ -131,23 +240,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends skopeo
 
-      - name: Verify source archive platforms and publish immutable SHA tags
+      - name: Verify both Skopeo source references before publication
         env:
-          GHCR_TOKEN: ${{ github.token }}
+          API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
+          WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
         run: |
           set -euo pipefail
-          authfile="$RUNNER_TEMP/ghcr-auth.json"
-          trap 'rm -f "$authfile"' EXIT
-          printf '%s' "$GHCR_TOKEN" |
-            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
-
           for image in api web; do
             archive="$RUNNER_TEMP/kasirv10-${image}/kasirv10-${image}-tagged.tar"
             source="oci-archive:${archive}:${OCI_REF}"
-            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:${IMAGE_TAG}"
             source_index="$RUNNER_TEMP/${image}-source-index.json"
+            expected_digest="$API_SOURCE_DIGEST"
+            if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
 
             skopeo inspect --raw "$source" > "$source_index"
+            actual_digest="sha256:$(sha256sum "$source_index" | cut -d' ' -f1)"
+            test "$actual_digest" = "$expected_digest"
             node - "$source_index" "$image" <<'NODE'
           const fs = require("node:fs");
           const [file, image] = process.argv.slice(2);
@@ -159,38 +267,66 @@ jobs:
               throw new Error(`${image} source OCI index is missing ${expected}`);
             }
           }
-          console.log(`${image} source OCI index has linux/amd64 and linux/arm64.`);
+          console.log(`${image} source index digest and platforms verified before publication.`);
           NODE
+          done
 
+      - name: Publish both immutable SHA-tagged images
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
+          WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          for image in api web; do
+            archive="$RUNNER_TEMP/kasirv10-${image}/kasirv10-${image}-tagged.tar"
+            source="oci-archive:${archive}:${OCI_REF}"
+            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:${IMAGE_TAG}"
             skopeo copy --all --preserve-digests \
               --dest-authfile "$authfile" \
               "$source" "$destination"
+          done
 
+      - name: Verify both published manifests and compare source digests
+        env:
+          API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
+          WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          for image in api web; do
+            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:${IMAGE_TAG}"
             published_index="$RUNNER_TEMP/${image}-published-index.json"
+            expected_digest="$API_SOURCE_DIGEST"
+            if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
+
             skopeo inspect --raw --authfile "$authfile" "$destination" > "$published_index"
-            node - "$published_index" "$image" "$GITHUB_STEP_SUMMARY" "$destination" <<'NODE'
+            actual_digest="sha256:$(sha256sum "$published_index" | cut -d' ' -f1)"
+            test "$actual_digest" = "$expected_digest"
+            node - "$published_index" "$image" "$GITHUB_STEP_SUMMARY" "$destination" "$actual_digest" <<'NODE'
           const fs = require("node:fs");
-          const crypto = require("node:crypto");
-          const [file, image, summaryFile, ref] = process.argv.slice(2);
-          const raw = fs.readFileSync(file);
-          const manifest = JSON.parse(raw.toString("utf8"));
-          const descriptors = manifest.manifests || [];
-          const platforms = new Set(descriptors
+          const [file, image, summaryFile, ref, digest] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+          const platforms = new Set((manifest.manifests || [])
             .map((item) => `${item.platform?.os}/${item.platform?.architecture}`));
           for (const expected of ["linux/amd64", "linux/arm64"]) {
             if (!platforms.has(expected)) {
               throw new Error(`${image} published manifest is missing ${expected}`);
             }
           }
-          const digest = `sha256:${crypto.createHash("sha256").update(raw).digest("hex")}`;
-          const lines = [
+          fs.appendFileSync(summaryFile, [
             `### ${image.toUpperCase()} image published`,
             `- Reference: \`${ref}\``,
             `- Manifest digest: \`${digest}\``,
             `- Platforms: linux/amd64, linux/arm64`,
             "",
-          ];
-          fs.appendFileSync(summaryFile, lines.join("\n"));
-          console.log(`${image} published manifest verified: ${digest}`);
+          ].join("\n"));
+          console.log(`${image} published digest matches source and both platforms are present.`);
           NODE
           done
