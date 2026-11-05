@@ -3,11 +3,11 @@ name: Temporary PostgreSQL test lifecycle
 description: Environment behavior when running an ephemeral PostgreSQL server for integration tests
 ---
 
-In this workspace, a PostgreSQL process launched by a standalone shell command does not remain available to later shell commands. Start the temporary cluster and run its integration tests in one shell invocation, with cleanup in a trap.
+In this workspace, a detached PostgreSQL server started from a short shell command may not remain available to later shell commands. A PostgreSQL server launched in the foreground as a long-running background shell task does remain available across tool calls and can be stopped cleanly with `pg_ctl`.
 
-**Why:** the shell execution environment cleans up child processes when a command exits, so a test run in a later command cannot connect to that temporary server.
+**Why:** child-process cleanup differs between a short-lived shell and a tracked long-running background task; `pg_ctl start` from a short shell did not persist reliably, while a foreground server in a tracked task did.
 
-**How to apply:** for local PostgreSQL integration tests, create a temporary data directory, use a socket directory inside it, run the test suite before the shell exits, then stop the server and remove the directory.
+**How to apply:** for multi-step isolated QA, create a dedicated temporary data directory and start `postgres -D ...` as a foreground background task; keep using that exact cluster across calls, and stop it with `pg_ctl -D ... -m fast -w stop` when finished. For a single-command test, keeping startup, test, and cleanup in one shell invocation remains suitable.
 
 For `pg_restore` and `psql`, use a plain PostgreSQL URI rather than Prisma's `?schema=public` URL option; libpq rejects `schema` as an invalid URI parameter. Keep the schema option only for Prisma clients.
 
