@@ -323,7 +323,7 @@ jobs:
             local existing_tags
 
             existing_tags="$(gh api --paginate --jq '.[].metadata.container.tags[]?' \
-              "orgs/adilacell011-cell/packages/container/${package}/versions?per_page=100")"
+              "users/adilacell011-cell/packages/container/${package}/versions?per_page=100")"
             if printf '%s\n' "$existing_tags" | grep -Fqx -- "$tag"; then
               echo "Refusing to overwrite existing GHCR tag ghcr.io/adilacell011-cell/${package}:${tag}." >&2
               return 1
