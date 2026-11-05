@@ -3,11 +3,23 @@ name: Publish validated OCI artifacts to GHCR
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: Publish from validated artifacts or resume a partial publication
+        required: true
+        type: choice
+        options:
+          - publish-and-promote
+          - resume-partial
+        default: publish-and-promote
       confirm_source_sha:
         description: Type the full candidate SHA to confirm publication
         required: true
         type: string
         default: 13c54b1125d8e62fd60688217089b7f67abd38e2
+      resume_temp_run_id:
+        description: Prior promotion run ID when resuming its temporary tag
+        required: false
+        type: string
 
 permissions:
   actions: read
@@ -29,6 +41,8 @@ jobs:
       VALIDATION_RUN_ID: "41989913895"
       OCI_REF: candidate
       IMAGE_TAG: sha-13c54b1125d8e62fd60688217089b7f67abd38e2
+      PROMOTION_MODE: ${{ inputs.mode }}
+      RESUME_TEMP_RUN_ID: ${{ inputs.resume_temp_run_id }}
 
     steps:
       - name: Verify explicit confirmation and successful validation run
@@ -51,6 +65,41 @@ jobs:
           test "$workflow_path" = ".github/workflows/docker-validate-multiplatform.yml"
           test "$event" = "push"
           echo "Pinned validation run and candidate SHA verified."
+
+      - name: Select temporary tag run ID
+        id: temp_tag
+        run: |
+          set -euo pipefail
+          if [ "$PROMOTION_MODE" = "publish-and-promote" ]; then
+            temp_run_id="$GITHUB_RUN_ID"
+          elif [ "$PROMOTION_MODE" = "resume-partial" ]; then
+            [[ "$RESUME_TEMP_RUN_ID" =~ ^[0-9]+$ ]]
+            test "$RESUME_TEMP_RUN_ID" != "0"
+            temp_run_id="$RESUME_TEMP_RUN_ID"
+          else
+            echo "Unsupported promotion mode." >&2
+            exit 1
+          fi
+          temp_tag="candidate-${CANDIDATE_SHA}-${temp_run_id}"
+          echo "run_id=$temp_run_id" >> "$GITHUB_OUTPUT"
+          echo "tag=$temp_tag" >> "$GITHUB_OUTPUT"
+          echo "Temporary tag selected: $temp_tag"
+
+      - name: Verify prior run for resume mode
+        if: ${{ inputs.mode == 'resume-partial' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_metadata="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RESUME_TEMP_RUN_ID}" \
+            --jq '[.id, .head_branch, .head_repository.full_name, .path, .event] | @tsv')"
+          IFS=$'\t' read -r prior_run_id prior_branch prior_repository prior_path prior_event <<< "$run_metadata"
+          test "$prior_run_id" = "$RESUME_TEMP_RUN_ID"
+          test "$prior_branch" = "validate/multiplatform-arm64"
+          test "$prior_repository" = "adilacell011-cell/kasirv10"
+          test "$prior_path" = ".github/workflows/docker-promote-validated-oci.yml"
+          test "$prior_event" = "workflow_dispatch"
+          echo "Resume run is from this workflow, repository, and candidate branch."
 
       - name: Download validated API OCI artifact
         uses: actions/download-artifact@v4
@@ -271,9 +320,53 @@ jobs:
           NODE
           done
 
-      - name: Publish both immutable SHA-tagged images
+      - name: Publish API and Web to the temporary SHA-and-run tag
+        id: publish_temporary
+        continue-on-error: true
         env:
           GHCR_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.temp_tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          api_status=failed
+          web_status=failed
+          api_source="oci-archive:$RUNNER_TEMP/kasirv10-api/kasirv10-api-tagged.tar:$OCI_REF"
+          web_source="oci-archive:$RUNNER_TEMP/kasirv10-web/kasirv10-web-tagged.tar:$OCI_REF"
+          api_destination="docker://ghcr.io/adilacell011-cell/kasirv10-api:$TEMP_TAG"
+          web_destination="docker://ghcr.io/adilacell011-cell/kasirv10-web:$TEMP_TAG"
+
+          if skopeo copy --all --preserve-digests --dest-authfile "$authfile" \
+            "$api_source" "$api_destination"; then
+            api_status=published
+          fi
+          if skopeo copy --all --preserve-digests --dest-authfile "$authfile" \
+            "$web_source" "$web_destination"; then
+            web_status=published
+          fi
+
+          {
+            echo "api_status=$api_status"
+            echo "web_status=$web_status"
+          } >> "$GITHUB_OUTPUT"
+          echo "Temporary API status: $api_status (tag: $TEMP_TAG)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Temporary Web status: $web_status (tag: $TEMP_TAG)" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$api_status" != "published" ] || [ "$web_status" != "published" ]; then
+            echo "Temporary publication is partial or failed; final SHA tags will not be promoted."
+            exit 1
+          fi
+
+      - name: Verify both temporary manifests against source digests
+        id: verify_temporary
+        if: ${{ steps.publish_temporary.outcome == 'success' }}
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.temp_tag.outputs.tag }}
           API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
           WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
         run: |
@@ -284,32 +377,94 @@ jobs:
             skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
 
           for image in api web; do
-            archive="$RUNNER_TEMP/kasirv10-${image}/kasirv10-${image}-tagged.tar"
-            source="oci-archive:${archive}:${OCI_REF}"
-            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:${IMAGE_TAG}"
-            skopeo copy --all --preserve-digests \
-              --dest-authfile "$authfile" \
-              "$source" "$destination"
+            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:$TEMP_TAG"
+            manifest_file="$RUNNER_TEMP/${image}-temporary-manifest.json"
+            expected_digest="$API_SOURCE_DIGEST"
+            if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
+            skopeo inspect --raw --authfile "$authfile" "$destination" > "$manifest_file"
+            actual_digest="sha256:$(sha256sum "$manifest_file" | cut -d' ' -f1)"
+            test "$actual_digest" = "$expected_digest"
+            node - "$manifest_file" "$image" <<'NODE'
+          const fs = require("node:fs");
+          const [file, image] = process.argv.slice(2);
+          const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+          const platforms = new Set((manifest.manifests || [])
+            .map((item) => `${item.platform?.os}/${item.platform?.architecture}`));
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              throw new Error(`${image} temporary manifest is missing ${expected}`);
+            }
+          }
+          console.log(`${image} temporary digest and both platforms verified.`);
+          NODE
           done
+          echo "Both temporary images verified; final SHA promotion is allowed." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Verify both published manifests and compare source digests
+      - name: Promote both verified temporary images to the final SHA tag
+        id: promote_final
+        if: ${{ steps.verify_temporary.outcome == 'success' }}
+        continue-on-error: true
         env:
+          GHCR_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.temp_tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          authfile="$RUNNER_TEMP/ghcr-auth.json"
+          trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
+
+          api_status=failed
+          web_status=failed
+          api_source="docker://ghcr.io/adilacell011-cell/kasirv10-api:$TEMP_TAG"
+          web_source="docker://ghcr.io/adilacell011-cell/kasirv10-web:$TEMP_TAG"
+          api_destination="docker://ghcr.io/adilacell011-cell/kasirv10-api:$IMAGE_TAG"
+          web_destination="docker://ghcr.io/adilacell011-cell/kasirv10-web:$IMAGE_TAG"
+
+          if skopeo copy --all --preserve-digests --src-authfile "$authfile" --dest-authfile "$authfile" \
+            "$api_source" "$api_destination"; then
+            api_status=promoted
+          fi
+          if skopeo copy --all --preserve-digests --src-authfile "$authfile" --dest-authfile "$authfile" \
+            "$web_source" "$web_destination"; then
+            web_status=promoted
+          fi
+
+          {
+            echo "api_status=$api_status"
+            echo "web_status=$web_status"
+          } >> "$GITHUB_OUTPUT"
+          echo "Final API status: $api_status (tag: $IMAGE_TAG)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Final Web status: $web_status (tag: $IMAGE_TAG)" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$api_status" != "promoted" ] || [ "$web_status" != "promoted" ]; then
+            echo "Final promotion is partial or failed; no image/tag was deleted."
+            exit 1
+          fi
+
+      - name: Verify both final SHA manifests against source digests
+        id: verify_final
+        if: ${{ steps.promote_final.outcome == 'success' }}
+        env:
+          GHCR_TOKEN: ${{ github.token }}
           API_SOURCE_DIGEST: ${{ steps.preflight.outputs.api_digest }}
           WEB_SOURCE_DIGEST: ${{ steps.preflight.outputs.web_digest }}
         run: |
           set -euo pipefail
           authfile="$RUNNER_TEMP/ghcr-auth.json"
           trap 'rm -f "$authfile"' EXIT
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --authfile "$authfile" --username "$GITHUB_ACTOR" --password-stdin ghcr.io
           for image in api web; do
-            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:${IMAGE_TAG}"
-            published_index="$RUNNER_TEMP/${image}-published-index.json"
+            destination="docker://ghcr.io/adilacell011-cell/kasirv10-${image}:$IMAGE_TAG"
+            manifest_file="$RUNNER_TEMP/${image}-final-manifest.json"
             expected_digest="$API_SOURCE_DIGEST"
             if [ "$image" = "web" ]; then expected_digest="$WEB_SOURCE_DIGEST"; fi
 
-            skopeo inspect --raw --authfile "$authfile" "$destination" > "$published_index"
-            actual_digest="sha256:$(sha256sum "$published_index" | cut -d' ' -f1)"
+            skopeo inspect --raw --authfile "$authfile" "$destination" > "$manifest_file"
+            actual_digest="sha256:$(sha256sum "$manifest_file" | cut -d' ' -f1)"
             test "$actual_digest" = "$expected_digest"
-            node - "$published_index" "$image" "$GITHUB_STEP_SUMMARY" "$destination" "$actual_digest" <<'NODE'
+            node - "$manifest_file" "$image" "$GITHUB_STEP_SUMMARY" "$destination" "$actual_digest" <<'NODE'
           const fs = require("node:fs");
           const [file, image, summaryFile, ref, digest] = process.argv.slice(2);
           const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -317,16 +472,52 @@ jobs:
             .map((item) => `${item.platform?.os}/${item.platform?.architecture}`));
           for (const expected of ["linux/amd64", "linux/arm64"]) {
             if (!platforms.has(expected)) {
-              throw new Error(`${image} published manifest is missing ${expected}`);
+              throw new Error(`${image} final manifest is missing ${expected}`);
             }
           }
           fs.appendFileSync(summaryFile, [
-            `### ${image.toUpperCase()} image published`,
+            `### ${image.toUpperCase()} final SHA image verified`,
             `- Reference: \`${ref}\``,
-            `- Manifest digest: \`${digest}\``,
+            `- Digest: \`${digest}\``,
             `- Platforms: linux/amd64, linux/arm64`,
             "",
           ].join("\n"));
-          console.log(`${image} published digest matches source and both platforms are present.`);
+          console.log(`${image} final digest matches source and both platforms are present.`);
           NODE
           done
+
+      - name: Report publication and partial state
+        if: always()
+        env:
+          TEMP_TAG: ${{ steps.temp_tag.outputs.tag }}
+          TEMP_RUN_ID: ${{ steps.temp_tag.outputs.run_id }}
+          API_TEMP_STATUS: ${{ steps.publish_temporary.outputs.api_status }}
+          WEB_TEMP_STATUS: ${{ steps.publish_temporary.outputs.web_status }}
+          API_FINAL_STATUS: ${{ steps.promote_final.outputs.api_status }}
+          WEB_FINAL_STATUS: ${{ steps.promote_final.outputs.web_status }}
+          TEMP_OUTCOME: ${{ steps.publish_temporary.outcome }}
+          TEMP_VERIFY_OUTCOME: ${{ steps.verify_temporary.outcome }}
+          PROMOTE_OUTCOME: ${{ steps.promote_final.outcome }}
+          FINAL_VERIFY_OUTCOME: ${{ steps.verify_final.outcome }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## GHCR publication status"
+            echo "- Candidate SHA: \`$CANDIDATE_SHA\`"
+            echo "- Temporary tag: \`${TEMP_TAG:-not-created}\`"
+            echo "- Temporary run ID: \`${TEMP_RUN_ID:-not-selected}\`"
+            echo "- Temporary upload: API \`${API_TEMP_STATUS:-not-confirmed}\`, Web \`${WEB_TEMP_STATUS:-not-confirmed}\` (\`${TEMP_OUTCOME:-skipped}\`)"
+            echo "- Temporary verification: \`${TEMP_VERIFY_OUTCOME:-skipped}\`"
+            echo "- Final promotion: API \`${API_FINAL_STATUS:-not-confirmed}\`, Web \`${WEB_FINAL_STATUS:-not-confirmed}\` (\`${PROMOTE_OUTCOME:-skipped}\`)"
+            echo "- Final verification: \`${FINAL_VERIFY_OUTCOME:-skipped}\`"
+            echo "- Temporary tags and any successfully promoted tags are not deleted automatically."
+            echo "- This two-image publication is not atomic; a successful API copy can remain if the Web copy fails."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$TEMP_OUTCOME" != "success" ] ||
+             [ "$TEMP_VERIFY_OUTCOME" != "success" ] ||
+             [ "$PROMOTE_OUTCOME" != "success" ] ||
+             [ "$FINAL_VERIFY_OUTCOME" != "success" ]; then
+            echo "Publication is incomplete or not fully verified. Use resume-partial with the temporary run ID above; no rebuild is required."
+            exit 1
+          fi
