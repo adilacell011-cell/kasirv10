@@ -266,8 +266,8 @@ jobs:
         id: tags
         run: |
           set -euo pipefail
-          temp_tag="candidate-tmp-${CANDIDATE_SHA}-${GITHUB_RUN_ID}"
-          final_tag="candidate-${CANDIDATE_SHA}-${GITHUB_RUN_ID}"
+          temp_tag="candidate-tmp-${CANDIDATE_SHA}-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}"
+          final_tag="candidate-${CANDIDATE_SHA}-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}"
           echo "temp_tag=$temp_tag" >> "$GITHUB_OUTPUT"
           echo "final_tag=$final_tag" >> "$GITHUB_OUTPUT"
           echo "Temporary tag and final candidate tag selected for this publication run."
@@ -308,6 +308,33 @@ jobs:
           console.log(`${image} source digest and both platforms verified before publication.`);
           NODE
           done
+
+      - name: Refuse existing temporary and final GHCR tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEMP_TAG: ${{ steps.tags.outputs.temp_tag }}
+          FINAL_TAG: ${{ steps.tags.outputs.final_tag }}
+        run: |
+          set -euo pipefail
+
+          check_tag_absent() {
+            local package="$1"
+            local tag="$2"
+            local existing_tags
+
+            existing_tags="$(gh api --paginate --jq '.[].metadata.container.tags[]?' \
+              "orgs/adilacell011-cell/packages/container/${package}/versions?per_page=100")"
+            if printf '%s\n' "$existing_tags" | grep -Fqx -- "$tag"; then
+              echo "Refusing to overwrite existing GHCR tag ghcr.io/adilacell011-cell/${package}:${tag}." >&2
+              return 1
+            fi
+            echo "Confirmed destination tag is absent: ghcr.io/adilacell011-cell/${package}:${tag}"
+          }
+
+          check_tag_absent kasirv10-api "$TEMP_TAG"
+          check_tag_absent kasirv10-api "$FINAL_TAG"
+          check_tag_absent kasirv10-web "$TEMP_TAG"
+          check_tag_absent kasirv10-web "$FINAL_TAG"
 
       - name: Publish both images to the unique temporary tag
         id: publish_temporary
