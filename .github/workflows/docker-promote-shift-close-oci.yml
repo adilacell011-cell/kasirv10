@@ -1,4 +1,4 @@
-name: Promote shift-close validated OCI artifacts to GHCR
+name: Promote stock-audit validated OCI artifacts to GHCR
 
 on:
   workflow_dispatch:
@@ -7,30 +7,30 @@ on:
         description: Type the full validated candidate SHA to confirm publication
         required: true
         type: string
-        default: b7cc08ffa46e975901ec8f5d38725971691ba7db
+        default: e0383959d691f79b121f08ad7f70640a9c352f8d
 
 permissions:
   actions: read
   packages: write
 
 concurrency:
-  group: promote-shift-close-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+  group: promote-stock-audit-oci-e0383959d691f79b121f08ad7f70640a9c352f8d
   cancel-in-progress: false
 
 jobs:
   publish:
     if: >-
       github.repository == 'adilacell011-cell/kasirv10' &&
-      github.ref == 'refs/heads/validate/shift-close-income'
+      github.ref == 'refs/heads/validate/stock-audit-camera'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      CANDIDATE_SHA: b7cc08ffa46e975901ec8f5d38725971691ba7db
-      SOURCE_RUN_ID: "42040517747"
-      API_ARTIFACT_ID: "13421175955"
-      API_ARTIFACT_NAME: kasirv10-api-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
-      WEB_ARTIFACT_ID: "13420926881"
-      WEB_ARTIFACT_NAME: kasirv10-web-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+      CANDIDATE_SHA: e0383959d691f79b121f08ad7f70640a9c352f8d
+      SOURCE_RUN_ID: "42163461467"
+      API_ARTIFACT_ID: "13477952053"
+      API_ARTIFACT_NAME: kasirv10-api-oci-e0383959d691f79b121f08ad7f70640a9c352f8d
+      WEB_ARTIFACT_ID: "13477941219"
+      WEB_ARTIFACT_NAME: kasirv10-web-oci-e0383959d691f79b121f08ad7f70640a9c352f8d
       OCI_REF: candidate
 
     steps:
@@ -41,13 +41,13 @@ jobs:
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "adilacell011-cell/kasirv10"
-          test "$GITHUB_REF" = "refs/heads/validate/shift-close-income"
+          test "$GITHUB_REF" = "refs/heads/validate/stock-audit-camera"
           test "$CONFIRM_SOURCE_SHA" = "$CANDIDATE_SHA"
 
           run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}")"
           jq -e \
             --arg sha "$CANDIDATE_SHA" \
-            --arg branch "validate/shift-close-income" \
+            --arg branch "validate/stock-audit-camera" \
             --arg repository "adilacell011-cell/kasirv10" \
             '
               .head_sha == $sha and
@@ -88,19 +88,19 @@ jobs:
       - name: Download API OCI artifact from the pinned run
         uses: actions/download-artifact@v4
         with:
-          name: kasirv10-api-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+          name: kasirv10-api-oci-e0383959d691f79b121f08ad7f70640a9c352f8d
           path: ${{ runner.temp }}/kasirv10-api
           repository: adilacell011-cell/kasirv10
-          run-id: 42040517747
+          run-id: 42163461467
           github-token: ${{ github.token }}
 
       - name: Download Web OCI artifact from the pinned run
         uses: actions/download-artifact@v4
         with:
-          name: kasirv10-web-oci-b7cc08ffa46e975901ec8f5d38725971691ba7db
+          name: kasirv10-web-oci-e0383959d691f79b121f08ad7f70640a9c352f8d
           path: ${{ runner.temp }}/kasirv10-web
           repository: adilacell011-cell/kasirv10
-          run-id: 42040517747
+          run-id: 42163461467
           github-token: ${{ github.token }}
 
       - name: Verify both OCI archives and prepare candidate references without rebuilding
