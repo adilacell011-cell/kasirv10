@@ -1,0 +1,54 @@
+.premium-page {
+  --premium-blue: #1d52da;
+  --premium-blue-deep: #163c9d;
+  --premium-navy: #172b49;
+  --premium-gold: #b9975b;
+  --premium-gold-soft: #f4eddf;
+  --premium-paper: #f5f6f8;
+  --premium-surface: #ffffff;
+  --premium-ink: #24334b;
+  --premium-muted: #78869a;
+  --premium-line: #e5e9ef;
+  --premium-soft-shadow: 0 14px 34px rgba(23, 43, 73, 0.08);
+  --premium-small-shadow: 0 5px 14px rgba(23, 43, 73, 0.07);
+  min-height: 100vh;
+  background: var(--premium-paper);
+  color: var(--premium-ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.premium-page *,
+.premium-page *::before,
+.premium-page *::after {
+  box-sizing: border-box;
+}
+
+.premium-page button,
+.premium-page input,
+.premium-page textarea {
+  font: inherit;
+}
+
+.premium-page button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.premium-reveal {
+  animation: premium-reveal 220ms cubic-bezier(.2,.75,.25,1) both;
+}
+
+@keyframes premium-reveal {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-page *,
+  .premium-page *::before,
+  .premium-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
