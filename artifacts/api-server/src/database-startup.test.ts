@@ -61,7 +61,13 @@ function snapshot(): SchemaSnapshot {
           const current = referenced.fields.find(candidate => candidate.name === name)!;
           return current.dbName || current.name;
         }),
-        delete_action: field.relationOnDelete === "SetNull" || (!field.relationOnDelete && !field.isRequired) ? "n" : "r",
+        delete_action: ({
+          Restrict: "r",
+          SetNull: "n",
+          Cascade: "c",
+          NoAction: "a",
+          SetDefault: "d",
+        } as Record<string, string>)[field.relationOnDelete || (field.isRequired ? "Restrict" : "SetNull")],
         update_action: "c",
       });
     }
