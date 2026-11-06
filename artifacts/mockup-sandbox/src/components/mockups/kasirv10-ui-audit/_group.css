@@ -1,0 +1,96 @@
+@theme {
+  --color-blue-50: #eff5ff;
+  --color-blue-100: #dbe8fe;
+  --color-blue-200: #bdd5fd;
+  --color-blue-300: #90b8fb;
+  --color-blue-400: #5d91f7;
+  --color-blue-500: #2f6cef;
+  --color-blue-600: #1d52da;
+  --color-blue-700: #1a42b8;
+  --color-blue-800: #1b3a93;
+  --color-blue-900: #1c3675;
+  --color-blue-950: #131f46;
+
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+}
+
+:root {
+  color-scheme: light;
+  --canvas-bg: #e0e5ec;
+  --card-bg: #e0e5ec;
+  --text-main: #0f172a;
+  --text-mute: #5b6878;
+  --border-color: #e6ebf3;
+  --input-bg: #f8fafc;
+  --accent: #1d52da;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas-bg: #23262e;
+  --card-bg: #2a2d35;
+  --text-main: #f8fafc;
+  --text-mute: #94a3b8;
+  --border-color: #243352;
+  --input-bg: #0f1a30;
+  --accent: #72a5ff;
+}
+
+.current-products .bg-white.rounded-2xl {
+  background-color: #e0e5ec !important;
+  border-color: transparent !important;
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    5px 5px 12px #c1cad6,
+    -5px -5px 12px #f8faff !important;
+}
+
+.dark .current-products .bg-white.rounded-2xl {
+  background-color: #2a2d35 !important;
+  border-color: transparent !important;
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    4px 4px 10px #1a1c22,
+    -4px -4px 10px #343840 !important;
+}
+
+.current-products input {
+  background-color: #e0e5ec !important;
+  border-color: transparent !important;
+  box-shadow:
+    inset 2px 2px 5px #c2ccd9,
+    inset -2px -2px 4px #ffffff !important;
+}
+
+.dark .current-products input {
+  background-color: #2a2d35 !important;
+  color: var(--text-main) !important;
+  border-color: transparent !important;
+  box-shadow:
+    inset 2px 2px 5px #1c1e24,
+    inset -2px -2px 4px #34373f !important;
+}
+
+.dark .current-products tr.bg-slate-50 {
+  background-color: #16213a !important;
+  color: var(--text-main) !important;
+}
+
+.dark .current-products tr.bg-blue-50\/50 {
+  background-color: rgba(37, 99, 235, 0.22) !important;
+  color: #93c5fd !important;
+  border-color: rgba(37, 99, 235, 0.45) !important;
+}

@@ -11,6 +11,7 @@ export const modules: ModuleMap = {
   "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
   "./components/mockups/kasir-android-dashboard/Compact.tsx": () => import("../components/mockups/kasir-android-dashboard/Compact.tsx"),
   "./components/mockups/kasir-android-dashboard/Current.tsx": () => import("../components/mockups/kasir-android-dashboard/Current.tsx"),
+  "./components/mockups/kasirv10-ui-audit/CurrentProducts.tsx": () => import("../components/mockups/kasirv10-ui-audit/CurrentProducts.tsx"),
   "./components/mockups/operator-logos/OperatorLogoPreview.tsx": () => import("../components/mockups/operator-logos/OperatorLogoPreview.tsx"),
   "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
   "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
