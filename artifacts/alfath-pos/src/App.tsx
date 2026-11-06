@@ -5559,8 +5559,8 @@ export default function App() {
                 </div>
 
                 <div className="bg-white rounded-2xl overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left table-auto border-collapse">
+                  <div className="overflow-x-auto" data-branch-stock-matrix>
+                    <table className="w-full min-w-[780px] text-left table-auto border-collapse">
                       <thead>
                         <tr className="bg-slate-200 border-b border-slate-300">
                           <th className="px-4 py-3 text-[10px] font-black text-slate-700 uppercase tracking-widest sticky left-0 bg-slate-200 z-10 w-80 border-r border-slate-300">
@@ -7160,7 +7160,7 @@ export default function App() {
             )}
 
             {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && shiftOpen && (
-              <div data-ui-screen="cashier-stock" className="ui-screen-cashier-stock flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
+              <div data-ui-screen="cashier-stock" data-stock-workspace className="ui-screen-cashier-stock flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
                 {!appConfig.allowCashierStockInput ? (
                   <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white rounded-[32px] border border-slate-200 shadow-sm max-w-md mx-auto my-auto text-center space-y-6">
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 shadow-inner">
