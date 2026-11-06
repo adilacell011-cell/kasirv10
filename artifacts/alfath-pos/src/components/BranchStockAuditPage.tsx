@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import {
   AlertCircle,
   ArrowDownRight,
   ArrowUpRight,
   Barcode,
+  Camera,
   Check,
   CheckCircle2,
   ChevronLeft,
@@ -16,6 +18,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ScanLine,
   ShieldAlert,
   X,
 } from "lucide-react";
@@ -111,6 +114,7 @@ type Props = {
 };
 
 type Finding = NonNullable<AuditItem["finding"]>;
+type CameraScanStatus = "starting" | "scanning" | "searching" | "found" | "not-found" | "error";
 
 const PAGE_SIZE = 25;
 const FINDINGS: { value: Finding; label: string }[] = [
@@ -148,6 +152,33 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Terjadi kendala. Silakan coba lagi.";
 }
 
+function cameraFailureMessage(error: unknown) {
+  const name = error instanceof DOMException ? error.name : "";
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+    return "Izin kamera ditolak. Izinkan akses kamera di pengaturan browser, lalu coba lagi.";
+  }
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    return "Kamera tidak ditemukan pada perangkat ini.";
+  }
+  if (name === "NotReadableError" || name === "TrackStartError") {
+    return "Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.";
+  }
+  if (name === "SecurityError") {
+    return "Kamera hanya dapat digunakan melalui HTTPS atau localhost.";
+  }
+  return "Kamera tidak dapat dibuka. Periksa izin kamera dan dukungan browser, lalu coba lagi.";
+}
+
+function barcodeMatches(storedValue: string | null | undefined, scannedValue: string) {
+  const stored = storedValue?.trim();
+  const scanned = scannedValue.trim();
+  if (!stored || !scanned) return false;
+  if (stored === scanned) return true;
+  if (!/^\d+$/.test(stored) || !/^\d+$/.test(scanned)) return false;
+  return (scanned.length === 12 && stored === `0${scanned}`)
+    || (stored.length === 13 && stored.startsWith("0") && stored.slice(1) === scanned);
+}
+
 export default function BranchStockAuditPage({ branches, role, api }: Props) {
   const [branchId, setBranchId] = useState("");
   const [session, setSession] = useState<AuditSession | null>(null);
@@ -177,7 +208,17 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
   const [exceptionNotes, setExceptionNotes] = useState("");
   const [confirmAction, setConfirmAction] = useState<"finalize" | "cancel" | null>(null);
   const [refreshIndex, setRefreshIndex] = useState(0);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraAttempt, setCameraAttempt] = useState(0);
+  const [cameraStatus, setCameraStatus] = useState<CameraScanStatus>("starting");
+  const [cameraMessage, setCameraMessage] = useState("");
+  const [cameraCode, setCameraCode] = useState("");
+  const [cameraResult, setCameraResult] = useState<AuditItem | null>(null);
+  const [scanNextAvailable, setScanNextAvailable] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const barcodeScannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerHandledRef = useRef(false);
+  const cameraCountItemRef = useRef<string | null>(null);
   const loadedSessionRef = useRef<{ branchId: string; sessionId: string | null } | null>(null);
   const reload = useCallback(() => setRefreshIndex((value) => value + 1), []);
 
@@ -316,7 +357,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
   };
 
   const openCount = async (item: AuditItem) => {
-    if (!session || !canWork || !item.inScope) return;
+    if (!session || !canWork || !item.inScope) return false;
     setError("");
     setNotice("");
     setActionBusy("Menyiapkan hitung…");
@@ -328,11 +369,175 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       setFinding((item.finding as Finding) || "NORMAL");
       setNotes(item.notes ?? "");
       setEditorItem(item);
+      return true;
     } catch (countError) {
       setError(errorMessage(countError));
       reload();
+      return false;
     } finally {
       setActionBusy("");
+    }
+  };
+
+  const handleCameraBarcode = useCallback(async (rawCode: string) => {
+    const code = rawCode.trim();
+    if (!code || !session?.id) {
+      setCameraMessage("Pilih cabang dan mulai sesi audit sebelum memindai.");
+      setCameraStatus("error");
+      return;
+    }
+
+    setCameraCode(code);
+    setCameraResult(null);
+    setCameraMessage("");
+    setCameraStatus("searching");
+
+    try {
+      const result = await api.getItems(
+        session.id,
+        { page: 1, pageSize: PAGE_SIZE, search: code },
+        new AbortController().signal,
+      );
+      const product = result.items.find((item) =>
+        [item.barcode, item.masterSN].some((value) => barcodeMatches(value, code)),
+      );
+
+      if (!product || !product.inScope || product.status === "EXCLUDED") {
+        setCameraMessage("Barcode tidak ditemukan dalam daftar audit cabang yang dipilih.");
+        setCameraStatus("not-found");
+        return;
+      }
+
+      setCameraResult(product);
+      setSearch(code);
+      setStatusFilter("");
+      setPage(1);
+      setCameraStatus("found");
+    } catch (lookupError) {
+      setCameraMessage(errorMessage(lookupError));
+      setCameraStatus("error");
+    }
+  }, [api, session?.id]);
+
+  useEffect(() => {
+    if (!cameraOpen) return;
+
+    let cancelled = false;
+    let scanner: Html5Qrcode | null = null;
+    scannerHandledRef.current = false;
+    setCameraStatus("starting");
+    setCameraMessage("");
+    setCameraCode("");
+    setCameraResult(null);
+
+    const startScanner = async () => {
+      if (!window.isSecureContext) {
+        setCameraMessage("Kamera hanya dapat digunakan melalui HTTPS atau localhost.");
+        setCameraStatus("error");
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraMessage("Browser ini tidak mendukung akses kamera. Gunakan browser Android terbaru melalui HTTPS.");
+        setCameraStatus("error");
+        return;
+      }
+
+      try {
+        if (cancelled) return;
+        const reader = document.getElementById("audit-camera-reader");
+        if (!reader) throw new Error("Area kamera belum siap.");
+
+        scanner = new Html5Qrcode("audit-camera-reader", {
+          verbose: false,
+          useBarCodeDetectorIfSupported: false,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.CODE_128,
+          ],
+        });
+        barcodeScannerRef.current = scanner;
+        await scanner.start(
+          { facingMode: { ideal: "environment" } },
+          {
+            fps: 10,
+            qrbox: (width, height) => ({
+              width: Math.max(1, Math.min(360, Math.floor(width * 0.9))),
+              height: Math.max(1, Math.min(130, Math.floor(height * 0.28))),
+            }),
+          },
+          (decodedText) => {
+            if (cancelled || scannerHandledRef.current) return;
+            scannerHandledRef.current = true;
+            setCameraStatus("searching");
+            void scanner?.stop().then(() => scanner?.clear()).catch(() => {});
+            void handleCameraBarcode(decodedText);
+          },
+          () => {},
+        );
+        if (cancelled) {
+          if (scanner.isScanning) await scanner.stop();
+          scanner.clear();
+          return;
+        }
+        if (!scannerHandledRef.current) setCameraStatus("scanning");
+      } catch (cameraError) {
+        if (scanner?.isScanning) {
+          try {
+            await scanner.stop();
+          } catch {
+            // A failed camera start may leave no active stream to stop.
+          }
+        }
+        scanner?.clear();
+        if (!cancelled) {
+          setCameraMessage(cameraFailureMessage(cameraError));
+          setCameraStatus("error");
+        }
+      }
+    };
+
+    void startScanner();
+    return () => {
+      cancelled = true;
+      scannerHandledRef.current = true;
+      if (barcodeScannerRef.current === scanner) barcodeScannerRef.current = null;
+      if (scanner) {
+        const stop = scanner.isScanning ? scanner.stop() : Promise.resolve();
+        void stop.catch(() => {}).finally(() => scanner?.clear());
+      }
+    };
+  }, [cameraOpen, cameraAttempt, handleCameraBarcode]);
+
+  const openCameraScanner = () => {
+    if (!canWork || !session) return;
+    setScanNextAvailable(false);
+    setCameraMessage("");
+    setCameraResult(null);
+    setCameraAttempt((attempt) => attempt + 1);
+    setCameraOpen(true);
+  };
+
+  const retryCameraScan = () => {
+    scannerHandledRef.current = false;
+    setCameraMessage("");
+    setCameraResult(null);
+    setCameraAttempt((attempt) => attempt + 1);
+  };
+
+  const closeCountEditor = () => {
+    cameraCountItemRef.current = null;
+    setEditorItem(null);
+  };
+
+  const startCountFromCamera = async () => {
+    if (!cameraResult || cameraResult.status === "COUNTED") return;
+    setCameraOpen(false);
+    const opened = await openCount(cameraResult);
+    if (opened) {
+      cameraCountItemRef.current = cameraResult.id;
+      setScanNextAvailable(false);
     }
   };
 
@@ -348,6 +553,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       setError("Temuan Tidak ditemukan harus disimpan dengan jumlah fisik 0.");
       return;
     }
+    const savedFromCamera = cameraCountItemRef.current === editorItem.id;
     await runAction("Hitungan tersimpan.", async () => {
       await api.saveCount(session.id, editorItem.id, {
         countedQty: quantity,
@@ -356,6 +562,10 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
         countToken,
       });
       setEditorItem(null);
+      if (savedFromCamera) {
+        cameraCountItemRef.current = null;
+        setScanNextAvailable(true);
+      }
     });
   };
 
@@ -423,7 +633,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                 <select
                   id="audit-branch"
                   data-testid="select-audit-branch"
-                  disabled={Boolean(actionBusy || editorItem || exceptionOpen || confirmAction)}
+                  disabled={Boolean(actionBusy || editorItem || exceptionOpen || confirmAction || cameraOpen)}
                   value={branchId}
                   onChange={(event) => {
                     setBranchId(event.target.value);
@@ -462,6 +672,16 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
         {notice && (
           <div role="status" data-testid="status-audit-notice" className="flex items-center gap-2 rounded-xl border border-[#b7d3c5] bg-[#eef7f1] px-4 py-3 text-sm font-semibold text-[#286044]">
             <CheckCircle2 className="h-4 w-4 shrink-0" />{notice}
+          </div>
+        )}
+        {scanNextAvailable && isActive && (
+          <div role="status" data-testid="status-scan-next" className="flex flex-col gap-3 rounded-xl border border-[#b7d3c5] bg-[#eef7f1] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-center gap-2 text-sm font-semibold text-[#286044]">
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> Hitungan barcode tersimpan. Anda dapat memindai produk berikutnya.
+            </p>
+            <button type="button" data-testid="button-scan-next-product" onClick={openCameraScanner} disabled={!canWork} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-4 text-xs font-bold text-white hover:bg-[#174944] disabled:opacity-50">
+              <ScanLine className="h-4 w-4" /> Scan produk berikutnya
+            </button>
           </div>
         )}
 
@@ -596,6 +816,15 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                     <button type="button" data-testid="button-focus-barcode" onClick={() => searchInputRef.current?.focus()} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] hover:bg-[#e9f0eb]">
                       <Barcode className="h-4 w-4" /> Pindai / ketik
                     </button>
+                    <button
+                      type="button"
+                      data-testid="button-open-camera-scanner"
+                      disabled={!canWork}
+                      onClick={openCameraScanner}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-3 text-xs font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      <Camera className="h-4 w-4" /> Scan Kamera
+                    </button>
                   </div>
                 </div>
               </div>
@@ -646,8 +875,100 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
         )}
       </div>
 
+      {cameraOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/65 p-0 sm:items-center sm:p-4"
+          data-testid="dialog-camera-scanner"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setCameraOpen(false); }}
+        >
+          <section role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title" className="max-h-[94dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-xl sm:rounded-[22px] sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Audit stok cabang</p>
+                <h2 id="camera-dialog-title" className="mt-1 text-lg font-extrabold text-[#1b3b3d]">Scan barcode dengan kamera</h2>
+                <p className="mt-1 text-xs leading-5 text-[#74847f]">Kamera belakang diprioritaskan. Arahkan barcode ke area garis.</p>
+              </div>
+              <button type="button" data-testid="button-close-camera-scanner" aria-label="Tutup pemindai kamera" onClick={() => setCameraOpen(false)} className="rounded-lg p-2 text-[#66807a] hover:bg-[#e9efea]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div
+              id="audit-camera-reader"
+              data-testid="camera-barcode-reader"
+              className="mt-4 min-h-[220px] overflow-hidden rounded-2xl bg-[#101819] sm:min-h-[280px] [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+              style={{
+                aspectRatio: "4 / 3",
+                display: cameraStatus === "starting" || cameraStatus === "scanning" ? "block" : "none",
+              }}
+            />
+
+            {(cameraStatus === "starting" || cameraStatus === "scanning") && (
+              <div aria-live="polite" data-testid="status-camera-scanner" className="mt-3 flex items-start gap-2 rounded-xl bg-[#e9eeea] px-3 py-2.5 text-xs leading-5 text-[#526b65]">
+                {cameraStatus === "starting" ? <LoaderCircle className="mt-0.5 h-4 w-4 shrink-0 animate-spin" /> : <ScanLine className="mt-0.5 h-4 w-4 shrink-0 text-[#1b7166]" />}
+                <span>{cameraStatus === "starting" ? "Meminta izin dan menyiapkan kamera…" : "Pemindai aktif. Kode EAN-13, EAN-8, UPC-A, dan Code 128 didukung."}</span>
+              </div>
+            )}
+
+            {cameraStatus === "searching" && (
+              <div role="status" data-testid="status-camera-product-search" className="mt-3 flex items-center gap-2 rounded-xl bg-[#e9eeea] px-3 py-3 text-xs font-semibold text-[#526b65]">
+                <LoaderCircle className="h-4 w-4 animate-spin" /> Mencari barcode pada daftar produk cabang…
+              </div>
+            )}
+
+            {cameraStatus === "found" && cameraResult && (
+              <div data-testid="card-camera-product-result" className="mt-3 rounded-xl border border-[#cadbd1] bg-[#eaf2ec] p-4">
+                <p className="text-[9px] font-extrabold uppercase tracking-[.15em] text-[#668078]">Produk ditemukan</p>
+                <h3 data-testid="text-camera-product-name" className="mt-1 break-words text-base font-extrabold text-[#244743]">{cameraResult.productName}</h3>
+                <p data-testid="text-camera-product-barcode" className="mt-1 break-all font-mono text-[11px] text-[#71827c]">{cameraCode}</p>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2.5">
+                  <span className="text-xs font-semibold text-[#526b65]">Stok sistem terbaru</span>
+                  <strong data-testid="text-camera-system-stock" className="font-mono text-xl font-black text-[#244743]">{cameraResult.systemQty}</strong>
+                </div>
+                {cameraResult.status === "COUNTED" ? (
+                  <p role="status" data-testid="status-camera-already-counted" className="mt-3 rounded-lg bg-[#f5efdb] px-3 py-2 text-xs leading-5 text-[#6f5c26]">
+                    Produk ini sudah dihitung pada sesi ini. Pemindaian ulang tidak membuat catatan kedua.
+                  </p>
+                ) : (
+                  <button type="button" data-testid="button-camera-start-count" disabled={!canWork} onClick={() => void startCountFromCamera()} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-4 text-sm font-bold text-white hover:bg-[#174944] disabled:opacity-50">
+                    <Check className="h-4 w-4" /> Masukkan jumlah fisik
+                  </button>
+                )}
+                <button type="button" data-testid="button-camera-scan-again" onClick={retryCameraScan} className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#d4dfd8] px-4 text-xs font-bold text-[#49645e] hover:bg-white">
+                  <ScanLine className="h-4 w-4" /> Scan barcode lain
+                </button>
+              </div>
+            )}
+
+            {cameraStatus === "not-found" && (
+              <div role="alert" data-testid="alert-camera-product-not-found" className="mt-3 rounded-xl border border-[#e6c5b7] bg-[#fff3ed] p-4 text-sm text-[#803e31]">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div><p className="font-bold">Produk tidak ditemukan</p><p className="mt-1 text-xs leading-5">{cameraMessage} Pastikan barcode milik produk yang tercakup dalam sesi audit ini.</p><p className="mt-2 break-all font-mono text-[10px]">Barcode: {cameraCode}</p></div>
+                </div>
+                <button type="button" data-testid="button-camera-retry-not-found" onClick={retryCameraScan} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#87564b] px-4 text-xs font-bold text-white hover:bg-[#73473e]">
+                  <ScanLine className="h-4 w-4" /> Scan ulang
+                </button>
+              </div>
+            )}
+
+            {cameraStatus === "error" && (
+              <div role="alert" data-testid="alert-camera-error" className="mt-3 rounded-xl border border-[#e6c5b7] bg-[#fff3ed] p-4 text-sm text-[#803e31]">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p data-testid="text-camera-error-message" className="text-xs leading-5">{cameraMessage}</p>
+                </div>
+                <button type="button" data-testid="button-camera-retry" onClick={retryCameraScan} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#d4c0b8] bg-white px-4 text-xs font-bold text-[#6d4a40] hover:bg-[#fff9f5]">
+                  <Camera className="h-4 w-4" /> Coba buka kamera lagi
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
       {editorItem && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditorItem(null); }}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCountEditor(); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="count-dialog-title" data-testid="dialog-count-item" className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -655,7 +976,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                 <h2 id="count-dialog-title" className="mt-1 text-lg font-extrabold leading-6 text-[#1b3b3d]">{editorItem.productName}</h2>
                 <p className="mt-1 break-all font-mono text-[11px] text-[#74847f]">{editorItem.barcode || editorItem.masterSN || "Identitas tidak tersedia"}</p>
               </div>
-              <button type="button" data-testid="button-close-count" aria-label="Tutup lembar hitung" onClick={() => setEditorItem(null)} className="rounded-lg p-2 text-[#66807a] hover:bg-[#e9efea]"><X className="h-4 w-4" /></button>
+              <button type="button" data-testid="button-close-count" aria-label="Tutup lembar hitung" onClick={closeCountEditor} className="rounded-lg p-2 text-[#66807a] hover:bg-[#e9efea]"><X className="h-4 w-4" /></button>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-[#e9eeea] p-3">
@@ -686,7 +1007,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
               </label>
               {editorItem.status === "RECOUNT_REQUIRED" && <p className="rounded-lg border border-[#e6d7a8] bg-[#faf3dc] px-3 py-2 text-xs leading-5 text-[#745f23]">Pergerakan stok terdeteksi pada jendela hitung sebelumnya. Hitung fisik ulang dengan stok sistem terbaru sebelum disimpan.</p>}
               <div className="flex flex-col-reverse gap-2 border-t border-[#e1e7e2] pt-4 sm:flex-row sm:justify-end">
-                <button type="button" data-testid="button-dismiss-count" onClick={() => setEditorItem(null)} className="h-11 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee]">Tutup tanpa menyimpan</button>
+                <button type="button" data-testid="button-dismiss-count" onClick={closeCountEditor} className="h-11 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee]">Tutup tanpa menyimpan</button>
                 <button type="submit" data-testid="button-save-count" disabled={Boolean(actionBusy)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-5 text-sm font-bold text-white hover:bg-[#174944] disabled:opacity-60">
                   {actionBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Simpan hitungan
                 </button>
