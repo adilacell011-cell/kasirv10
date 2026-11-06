@@ -157,6 +157,12 @@ test("branch stock audit stays isolated, conflict-safe, and persistent", {
     const beginA2 = await call("/api/stock-audits/begin-count", "POST", secondAuditor.id, "AUDIT", { auditId: auditAId, itemId: itemAId });
     assert.equal(beginA2.status, 200);
     assert.notEqual(beginA2.body?.countToken, beginA1.body?.countToken, "A second begin must issue a distinct token, even in the same millisecond");
+    const resumedCount = await call(`/api/stock-audits/items?auditId=${auditAId}&page=1&pageSize=10`, "GET", secondAuditor.id, "AUDIT");
+    assert.equal(
+      resumedCount.body?.items.find((item: { id: string }) => item.id === itemAId)?.countToken,
+      beginA2.body?.countToken,
+      "The active count token must be available to restore a saved browser draft after refresh",
+    );
 
     const staleCount = await call("/api/stock-audits/count", "PATCH", auditor.id, "AUDIT", {
       auditId: auditAId, itemId: itemAId, countedQty: 8, finding: "NORMAL", countToken: beginA1.body?.countToken,

@@ -149,6 +149,7 @@ function itemDto(item: {
   masterSNSnapshot: string | null;
   status: string;
   inScope: boolean;
+  countStartedAt: Date | null;
   expectedQty: number;
   baselineQty: number | null;
   countedQty: number | null;
@@ -168,6 +169,9 @@ function itemDto(item: {
     inScope: item.inScope,
     expectedQty: item.expectedQty,
     systemQty,
+    ...(item.status === "COUNTING" && item.countStartedAt
+      ? { countToken: item.countStartedAt.toISOString() }
+      : {}),
     baselineQty: item.baselineQty,
     countedQty: item.countedQty,
     variance: item.variance,

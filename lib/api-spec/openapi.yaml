@@ -566,6 +566,9 @@ components:
           enum: [PENDING, COUNTING, COUNTED, RECOUNT_REQUIRED, EXCLUDED]
         inScope:
           type: boolean
+        countToken:
+          type: string
+          description: Concurrency token for resuming an in-progress physical count.
         expectedQty:
           type: integer
           description: Stock snapshot captured when the audit session started.

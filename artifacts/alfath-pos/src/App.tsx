@@ -6266,6 +6266,7 @@ export default function App() {
                 <BranchStockAuditPage
                   branches={branches.map((branch) => ({ id: branch.id, name: branch.name }))}
                   role={profile.role}
+                  userId={profile.id}
                   api={branchStockAuditApi}
                 />
               )}

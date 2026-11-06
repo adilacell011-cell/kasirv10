@@ -34,6 +34,10 @@ async function buildAll() {
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
       "*.node",
+      // Pino's worker transport resolves worker.js relative to its installed
+      // package. Bundling it into dist makes thread-stream look for dist/lib/worker.js.
+      "pino",
+      "pino-pretty",
       "sharp",
       "better-sqlite3",
       "sqlite3",

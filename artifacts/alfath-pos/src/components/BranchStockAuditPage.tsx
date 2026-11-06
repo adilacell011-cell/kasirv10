@@ -59,6 +59,7 @@ export type AuditItem = {
   inScope: boolean;
   expectedQty: number;
   systemQty: number;
+  countToken?: string;
   baselineQty?: number | null;
   countedQty?: number | null;
   variance?: number | null;
@@ -110,13 +111,29 @@ export type AuditPageApi = {
 type Props = {
   branches: AuditBranch[];
   role: "ADMIN" | "AUDIT";
+  userId: string;
   api: AuditPageApi;
 };
 
 type Finding = NonNullable<AuditItem["finding"]>;
 type CameraScanStatus = "starting" | "scanning" | "searching" | "found" | "not-found" | "error";
+type AuditConnectionStatus = "online" | "offline" | "server-error";
+type SavedCountDraft = {
+  auditId: string;
+  itemId: string;
+  productName: string;
+  countQty: string;
+  finding: Finding;
+  notes: string;
+  countToken: string;
+  page: number;
+  search: string;
+  statusFilter: string;
+  startedFromCamera: boolean;
+};
 
 const PAGE_SIZE = 25;
+const AUDIT_BRANCH_QUERY_PARAM = "auditBranchId";
 const FINDINGS: { value: Finding; label: string }[] = [
   { value: "NORMAL", label: "Normal" },
   { value: "NOT_FOUND", label: "Tidak ditemukan (fisik 0)" },
@@ -152,8 +169,65 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Terjadi kendala. Silakan coba lagi.";
 }
 
+function readBranchIdFromUrl() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get(AUDIT_BRANCH_QUERY_PARAM) ?? "";
+}
+
+function writeBranchIdToUrl(branchId: string) {
+  const url = new URL(window.location.href);
+  if (branchId) url.searchParams.set(AUDIT_BRANCH_QUERY_PARAM, branchId);
+  else url.searchParams.delete(AUDIT_BRANCH_QUERY_PARAM);
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
+}
+
+function countDraftKey(userId: string, auditId: string) {
+  return `kasirv10:stock-audit-count-draft:${userId}:${auditId}`;
+}
+
+function removeCountDraft(userId: string, auditId: string) {
+  try {
+    localStorage.removeItem(countDraftKey(userId, auditId));
+  } catch {
+    // A browser with disabled storage should still allow the audit to proceed.
+  }
+}
+
+function readCountDraft(userId: string, auditId: string): SavedCountDraft | null {
+  try {
+    const raw = localStorage.getItem(countDraftKey(userId, auditId));
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<SavedCountDraft>;
+    if (
+      value.auditId !== auditId ||
+      typeof value.itemId !== "string" ||
+      typeof value.productName !== "string" ||
+      typeof value.countQty !== "string" ||
+      typeof value.countToken !== "string" ||
+      !Number.isInteger(value.page) ||
+      !["NORMAL", "NOT_FOUND", "EXPIRED", "DAMAGED", "NOT_SOLD_HERE"].includes(String(value.finding)) ||
+      typeof value.notes !== "string" ||
+      typeof value.search !== "string" ||
+      typeof value.statusFilter !== "string" ||
+      typeof value.startedFromCamera !== "boolean"
+    ) {
+      localStorage.removeItem(countDraftKey(userId, auditId));
+      return null;
+    }
+    return value as SavedCountDraft;
+  } catch {
+    return null;
+  }
+}
+
 function cameraFailureMessage(error: unknown) {
-  const name = error instanceof DOMException ? error.name : "";
+  const name = typeof error === "object" && error !== null && "name" in error
+    ? String((error as { name?: unknown }).name ?? "")
+    : "";
   if (name === "NotAllowedError" || name === "PermissionDeniedError") {
     return "Izin kamera ditolak. Izinkan akses kamera di pengaturan browser, lalu coba lagi.";
   }
@@ -179,11 +253,12 @@ function barcodeMatches(storedValue: string | null | undefined, scannedValue: st
     || (stored.length === 13 && stored.startsWith("0") && stored.slice(1) === scanned);
 }
 
-export default function BranchStockAuditPage({ branches, role, api }: Props) {
-  const [branchId, setBranchId] = useState("");
+export default function BranchStockAuditPage({ branches, role, userId, api }: Props) {
+  const [branchId, setBranchId] = useState(readBranchIdFromUrl);
   const [session, setSession] = useState<AuditSession | null>(null);
   const [items, setItems] = useState<AuditItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
+  const [loadedItemsQuery, setLoadedItemsQuery] = useState("");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -215,14 +290,27 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
   const [cameraCode, setCameraCode] = useState("");
   const [cameraResult, setCameraResult] = useState<AuditItem | null>(null);
   const [scanNextAvailable, setScanNextAvailable] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<AuditConnectionStatus>(() =>
+    typeof navigator === "undefined" || navigator.onLine ? "online" : "offline",
+  );
+  const [recoveredDraft, setRecoveredDraft] = useState<{
+    productName: string;
+    countQty: string;
+    item: AuditItem | null;
+    countToken: string;
+    stale: boolean;
+    startedFromCamera: boolean;
+  } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const barcodeScannerRef = useRef<Html5Qrcode | null>(null);
   const scannerHandledRef = useRef(false);
   const cameraCountItemRef = useRef<string | null>(null);
   const loadedSessionRef = useRef<{ branchId: string; sessionId: string | null } | null>(null);
+  const restoredDraftForSessionRef = useRef("");
   const reload = useCallback(() => setRefreshIndex((value) => value + 1), []);
 
   const selectedBranch = branches.find((branch) => branch.id === branchId);
+  const branchAllowed = Boolean(selectedBranch);
   const isActive = session?.status === "IN_PROGRESS";
   const canWork = Boolean(branchId && isActive && !actionBusy);
   const pageCount = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
@@ -243,26 +331,55 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       const current = await api.getCurrent(id, signal);
       if (!signal.aborted) {
         const nextSessionId = current?.id ?? null;
-        if (loadedSessionRef.current?.branchId !== id || loadedSessionRef.current.sessionId !== nextSessionId) {
+        const newSession = loadedSessionRef.current?.branchId !== id ||
+          loadedSessionRef.current.sessionId !== nextSessionId;
+        if (newSession) {
           setPage(1);
           setItems([]);
           setTotalItems(0);
+          setLoadedItemsQuery("");
+          restoredDraftForSessionRef.current = "";
+          if (current && userId) {
+            const draft = readCountDraft(userId, current.id);
+            if (draft) {
+              setPage(draft.page);
+              setSearch(draft.search);
+              setStatusFilter(draft.statusFilter);
+            }
+          }
         }
         loadedSessionRef.current = { branchId: id, sessionId: nextSessionId };
         setSession(current);
+        setConnectionStatus("online");
       }
     } catch (loadError) {
-      if (!signal.aborted) setError(errorMessage(loadError));
+      if (!signal.aborted) {
+        setError(errorMessage(loadError));
+        setConnectionStatus(navigator.onLine ? "server-error" : "offline");
+      }
     } finally {
       if (!signal.aborted) setLoadingSession(false);
     }
-  }, [api]);
+  }, [api, userId]);
 
   useEffect(() => {
-    if (!branchId) {
+    if (branchId && !branches.some((branch) => branch.id === branchId)) {
+      setBranchId("");
+      writeBranchIdToUrl("");
       setSession(null);
       setItems([]);
       setTotalItems(0);
+      setLoadedItemsQuery("");
+      loadedSessionRef.current = null;
+    }
+  }, [branches, branchId]);
+
+  useEffect(() => {
+    if (!branchId || !branchAllowed) {
+      setSession(null);
+      setItems([]);
+      setTotalItems(0);
+      setLoadedItemsQuery("");
       setLoadingSession(false);
       loadedSessionRef.current = null;
       return;
@@ -270,13 +387,16 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
     const controller = new AbortController();
     void loadCurrent(branchId, controller.signal);
     return () => controller.abort();
-  }, [branchId, loadCurrent, refreshIndex]);
+  }, [branchAllowed, branchId, loadCurrent, refreshIndex]);
 
   useEffect(() => {
-    if (!branchId || !session?.id) return;
+    if (!branchId || !branchAllowed || !session?.id) return;
     const controller = new AbortController();
     setLoadingItems(true);
+    setItems([]);
+    setLoadedItemsQuery("");
     setError("");
+    const queryKey = `${session.id}:${page}:${search.trim()}:${statusFilter}`;
     void api
       .getItems(session.id, {
         page,
@@ -288,22 +408,138 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
         if (!controller.signal.aborted) {
           setItems(result.items);
           setTotalItems(result.total);
+          setLoadedItemsQuery(queryKey);
+          setConnectionStatus("online");
         }
       })
       .catch((loadError: unknown) => {
-        if (!controller.signal.aborted) setError(errorMessage(loadError));
+        if (!controller.signal.aborted) {
+          setError(errorMessage(loadError));
+          setConnectionStatus(navigator.onLine ? "server-error" : "offline");
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoadingItems(false);
       });
     return () => controller.abort();
-  }, [api, branchId, session?.id, page, search, statusFilter, refreshIndex]);
+  }, [api, branchAllowed, branchId, session?.id, page, search, statusFilter, refreshIndex]);
 
   useEffect(() => {
-    if (!branchId || !session?.id || session.status !== "IN_PROGRESS") return;
-    const timer = window.setInterval(reload, 5000);
-    return () => window.clearInterval(timer);
-  }, [branchId, session?.id, session?.status, reload]);
+    const queryKey = session?.id ? `${session.id}:${page}:${search.trim()}:${statusFilter}` : "";
+    if (!session?.id || !userId || loadingItems || error || loadedItemsQuery !== queryKey) return;
+    const restoreKey = `${userId}:${session.id}`;
+    if (restoredDraftForSessionRef.current === restoreKey) return;
+    restoredDraftForSessionRef.current = restoreKey;
+
+    const draft = readCountDraft(userId, session.id);
+    if (!draft) return;
+    const item = items.find((candidate) => candidate.id === draft.itemId);
+    if (
+      item?.status === "COUNTING" &&
+      item.countToken === draft.countToken &&
+      item.baselineQty != null
+    ) {
+      setBaselineQty(item.baselineQty);
+      setCountToken(draft.countToken);
+      setCountQty(draft.countQty);
+      setFinding(draft.finding);
+      setNotes(draft.notes);
+      setEditorItem(item);
+      cameraCountItemRef.current = draft.startedFromCamera ? item.id : null;
+      setNotice("Draft hitungan yang belum disimpan berhasil dipulihkan.");
+      return;
+    }
+
+    setRecoveredDraft({
+      productName: draft.productName,
+      countQty: draft.countQty,
+      item: item ?? null,
+      countToken: draft.countToken,
+      stale: true,
+      startedFromCamera: draft.startedFromCamera,
+    });
+  }, [error, items, loadedItemsQuery, loadingItems, page, search, session?.id, statusFilter, userId]);
+
+  useEffect(() => {
+    if (!session?.id || !editorItem || !userId || !countToken) return;
+    const draft: SavedCountDraft = {
+      auditId: session.id,
+      itemId: editorItem.id,
+      productName: editorItem.productName,
+      countQty,
+      finding,
+      notes,
+      countToken,
+      page,
+      search,
+      statusFilter,
+      startedFromCamera: cameraCountItemRef.current === editorItem.id,
+    };
+    try {
+      localStorage.setItem(countDraftKey(userId, session.id), JSON.stringify(draft));
+    } catch {
+      setError("Draft hitungan tidak dapat disimpan pada perangkat ini. Jangan muat ulang sebelum hitungan disimpan.");
+    }
+  }, [countQty, countToken, editorItem, finding, notes, page, search, session?.id, statusFilter, userId]);
+
+  useEffect(() => {
+    if (!branchId || !branchAllowed || !session?.id || session.status !== "IN_PROGRESS") return;
+
+    const controller = new AbortController();
+    let inFlight = false;
+    const syncAuditData = async () => {
+      if (inFlight || controller.signal.aborted || document.visibilityState === "hidden") return;
+      inFlight = true;
+      try {
+        const current = await api.getCurrent(branchId, controller.signal);
+        if (controller.signal.aborted) return;
+        if (current?.id !== session.id) {
+          setSession(current);
+          setItems([]);
+          setTotalItems(0);
+          setConnectionStatus("online");
+          return;
+        }
+        const latestItems = await api.getItems(session.id, {
+          page,
+          pageSize: PAGE_SIZE,
+          search: search.trim() || undefined,
+          status: statusFilter || undefined,
+        }, controller.signal);
+        if (!controller.signal.aborted) {
+          setSession(current);
+          setItems(latestItems.items);
+          setTotalItems(latestItems.total);
+          setConnectionStatus("online");
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setConnectionStatus(navigator.onLine ? "server-error" : "offline");
+        }
+      } finally {
+        inFlight = false;
+      }
+    };
+    const timer = window.setInterval(() => void syncAuditData(), 30_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void syncAuditData();
+    };
+    const onOnline = () => {
+      setConnectionStatus("server-error");
+      void syncAuditData();
+    };
+    const onOffline = () => setConnectionStatus("offline");
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [api, branchAllowed, branchId, session?.id, session?.status, page, search, statusFilter]);
 
   useEffect(() => {
     const query = exceptionSearch.trim();
@@ -358,17 +594,32 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
 
   const openCount = async (item: AuditItem) => {
     if (!session || !canWork || !item.inScope) return false;
+    if (recoveredDraft && recoveredDraft.item?.id !== item.id) {
+      setError("Lanjutkan atau buang draft hitungan sebelumnya sebelum membuka produk lain.");
+      return false;
+    }
     setError("");
     setNotice("");
     setActionBusy("Menyiapkan hitung…");
     try {
       const result = await api.beginCount(session.id, item.id);
+      const countingItem = {
+        ...item,
+        status: "COUNTING" as const,
+        countToken: result.countToken,
+        baselineQty: result.baselineQty,
+      };
       setBaselineQty(result.baselineQty);
       setCountToken(result.countToken);
+      setItems((current) => current.map((candidate) => candidate.id === item.id ? countingItem : candidate));
+      if (recoveredDraft?.item?.id === item.id) {
+        removeCountDraft(userId, session.id);
+        setRecoveredDraft(null);
+      }
       setCountQty(String(item.countedQty ?? ""));
       setFinding((item.finding as Finding) || "NORMAL");
       setNotes(item.notes ?? "");
-      setEditorItem(item);
+      setEditorItem(countingItem);
       return true;
     } catch (countError) {
       setError(errorMessage(countError));
@@ -424,11 +675,35 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
 
     let cancelled = false;
     let scanner: Html5Qrcode | null = null;
+    let stopPromise: Promise<void> | null = null;
+    let startSettled = false;
     scannerHandledRef.current = false;
     setCameraStatus("starting");
     setCameraMessage("");
     setCameraCode("");
     setCameraResult(null);
+
+    const stopScanner = () => {
+      if (!scanner) return Promise.resolve();
+      if (!stopPromise) {
+        stopPromise = (async () => {
+          if (scanner?.isScanning) {
+            try {
+              await scanner.stop();
+            } catch {
+              // Teardown is best-effort when permission or camera startup failed.
+            }
+          }
+          try {
+            scanner?.clear();
+          } catch {
+            // The scanner may not have completed initialization.
+          }
+          if (barcodeScannerRef.current === scanner) barcodeScannerRef.current = null;
+        })();
+      }
+      return stopPromise;
+    };
 
     const startScanner = async () => {
       if (!window.isSecureContext) {
@@ -458,8 +733,19 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
           ],
         });
         barcodeScannerRef.current = scanner;
+        const cameras = await Html5Qrcode.getCameras();
+        if (cancelled) return;
+        const rearCamera = cameras.find((camera) =>
+          /\b(back|rear|environment|belakang)\b/i.test(camera.label),
+        );
+        const selectedCamera = rearCamera ?? cameras[0];
+        if (!selectedCamera) {
+          throw Object.assign(new Error("Tidak ada kamera yang tersedia."), {
+            name: "NotFoundError",
+          });
+        }
         await scanner.start(
-          { facingMode: { ideal: "environment" } },
+          selectedCamera.id,
           {
             fps: 10,
             qrbox: (width, height) => ({
@@ -471,26 +757,21 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
             if (cancelled || scannerHandledRef.current) return;
             scannerHandledRef.current = true;
             setCameraStatus("searching");
-            void scanner?.stop().then(() => scanner?.clear()).catch(() => {});
-            void handleCameraBarcode(decodedText);
+            void stopScanner().then(() => {
+              if (!cancelled) void handleCameraBarcode(decodedText);
+            });
           },
           () => {},
         );
+        startSettled = true;
         if (cancelled) {
-          if (scanner.isScanning) await scanner.stop();
-          scanner.clear();
+          await stopScanner();
           return;
         }
         if (!scannerHandledRef.current) setCameraStatus("scanning");
       } catch (cameraError) {
-        if (scanner?.isScanning) {
-          try {
-            await scanner.stop();
-          } catch {
-            // A failed camera start may leave no active stream to stop.
-          }
-        }
-        scanner?.clear();
+        startSettled = true;
+        await stopScanner();
         if (!cancelled) {
           setCameraMessage(cameraFailureMessage(cameraError));
           setCameraStatus("error");
@@ -502,11 +783,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
     return () => {
       cancelled = true;
       scannerHandledRef.current = true;
-      if (barcodeScannerRef.current === scanner) barcodeScannerRef.current = null;
-      if (scanner) {
-        const stop = scanner.isScanning ? scanner.stop() : Promise.resolve();
-        void stop.catch(() => {}).finally(() => scanner?.clear());
-      }
+      if (startSettled) void stopScanner();
     };
   }, [cameraOpen, cameraAttempt, handleCameraBarcode]);
 
@@ -527,6 +804,16 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
   };
 
   const closeCountEditor = () => {
+    if (editorItem && countToken) {
+      setRecoveredDraft({
+        productName: editorItem.productName,
+        countQty,
+        item: editorItem,
+        countToken,
+        stale: false,
+        startedFromCamera: cameraCountItemRef.current === editorItem.id,
+      });
+    }
     cameraCountItemRef.current = null;
     setEditorItem(null);
   };
@@ -561,6 +848,8 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
         notes: notes.trim() || undefined,
         countToken,
       });
+      removeCountDraft(userId, session.id);
+      setRecoveredDraft(null);
       setEditorItem(null);
       if (savedFromCamera) {
         cameraCountItemRef.current = null;
@@ -599,32 +888,40 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
     setConfirmAction(null);
     if (action === "finalize") {
       if (!canFinalize) return;
-      await runAction("Audit selesai dan rekonsiliasi diterapkan.", () => api.finalize(session.id));
+      await runAction("Audit selesai dan rekonsiliasi diterapkan.", async () => {
+        await api.finalize(session.id);
+        removeCountDraft(userId, session.id);
+        setRecoveredDraft(null);
+      });
     } else {
-      await runAction("Audit dibatalkan. Riwayat audit tetap tersimpan.", () => api.cancel(session.id));
+      await runAction("Audit dibatalkan. Riwayat audit tetap tersimpan.", async () => {
+        await api.cancel(session.id);
+        removeCountDraft(userId, session.id);
+        setRecoveredDraft(null);
+      });
     }
   };
 
   const filteredSummary = session?.summary;
 
   return (
-    <main className="min-h-[100dvh] bg-[#edf1f2] px-3 py-4 text-[#18363b] sm:px-5 sm:py-6 lg:px-8">
-      <div className="mx-auto max-w-[1440px] space-y-5">
-        <header className="relative overflow-hidden rounded-[22px] bg-[#173b3d] px-5 py-5 text-[#f4f4e9] shadow-[0_12px_30px_rgba(23,59,61,.13)] sm:px-7 sm:py-6">
+    <div data-testid="page-branch-stock-audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-3 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-5 md:pb-6 lg:px-8">
+      <div className="mx-auto w-full min-w-0 max-w-[1440px] space-y-4 sm:space-y-5">
+        <header className="relative w-full min-w-0 overflow-hidden rounded-[20px] bg-[#173b3d] px-4 py-4 text-[#f4f4e9] shadow-[0_12px_30px_rgba(23,59,61,.13)] sm:rounded-[22px] sm:px-7 sm:py-6">
           <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border border-[#d6b96a]/20" />
           <div className="pointer-events-none absolute -right-1 top-[-5.5rem] h-56 w-56 rounded-full border border-[#d6b96a]/20" />
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.22em] text-[#d6b96a]">
+          <div className="relative flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#d6b96a] sm:mb-3 sm:text-[10px] sm:tracking-[.22em]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d6b96a]" />
                 Alfath Pulsa <span className="text-[#86a7a1]">/</span> Pengendalian stok
               </div>
-              <h1 className="text-2xl font-black tracking-[-.045em] sm:text-[32px]">Audit stok cabang</h1>
-              <p className="mt-1.5 max-w-xl text-sm leading-6 text-[#c5d5d0]">
-                Hitung fisik tanpa menghentikan transaksi. Selisih baru direkonsiliasi setelah audit difinalisasi.
+              <h1 className="break-words text-xl font-black tracking-[-.035em] sm:text-[32px] sm:tracking-[-.045em]">Audit stok cabang</h1>
+              <p className="mt-1.5 max-w-xl text-xs leading-5 text-[#c5d5d0] sm:text-sm sm:leading-6">
+                Hitung fisik tanpa menghentikan transaksi. Saat finalisasi, selisih terkonfirmasi diterapkan pada stok terkini.
               </p>
             </div>
-            <div className="flex w-full flex-col gap-2 md:w-[310px]">
+            <div className="flex w-full min-w-0 flex-col gap-2 md:w-[310px] md:shrink-0">
               <label htmlFor="audit-branch" className="text-[10px] font-bold uppercase tracking-[.18em] text-[#a9c3bd]">
                 Cabang yang diaudit <span className="text-[#e3c975]">· wajib</span>
               </label>
@@ -636,13 +933,18 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                   disabled={Boolean(actionBusy || editorItem || exceptionOpen || confirmAction || cameraOpen)}
                   value={branchId}
                   onChange={(event) => {
-                    setBranchId(event.target.value);
+                    const nextBranchId = event.target.value;
+                    setBranchId(nextBranchId);
+                    writeBranchIdToUrl(nextBranchId);
                     setSession(null);
                     setItems([]);
                     setTotalItems(0);
+                    setLoadedItemsQuery("");
                     loadedSessionRef.current = null;
+                    restoredDraftForSessionRef.current = "";
                     setSearch("");
                     setStatusFilter("");
+                    setRecoveredDraft(null);
                     setError("");
                     setNotice("");
                   }}
@@ -654,10 +956,14 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
               </div>
             </div>
           </div>
-          <div className="relative mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 pt-3 text-[11px] text-[#bdd0ca]">
+          <div className="relative mt-4 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/10 pt-3 text-[10px] text-[#bdd0ca] sm:mt-5 sm:gap-x-5 sm:text-[11px]">
             <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#d6b96a]" /> Stok operasional tetap aktif</span>
             <span className="hidden h-3 w-px bg-white/20 sm:block" />
-            <span>Cabang punya sesi audit yang terpisah</span>
+            <span className="min-w-0">Cabang punya sesi audit yang terpisah</span>
+            <span data-testid="status-audit-connection" aria-live="polite" className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] font-semibold ${connectionStatus === "online" ? "border-emerald-200/20 text-[#c8dfd1]" : connectionStatus === "offline" ? "border-amber-200/30 text-[#ffe1a5]" : "border-rose-200/30 text-[#ffc8b9]"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${connectionStatus === "online" ? "bg-emerald-300" : connectionStatus === "offline" ? "bg-amber-300" : "bg-rose-300"}`} />
+              {connectionStatus === "online" ? "Terhubung" : connectionStatus === "offline" ? "Offline" : "Server belum tersinkron"}
+            </span>
             <span className="ml-auto rounded-full border border-white/15 px-2.5 py-1 font-mono text-[9px] tracking-[.16em] text-[#d6b96a]">{role}</span>
           </div>
         </header>
@@ -672,6 +978,69 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
         {notice && (
           <div role="status" data-testid="status-audit-notice" className="flex items-center gap-2 rounded-xl border border-[#b7d3c5] bg-[#eef7f1] px-4 py-3 text-sm font-semibold text-[#286044]">
             <CheckCircle2 className="h-4 w-4 shrink-0" />{notice}
+          </div>
+        )}
+        {connectionStatus !== "online" && branchId && (
+          <div role="status" data-testid="notice-audit-connection" className="flex min-w-0 items-start gap-2 rounded-xl border border-[#ead6a2] bg-[#fff8e5] px-3 py-2.5 text-xs leading-5 text-[#735f2b] sm:px-4">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="min-w-0 flex-1 break-words">
+              {connectionStatus === "offline"
+                ? "Koneksi perangkat terputus. Data yang tampil mungkin belum terbaru; sesi dan hitungan tersimpan tetap berada di server."
+                : "Server belum tersinkron. Sesi audit tidak dibuat ulang; coba segarkan setelah koneksi kembali."}
+            </p>
+            <button type="button" data-testid="button-audit-sync-retry" onClick={reload} className="shrink-0 rounded-lg px-2 py-1 font-bold hover:bg-[#f6edcf]">Coba lagi</button>
+          </div>
+        )}
+        {recoveredDraft && session && userId && (
+          <div role="status" data-testid="notice-stale-count-draft" className="flex min-w-0 flex-col gap-2 rounded-xl border border-[#e7d3a0] bg-[#fff8e5] px-3 py-3 text-xs leading-5 text-[#735f2b] sm:flex-row sm:items-start sm:px-4">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="min-w-0 flex-1 break-words">
+              {recoveredDraft.stale
+                ? <>Draft hitungan {recoveredDraft.productName} ({recoveredDraft.countQty || "belum diisi"}) masih tersimpan di perangkat, tetapi status atau token server sudah berubah. Nilai draft tidak diterapkan. {recoveredDraft.item?.status === "COUNTING" ? "Produk sedang dihitung pengguna lain; jangan mengambil alih hitungan aktif." : "Periksa produk sebelum memulai hitung fisik baru."}</>
+                : <>Draft hitungan {recoveredDraft.productName} ({recoveredDraft.countQty || "belum diisi"}) tersimpan di perangkat dan belum dikirim ke server. Lanjutkan draft untuk menyimpan hitungan, atau hitung ulang jika stok bergerak.</>}
+            </div>
+            {!recoveredDraft.stale && recoveredDraft.item?.status === "COUNTING" && recoveredDraft.item.countToken === recoveredDraft.countToken && (
+              <button
+                type="button"
+                data-testid="button-resume-count-draft"
+                onClick={() => {
+                  setBaselineQty(recoveredDraft.item?.baselineQty ?? 0);
+                  setCountToken(recoveredDraft.countToken);
+                  setCountQty(recoveredDraft.countQty);
+                  setFinding((recoveredDraft.item?.finding as Finding) || "NORMAL");
+                  setNotes(recoveredDraft.item?.notes ?? "");
+                  setEditorItem(recoveredDraft.item);
+                  cameraCountItemRef.current = recoveredDraft.startedFromCamera ? recoveredDraft.item?.id ?? null : null;
+                  setRecoveredDraft(null);
+                }}
+                className="self-end shrink-0 rounded-lg bg-[#735f2b] px-3 py-2 font-bold text-white hover:bg-[#5d4d24] sm:self-auto"
+              >
+                Lanjutkan draft
+              </button>
+            )}
+            {recoveredDraft.stale && recoveredDraft.item?.inScope && recoveredDraft.item.status !== "COUNTING" && isActive && (
+              <button
+                type="button"
+                data-testid="button-recount-stale-draft"
+                onClick={() => void openCount(recoveredDraft.item!)}
+                className="self-end shrink-0 rounded-lg bg-[#735f2b] px-3 py-2 font-bold text-white hover:bg-[#5d4d24] sm:self-auto"
+              >
+                Hitung ulang
+              </button>
+            )}
+            {recoveredDraft.stale && (
+              <button
+                type="button"
+                data-testid="button-dismiss-stale-count-draft"
+                onClick={() => {
+                  removeCountDraft(userId, session.id);
+                  setRecoveredDraft(null);
+                }}
+                className="self-end shrink-0 rounded-lg px-2 py-1 font-bold hover:bg-[#f6edcf] sm:self-auto"
+              >
+                Buang draft lama
+              </button>
+            )}
           </div>
         )}
         {scanNextAvailable && isActive && (
@@ -771,7 +1140,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
               {isActive && (
                 <p className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-[#687e79]">
                   <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a17e2d]" />
-                  Stok bergerak tetap diizinkan. Jika berubah selama jendela hitung, tandai konflik dan hitung ulang item sebelum finalisasi.
+                  Stok bergerak tetap diizinkan. Pergerakan yang terdeteksi selama jendela hitung wajib dihitung ulang sebelum finalisasi.
                 </p>
               )}
             </section>
@@ -785,12 +1154,12 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
 
             <section className="overflow-hidden rounded-[22px] border border-[#d7e0dc] bg-[#f8f9f5] shadow-[0_5px_20px_rgba(26,64,66,.035)]" data-testid="panel-audit-items">
               <div className="border-b border-[#e1e7e2] px-4 py-4 sm:px-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
+                <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="min-w-0">
                     <h3 className="text-base font-extrabold tracking-tight text-[#1b3b3d]">Daftar hitung</h3>
-                    <p className="mt-1 text-xs text-[#74847f]">Pindai barcode untuk melihat stok sistem terbaru; tombol hitung mengambil baseline saat hitung dimulai.</p>
+                    <p className="mt-1 text-xs leading-5 text-[#74847f]">Pindai barcode untuk melihat stok sistem terbaru; tombol hitung mengambil baseline saat hitung dimulai.</p>
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
                     <label className="relative block min-w-0 sm:w-[280px]">
                       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#78908a]" />
                       <input
@@ -805,7 +1174,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                       />
                     </label>
                     <label className="sr-only" htmlFor="audit-status-filter">Filter status</label>
-                    <select id="audit-status-filter" data-testid="select-audit-status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="h-10 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] shadow-none outline-none focus:border-[#63988b]">
+                    <select id="audit-status-filter" data-testid="select-audit-status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="h-10 w-full min-w-0 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] shadow-none outline-none focus:border-[#63988b] lg:w-auto">
                       <option value="">Semua status</option>
                       <option value="PENDING">Belum dihitung</option>
                       <option value="COUNTING">Sedang dihitung</option>
@@ -813,7 +1182,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                       <option value="RECOUNT_REQUIRED">Perlu hitung ulang</option>
                       <option value="EXCLUDED">Pengecualian</option>
                     </select>
-                    <button type="button" data-testid="button-focus-barcode" onClick={() => searchInputRef.current?.focus()} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] hover:bg-[#e9f0eb]">
+                    <button type="button" data-testid="button-focus-barcode" onClick={() => searchInputRef.current?.focus()} className="inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] hover:bg-[#e9f0eb] lg:w-auto">
                       <Barcode className="h-4 w-4" /> Pindai / ketik
                     </button>
                     <button
@@ -821,7 +1190,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                       data-testid="button-open-camera-scanner"
                       disabled={!canWork}
                       onClick={openCameraScanner}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-3 text-xs font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:opacity-45"
+                      className="inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-3 text-xs font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
                     >
                       <Camera className="h-4 w-4" /> Scan Kamera
                     </button>
@@ -841,7 +1210,19 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                   {(search || statusFilter) && <button type="button" data-testid="button-clear-audit-filter" onClick={() => { setSearch(""); setStatusFilter(""); setPage(1); }} className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-[#23665d] hover:bg-[#e7f0eb]">Hapus filter</button>}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <>
+                  <div className="space-y-3 p-3 sm:hidden" data-testid="list-audit-item-cards">
+                    {items.map((item) => (
+                      <AuditItemCard
+                        key={item.id}
+                        item={item}
+                        canWork={canWork}
+                        busy={Boolean(actionBusy)}
+                        onCount={() => void openCount(item)}
+                      />
+                    ))}
+                  </div>
+                  <div className="hidden max-w-full overflow-x-auto sm:block">
                   <table className="w-full min-w-[900px] border-collapse text-left">
                     <thead className="bg-[#edf2ed]">
                       <tr className="border-b border-[#dce4de] text-[9px] font-extrabold uppercase tracking-[.15em] text-[#71827d]">
@@ -858,16 +1239,17 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                       {items.map((item) => <AuditItemRow key={item.id} item={item} canWork={canWork} busy={Boolean(actionBusy)} onCount={() => void openCount(item)} />)}
                     </tbody>
                   </table>
-                </div>
+                  </div>
+                </>
               )}
-              <footer className="flex flex-col gap-3 border-t border-[#e1e7e2] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <footer className="flex min-w-0 flex-col gap-3 border-t border-[#e1e7e2] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <span data-testid="text-audit-pagination" className="text-[11px] text-[#768681]">
                   {totalItems ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, totalItems)} dari ${totalItems} produk` : "0 produk"}
                 </span>
-                <div className="flex items-center justify-between gap-2 sm:justify-end">
-                  <button type="button" data-testid="button-audit-prev-page" aria-label="Halaman sebelumnya" disabled={page <= 1 || loadingItems} onClick={() => setPage((value) => Math.max(1, value - 1))} className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#d9e1dc] px-3 text-xs font-semibold text-[#48635d] hover:bg-[#ecf1ed] disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft className="h-4 w-4" /> Sebelumnya</button>
+                <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-end">
+                  <button type="button" data-testid="button-audit-prev-page" aria-label="Halaman sebelumnya" disabled={page <= 1 || loadingItems} onClick={() => setPage((value) => Math.max(1, value - 1))} className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-[#d9e1dc] px-2.5 text-[11px] font-semibold text-[#48635d] hover:bg-[#ecf1ed] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-xs"><ChevronLeft className="h-4 w-4 shrink-0" /> Sebelumnya</button>
                   <span className="min-w-[75px] text-center font-mono text-[11px] text-[#71817c]" data-testid="text-audit-page">Hal. {page} / {pageCount}</span>
-                  <button type="button" data-testid="button-audit-next-page" aria-label="Halaman berikutnya" disabled={page >= pageCount || loadingItems} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#d9e1dc] px-3 text-xs font-semibold text-[#48635d] hover:bg-[#ecf1ed] disabled:cursor-not-allowed disabled:opacity-40">Berikutnya <ChevronRight className="h-4 w-4" /></button>
+                  <button type="button" data-testid="button-audit-next-page" aria-label="Halaman berikutnya" disabled={page >= pageCount || loadingItems} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-lg border border-[#d9e1dc] px-2.5 text-[11px] font-semibold text-[#48635d] hover:bg-[#ecf1ed] disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-xs">Berikutnya <ChevronRight className="h-4 w-4 shrink-0" /></button>
                 </div>
               </footer>
             </section>
@@ -968,8 +1350,8 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       )}
 
       {editorItem && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCountEditor(); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="count-dialog-title" data-testid="dialog-count-item" className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCountEditor(); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="count-dialog-title" data-testid="dialog-count-item" className="max-h-[92dvh] w-full min-w-0 overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Lembar hitung fisik</p>
@@ -1018,7 +1400,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       )}
 
       {exceptionOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExceptionOpen(false); }}>
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExceptionOpen(false); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="exception-dialog-title" data-testid="dialog-audit-exception" className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div><p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Temuan di luar daftar</p><h2 id="exception-dialog-title" className="mt-1 text-lg font-extrabold text-[#1b3b3d]">Catat pengecualian</h2></div>
@@ -1073,13 +1455,13 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       )}
 
       {confirmAction && session && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#102d2b]/60 p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/60 p-0 sm:items-center sm:p-4">
           <section role="alertdialog" aria-modal="true" aria-labelledby="confirm-audit-title" data-testid="dialog-confirm-audit-action" className="w-full rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-md sm:rounded-[22px] sm:p-6">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f2edda] text-[#806722]"><ShieldAlert className="h-5 w-5" /></div>
             <h2 id="confirm-audit-title" className="mt-4 text-lg font-extrabold text-[#1b3b3d]">{confirmAction === "finalize" ? "Finalisasi audit ini?" : "Batalkan sesi audit?"}</h2>
             {confirmAction === "finalize" ? (
               <div className="mt-2 space-y-2 text-xs leading-5 text-[#697c77]">
-                <p>Finalisasi akan menerapkan hanya selisih yang sudah dikonfirmasi pada produk dalam cakupan melalui operasi backend. Tidak ada langkah persetujuan Owner.</p>
+                  <p>Finalisasi menerapkan hanya selisih yang sudah dikonfirmasi pada produk dalam cakupan terhadap stok terkini secara atomik. Pergerakan yang terdeteksi saat hitung harus dihitung ulang terlebih dahulu. Tidak ada langkah persetujuan Owner.</p>
                 <div className="rounded-xl border border-[#dce5df] bg-[#eef2ed] p-3">
                   <p className="mb-2 font-bold text-[#3c5b55]">Ringkasan sebelum rekonsiliasi</p>
                   <p>Produk dihitung: <strong>{session.summary.counted}</strong> / {session.summary.totalProducts}</p>
@@ -1103,7 +1485,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
       )}
 
       {actionBusy && <span className="sr-only" role="status" data-testid="status-audit-action-busy">{actionBusy}</span>}
-    </main>
+    </div>
   );
 }
 
@@ -1120,6 +1502,80 @@ function SummaryCell({ label, value, accent, testId }: { label: string; value: n
       <p className="truncate text-[9px] font-bold uppercase leading-4 tracking-[.11em] text-[#7a8984]">{label}</p>
       <p className={`mt-1 font-mono text-xl font-black leading-none ${tones[accent]}`}>{value}</p>
     </div>
+  );
+}
+
+function AuditItemCard({ item, canWork, busy, onCount }: { item: AuditItem; canWork: boolean; busy: boolean; onCount: () => void }) {
+  const variance = item.variance ?? (
+    item.status === "COUNTED" && item.countedQty != null && item.baselineQty != null
+      ? item.countedQty - item.baselineQty
+      : null
+  );
+  const isConflict = item.status === "RECOUNT_REQUIRED";
+  const statusTone = isConflict
+    ? "bg-[#f7e7df] text-[#a04d34]"
+    : item.status === "COUNTED"
+      ? "bg-[#e3f0e7] text-[#39734d]"
+      : item.status === "COUNTING"
+        ? "bg-[#e7edf0] text-[#496c78]"
+        : item.status === "EXCLUDED" || !item.inScope
+          ? "bg-[#f3edd9] text-[#816c2d]"
+          : "bg-[#edf0eb] text-[#71817a]";
+
+  return (
+    <article data-testid={`card-audit-item-${item.id}`} className="min-w-0 max-w-full rounded-xl border border-[#dce5df] bg-white p-3 shadow-[0_2px_8px_rgba(26,64,66,.035)]">
+      <div className="flex min-w-0 items-start gap-2.5">
+        <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}>
+          <PackageSearch className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p data-testid={`text-audit-product-${item.id}`} className="break-words text-sm font-bold leading-5 text-[#294743]">{item.productName}</p>
+          <p className="mt-1 break-all font-mono text-[10px] leading-4 text-[#85918d]">
+            {item.barcode ? `BC ${item.barcode}` : item.masterSN ? `SKU ${item.masterSN}` : `ID ${item.productId}`}
+          </p>
+          {!item.inScope && <span className="mt-1 inline-flex rounded bg-[#f3ebd2] px-1.5 py-0.5 text-[9px] font-bold text-[#806b30]">Di luar cakupan</span>}
+          {item.finding && item.finding !== "NORMAL" && (
+            <p className="mt-1 break-words text-[10px] font-semibold leading-4 text-[#826a2b]">
+              {FINDING_LABEL[item.finding] ?? item.finding}{item.notes ? ` · ${item.notes}` : ""}
+            </p>
+          )}
+        </div>
+        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[118px] shrink-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold leading-4 ${statusTone}`}>
+          {isConflict && <AlertCircle className="h-3 w-3 shrink-0" />}{STATUS_LABEL[item.status]}
+        </span>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-1.5">
+        <div className="min-w-0 rounded-lg bg-[#f1f4f0] px-2 py-2">
+          <p className="break-words text-[9px] font-semibold leading-3 text-[#75847e]">Sistem</p>
+          <p data-testid={`text-audit-system-${item.id}`} className="mt-1 font-mono text-base font-bold text-[#425d57]">{item.systemQty}</p>
+        </div>
+        <div className="min-w-0 rounded-lg bg-[#f1f4f0] px-2 py-2">
+          <p className="break-words text-[9px] font-semibold leading-3 text-[#75847e]">Fisik</p>
+          <p data-testid={`text-audit-counted-${item.id}`} className={`mt-1 font-mono text-base font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</p>
+        </div>
+        <div className="min-w-0 rounded-lg bg-[#f1f4f0] px-2 py-2">
+          <p className="break-words text-[9px] font-semibold leading-3 text-[#75847e]">Selisih</p>
+          <p data-testid={`text-audit-variance-${item.id}`} className={`mt-1 inline-flex items-center gap-0.5 font-mono text-base font-bold ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "text-[#39754a]" : variance < 0 ? "text-[#a34f3d]" : "text-[#617770]"}`}>
+            {variance == null ? "—" : variance > 0 ? <><ArrowUpRight className="h-3 w-3" />{variance}</> : variance < 0 ? <><ArrowDownRight className="h-3 w-3" />{Math.abs(variance)}</> : "0"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+        {item.countedByName
+          ? <p className="min-w-0 break-words text-[10px] leading-4 text-[#526d66]">{item.countedByName} · {formatDate(item.countedAt)}</p>
+          : <p className="min-w-0 text-[10px] text-[#a0aaa6]">Belum ada hitungan</p>}
+        {item.inScope && item.status !== "EXCLUDED" && item.status !== "COUNTING" ? (
+          <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
+            {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+            {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah" : "Hitung"}
+          </button>
+        ) : item.status === "COUNTING" ? (
+          <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Dibuka</span>
+        ) : <span className="shrink-0 text-[10px] text-[#899792]">—</span>}
+      </div>
+    </article>
   );
 }
 

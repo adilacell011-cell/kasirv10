@@ -162,6 +162,8 @@ export interface StockAuditItem {
   masterSN?: string | null;
   status: StockAuditItemStatus;
   inScope: boolean;
+  /** Concurrency token for resuming an in-progress physical count. */
+  countToken?: string;
   /** Stock snapshot captured when the audit session started. */
   expectedQty: number;
   /** Current stock for active audits; count-time stock for completed audits. */
