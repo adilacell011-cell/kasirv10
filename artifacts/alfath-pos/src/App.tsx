@@ -89,6 +89,7 @@ import {
 } from "react-icons/md";
 
 import { ProductTable } from "./components/ProductTable";
+import { MasterProductCatalog } from "./components/MasterProductCatalog";
 import { CustomSelect as ProductCombobox } from "./components/CustomSelect";
 import {
   ResponsiveContainer,
@@ -4812,8 +4813,8 @@ export default function App() {
               <div data-ui-screen="inventory" className="ui-screen-inventory flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
-                  <div className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
+                  <div data-product-form-overlay className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
+                    <div data-product-form-card className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
                       <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                         <h3 className="font-black text-slate-800 uppercase tracking-tight">
                           {editingProduct
@@ -4834,6 +4835,7 @@ export default function App() {
                         <form
                           onSubmit={handleSaveProduct}
                           className="space-y-5"
+                          data-product-form
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Column 1: Identity */}
@@ -5095,7 +5097,7 @@ export default function App() {
                             />
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded border border-slate-200 shadow-inner">
+                          <div data-product-pricing className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded border border-slate-200 shadow-inner">
                             <div>
                               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                                 Harga Modal (Rp)
@@ -5249,31 +5251,8 @@ export default function App() {
                     </button>
                   </div>
 
-                  {!searchTerm && (
-                    <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar text-[10px] font-bold uppercase tracking-widest">
-                      <button
-                        onClick={() => setDrillPath([])}
-                        className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl border transition-colors ${drillPath.length === 0 ? "bg-blue-600 border-blue-600 text-white" : "bg-slate-100 border-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-700"}`}
-                      >
-                        <LayoutList className="w-3 h-3" />
-                        SEMUA KATEGORI
-                      </button>
-                      {drillPath.map((path, idx) => (
-                        <React.Fragment key={idx}>
-                          <ArrowRightLeft className="w-3 h-3 text-slate-300 transform rotate-90 sm:rotate-0" />
-                          <button
-                            onClick={() =>
-                              setDrillPath(drillPath.slice(0, idx + 1))
-                            }
-                            className={`shrink-0 px-3 py-1.5 rounded-lg border bg-blue-50 border-blue-200 text-blue-600 shadow-sm`}
-                          >
-                            {path}
-                          </button>
-                        </React.Fragment>
-                      ))}
-                    </div>
-                  )}
                 </div>
+                {searchTerm ? (
                 <div className="flex-1 overflow-x-auto bg-slate-50">
                   <table className={`w-full text-left border-collapse ${(searchTerm || drillPath.length >= 3 || (drillPath.length === 2 && drillPath[0] !== "Aksesoris")) ? "min-w-[700px]" : ""}`}>
                     <thead className="bg-slate-50 sticky top-0 border-b border-slate-200 z-10">
@@ -5542,6 +5521,17 @@ export default function App() {
                     </div>
                   )}
                 </div>
+                ) : (
+                  <MasterProductCatalog
+                    products={products}
+                    searchTerm=""
+                    getProductName={getProductName}
+                    onEdit={startEditing}
+                    onDelete={handleDeleteProduct}
+                    hasMoreProducts={hasMoreProducts}
+                    onLoadMore={loadMoreProducts}
+                  />
+                )}
               </div>
             )}
 
