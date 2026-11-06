@@ -106,7 +106,7 @@ test("legacy baseline validates the full 15-model structure before it can be mar
       .filter((field) => field.kind === "object" && field.relationFromFields?.length)
       .map((field) => {
         const referenced = Prisma.dmmf.datamodel.models.find((candidate) => candidate.name === field.type)!;
-        const mapFields = (source: typeof model, names: string[]) => names.map((name) => {
+        const mapFields = (source: typeof model, names: readonly string[]) => names.map((name) => {
           const candidate = source.fields.find((field) => field.name === name)!;
           return candidate.dbName || candidate.name;
         });

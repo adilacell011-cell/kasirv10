@@ -17,6 +17,7 @@ const LEGACY_MODEL_NAMES = new Set([
 
 function safePrismaDiagnostic(error: unknown): string {
   if (!error || typeof error !== "object") return "";
+  const message = "message" in error && typeof error.message === "string" ? error.message : "";
   const stderr = "stderr" in error ? error.stderr : undefined;
   const stdout = "stdout" in error ? error.stdout : undefined;
   const raw = [stderr, stdout]
@@ -24,9 +25,9 @@ function safePrismaDiagnostic(error: unknown): string {
     .filter(Boolean)
     .join("\n")
     .trim();
-  if (!raw) return "";
+  if (!raw && !message) return "";
   const configuredUrl = process.env.DATABASE_URL;
-  return raw
+  return (raw || message)
     .replaceAll(configuredUrl ?? "\u0000", "[redacted DATABASE_URL]")
     .replace(/postgres(?:ql)?:\/\/[^\s'"]+/gi, "[redacted database URL]")
     .slice(-4000);

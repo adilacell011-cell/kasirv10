@@ -22,7 +22,8 @@ jobs:
     if: >-
       github.ref == 'refs/heads/main' ||
       (github.event_name == 'workflow_dispatch' &&
-       github.ref == 'refs/heads/validate/multiplatform-arm64' &&
+       (github.ref == 'refs/heads/validate/multiplatform-arm64' ||
+        github.ref == 'refs/heads/validate/stock-audit-camera') &&
        inputs.publish_validated_candidate == true)
     runs-on: ubuntu-latest
     strategy:
@@ -40,10 +41,13 @@ jobs:
           CONFIRM_CANDIDATE_PUBLISH: ${{ inputs.publish_validated_candidate }}
         run: |
           set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "adilacell011-cell/kasirv10"
           source_sha="$GITHUB_SHA"
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             publish_latest=true
-          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" == "refs/heads/validate/multiplatform-arm64" ]]; then
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" &&
+                  ( "$GITHUB_REF" == "refs/heads/validate/multiplatform-arm64" ||
+                    "$GITHUB_REF" == "refs/heads/validate/stock-audit-camera" ) ]]; then
             if [[ "$CONFIRM_CANDIDATE_PUBLISH" != "true" ]]; then
               echo "Candidate publication requires explicit confirmation."
               exit 1
