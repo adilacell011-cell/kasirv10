@@ -51,6 +51,40 @@ Pada target Compose yang diizinkan (`db:5432/kasirv10` atau
 6. Setelah layanan init sukses, API entrypoint menjalankan pemeriksaan baca-saja
    `dist/database-check-cli.mjs` sebelum membuka port. API tidak menjalankan DDL.
 
+## Upgrade manual schema lama 15 → 17 model
+
+Proyek sebelumnya memakai `prisma db push` dan belum memiliki riwayat Prisma
+Migrate. Migrasi pertama ini hanya untuk target staging/QA yang memiliki 15 tabel
+lama dan belum memiliki `BranchStockAudit` maupun `BranchStockAuditItem`.
+
+- Migrasi: `prisma/migrations/20261106120000_add_branch_stock_audit_tables/migration.sql`.
+- Migrasi berjalan manual melalui `db:migrate-staging`; tidak dipanggil dari
+  entrypoint API atau Compose startup.
+- Perintah memvalidasi `DATABASE_URL`, `DB_EXPECTED_*`, `STAGING_SCHEMA_INIT_TARGET`,
+  flag `--execute`, dan persetujuan yang tepat untuk target.
+- SQL memeriksa nama database staging/QA, keberadaan 15 tabel lama, dan
+  ketidakberadaan dua tabel baru sebelum DDL. Tabel atau data lama tidak diubah.
+  Foreign key, indeks, atau constraint yang gagal dibuat membatalkan transaksi.
+- Setelah migrasi, jalankan `db:check` dari image kandidat sebelum API dibuka.
+  Pemeriksaan tetap wajib dan tidak dinonaktifkan.
+
+Jalankan sebagai perintah maintenance satu kali dari direktori stack Dockge.
+Gunakan image API kandidat yang sama untuk schema-init dan API:
+
+    docker compose run --rm --no-deps --entrypoint node api \
+      --enable-source-maps \
+      /app/artifacts/api-server/dist/schema-migration-main.mjs \
+      --execute \
+      --approve=schema-migrate:production:db:5432/kasirv10_staging/public
+
+Image `schema-init` dan `api` harus menggunakan SHA API yang sama. Referensi image
+keduanya di `compose.staging.yaml` memakai `KASIRV10_IMAGE_SHA` yang sama. Jika
+database kosong, tetap gunakan jalur `db:init-schema` yang sudah ada; jangan
+jalankan migrasi legacy ini. Jika database sudah memiliki salah satu tabel audit,
+migrasi berhenti dan perlu inspeksi manual, bukan reset atau retry paksa.
+Perintah di atas tidak dijalankan otomatis; buat backup yang tervalidasi dan
+pastikan `docker compose config` menunjukkan target staging yang diharapkan dulu.
+
 Compose menetapkan database internal sendiri (`db`) dan mengunci nama target
 yang didukung; host jarak jauh, nama database lain, schema lain, atau allowlist
 yang tidak cocok ditolak. PostgreSQL harus sehat sebelum layanan init mulai.

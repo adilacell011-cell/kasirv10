@@ -1,0 +1,3 @@
+-- Baseline marker for databases created before Prisma Migrate was introduced.
+-- This migration is recorded with `prisma migrate resolve --applied`; it is
+-- intentionally not executed and contains no schema or data changes.
