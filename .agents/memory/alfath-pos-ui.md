@@ -242,3 +242,13 @@ panel min-width) which overflowed or clipped on phones.
 panel `min-w-[...]` must be `lg:`-gated (parents sometimes have `overflow-hidden` that clips it);
 wide multi-column tables either live in `overflow-x-auto` or shrink fixed column widths on phones
 (`w-20 md:w-32`). Inner pages are login-gated so they can't be screenshotted — audit by code.
+
+## Product catalog visual direction — compact premium, not heavy neumorphism
+The owner feels large, deeply raised neumorphic product components are too bulky for catalogs with
+many long product names, and wants a more luxurious, tidy look. Discuss the direction before changing
+the live UI. Prefer a compact Fluent-style list/table with restrained borders and shadows; reserve
+stronger neumorphic depth for a few primary controls or summary surfaces. Keep long names readable.
+**Why:** product discovery and dense catalogs benefit more from information density than a large card
+per item, while the POS still needs clear, easy-to-tap product targets.
+**How to apply:** distinguish the master product-management list from the tablet POS picker; avoid
+blanket card-sizing changes across unrelated pages.
