@@ -14,6 +14,11 @@ on:
         description: Exact source SHA for the clean stock-audit candidate
         required: false
         type: string
+      verify_existing_candidate:
+        description: Verify the already-published stock-audit candidate without building or publishing
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -159,7 +164,11 @@ jobs:
         run: |
           set -euo pipefail
           docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
-          published_digest="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" --format '{{.Digest}}')"
+          published_digest="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" | awk '$1 == "Digest:" { print $2; exit }')"
+          if [[ -z "$published_digest" ]]; then
+            echo "Could not read the published registry digest." >&2
+            exit 1
+          fi
           if [[ "$published_digest" != "$IMAGE_DIGEST" ]]; then
             echo "Published digest does not match the build result." >&2
             echo "Build: $IMAGE_DIGEST; registry: $published_digest" >&2
@@ -191,5 +200,78 @@ jobs:
           }
           console.log(`Image: ${process.env.IMAGE}:${process.env.IMAGE_TAG}`);
           console.log(`Digest: ${process.env.IMAGE_DIGEST}`);
+          console.log("Published manifest includes linux/amd64 and linux/arm64.");
+          NODE
+
+  verify-published-candidate:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/validate/stock-audit-camera-clean' && inputs.verify_existing_candidate == true }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            expected_digest: sha256:2ae5e628c512640b1c7a51fe5d69823ab4746ed1bab571d6bbe0ce4473771df9
+          - name: web
+            expected_digest: sha256:0b9020d34c68207b9d012ad7fb4d7d8a138ccc036ace24d935ee9957141d13f2
+    steps:
+      - name: Verify approved source and registry targets
+        env:
+          SOURCE_SHA: ${{ inputs.candidate_source_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$SOURCE_SHA" != "e50168c70c0de0f5c2a8619bc77adb377adada8c" ]]; then
+            echo "Refusing verification: source SHA does not match the approved candidate."
+            exit 1
+          fi
+          echo "Source SHA: $SOURCE_SHA"
+          echo "Registry tag is pinned to the recorded publish run and attempt."
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify published digest and platform manifest
+        env:
+          IMAGE: ghcr.io/adilacell011-cell/kasirv10-${{ matrix.name }}
+          IMAGE_TAG: candidate-e50168c70c0de0f5c2a8619bc77adb377adada8c-run-42199766269-attempt-1
+          EXPECTED_DIGEST: ${{ matrix.expected_digest }}
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
+          inspect_output="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}")"
+          published_digest="$(printf '%s\n' "$inspect_output" | awk '$1 == "Digest:" { print $2; exit }')"
+          if [[ -z "$published_digest" || "$published_digest" != "$EXPECTED_DIGEST" ]]; then
+            echo "Published digest did not match the recorded build digest." >&2
+            echo "Expected: $EXPECTED_DIGEST; registry: ${published_digest:-missing}" >&2
+            exit 1
+          fi
+          node <<'NODE'
+          const fs = require("node:fs");
+          const manifest = JSON.parse(fs.readFileSync("/tmp/manifest.json", "utf8"));
+          const descriptors = (manifest.manifests || []).map((item) => ({
+            mediaType: item.mediaType || null,
+            digest: item.digest || null,
+            size: item.size ?? null,
+            os: item.platform?.os || null,
+            architecture: item.platform?.architecture || null,
+            variant: item.platform?.variant || null,
+          }));
+          console.log(`Image: ${process.env.IMAGE}:${process.env.IMAGE_TAG}`);
+          console.log(`Digest: ${process.env.EXPECTED_DIGEST}`);
+          console.log("Manifest descriptors:");
+          console.log(JSON.stringify(descriptors, null, 2));
+          const platforms = new Set(descriptors.map((item) => `${item.os}/${item.architecture}`));
+          for (const expected of ["linux/amd64", "linux/arm64"]) {
+            if (!platforms.has(expected)) {
+              console.error(`Missing ${expected} in published image manifest`);
+              process.exit(1);
+            }
+          }
           console.log("Published manifest includes linux/amd64 and linux/arm64.");
           NODE
