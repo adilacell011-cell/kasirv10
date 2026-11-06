@@ -17,9 +17,13 @@ const scalarTypes: Record<string, string> = {
 };
 const same = (a: string[], b: readonly string[]) => a.length === b.length && a.every((v, i) => v === b[i]);
 
-export function assertCompatibleSchema(snapshot: SchemaSnapshot, target: DatabaseTarget) {
+export function assertCompatibleSchema(
+  snapshot: SchemaSnapshot,
+  target: DatabaseTarget,
+  models = Prisma.dmmf.datamodel.models,
+) {
   if (snapshot.database_name !== target.database) throw new Error("Connected database identity mismatch.");
-  for (const model of Prisma.dmmf.datamodel.models) {
+  for (const model of models) {
     const table = model.dbName || model.name;
     for (const field of model.fields.filter(f => f.kind === "scalar")) {
       const column = field.dbName || field.name;
@@ -64,7 +68,11 @@ export function assertCompatibleSchema(snapshot: SchemaSnapshot, target: Databas
 }
 
 // One SELECT and one catalog snapshot. No DDL, data writes or automatic repairs.
-export async function inspectDatabase(prisma: Pick<PrismaClient, "$queryRaw">, target: DatabaseTarget) {
+export async function inspectDatabase(
+  prisma: Pick<PrismaClient, "$queryRaw">,
+  target: DatabaseTarget,
+  models = Prisma.dmmf.datamodel.models,
+) {
   const snapshots = await prisma.$queryRaw<SchemaSnapshot[]>`
     SELECT current_database() AS database_name,
       COALESCE((SELECT json_agg(c) FROM (
@@ -94,7 +102,7 @@ export async function inspectDatabase(prisma: Pick<PrismaClient, "$queryRaw">, t
         WHERE con.contype = 'f' AND con.convalidated AND n.nspname = ${target.schema}
       ) f), '[]'::json) AS foreign_keys`;
   if (!snapshots[0]) throw new Error("Database readiness returned no metadata.");
-  assertCompatibleSchema(snapshots[0], target);
+  assertCompatibleSchema(snapshots[0], target, models);
 }
 
 export function createReadiness(check: () => Promise<void>) {

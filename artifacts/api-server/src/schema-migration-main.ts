@@ -2,13 +2,18 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { inspectDatabase } from "./database-readiness";
 import { validateDatabaseTarget } from "./database-target";
 import { approveStagingSchemaMigration } from "./schema-migration";
 
 const BASELINE_MIGRATION = "20261106110000_baseline_existing_15_table_schema";
 const AUDIT_MIGRATION = "20261106120000_add_branch_stock_audit_tables";
+const LEGACY_MODEL_NAMES = new Set([
+  "User", "Branch", "Product", "ProductStock", "VoucherSN", "Sale",
+  "SaleIdempotency", "SaleItem", "Commission", "Adjustment", "GlobalConfig",
+  "Shift", "StockSnapshot", "DailyIncomeSummary", "ShoppingPlan",
+]);
 
 function safePrismaDiagnostic(error: unknown): string {
   if (!error || typeof error !== "object") return "";
@@ -95,19 +100,13 @@ async function main() {
       throw new Error("Audit Stok tables already exist without a completed migration record; refusing to infer or alter schema.");
     }
 
-    const absentTables = await client.$queryRaw<Array<{ table_name: string }>>`
-      SELECT required.table_name
-        FROM unnest(ARRAY[
-          'User', 'Branch', 'Product', 'ProductStock', 'VoucherSN', 'Sale',
-          'SaleIdempotency', 'SaleItem', 'Commission', 'Adjustment',
-          'GlobalConfig', 'Shift', 'StockSnapshot', 'DailyIncomeSummary',
-          'ShoppingPlan'
-        ]::text[]) AS required(table_name)
-       WHERE to_regclass(format('%I.%I', 'public', required.table_name)) IS NULL
-    `;
-    if (absentTables.length > 0) {
-      throw new Error(`Legacy schema is incomplete: ${absentTables.map((row) => row.table_name).join(", ")}`);
+    const legacyModels = Prisma.dmmf.datamodel.models.filter((model) => LEGACY_MODEL_NAMES.has(model.name));
+    if (legacyModels.length !== LEGACY_MODEL_NAMES.size) {
+      throw new Error("The application Prisma datamodel no longer matches the approved 15-table legacy baseline.");
     }
+    // Validate all legacy columns, nullability, unique keys and foreign-key
+    // actions before recording the baseline or applying any DDL.
+    await inspectDatabase(client, target, legacyModels);
 
     if (!baseline) {
       const baselineOutput = execFileSync(process.execPath, [

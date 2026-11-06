@@ -62,9 +62,11 @@ lama dan belum memiliki `BranchStockAudit` maupun `BranchStockAuditItem`.
   entrypoint API atau Compose startup.
 - Perintah memvalidasi `DATABASE_URL`, `DB_EXPECTED_*`, `STAGING_SCHEMA_INIT_TARGET`,
   flag `--execute`, dan persetujuan yang tepat untuk target.
-- SQL memeriksa nama database staging/QA, keberadaan 15 tabel lama, dan
-  ketidakberadaan dua tabel baru sebelum DDL. Tabel atau data lama tidak diubah.
-  Foreign key, indeks, atau constraint yang gagal dibuat membatalkan transaksi.
+- Sebelum baseline dicatat, checker hanya-baca membandingkan struktur seluruh
+  15 model lama: kolom, tipe, nullability, primary/unique key, dan aksi foreign
+  key. SQL juga memeriksa nama database staging/QA dan ketidakberadaan dua tabel
+  baru sebelum DDL. Tabel atau data lama tidak diubah. Kegagalan DDL membatalkan
+  transaksi.
 - Setelah migrasi, jalankan `db:check` dari image kandidat sebelum API dibuka.
   Pemeriksaan tetap wajib dan tidak dinonaktifkan.
 
