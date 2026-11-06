@@ -163,10 +163,26 @@ jobs:
           IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
         run: |
           set -euo pipefail
-          docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
-          published_digest="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" | awk '$1 == "Digest:" { print $2; exit }')"
+          if ! docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" \
+            > /tmp/manifest.json 2> /tmp/manifest-inspect.err; then
+            echo "Could not read the published registry manifest for ${IMAGE}:${IMAGE_TAG}." >&2
+            cat /tmp/manifest-inspect.err >&2
+            exit 1
+          fi
+
+          if ! inspect_output="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" \
+            2> /tmp/manifest-summary.err)"; then
+            echo "Could not inspect the published registry digest for ${IMAGE}:${IMAGE_TAG}." >&2
+            cat /tmp/manifest-summary.err >&2
+            exit 1
+          fi
+          published_digest="$(printf '%s\n' "$inspect_output" | awk '$1 == "Digest:" { print $2; exit }')"
+          if [[ -z "$IMAGE_DIGEST" ]]; then
+            echo "Build action did not return the published manifest digest." >&2
+            exit 1
+          fi
           if [[ -z "$published_digest" ]]; then
-            echo "Could not read the published registry digest." >&2
+            echo "Could not read the published registry digest from the inspect output." >&2
             exit 1
           fi
           if [[ "$published_digest" != "$IMAGE_DIGEST" ]]; then
@@ -194,10 +210,6 @@ jobs:
               process.exit(1);
             }
           }
-          if (!process.env.IMAGE_DIGEST) {
-            console.error("Build action did not return the published manifest digest.");
-            process.exit(1);
-          }
           console.log(`Image: ${process.env.IMAGE}:${process.env.IMAGE_TAG}`);
           console.log(`Digest: ${process.env.IMAGE_DIGEST}`);
           console.log("Published manifest includes linux/amd64 and linux/arm64.");
@@ -213,21 +225,21 @@ jobs:
       matrix:
         include:
           - name: api
-            expected_digest: sha256:2ae5e628c512640b1c7a51fe5d69823ab4746ed1bab571d6bbe0ce4473771df9
+            expected_digest: sha256:c5a185d10f5d9330b01fc7dc5a24150ee87c76b2504d887387a004b1853d85f2
           - name: web
-            expected_digest: sha256:0b9020d34c68207b9d012ad7fb4d7d8a138ccc036ace24d935ee9957141d13f2
+            expected_digest: sha256:40a990158e92ecd1e6c8d1a5b85d4207ad4327258559f16c84f289efddb3957c
     steps:
       - name: Verify approved source and registry targets
         env:
           SOURCE_SHA: ${{ inputs.candidate_source_sha }}
         run: |
           set -euo pipefail
-          if [[ "$SOURCE_SHA" != "e50168c70c0de0f5c2a8619bc77adb377adada8c" ]]; then
+          if [[ "$SOURCE_SHA" != "1f45011808afa79437629758d5fcb25332b900f0" ]]; then
             echo "Refusing verification: source SHA does not match the approved candidate."
             exit 1
           fi
           echo "Source SHA: $SOURCE_SHA"
-          echo "Registry tag is pinned to the recorded publish run and attempt."
+          echo "Registry tag is pinned to publish run 42211464440, attempt 1."
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
@@ -239,14 +251,24 @@ jobs:
       - name: Verify published digest and platform manifest
         env:
           IMAGE: ghcr.io/adilacell011-cell/kasirv10-${{ matrix.name }}
-          IMAGE_TAG: candidate-e50168c70c0de0f5c2a8619bc77adb377adada8c-run-42199766269-attempt-1
+          IMAGE_TAG: candidate-1f45011808afa79437629758d5fcb25332b900f0-run-42211464440-attempt-1
           EXPECTED_DIGEST: ${{ matrix.expected_digest }}
         run: |
           set -euo pipefail
-          docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
-          inspect_output="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}")"
+          if ! docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" \
+            > /tmp/manifest.json 2> /tmp/manifest-inspect.err; then
+            echo "Could not read the published registry manifest for ${IMAGE}:${IMAGE_TAG}." >&2
+            cat /tmp/manifest-inspect.err >&2
+            exit 1
+          fi
+          if ! inspect_output="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" \
+            2> /tmp/manifest-summary.err)"; then
+            echo "Could not inspect the published registry digest for ${IMAGE}:${IMAGE_TAG}." >&2
+            cat /tmp/manifest-summary.err >&2
+            exit 1
+          fi
           published_digest="$(printf '%s\n' "$inspect_output" | awk '$1 == "Digest:" { print $2; exit }')"
-          if [[ -z "$published_digest" || "$published_digest" != "$EXPECTED_DIGEST" ]]; then
+          if [[ -z "$EXPECTED_DIGEST" || "$published_digest" != "$EXPECTED_DIGEST" ]]; then
             echo "Published digest did not match the recorded build digest." >&2
             echo "Expected: $EXPECTED_DIGEST; registry: ${published_digest:-missing}" >&2
             exit 1
