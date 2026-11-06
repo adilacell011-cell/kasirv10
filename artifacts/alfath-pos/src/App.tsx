@@ -3305,10 +3305,9 @@ export default function App() {
 
   if (!profile) {
     return (
-      <div className="dark flex min-h-[100dvh] font-sans items-center justify-center p-4" style={{ backgroundColor: '#020617' }}>
+      <div className="auth-screen dark flex min-h-[100dvh] font-sans items-center justify-center p-4">
         {/* app-solid: exclude from neumorphic selector — no white halo on dark background */}
-        <div className="app-solid rounded-3xl max-w-sm w-full animate-in zoom-in-95 duration-300 overflow-hidden"
-             style={{ backgroundColor: '#1e293b', border: '1px solid rgba(71,85,105,0.5)', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}>
+        <div className="auth-card app-solid rounded-3xl max-w-sm w-full animate-in zoom-in-95 duration-300 overflow-hidden">
 
           {/* Header strip */}
           <div className="px-8 pt-9 pb-6 text-center" style={{ borderBottom: '1px solid rgba(71,85,105,0.4)' }}>
@@ -3347,7 +3346,7 @@ export default function App() {
                   type="text"
                   required
                   style={{ backgroundColor: '#0f172a', borderColor: 'rgba(71,85,105,0.6)', color: '#f1f5f9' }}
-                  className="w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
+                  className="auth-field w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
                   placeholder="Masukkan username"
                 />
               </div>
@@ -3360,13 +3359,13 @@ export default function App() {
                   type="password"
                   required
                   style={{ backgroundColor: '#0f172a', borderColor: 'rgba(71,85,105,0.6)', color: '#f1f5f9' }}
-                  className="w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
+                  className="auth-field w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
                   placeholder="••••••••"
                 />
               </div>
               <button
                 type="submit"
-                className="w-full mt-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+                className="auth-submit w-full mt-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 Masuk ke Sistem <ArrowRight className="w-4 h-4" />
               </button>
@@ -3406,8 +3405,8 @@ export default function App() {
 
   if (profile?.role === "PENDING") {
     return (
-      <div className="flex min-h-[100dvh] bg-slate-50 font-sans items-center justify-center p-4">
-        <div className="bg-white p-4 md:p-8 rounded border border-amber-200 max-w-md w-full text-center shadow-sm">
+      <div className="auth-screen dark flex min-h-[100dvh] bg-slate-50 font-sans items-center justify-center p-4">
+        <div className="auth-card app-solid p-4 md:p-8 rounded border border-amber-200 max-w-md w-full text-center shadow-sm">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-800 mb-2 tracking-tight">
             Akun Menunggu Review
@@ -3479,14 +3478,14 @@ export default function App() {
   // --- MAIN UI ---
   return (
     <>
-      <div className="flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden">
+      <div className="app-shell flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden">
         {/* --- DESKTOP/TABLET SIDEBAR --- */}
         <div
           className={`fixed inset-0 bg-black/50 z-[80] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
-        <aside className={`fixed inset-y-0 left-0 w-64 bg-[#e0e5ec] dark:bg-[#23262e] border-r border-white/50 dark:border-white/5 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`app-sidebar fixed inset-y-0 left-0 w-64 bg-[#e0e5ec] dark:bg-[#23262e] border-r border-white/50 dark:border-white/5 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="h-16 flex items-center px-4 md:px-6 border-b border-white/60 dark:border-white/10 shrink-0">
             <img
               src={`${import.meta.env.BASE_URL}logo.png`}
@@ -3690,7 +3689,7 @@ export default function App() {
         {/* --- DASHBOARD CONTENT AREA --- */}
         <div className="flex-1 flex flex-col min-w-0 pb-[68px] md:pb-0 relative h-[100dvh]">
           {/* HEADER */}
-          <header className={`h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
+          <header className={`app-topbar h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
             <div className={`flex items-center gap-3 md:gap-4 overflow-hidden ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
               <button className="p-2 -ml-1 rounded-xl bg-slate-50 text-blue-600 shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_12px_1px_rgba(59,130,246,0.3)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_12px_1px_rgba(59,130,246,0.3)] active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] transition-all" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <Menu className="w-6 h-6" />
@@ -3791,10 +3790,10 @@ export default function App() {
           </header>
 
           {/* WORKSPACES */}
-          <main className={`flex-1 overflow-hidden flex bg-slate-50/50 relative h-full ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
+          <main className={`app-workspace flex-1 overflow-hidden flex bg-slate-50/50 relative h-full ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
             {/* --- 1. ADMIN: PENGATURAN AKSES KARYAWAN --- */}
             {activeMenu === "employees" && profile?.role === "ADMIN" && (
-              <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+              <div data-ui-screen="employees" className="ui-screen-employees flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
                 <div className="bg-white rounded-3xl flex flex-col h-full overflow-hidden">
                   <div className="p-3 md:p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
                     <div className="flex items-start gap-3">
@@ -4100,7 +4099,7 @@ export default function App() {
             {/* --- 2. ADMIN: PENGATURAN CABANG --- */}
             {activeMenu === "reports" &&
               (profile?.role === "ADMIN" || profile?.role === "AUDIT") && (
-                <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
+                <div data-ui-screen="reports" className="ui-screen-reports flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 text-left">
                     <div>
                       <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
@@ -4622,7 +4621,7 @@ export default function App() {
                 )}
 
             {activeMenu === "settings" && profile?.role === "ADMIN" && (
-              <div className="flex-1 p-4 md:p-4 md:p-6 overflow-y-auto">
+              <div data-ui-screen="settings" className="ui-screen-settings flex-1 p-4 md:p-4 md:p-6 overflow-y-auto">
                 <div className="max-w-3xl mx-auto space-y-6 text-left pb-20">
                   {/* Card Configuration Switch */}
                   <div className="bg-white p-4 md:p-7 rounded-2xl md:rounded-[32px]">
@@ -4810,7 +4809,7 @@ export default function App() {
 
             {/* --- 3. ADMIN: INVENTORY MASTER --- */}
             {activeMenu === "inventory" && profile?.role === "ADMIN" && (
-              <div className="flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
+              <div data-ui-screen="inventory" className="ui-screen-inventory flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
                   <div className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
@@ -5548,7 +5547,7 @@ export default function App() {
 
             {/* --- 4. ADMIN: STOK PER CABANG --- */}
             {activeMenu === "branch_stocks" && profile?.role === "ADMIN" && (
-              <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
+              <div data-ui-screen="branch-stocks" className="ui-screen-branch-stocks flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
                   <div>
                     <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
@@ -5695,7 +5694,7 @@ export default function App() {
 
             {/* --- 5. ADMIN: DAFTAR BELANJA (LOW STOCK) --- */}
             {activeMenu === "shopping_list" && profile?.role === "ADMIN" && (
-              <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
+              <div data-ui-screen="shopping-list" className="ui-screen-shopping-list flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 text-left">
                   <div>
                     <div className="flex items-center gap-3 mb-2 text-left">
@@ -6288,7 +6287,7 @@ export default function App() {
               )}
             {activeMenu === "audit" &&
               (profile?.role === "AUDIT" || profile?.role === "ADMIN") && (
-                <div className="flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden">
+                <div data-ui-screen="opname" className="ui-screen-opname flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden">
                   <div className="p-4 border-b border-slate-200 bg-slate-100 flex flex-col gap-4 justify-between shrink-0">
                     <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                       <div className="flex-1 w-full text-left">
@@ -7146,7 +7145,7 @@ export default function App() {
             {/* --- 5. CASHIER: POS AREA --- */}
             {/* --- NEW: CASHIER STOCK INPUT --- */}
             {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && !shiftOpen && (
-              <div className="flex-1 flex items-center justify-center bg-slate-50 p-4">
+              <div data-ui-screen="cashier-stock" className="ui-screen-cashier-stock flex-1 flex items-center justify-center bg-slate-50 p-4">
                 <div
                   role="status"
                   className="w-full max-w-sm rounded-3xl border border-amber-200 bg-white p-6 text-center shadow-xl"
@@ -7171,7 +7170,7 @@ export default function App() {
             )}
 
             {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && shiftOpen && (
-              <div className="flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
+              <div data-ui-screen="cashier-stock" className="ui-screen-cashier-stock flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
                 {!appConfig.allowCashierStockInput ? (
                   <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white rounded-[32px] border border-slate-200 shadow-sm max-w-md mx-auto my-auto text-center space-y-6">
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 shadow-inner">
@@ -7493,7 +7492,7 @@ export default function App() {
             )}
 
             {activeMenu === "pos" && profile?.role === "CASHIER" && !shiftOpen && (
-              <div className="flex-1 flex items-center justify-center bg-slate-50 p-4">
+              <div data-ui-screen="pos-locked" className="ui-screen-pos-locked flex-1 flex items-center justify-center bg-slate-50 p-4">
                 <div
                   role="status"
                   className="w-full max-w-sm rounded-3xl border border-amber-200 bg-white p-6 text-center shadow-xl"
@@ -7518,7 +7517,7 @@ export default function App() {
             )}
 
             {activeMenu === "pos" && profile?.role === "CASHIER" && shiftOpen && (
-              <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
+              <div data-ui-screen="pos" className="ui-screen-pos flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
                 <div className="p-2 bg-white shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
                   <div className="flex items-center justify-between mb-2 px-1 text-left">
@@ -8782,7 +8781,7 @@ export default function App() {
 
             {/* --- 6. BONUS & INCENTIVE --- */}
             {activeMenu === "incentive" && (
-              <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+              <div data-ui-screen="incentive" className="ui-screen-incentive flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
                 <div className="p-4 md:p-8 shrink-0">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
@@ -8953,7 +8952,7 @@ export default function App() {
               </div>
             )}
             {activeMenu === "shift" && profile?.role === "CASHIER" && (
-              <div className="flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
+              <div data-ui-screen="shift" className="ui-screen-shift flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
                 <div className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden relative shrink-0">
                   <div className="p-4 md:p-8 border-b border-slate-200 bg-white text-slate-900 text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16"></div>
@@ -9277,7 +9276,7 @@ export default function App() {
 
             {/* --- 7. ADMIN: DASHBOARD (Overview Live Sales) --- */}
             {activeMenu === "dashboard" && profile?.role === "ADMIN" && (
-              <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
+              <div data-ui-screen="dashboard" className="ui-screen-dashboard flex-1 flex flex-col overflow-hidden bg-slate-50">
                 {/* HEADER DASHBOARD COMPACT */}
                 <div className="bg-white px-4 md:px-8 py-4 md:py-6 border-b border-slate-200 shrink-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -9831,7 +9830,7 @@ export default function App() {
 
         {/* MOBILE BOTTOM NAV */}
         <nav 
-          className="md:hidden fixed bottom-0 w-full bg-white shadow-[0_-6px_14px_rgba(184,194,208,0.45)] dark:shadow-[0_-6px_14px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
+          className="app-bottom-nav md:hidden fixed bottom-0 w-full bg-white shadow-[0_-6px_14px_rgba(184,194,208,0.45)] dark:shadow-[0_-6px_14px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="flex items-center h-[68px] px-2 min-w-max">

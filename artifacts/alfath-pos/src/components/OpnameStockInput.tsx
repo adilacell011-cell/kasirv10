@@ -39,7 +39,7 @@ export function OpnameStockInput({ branchId, productId, currentStock, onSave }: 
     }
   };
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-[104px] items-center gap-1.5">
       <input
         aria-label="Jumlah fisik opname"
         type="number" min="0" step="1" value={value} disabled={saving}
@@ -54,13 +54,13 @@ export function OpnameStockInput({ branchId, productId, currentStock, onSave }: 
           void save();
         }}
         onKeyDown={(event) => { if (event.key === "Enter") void save(); }}
-        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-center text-xs font-black focus:ring-2 focus:ring-blue-600 focus:bg-white focus:outline-none transition-all outline-none"
+        className="min-h-10 w-full rounded-xl border border-slate-200/80 bg-slate-50 px-2 py-2 text-center text-sm font-extrabold tabular-nums text-slate-800 focus:ring-2 focus:ring-blue-600 focus:bg-white focus:outline-none transition-all outline-none"
       />
       <button
         aria-label="Simpan opname" disabled={saving}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => void save()}
-        className="shrink-0 p-2 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+        className="min-h-10 min-w-10 shrink-0 rounded-xl bg-emerald-50 p-2.5 text-emerald-700 hover:bg-emerald-100 transition-colors"
       >
         <Check className="w-4 h-4" />
       </button>

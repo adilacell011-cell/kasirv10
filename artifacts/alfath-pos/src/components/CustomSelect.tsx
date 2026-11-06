@@ -38,7 +38,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   return (
     <div className="relative group">
-      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 focus-within:text-blue-600 transition-colors">
+      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors focus-within:text-blue-700">
         {label}
       </label>
       <input
@@ -75,13 +75,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           }, 150)
         }
         placeholder={placeholder}
-        className="w-full border border-slate-300 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold transition-all shadow-sm cursor-text"
+        className="min-h-11 w-full rounded-xl border border-slate-300/80 px-3.5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-100 cursor-text"
       />
       {isOpen && (
-        <div className="app-solid absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto">
+        <div className="app-solid absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
           {showCreate && (
             <div
-              className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer text-sm font-black text-blue-600 flex items-center gap-2 border-b border-slate-100"
+              className="flex min-h-11 cursor-pointer items-center gap-2 border-b border-slate-100 px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50"
               onMouseDown={(e) => {
                 e.preventDefault();
                 commit(query);
@@ -94,7 +94,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           {filtered.map((opt) => (
             <div
               key={opt}
-              className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm font-medium text-slate-700"
+              className="min-h-11 cursor-pointer px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50"
               onMouseDown={(e) => {
                 e.preventDefault();
                 commit(opt);
