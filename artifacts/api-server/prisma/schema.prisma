@@ -22,10 +22,10 @@ model User {
   bonusBalance     Float    @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  
-  sales            Sale[]
-  commissions      Commission[]
-  shifts           Shift[]
+
+  sales       Sale[]
+  commissions Commission[]
+  shifts      Shift[]
 }
 
 model Branch {
@@ -35,7 +35,7 @@ model Branch {
   phone              String?
   allowEmployeeInput Boolean  @default(true)
   createdAt          DateTime @default(now())
-  
+
   users                User[]
   sales                Sale[]
   adjustments          Adjustment[]
@@ -45,11 +45,12 @@ model Branch {
   commissions          Commission[]
   voucherSNs           VoucherSN[]
   dailyIncomeSummaries DailyIncomeSummary[]
+  stockAudits          BranchStockAudit[]
 }
 
 model Product {
-  id               String   @id @default(uuid())
-  barcode          String?  @unique
+  id               String    @id @default(uuid())
+  barcode          String?   @unique
   name             String
   category         String?
   subCategory      String?
@@ -61,14 +62,14 @@ model Product {
   buyingPrice      Float
   sellingPrice     Float
   discountPrice    Float?
-  commissionAmount Float    @default(0)
-  minStock         Int      @default(0)
+  commissionAmount Float     @default(0)
+  minStock         Int       @default(0)
   expiredAt        DateTime?
   unit             String?
-  status           String   @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
-  visibleBranchIds String   @default("*")      // "*" for all, or comma-separated branch IDs
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
+  visibleBranchIds String    @default("*") // "*" for all, or comma-separated branch IDs
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   saleItems      SaleItem[]
   commissions    Commission[]
@@ -79,7 +80,7 @@ model Product {
 }
 
 model ProductStock {
-  id        String @id @default(uuid())
+  id        String  @id @default(uuid())
   product   Product @relation(fields: [productId], references: [id])
   productId String
   branch    Branch  @relation(fields: [branchId], references: [id])
@@ -96,7 +97,7 @@ model VoucherSN {
   productId   String
   branch      Branch   @relation(fields: [branchId], references: [id])
   branchId    String
-  status      String   // available, sold, refunded
+  status      String // available, sold, refunded
   productName String?
   saleId      String?
   createdAt   DateTime @default(now())
@@ -104,22 +105,22 @@ model VoucherSN {
 }
 
 model Sale {
-  id              String   @id @default(uuid())
-  branch          Branch   @relation(fields: [branchId], references: [id])
-  branchId        String
-  cashier         User     @relation(fields: [cashierId], references: [id])
-  cashierId       String
-  customerName    String?
-  total           Float
-  totalCommission Float
-  totalProfit     Float    @default(0)
-  status          String   // success, refunded, cancelled
-  idempotencyKeyHash    String? @unique
+  id                     String   @id @default(uuid())
+  branch                 Branch   @relation(fields: [branchId], references: [id])
+  branchId               String
+  cashier                User     @relation(fields: [cashierId], references: [id])
+  cashierId              String
+  customerName           String?
+  total                  Float
+  totalCommission        Float
+  totalProfit            Float    @default(0)
+  status                 String // success, refunded, cancelled
+  idempotencyKeyHash     String?  @unique
   idempotencyPayloadHash String?
-  createdAt       DateTime @default(now())
+  createdAt              DateTime @default(now())
 
-  items       SaleItem[]
-  commissions Commission[]
+  items             SaleItem[]
+  commissions       Commission[]
   idempotencyRecord SaleIdempotency?
 
   @@index([branchId, status, createdAt])
@@ -128,17 +129,17 @@ model Sale {
 }
 
 model SaleIdempotency {
-  id               String   @id @default(uuid())
-  scopeKeyHash     String   @unique
-  payloadHash      String
-  state            String
-  saleId           String?  @unique
-  sale              Sale?   @relation(fields: [saleId], references: [id], onDelete: SetNull)
-  originalSaleId   String?
-  resultSnapshot   Json?
-  createdAt        DateTime @default(now())
-  completedAt      DateTime?
-  archivedAt       DateTime?
+  id             String    @id @default(uuid())
+  scopeKeyHash   String    @unique
+  payloadHash    String
+  state          String
+  saleId         String?   @unique
+  sale           Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  originalSaleId String?
+  resultSnapshot Json?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+  archivedAt     DateTime?
 
   @@index([state, createdAt])
 }
@@ -150,87 +151,139 @@ model SaleItem {
   product   Product @relation(fields: [productId], references: [id])
   productId String
   qty       Int
-  price     Float   // Selling price at time of sale
-  costPrice Float   // Buying price at time of sale
+  price     Float // Selling price at time of sale
+  costPrice Float // Buying price at time of sale
   subtotal  Float
   sn        String?
 }
 
 model Commission {
-  id          String   @id @default(uuid())
-  sale        Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  id          String    @id @default(uuid())
+  sale        Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
   saleId      String?
-  product     Product  @relation(fields: [productId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
   productId   String
   qty         Int
   sn          String?
   amount      Float
-  cashier     User     @relation(fields: [cashierId], references: [id])
+  cashier     User      @relation(fields: [cashierId], references: [id])
   cashierId   String
-  branch      Branch   @relation(fields: [branchId], references: [id])
+  branch      Branch    @relation(fields: [branchId], references: [id])
   branchId    String
-  status      String   // earned, refunded, withdrawn
-  createdAt   DateTime @default(now())
+  status      String // earned, refunded, withdrawn
+  createdAt   DateTime  @default(now())
   refundedAt  DateTime?
   withdrawnAt DateTime?
 }
 
 model Adjustment {
-  id          String   @id @default(uuid())
-  product     Product  @relation(fields: [productId], references: [id])
-  productId   String
-  branch      Branch   @relation(fields: [branchId], references: [id])
-  branchId    String
-  qty         Int
-  type        String   // STOCK_IN, STOCK_OUT, TRANSFER_IN, TRANSFER_OUT
-  reason      String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  branchId  String
+  qty       Int
+  type      String // STOCK_IN, STOCK_OUT, TRANSFER_IN, TRANSFER_OUT
+  reason    String?
+  createdAt DateTime @default(now())
 }
 
 model GlobalConfig {
-  id                     String  @id @default("default")
-  allowCashierStockInput Boolean @default(true)
+  id                     String   @id @default("default")
+  allowCashierStockInput Boolean  @default(true)
   updatedAt              DateTime @updatedAt
 }
 
 model Shift {
-  id          String   @id @default(uuid())
-  branch      Branch   @relation(fields: [branchId], references: [id])
-  branchId    String
-  cashier     User     @relation(fields: [cashierId], references: [id])
-  cashierId   String
-  openTime    DateTime @default(now())
-  closeTime   DateTime?
-  initialCash     Float
-  totalSales      Float    @default(0)
+  id             String    @id @default(uuid())
+  branch         Branch    @relation(fields: [branchId], references: [id])
+  branchId       String
+  cashier        User      @relation(fields: [cashierId], references: [id])
+  cashierId      String
+  openTime       DateTime  @default(now())
+  closeTime      DateTime?
+  initialCash    Float
+  totalSales     Float     @default(0)
   // Legacy database column stores the cashier-reported total income.
-  reportedIncome  Float?   @map("actualCash")
-  difference      Float?
-  shiftDate   String
-  shiftType   String?
-  status      String   // open, closed
+  reportedIncome Float?    @map("actualCash")
+  difference     Float?
+  shiftDate      String
+  shiftType      String?
+  status         String // open, closed
 
   stockSnapshots StockSnapshot[]
 }
 
 model StockSnapshot {
-  id          String   @id @default(uuid())
-  branch      Branch   @relation(fields: [branchId], references: [id])
-  branchId    String
-  shift       Shift?   @relation(fields: [shiftId], references: [id])
-  shiftId     String?
-  product     Product  @relation(fields: [productId], references: [id])
-  productId   String
-  initialQty  Int
-  soldQty     Int
-  finalQty    Int
-  timestamp   DateTime @default(now())
-  type        String   // SHIFT_CLOSE, AUDIT_CHECK
+  id         String   @id @default(uuid())
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  branchId   String
+  shift      Shift?   @relation(fields: [shiftId], references: [id])
+  shiftId    String?
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  initialQty Int
+  soldQty    Int
+  finalQty   Int
+  timestamp  DateTime @default(now())
+  type       String // SHIFT_CLOSE, AUDIT_CHECK
+}
+
+model BranchStockAudit {
+  id                 String                 @id @default(uuid())
+  branchId           String
+  branch             Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  branchNameSnapshot String
+  activeBranchId     String?                @unique
+  status             String                 @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, CANCELLED
+  startedById        String
+  startedByName      String
+  startedAt          DateTime               @default(now())
+  completedById      String?
+  completedByName    String?
+  completedAt        DateTime?
+  cancelledById      String?
+  cancelledByName    String?
+  cancelledAt        DateTime?
+  items              BranchStockAuditItem[]
+
+  @@index([branchId, startedAt])
+  @@index([status, startedAt])
+}
+
+model BranchStockAuditItem {
+  id                  String           @id @default(uuid())
+  auditId             String
+  audit               BranchStockAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  productId           String
+  productNameSnapshot String
+  barcodeSnapshot     String?
+  masterSNSnapshot    String?
+  inScope             Boolean          @default(true)
+  expectedQty         Int              @default(0)
+  baselineQty         Int?
+  countedQty          Int?
+  variance            Int?
+  status              String           @default("PENDING") // PENDING, COUNTING, COUNTED, RECOUNT_REQUIRED, EXCLUDED
+  finding             String?
+  notes               String?
+  countStartedById    String?
+  countStartedByName  String?
+  countStartedAt      DateTime?
+  countedById         String?
+  countedByName       String?
+  countedAt           DateTime?
+  appliedAt           DateTime?
+  createdAt           DateTime         @default(now())
+
+  @@unique([auditId, productId])
+  @@index([auditId, inScope, status])
+  @@index([auditId, productNameSnapshot])
 }
 
 model DailyIncomeSummary {
   id              String   @id @default(uuid())
-  date            String   // format: "YYYY-MM-DD"
+  date            String // format: "YYYY-MM-DD"
   branchId        String
   branch          Branch   @relation(fields: [branchId], references: [id])
   revenue         Float    @default(0)

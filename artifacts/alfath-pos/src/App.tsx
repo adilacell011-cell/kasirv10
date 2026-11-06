@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { OpnameStockInput } from "./components/OpnameStockInput";
+import BranchStockAuditPage from "./components/BranchStockAuditPage";
+import type { AuditPageApi } from "./components/BranchStockAuditPage";
 import { toCsvRow } from "./lib/csv";
 // POS Refined Version 2.0
 
@@ -98,6 +100,19 @@ import {
   Tooltip as RechartsTooltip,
   Cell,
 } from "recharts";
+
+const branchStockAuditApi: AuditPageApi = {
+  getCurrent: (branchId, signal) => api.getStockAuditCurrent(branchId, signal),
+  getItems: (auditId, params, signal) => api.getStockAuditItems(auditId, params, signal),
+  searchCandidates: (auditId, search, signal) => api.searchStockAuditCandidates(auditId, search, signal),
+  start: (branchId) => api.startStockAudit(branchId),
+  beginCount: (auditId, itemId) => api.beginStockAuditCount(auditId, itemId),
+  saveCount: (auditId, itemId, data) => api.saveStockAuditCount(auditId, itemId, data),
+  reportException: (auditId, data) => api.reportStockAuditException(auditId, data),
+  finalize: (auditId) => api.finalizeStockAudit(auditId),
+  cancel: (auditId) => api.cancelStockAudit(auditId),
+};
+
 const ScannerModal = ({
   onClose,
   onScan,
@@ -709,12 +724,13 @@ export default function App() {
     | "branch_stocks"
     | "shopping_list"
     | "audit"
+    | "stock_audit"
     | "shift"
     | "cashier_stock"
     | "reports"
     | "incentive"
   >(() => {
-    const valid = ["dashboard","pos","inventory","employees","settings","branch_stocks","shopping_list","audit","shift","cashier_stock","reports","incentive"];
+    const valid = ["dashboard","pos","inventory","employees","settings","branch_stocks","shopping_list","audit","stock_audit","shift","cashier_stock","reports","incentive"];
     const saved = localStorage.getItem("active_menu");
     return (saved && valid.includes(saved) ? saved : "dashboard") as any;
   });
@@ -3198,6 +3214,8 @@ export default function App() {
         return "Manajemen Akses Karyawan";
       case "audit":
         return "Audit Stok By Cabang";
+      case "stock_audit":
+        return "Audit Stok Cabang";
       case "branch_stocks":
         return "Laporan Stok per Cabang";
       case "shopping_list":
@@ -3218,6 +3236,7 @@ export default function App() {
       items.push({ id: "branch_stocks", icon: MdWarehouse, label: "Stok" });
       items.push({ id: "incentive", icon: MdAutoAwesome, label: "Bonus" });
       items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
+      items.push({ id: "stock_audit", icon: MdFactCheck, label: "Audit" });
       items.push({ id: "employees", icon: MdGroups, label: "Karyawan" });
       items.push({ id: "settings", icon: MdStorefront, label: "Cabang" });
     } else if (profile?.role === "CASHIER") {
@@ -3232,6 +3251,7 @@ export default function App() {
       });
     } else if (profile?.role === "AUDIT") {
       items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
+      items.push({ id: "stock_audit", icon: MdFactCheck, label: "Audit" });
       items.push({ id: "reports", icon: MdInsights, label: "Laporan" });
     }
     return items;
@@ -3516,6 +3536,12 @@ export default function App() {
                   onClick={() => setActiveMenu("audit")}
                 />
                 <MenuItem
+                  icon={MdFactCheck}
+                  label="Audit Stok Cabang"
+                  active={activeMenu === "stock_audit"}
+                  onClick={() => setActiveMenu("stock_audit")}
+                />
+                <MenuItem
                   icon={MdWarehouse}
                   label="Stok per Cabang"
                   active={activeMenu === "branch_stocks"}
@@ -3569,6 +3595,12 @@ export default function App() {
                   label="Opname Cabang"
                   active={activeMenu === "audit"}
                   onClick={() => setActiveMenu("audit")}
+                />
+                <MenuItem
+                  icon={MdFactCheck}
+                  label="Audit Stok Cabang"
+                  active={activeMenu === "stock_audit"}
+                  onClick={() => setActiveMenu("stock_audit")}
                 />
                 <MenuItem
                   icon={MdInsights}
@@ -6229,6 +6261,14 @@ export default function App() {
                 )}
               </div>
             )}
+            {activeMenu === "stock_audit" &&
+              (profile?.role === "AUDIT" || profile?.role === "ADMIN") && (
+                <BranchStockAuditPage
+                  branches={branches.map((branch) => ({ id: branch.id, name: branch.name }))}
+                  role={profile.role}
+                  api={branchStockAuditApi}
+                />
+              )}
             {activeMenu === "audit" &&
               (profile?.role === "AUDIT" || profile?.role === "ADMIN") && (
                 <div className="flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden">

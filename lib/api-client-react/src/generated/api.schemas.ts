@@ -24,6 +24,198 @@ export interface BranchTransferTarget {
   name: string;
 }
 
+export interface StockAuditStartInput {
+  /** @minLength 1 */
+  branchId: string;
+}
+
+export interface StockAuditCountStartInput {
+  /** @minLength 1 */
+  auditId: string;
+  /** @minLength 1 */
+  itemId: string;
+}
+
+export interface StockAuditEndInput {
+  /** @minLength 1 */
+  auditId: string;
+}
+
+export type StockAuditCountInputFinding = typeof StockAuditCountInputFinding[keyof typeof StockAuditCountInputFinding];
+
+
+export const StockAuditCountInputFinding = {
+  NORMAL: 'NORMAL',
+  NOT_FOUND: 'NOT_FOUND',
+  EXPIRED: 'EXPIRED',
+  DAMAGED: 'DAMAGED',
+  NOT_SOLD_HERE: 'NOT_SOLD_HERE',
+} as const;
+
+export interface StockAuditCountInput {
+  /** @minLength 1 */
+  auditId: string;
+  /** @minLength 1 */
+  itemId: string;
+  /** @minimum 0 */
+  countedQty: number;
+  finding: StockAuditCountInputFinding;
+  /** @maxLength 1000 */
+  notes?: string;
+  countToken: string;
+}
+
+export type StockAuditExceptionInputFinding = typeof StockAuditExceptionInputFinding[keyof typeof StockAuditExceptionInputFinding];
+
+
+export const StockAuditExceptionInputFinding = {
+  EXPIRED: 'EXPIRED',
+  DAMAGED: 'DAMAGED',
+  NOT_SOLD_HERE: 'NOT_SOLD_HERE',
+  UNLISTED_IN_BRANCH: 'UNLISTED_IN_BRANCH',
+} as const;
+
+export interface StockAuditExceptionInput {
+  /** @minLength 1 */
+  auditId: string;
+  /** @minLength 1 */
+  productId: string;
+  finding: StockAuditExceptionInputFinding;
+  /** @maxLength 1000 */
+  notes?: string;
+  /** @minimum 0 */
+  countedQty?: number;
+}
+
+export type StockAuditSessionStatus = typeof StockAuditSessionStatus[keyof typeof StockAuditSessionStatus];
+
+
+export const StockAuditSessionStatus = {
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface StockAuditSummary {
+  totalProducts: number;
+  counted: number;
+  pending: number;
+  counting: number;
+  recountRequired: number;
+  excluded: number;
+  positiveVariance: number;
+  negativeVariance: number;
+  netVariance: number;
+}
+
+export interface StockAuditSession {
+  id: string;
+  branchId: string;
+  branchName: string;
+  status: StockAuditSessionStatus;
+  startedAt: string;
+  startedByName: string;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  completedByName?: string | null;
+  /** @nullable */
+  cancelledAt?: string | null;
+  /** @nullable */
+  cancelledByName?: string | null;
+  summary: StockAuditSummary;
+}
+
+export type StockAuditItemStatus = typeof StockAuditItemStatus[keyof typeof StockAuditItemStatus];
+
+
+export const StockAuditItemStatus = {
+  PENDING: 'PENDING',
+  COUNTING: 'COUNTING',
+  COUNTED: 'COUNTED',
+  RECOUNT_REQUIRED: 'RECOUNT_REQUIRED',
+  EXCLUDED: 'EXCLUDED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type StockAuditItemFinding = typeof StockAuditItemFinding[keyof typeof StockAuditItemFinding] | null;
+
+
+export const StockAuditItemFinding = {
+  NORMAL: 'NORMAL',
+  NOT_FOUND: 'NOT_FOUND',
+  EXPIRED: 'EXPIRED',
+  DAMAGED: 'DAMAGED',
+  NOT_SOLD_HERE: 'NOT_SOLD_HERE',
+  UNLISTED_IN_BRANCH: 'UNLISTED_IN_BRANCH',
+} as const;
+
+export interface StockAuditItem {
+  id: string;
+  productId: string;
+  productName: string;
+  /** @nullable */
+  barcode?: string | null;
+  /** @nullable */
+  masterSN?: string | null;
+  status: StockAuditItemStatus;
+  inScope: boolean;
+  expectedQty: number;
+  /** @nullable */
+  baselineQty?: number | null;
+  /** @nullable */
+  countedQty?: number | null;
+  /** @nullable */
+  variance?: number | null;
+  /** @nullable */
+  finding?: StockAuditItemFinding;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  countedByName?: string | null;
+  /** @nullable */
+  countedAt?: string | null;
+}
+
+export interface StockAuditItemPage {
+  items: StockAuditItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface StockAuditCandidate {
+  id: string;
+  name: string;
+  /** @nullable */
+  barcode?: string | null;
+  /** @nullable */
+  masterSN?: string | null;
+  branchStockQty: number;
+}
+
+export interface StockAuditCandidatePage {
+  /** @maxItems 20 */
+  items: StockAuditCandidate[];
+}
+
+export interface StockAuditCountStart {
+  baselineQty: number;
+  countToken: string;
+}
+
+export interface StockAuditMutation {
+  success: boolean;
+  changedProducts?: number;
+}
+
+export interface StockAuditExceptionResponse {
+  success: boolean;
+  item: StockAuditItem;
+}
+
 export type GetOwnerDashboardParams = {
 /**
  * Omit for all branches.
@@ -52,5 +244,47 @@ export type GetOwnerDashboardDetails200 = {
   recentSales: GetOwnerDashboardDetails200RecentSalesItem[];
   /** @maxItems 5 */
   topProducts: GetOwnerDashboardDetails200TopProductsItem[];
+};
+
+export type GetStockAuditCurrentParams = {
+branchId: string;
+};
+
+export type GetStockAuditItemsParams = {
+auditId: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+/**
+ * @maxLength 100
+ */
+search?: string;
+status?: GetStockAuditItemsStatus;
+};
+
+export type GetStockAuditItemsStatus = typeof GetStockAuditItemsStatus[keyof typeof GetStockAuditItemsStatus];
+
+
+export const GetStockAuditItemsStatus = {
+  PENDING: 'PENDING',
+  COUNTING: 'COUNTING',
+  COUNTED: 'COUNTED',
+  RECOUNT_REQUIRED: 'RECOUNT_REQUIRED',
+  EXCLUDED: 'EXCLUDED',
+} as const;
+
+export type SearchStockAuditCandidatesParams = {
+auditId: string;
+/**
+ * @minLength 2
+ * @maxLength 100
+ */
+search: string;
 };
 

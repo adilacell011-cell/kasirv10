@@ -14,6 +14,7 @@ import { Server } from "socket.io";
 import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict, validateReportedIncome } from "./shift-safety";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
+import { registerStockAuditRoutes } from "./stock-audit";
 import { applyOpname, OpnameConflict } from "./opname";
 import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment";
 import { validateDatabaseTarget } from "./database-target";
@@ -435,14 +436,15 @@ app.delete("/api/branches/:id", authenticateToken, async (req, res) => {
     const salesCount = await prisma.sale.count({ where: { branchId } });
     const shiftsCount = await prisma.shift.count({ where: { branchId } });
     const adjustmentsCount = await prisma.adjustment.count({ where: { branchId } });
+    const stockAuditsCount = await prisma.branchStockAudit.count({ where: { branchId } });
     // Bonus must never be destroyed by deleting a branch. After old sales are archived,
     // commissions stay (saleId = null) but keep their branchId, so check them explicitly
     // — otherwise an archived branch could pass the guard above and lose bonus history.
     const commissionsCount = await prisma.commission.count({ where: { branchId } });
 
-    if (salesCount > 0 || shiftsCount > 0 || adjustmentsCount > 0 || commissionsCount > 0) {
+    if (salesCount > 0 || shiftsCount > 0 || adjustmentsCount > 0 || commissionsCount > 0 || stockAuditsCount > 0) {
       return void res.status(400).json({
-        error: "Cabang tidak dapat dihapus karena masih memiliki riwayat operasional atau bonus (penjualan, shift, adjustment, atau komisi)." 
+        error: "Cabang tidak dapat dihapus karena masih memiliki riwayat operasional, stok, audit, atau bonus."
       });
     }
 
@@ -1673,6 +1675,7 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
 
 registerBranchReadRoutes(app, prisma, authenticateToken, getLogicalShiftDate);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
+registerStockAuditRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
 
 async function startServer() {
   // Last-resort error middleware: any synchronous throw or forwarded error from a

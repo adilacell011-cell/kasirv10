@@ -70,3 +70,259 @@ export const GetOwnerDashboardDetailsResponse = zod.object({
 })
 
 
+/**
+ * @summary Read the current or most recent stock audit for a branch
+ */
+export const GetStockAuditCurrentQueryParams = zod.object({
+  "branchId": zod.coerce.string()
+})
+
+export const GetStockAuditCurrentResponse = zod.union([zod.object({
+  "id": zod.string(),
+  "branchId": zod.string(),
+  "branchName": zod.string(),
+  "status": zod.enum(['IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+  "startedAt": zod.coerce.date(),
+  "startedByName": zod.string(),
+  "completedAt": zod.coerce.date().nullish(),
+  "completedByName": zod.string().nullish(),
+  "cancelledAt": zod.coerce.date().nullish(),
+  "cancelledByName": zod.string().nullish(),
+  "summary": zod.object({
+  "totalProducts": zod.number().int(),
+  "counted": zod.number().int(),
+  "pending": zod.number().int(),
+  "counting": zod.number().int(),
+  "recountRequired": zod.number().int(),
+  "excluded": zod.number().int(),
+  "positiveVariance": zod.number().int(),
+  "negativeVariance": zod.number().int(),
+  "netVariance": zod.number().int()
+})
+}),zod.null()])
+
+
+/**
+ * @summary Start a branch stock audit and snapshot its product scope
+ */
+
+
+
+export const StartStockAuditBody = zod.object({
+  "branchId": zod.string().min(1)
+})
+
+export const StartStockAuditResponse = zod.object({
+  "id": zod.string(),
+  "branchId": zod.string(),
+  "branchName": zod.string(),
+  "status": zod.enum(['IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+  "startedAt": zod.coerce.date(),
+  "startedByName": zod.string(),
+  "completedAt": zod.coerce.date().nullish(),
+  "completedByName": zod.string().nullish(),
+  "cancelledAt": zod.coerce.date().nullish(),
+  "cancelledByName": zod.string().nullish(),
+  "summary": zod.object({
+  "totalProducts": zod.number().int(),
+  "counted": zod.number().int(),
+  "pending": zod.number().int(),
+  "counting": zod.number().int(),
+  "recountRequired": zod.number().int(),
+  "excluded": zod.number().int(),
+  "positiveVariance": zod.number().int(),
+  "negativeVariance": zod.number().int(),
+  "netVariance": zod.number().int()
+})
+})
+
+
+/**
+ * @summary Read a page of audit items
+ */
+export const getStockAuditItemsQueryPageDefault = 1;
+
+export const getStockAuditItemsQueryPageSizeDefault = 25;
+export const getStockAuditItemsQueryPageSizeMax = 100;
+
+export const getStockAuditItemsQuerySearchMax = 100;
+
+
+
+export const GetStockAuditItemsQueryParams = zod.object({
+  "auditId": zod.coerce.string(),
+  "page": zod.coerce.number().int().min(1).default(getStockAuditItemsQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(getStockAuditItemsQueryPageSizeMax).default(getStockAuditItemsQueryPageSizeDefault),
+  "search": zod.coerce.string().max(getStockAuditItemsQuerySearchMax).optional(),
+  "status": zod.enum(['PENDING', 'COUNTING', 'COUNTED', 'RECOUNT_REQUIRED', 'EXCLUDED']).optional()
+})
+
+export const GetStockAuditItemsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "barcode": zod.string().nullish(),
+  "masterSN": zod.string().nullish(),
+  "status": zod.enum(['PENDING', 'COUNTING', 'COUNTED', 'RECOUNT_REQUIRED', 'EXCLUDED']),
+  "inScope": zod.boolean(),
+  "expectedQty": zod.number().int(),
+  "baselineQty": zod.number().int().nullish(),
+  "countedQty": zod.number().int().nullish(),
+  "variance": zod.number().int().nullish(),
+  "finding": zod.union([zod.literal('NORMAL'),zod.literal('NOT_FOUND'),zod.literal('EXPIRED'),zod.literal('DAMAGED'),zod.literal('NOT_SOLD_HERE'),zod.literal('UNLISTED_IN_BRANCH'),zod.literal(null)]).nullish(),
+  "notes": zod.string().nullish(),
+  "countedByName": zod.string().nullish(),
+  "countedAt": zod.coerce.date().nullish()
+})),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+/**
+ * @summary Search catalog products not present in the audit scope
+ */
+export const searchStockAuditCandidatesQuerySearchMin = 2;
+export const searchStockAuditCandidatesQuerySearchMax = 100;
+
+
+
+export const SearchStockAuditCandidatesQueryParams = zod.object({
+  "auditId": zod.coerce.string(),
+  "search": zod.coerce.string().min(searchStockAuditCandidatesQuerySearchMin).max(searchStockAuditCandidatesQuerySearchMax)
+})
+
+export const searchStockAuditCandidatesResponseItemsMax = 20;
+
+
+
+export const SearchStockAuditCandidatesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "barcode": zod.string().nullish(),
+  "masterSN": zod.string().nullish(),
+  "branchStockQty": zod.number().int()
+})).max(searchStockAuditCandidatesResponseItemsMax)
+})
+
+
+/**
+ * @summary Capture a fresh stock baseline for counting one item
+ */
+
+
+
+
+export const BeginStockAuditCountBody = zod.object({
+  "auditId": zod.string().min(1),
+  "itemId": zod.string().min(1)
+})
+
+export const BeginStockAuditCountResponse = zod.object({
+  "baselineQty": zod.number().int(),
+  "countToken": zod.coerce.date()
+})
+
+
+/**
+ * @summary Save a physical quantity and record count conflicts
+ */
+
+
+export const saveStockAuditCountBodyCountedQtyMin = 0;
+
+export const saveStockAuditCountBodyNotesMax = 1000;
+
+
+
+export const SaveStockAuditCountBody = zod.object({
+  "auditId": zod.string().min(1),
+  "itemId": zod.string().min(1),
+  "countedQty": zod.number().int().min(saveStockAuditCountBodyCountedQtyMin),
+  "finding": zod.enum(['NORMAL', 'NOT_FOUND', 'EXPIRED', 'DAMAGED', 'NOT_SOLD_HERE']),
+  "notes": zod.string().max(saveStockAuditCountBodyNotesMax).optional(),
+  "countToken": zod.coerce.date()
+})
+
+export const SaveStockAuditCountResponse = zod.object({
+  "success": zod.boolean(),
+  "changedProducts": zod.number().int().optional()
+})
+
+
+/**
+ * @summary Record a product discovered outside the audit scope without changing stock
+ */
+
+
+export const reportStockAuditExceptionBodyNotesMax = 1000;
+
+export const reportStockAuditExceptionBodyCountedQtyMin = 0;
+
+
+
+export const ReportStockAuditExceptionBody = zod.object({
+  "auditId": zod.string().min(1),
+  "productId": zod.string().min(1),
+  "finding": zod.enum(['EXPIRED', 'DAMAGED', 'NOT_SOLD_HERE', 'UNLISTED_IN_BRANCH']),
+  "notes": zod.string().max(reportStockAuditExceptionBodyNotesMax).optional(),
+  "countedQty": zod.number().int().min(reportStockAuditExceptionBodyCountedQtyMin).optional()
+})
+
+export const ReportStockAuditExceptionResponse = zod.object({
+  "success": zod.boolean(),
+  "item": zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string(),
+  "barcode": zod.string().nullish(),
+  "masterSN": zod.string().nullish(),
+  "status": zod.enum(['PENDING', 'COUNTING', 'COUNTED', 'RECOUNT_REQUIRED', 'EXCLUDED']),
+  "inScope": zod.boolean(),
+  "expectedQty": zod.number().int(),
+  "baselineQty": zod.number().int().nullish(),
+  "countedQty": zod.number().int().nullish(),
+  "variance": zod.number().int().nullish(),
+  "finding": zod.union([zod.literal('NORMAL'),zod.literal('NOT_FOUND'),zod.literal('EXPIRED'),zod.literal('DAMAGED'),zod.literal('NOT_SOLD_HERE'),zod.literal('UNLISTED_IN_BRANCH'),zod.literal(null)]).nullish(),
+  "notes": zod.string().nullish(),
+  "countedByName": zod.string().nullish(),
+  "countedAt": zod.coerce.date().nullish()
+})
+})
+
+
+/**
+ * @summary Apply confirmed audit deltas atomically
+ */
+
+
+
+export const FinalizeStockAuditBody = zod.object({
+  "auditId": zod.string().min(1)
+})
+
+export const FinalizeStockAuditResponse = zod.object({
+  "success": zod.boolean(),
+  "changedProducts": zod.number().int().optional()
+})
+
+
+/**
+ * @summary Cancel an audit session without changing stock
+ */
+
+
+
+export const CancelStockAuditBody = zod.object({
+  "auditId": zod.string().min(1)
+})
+
+export const CancelStockAuditResponse = zod.object({
+  "success": zod.boolean(),
+  "changedProducts": zod.number().int().optional()
+})
+
+

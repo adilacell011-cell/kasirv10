@@ -6,16 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -26,11 +30,25 @@ import type {
   GetOwnerDashboardDetails200,
   GetOwnerDashboardDetailsParams,
   GetOwnerDashboardParams,
-  HealthStatus
+  GetStockAuditCurrentParams,
+  GetStockAuditItemsParams,
+  HealthStatus,
+  SearchStockAuditCandidatesParams,
+  StockAuditCandidatePage,
+  StockAuditCountInput,
+  StockAuditCountStart,
+  StockAuditCountStartInput,
+  StockAuditEndInput,
+  StockAuditExceptionInput,
+  StockAuditExceptionResponse,
+  StockAuditItemPage,
+  StockAuditMutation,
+  StockAuditSession,
+  StockAuditStartInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -474,4 +492,856 @@ export function useGetOwnerDashboardDetails<TData = Awaited<ReturnType<typeof ge
 
 
 
+
+export const getGetStockAuditCurrentUrl = (params: GetStockAuditCurrentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stock-audits/current?${stringifiedParams}` : `/api/stock-audits/current`
+}
+
+/**
+ * @summary Read the current or most recent stock audit for a branch
+ */
+export const getStockAuditCurrent = async (params: GetStockAuditCurrentParams, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditSession | null> => {
+
+  return customFetch<StockAuditSession | null>(getGetStockAuditCurrentUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStockAuditCurrentQueryKey = (params?: GetStockAuditCurrentParams,) => {
+    return [
+    `/api/stock-audits/current`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStockAuditCurrentQueryOptions = <TData = Awaited<ReturnType<typeof getStockAuditCurrent>>, TError = ErrorType<void>>(params: GetStockAuditCurrentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditCurrent>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStockAuditCurrentQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStockAuditCurrent>>> = ({ signal }) => getStockAuditCurrent(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStockAuditCurrent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStockAuditCurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getStockAuditCurrent>>>
+export type GetStockAuditCurrentQueryError = ErrorType<void>
+
+
+export function useGetStockAuditCurrent<TData = Awaited<ReturnType<typeof getStockAuditCurrent>>, TError = ErrorType<void>>(
+ params: GetStockAuditCurrentParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditCurrent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStockAuditCurrent>>,
+          TError,
+          Awaited<ReturnType<typeof getStockAuditCurrent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStockAuditCurrent<TData = Awaited<ReturnType<typeof getStockAuditCurrent>>, TError = ErrorType<void>>(
+ params: GetStockAuditCurrentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditCurrent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStockAuditCurrent>>,
+          TError,
+          Awaited<ReturnType<typeof getStockAuditCurrent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStockAuditCurrent<TData = Awaited<ReturnType<typeof getStockAuditCurrent>>, TError = ErrorType<void>>(
+ params: GetStockAuditCurrentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditCurrent>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read the current or most recent stock audit for a branch
+ */
+
+export function useGetStockAuditCurrent<TData = Awaited<ReturnType<typeof getStockAuditCurrent>>, TError = ErrorType<void>>(
+ params: GetStockAuditCurrentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditCurrent>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStockAuditCurrentQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartStockAuditUrl = () => {
+
+
+
+
+  return `/api/stock-audits`
+}
+
+/**
+ * @summary Start a branch stock audit and snapshot its product scope
+ */
+export const startStockAudit = async (stockAuditStartInput: StockAuditStartInput, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockAuditSession>(getStartStockAuditUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockAuditStartInput)
+  }
+);}
+
+
+
+
+
+export const getStartStockAuditMutationKey = () => ['startStockAudit'] as const;
+
+export const getStartStockAuditMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStockAudit>>, TError,StartStockAuditMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startStockAudit>>, TError,StartStockAuditMutationVariables, TContext> => {
+
+const mutationKey = getStartStockAuditMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startStockAudit>>, StartStockAuditMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  startStockAudit(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartStockAuditMutationResult = NonNullable<Awaited<ReturnType<typeof startStockAudit>>>
+    export type StartStockAuditMutationBody = BodyType<StockAuditStartInput>
+    export type StartStockAuditMutationError = ErrorType<void>
+    export type StartStockAuditMutationVariables = {data: BodyType<StockAuditStartInput>}
+
+    /**
+ * @summary Start a branch stock audit and snapshot its product scope
+ */
+export const useStartStockAudit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStockAudit>>, TError,StartStockAuditMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startStockAudit>>,
+        TError,
+        StartStockAuditMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartStockAuditMutationOptions(options), queryClient);
+    }
+
+export const getGetStockAuditItemsUrl = (params: GetStockAuditItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stock-audits/items?${stringifiedParams}` : `/api/stock-audits/items`
+}
+
+/**
+ * @summary Read a page of audit items
+ */
+export const getStockAuditItems = async (params: GetStockAuditItemsParams, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditItemPage> => {
+
+  return customFetch<StockAuditItemPage>(getGetStockAuditItemsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStockAuditItemsQueryKey = (params?: GetStockAuditItemsParams,) => {
+    return [
+    `/api/stock-audits/items`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStockAuditItemsQueryOptions = <TData = Awaited<ReturnType<typeof getStockAuditItems>>, TError = ErrorType<void>>(params: GetStockAuditItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditItems>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStockAuditItemsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStockAuditItems>>> = ({ signal }) => getStockAuditItems(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStockAuditItems>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetStockAuditItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getStockAuditItems>>>
+export type GetStockAuditItemsQueryError = ErrorType<void>
+
+
+export function useGetStockAuditItems<TData = Awaited<ReturnType<typeof getStockAuditItems>>, TError = ErrorType<void>>(
+ params: GetStockAuditItemsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditItems>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStockAuditItems>>,
+          TError,
+          Awaited<ReturnType<typeof getStockAuditItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStockAuditItems<TData = Awaited<ReturnType<typeof getStockAuditItems>>, TError = ErrorType<void>>(
+ params: GetStockAuditItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditItems>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getStockAuditItems>>,
+          TError,
+          Awaited<ReturnType<typeof getStockAuditItems>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetStockAuditItems<TData = Awaited<ReturnType<typeof getStockAuditItems>>, TError = ErrorType<void>>(
+ params: GetStockAuditItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditItems>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read a page of audit items
+ */
+
+export function useGetStockAuditItems<TData = Awaited<ReturnType<typeof getStockAuditItems>>, TError = ErrorType<void>>(
+ params: GetStockAuditItemsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStockAuditItems>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetStockAuditItemsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSearchStockAuditCandidatesUrl = (params: SearchStockAuditCandidatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/stock-audits/candidates?${stringifiedParams}` : `/api/stock-audits/candidates`
+}
+
+/**
+ * @summary Search catalog products not present in the audit scope
+ */
+export const searchStockAuditCandidates = async (params: SearchStockAuditCandidatesParams, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditCandidatePage> => {
+
+  return customFetch<StockAuditCandidatePage>(getSearchStockAuditCandidatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchStockAuditCandidatesQueryKey = (params?: SearchStockAuditCandidatesParams,) => {
+    return [
+    `/api/stock-audits/candidates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchStockAuditCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError = ErrorType<void>>(params: SearchStockAuditCandidatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchStockAuditCandidatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchStockAuditCandidates>>> = ({ signal }) => searchStockAuditCandidates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SearchStockAuditCandidatesQueryResult = NonNullable<Awaited<ReturnType<typeof searchStockAuditCandidates>>>
+export type SearchStockAuditCandidatesQueryError = ErrorType<void>
+
+
+export function useSearchStockAuditCandidates<TData = Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError = ErrorType<void>>(
+ params: SearchStockAuditCandidatesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchStockAuditCandidates>>,
+          TError,
+          Awaited<ReturnType<typeof searchStockAuditCandidates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchStockAuditCandidates<TData = Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError = ErrorType<void>>(
+ params: SearchStockAuditCandidatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchStockAuditCandidates>>,
+          TError,
+          Awaited<ReturnType<typeof searchStockAuditCandidates>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchStockAuditCandidates<TData = Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError = ErrorType<void>>(
+ params: SearchStockAuditCandidatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Search catalog products not present in the audit scope
+ */
+
+export function useSearchStockAuditCandidates<TData = Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError = ErrorType<void>>(
+ params: SearchStockAuditCandidatesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchStockAuditCandidates>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSearchStockAuditCandidatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getBeginStockAuditCountUrl = () => {
+
+
+
+
+  return `/api/stock-audits/begin-count`
+}
+
+/**
+ * @summary Capture a fresh stock baseline for counting one item
+ */
+export const beginStockAuditCount = async (stockAuditCountStartInput: StockAuditCountStartInput, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditCountStart> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockAuditCountStart>(getBeginStockAuditCountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockAuditCountStartInput)
+  }
+);}
+
+
+
+
+
+export const getBeginStockAuditCountMutationKey = () => ['beginStockAuditCount'] as const;
+
+export const getBeginStockAuditCountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginStockAuditCount>>, TError,BeginStockAuditCountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginStockAuditCount>>, TError,BeginStockAuditCountMutationVariables, TContext> => {
+
+const mutationKey = getBeginStockAuditCountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginStockAuditCount>>, BeginStockAuditCountMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  beginStockAuditCount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginStockAuditCountMutationResult = NonNullable<Awaited<ReturnType<typeof beginStockAuditCount>>>
+    export type BeginStockAuditCountMutationBody = BodyType<StockAuditCountStartInput>
+    export type BeginStockAuditCountMutationError = ErrorType<void>
+    export type BeginStockAuditCountMutationVariables = {data: BodyType<StockAuditCountStartInput>}
+
+    /**
+ * @summary Capture a fresh stock baseline for counting one item
+ */
+export const useBeginStockAuditCount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginStockAuditCount>>, TError,BeginStockAuditCountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof beginStockAuditCount>>,
+        TError,
+        BeginStockAuditCountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getBeginStockAuditCountMutationOptions(options), queryClient);
+    }
+
+export const getSaveStockAuditCountUrl = () => {
+
+
+
+
+  return `/api/stock-audits/count`
+}
+
+/**
+ * @summary Save a physical quantity and record count conflicts
+ */
+export const saveStockAuditCount = async (stockAuditCountInput: StockAuditCountInput, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditMutation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockAuditMutation>(getSaveStockAuditCountUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockAuditCountInput)
+  }
+);}
+
+
+
+
+
+export const getSaveStockAuditCountMutationKey = () => ['saveStockAuditCount'] as const;
+
+export const getSaveStockAuditCountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveStockAuditCount>>, TError,SaveStockAuditCountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveStockAuditCount>>, TError,SaveStockAuditCountMutationVariables, TContext> => {
+
+const mutationKey = getSaveStockAuditCountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveStockAuditCount>>, SaveStockAuditCountMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveStockAuditCount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveStockAuditCountMutationResult = NonNullable<Awaited<ReturnType<typeof saveStockAuditCount>>>
+    export type SaveStockAuditCountMutationBody = BodyType<StockAuditCountInput>
+    export type SaveStockAuditCountMutationError = ErrorType<void>
+    export type SaveStockAuditCountMutationVariables = {data: BodyType<StockAuditCountInput>}
+
+    /**
+ * @summary Save a physical quantity and record count conflicts
+ */
+export const useSaveStockAuditCount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveStockAuditCount>>, TError,SaveStockAuditCountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof saveStockAuditCount>>,
+        TError,
+        SaveStockAuditCountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveStockAuditCountMutationOptions(options), queryClient);
+    }
+
+export const getReportStockAuditExceptionUrl = () => {
+
+
+
+
+  return `/api/stock-audits/exceptions`
+}
+
+/**
+ * @summary Record a product discovered outside the audit scope without changing stock
+ */
+export const reportStockAuditException = async (stockAuditExceptionInput: StockAuditExceptionInput, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditExceptionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockAuditExceptionResponse>(getReportStockAuditExceptionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockAuditExceptionInput)
+  }
+);}
+
+
+
+
+
+export const getReportStockAuditExceptionMutationKey = () => ['reportStockAuditException'] as const;
+
+export const getReportStockAuditExceptionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStockAuditException>>, TError,ReportStockAuditExceptionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportStockAuditException>>, TError,ReportStockAuditExceptionMutationVariables, TContext> => {
+
+const mutationKey = getReportStockAuditExceptionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportStockAuditException>>, ReportStockAuditExceptionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportStockAuditException(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportStockAuditExceptionMutationResult = NonNullable<Awaited<ReturnType<typeof reportStockAuditException>>>
+    export type ReportStockAuditExceptionMutationBody = BodyType<StockAuditExceptionInput>
+    export type ReportStockAuditExceptionMutationError = ErrorType<void>
+    export type ReportStockAuditExceptionMutationVariables = {data: BodyType<StockAuditExceptionInput>}
+
+    /**
+ * @summary Record a product discovered outside the audit scope without changing stock
+ */
+export const useReportStockAuditException = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStockAuditException>>, TError,ReportStockAuditExceptionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportStockAuditException>>,
+        TError,
+        ReportStockAuditExceptionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReportStockAuditExceptionMutationOptions(options), queryClient);
+    }
+
+export const getFinalizeStockAuditUrl = () => {
+
+
+
+
+  return `/api/stock-audits/finalize`
+}
+
+/**
+ * @summary Apply confirmed audit deltas atomically
+ */
+export const finalizeStockAudit = async (stockAuditEndInput: StockAuditEndInput, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditMutation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockAuditMutation>(getFinalizeStockAuditUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockAuditEndInput)
+  }
+);}
+
+
+
+
+
+export const getFinalizeStockAuditMutationKey = () => ['finalizeStockAudit'] as const;
+
+export const getFinalizeStockAuditMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeStockAudit>>, TError,FinalizeStockAuditMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finalizeStockAudit>>, TError,FinalizeStockAuditMutationVariables, TContext> => {
+
+const mutationKey = getFinalizeStockAuditMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finalizeStockAudit>>, FinalizeStockAuditMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  finalizeStockAudit(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinalizeStockAuditMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeStockAudit>>>
+    export type FinalizeStockAuditMutationBody = BodyType<StockAuditEndInput>
+    export type FinalizeStockAuditMutationError = ErrorType<void>
+    export type FinalizeStockAuditMutationVariables = {data: BodyType<StockAuditEndInput>}
+
+    /**
+ * @summary Apply confirmed audit deltas atomically
+ */
+export const useFinalizeStockAudit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeStockAudit>>, TError,FinalizeStockAuditMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof finalizeStockAudit>>,
+        TError,
+        FinalizeStockAuditMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinalizeStockAuditMutationOptions(options), queryClient);
+    }
+
+export const getCancelStockAuditUrl = () => {
+
+
+
+
+  return `/api/stock-audits/cancel`
+}
+
+/**
+ * @summary Cancel an audit session without changing stock
+ */
+export const cancelStockAudit = async (stockAuditEndInput: StockAuditEndInput, options?: Parameters<typeof customFetch>[1]): Promise<StockAuditMutation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockAuditMutation>(getCancelStockAuditUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockAuditEndInput)
+  }
+);}
+
+
+
+
+
+export const getCancelStockAuditMutationKey = () => ['cancelStockAudit'] as const;
+
+export const getCancelStockAuditMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelStockAudit>>, TError,CancelStockAuditMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelStockAudit>>, TError,CancelStockAuditMutationVariables, TContext> => {
+
+const mutationKey = getCancelStockAuditMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelStockAudit>>, CancelStockAuditMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  cancelStockAudit(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelStockAuditMutationResult = NonNullable<Awaited<ReturnType<typeof cancelStockAudit>>>
+    export type CancelStockAuditMutationBody = BodyType<StockAuditEndInput>
+    export type CancelStockAuditMutationError = ErrorType<void>
+    export type CancelStockAuditMutationVariables = {data: BodyType<StockAuditEndInput>}
+
+    /**
+ * @summary Cancel an audit session without changing stock
+ */
+export const useCancelStockAudit = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelStockAudit>>, TError,CancelStockAuditMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelStockAudit>>,
+        TError,
+        CancelStockAuditMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCancelStockAuditMutationOptions(options), queryClient);
+    }
 

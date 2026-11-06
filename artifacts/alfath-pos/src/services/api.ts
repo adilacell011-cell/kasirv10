@@ -55,6 +55,19 @@ async function readJson(path: string, signal?: AbortSignal): Promise<any> {
   return (await readJsonWithResponse(path, signal)).data;
 }
 
+async function writeJson(path: string, method: "POST" | "PATCH", body: unknown) {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: getHeaders(),
+    body: JSON.stringify(body),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof result.error === "string" ? result.error : `Permintaan gagal (HTTP ${response.status}).`);
+  }
+  return result;
+}
+
 // One read cycle at a time. Events arriving DURING a read require a trailing
 // cycle, so reconnects cannot lose changes made after the HTTP snapshot.
 export function createReadRefresh(run: () => Promise<void>, delay = 150) {
@@ -397,6 +410,62 @@ export const api = {
     const params = new URLSearchParams();
     if (branchId) params.set("branchId", branchId);
     return readJson(`/owner-dashboard/details?${params}`, signal);
+  },
+
+  async getStockAuditCurrent(branchId: string, signal: AbortSignal) {
+    const params = new URLSearchParams({ branchId });
+    return readJson(`/stock-audits/current?${params}`, signal);
+  },
+
+  async getStockAuditItems(
+    auditId: string,
+    params: { page: number; pageSize: number; search?: string; status?: string },
+    signal: AbortSignal,
+  ) {
+    const query = new URLSearchParams({
+      auditId,
+      page: String(params.page),
+      pageSize: String(params.pageSize),
+    });
+    if (params.search) query.set("search", params.search);
+    if (params.status) query.set("status", params.status);
+    return readJson(`/stock-audits/items?${query}`, signal);
+  },
+
+  async searchStockAuditCandidates(auditId: string, search: string, signal: AbortSignal) {
+    const params = new URLSearchParams({ auditId, search });
+    return readJson(`/stock-audits/candidates?${params}`, signal);
+  },
+
+  async startStockAudit(branchId: string) {
+    return writeJson("/stock-audits", "POST", { branchId });
+  },
+
+  async beginStockAuditCount(auditId: string, itemId: string) {
+    return writeJson("/stock-audits/begin-count", "POST", { auditId, itemId });
+  },
+
+  async saveStockAuditCount(
+    auditId: string,
+    itemId: string,
+    data: { countedQty: number; finding: string; notes?: string; countToken: string },
+  ) {
+    return writeJson("/stock-audits/count", "PATCH", { auditId, itemId, ...data });
+  },
+
+  async reportStockAuditException(
+    auditId: string,
+    data: { productId: string; finding: string; notes?: string; countedQty?: number },
+  ) {
+    return writeJson("/stock-audits/exceptions", "POST", { auditId, ...data });
+  },
+
+  async finalizeStockAudit(auditId: string) {
+    return writeJson("/stock-audits/finalize", "POST", { auditId });
+  },
+
+  async cancelStockAudit(auditId: string) {
+    return writeJson("/stock-audits/cancel", "POST", { auditId });
   },
 
   async getShoppingPlans(signal?: AbortSignal) {

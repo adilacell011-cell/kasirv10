@@ -116,6 +116,281 @@ paths:
           description: Sign-in required.
         "403":
           description: Owner access required.
+  /stock-audits/current:
+    get:
+      operationId: getStockAuditCurrent
+      summary: Read the current or most recent stock audit for a branch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: branchId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current active audit or most recent read-only audit.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/StockAuditSession"
+                  - type: "null"
+        "400":
+          description: Branch is required.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+  /stock-audits:
+    post:
+      operationId: startStockAudit
+      summary: Start a branch stock audit and snapshot its product scope
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditStartInput"
+      responses:
+        "201":
+          description: Audit session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditSession"
+        "400":
+          description: Invalid branch.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "409":
+          description: The branch already has an active audit.
+  /stock-audits/items:
+    get:
+      operationId: getStockAuditItems
+      summary: Read a page of audit items
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: auditId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, COUNTING, COUNTED, RECOUNT_REQUIRED, EXCLUDED]
+      responses:
+        "200":
+          description: Paginated items and total count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditItemPage"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit session not found.
+  /stock-audits/candidates:
+    get:
+      operationId: searchStockAuditCandidates
+      summary: Search catalog products not present in the audit scope
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: auditId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+      responses:
+        "200":
+          description: Matching catalog products, bounded to 20 results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditCandidatePage"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit session not found.
+        "409":
+          description: Audit session is closed.
+  /stock-audits/begin-count:
+    post:
+      operationId: beginStockAuditCount
+      summary: Capture a fresh stock baseline for counting one item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditCountStartInput"
+      responses:
+        "200":
+          description: Baseline quantity and concurrency token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditCountStart"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit item not found.
+        "409":
+          description: Audit session is closed or product is unavailable.
+  /stock-audits/count:
+    patch:
+      operationId: saveStockAuditCount
+      summary: Save a physical quantity and record count conflicts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditCountInput"
+      responses:
+        "200":
+          description: Count saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditMutation"
+        "400":
+          description: Invalid quantity or finding.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit item not found.
+        "409":
+          description: Stale count token or stock moved during count; recount required.
+  /stock-audits/exceptions:
+    post:
+      operationId: reportStockAuditException
+      summary: Record a product discovered outside the audit scope without changing stock
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditExceptionInput"
+      responses:
+        "201":
+          description: Exception recorded without stock mutation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditExceptionResponse"
+        "400":
+          description: Invalid exception.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit or catalog product not found.
+        "409":
+          description: Audit is closed or the product is already in the audit.
+  /stock-audits/finalize:
+    post:
+      operationId: finalizeStockAudit
+      summary: Apply confirmed audit deltas atomically
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditEndInput"
+      responses:
+        "200":
+          description: Audit finalized and stock deltas recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditMutation"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit session not found.
+        "409":
+          description: Unfinished items or unsafe stock delta.
+  /stock-audits/cancel:
+    post:
+      operationId: cancelStockAudit
+      summary: Cancel an audit session without changing stock
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditEndInput"
+      responses:
+        "200":
+          description: Audit cancelled; history is retained.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditMutation"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit session not found.
+        "409":
+          description: Audit is already closed.
 components:
   securitySchemes:
     bearerAuth:
@@ -155,4 +430,220 @@ components:
           type: string
         name:
           type: string
+    StockAuditStartInput:
+      type: object
+      required: [branchId]
+      properties:
+        branchId:
+          type: string
+          minLength: 1
+    StockAuditCountStartInput:
+      type: object
+      required: [auditId, itemId]
+      properties:
+        auditId:
+          type: string
+          minLength: 1
+        itemId:
+          type: string
+          minLength: 1
+    StockAuditEndInput:
+      type: object
+      required: [auditId]
+      properties:
+        auditId:
+          type: string
+          minLength: 1
+    StockAuditCountInput:
+      type: object
+      required: [auditId, itemId, countedQty, finding, countToken]
+      properties:
+        auditId:
+          type: string
+          minLength: 1
+        itemId:
+          type: string
+          minLength: 1
+        countedQty:
+          type: integer
+          minimum: 0
+        finding:
+          type: string
+          enum: [NORMAL, NOT_FOUND, EXPIRED, DAMAGED, NOT_SOLD_HERE]
+        notes:
+          type: string
+          maxLength: 1000
+        countToken:
+          type: string
+          format: date-time
+    StockAuditExceptionInput:
+      type: object
+      required: [auditId, productId, finding]
+      properties:
+        auditId:
+          type: string
+          minLength: 1
+        productId:
+          type: string
+          minLength: 1
+        finding:
+          type: string
+          enum: [EXPIRED, DAMAGED, NOT_SOLD_HERE, UNLISTED_IN_BRANCH]
+        notes:
+          type: string
+          maxLength: 1000
+        countedQty:
+          type: integer
+          minimum: 0
+    StockAuditSession:
+      type: object
+      required: [id, branchId, branchName, status, startedAt, startedByName, summary]
+      properties:
+        id:
+          type: string
+        branchId:
+          type: string
+        branchName:
+          type: string
+        status:
+          type: string
+          enum: [IN_PROGRESS, COMPLETED, CANCELLED]
+        startedAt:
+          type: string
+          format: date-time
+        startedByName:
+          type: string
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedByName:
+          type: ["string", "null"]
+        cancelledAt:
+          type: ["string", "null"]
+          format: date-time
+        cancelledByName:
+          type: ["string", "null"]
+        summary:
+          $ref: "#/components/schemas/StockAuditSummary"
+    StockAuditSummary:
+      type: object
+      required: [totalProducts, counted, pending, counting, recountRequired, excluded, positiveVariance, negativeVariance, netVariance]
+      properties:
+        totalProducts:
+          type: integer
+        counted:
+          type: integer
+        pending:
+          type: integer
+        counting:
+          type: integer
+        recountRequired:
+          type: integer
+        excluded:
+          type: integer
+        positiveVariance:
+          type: integer
+        negativeVariance:
+          type: integer
+        netVariance:
+          type: integer
+    StockAuditItem:
+      type: object
+      required: [id, productId, productName, status, inScope, expectedQty]
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        productName:
+          type: string
+        barcode:
+          type: ["string", "null"]
+        masterSN:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [PENDING, COUNTING, COUNTED, RECOUNT_REQUIRED, EXCLUDED]
+        inScope:
+          type: boolean
+        expectedQty:
+          type: integer
+        baselineQty:
+          type: ["integer", "null"]
+        countedQty:
+          type: ["integer", "null"]
+        variance:
+          type: ["integer", "null"]
+        finding:
+          type: ["string", "null"]
+          enum: [NORMAL, NOT_FOUND, EXPIRED, DAMAGED, NOT_SOLD_HERE, UNLISTED_IN_BRANCH, null]
+        notes:
+          type: ["string", "null"]
+        countedByName:
+          type: ["string", "null"]
+        countedAt:
+          type: ["string", "null"]
+          format: date-time
+    StockAuditItemPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StockAuditItem"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    StockAuditCandidate:
+      type: object
+      required: [id, name, branchStockQty]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        barcode:
+          type: ["string", "null"]
+        masterSN:
+          type: ["string", "null"]
+        branchStockQty:
+          type: integer
+    StockAuditCandidatePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/StockAuditCandidate"
+    StockAuditCountStart:
+      type: object
+      required: [baselineQty, countToken]
+      properties:
+        baselineQty:
+          type: integer
+        countToken:
+          type: string
+          format: date-time
+    StockAuditMutation:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        changedProducts:
+          type: integer
+    StockAuditExceptionResponse:
+      type: object
+      required: [success, item]
+      properties:
+        success:
+          type: boolean
+        item:
+          $ref: "#/components/schemas/StockAuditItem"
 
