@@ -49,6 +49,21 @@
   color: var(--text-main);
   font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
 }
+.kasirv10-fixture.app-shell {
+  min-height: 100dvh;
+  height: auto;
+  overflow: visible;
+}
+.kasirv10-fixture .app-workspace {
+  min-height: auto;
+  overflow: visible !important;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding-bottom: calc(6rem + var(--safe-bottom));
+}
+.kasirv10-fixture .app-bottom-nav {
+  padding-bottom: var(--safe-bottom);
+}
 .kasirv10-fixture .fixture-panel {
   border: 1px solid rgba(148, 163, 184, .18);
   background: #e0e5ec;
@@ -70,10 +85,32 @@
   color: var(--text-main);
   box-shadow: inset 2px 2px 5px #1c1e24, inset -2px -2px 4px #34373f;
 }
+.fixture-shift-hero {
+  background: #e7edf5 !important;
+  box-shadow: inset 2px 2px 6px #c3ccd8, inset -2px -2px 6px #fff !important;
+}
+.dark .fixture-shift-hero {
+  background: #2a2d35 !important;
+  box-shadow: inset 2px 2px 6px #1c1e24, inset -2px -2px 6px #343840 !important;
+}
 /* Scoped brand adjustments copied from the Alfath audit skin. */
 [data-testid="page-branch-stock-audit"] {
   background: #e2e8f1 !important;
   color: #17283f !important;
+}
+[data-testid="page-branch-stock-audit"] > div > header {
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow: 8px 8px 18px rgba(43, 67, 99, .22), -3px -3px 10px rgba(255, 255, 255, .25) !important;
+}
+[data-testid="page-branch-stock-audit"] [data-testid^="card-audit-item-"] {
+  border-radius: 1rem !important;
+  border-color: rgba(148, 163, 184, .24) !important;
+  background: #e7edf5 !important;
+  box-shadow: 4px 4px 10px #c3ccd8, -4px -4px 10px #f8faff !important;
+}
+.dark [data-testid="page-branch-stock-audit"] [data-testid^="card-audit-item-"] {
+  background: #2a2d35 !important;
+  box-shadow: 4px 4px 10px #1a1c22, -4px -4px 10px #343840 !important;
 }
 [data-testid="page-branch-stock-audit"] [class*="bg-[#173b3d]"] {
   background-color: #174a8a !important;
@@ -133,6 +170,12 @@
 }
 .kasirv10-fixture button {
   min-height: 40px;
+}
+.kasirv10-fixture button:active:not(:disabled) {
+  box-shadow: inset 2px 2px 4px rgba(15, 23, 42, .18);
+}
+.kasirv10-fixture .fixture-nav-current span:first-child {
+  box-shadow: 3px 3px 8px #c1cad6, -3px -3px 8px #f8faff;
 }
 .fixture-opname-mobile {
   display: none;
@@ -224,6 +267,22 @@
     min-width: 180px !important;
     max-width: 180px !important;
   }
+  .fixture-admin-mobile [class~="text-[8px]"] {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+  .fixture-admin-mobile [class~="text-[9px]"] {
+    font-size: 10.5px !important;
+    line-height: 1.4 !important;
+  }
+  .fixture-admin-mobile [class~="text-slate-400"] {
+    color: #64748b !important;
+  }
+  [data-testid="page-branch-stock-audit"] [data-testid^="metric-audit-"] > p:first-child {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
   .dark .fixture-mobile-cards tbody tr {
     border-color: #243352;
     background: #2a2d35;
@@ -231,6 +290,11 @@
   }
   .dark .fixture-mobile-cards tbody td {
     border-bottom-color: #243352 !important;
+  }
+}
+@media (min-width: 768px) {
+  .kasirv10-fixture .app-workspace {
+    padding-bottom: 2rem;
   }
 }
 

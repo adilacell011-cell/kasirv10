@@ -7,7 +7,7 @@ export function Dashboard() {
     <div className="fixture-panel mb-5 p-4 sm:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <FixturePageTitle title="Dashboard Pusat" subtitle="Ringkasan operasional hari ini" />
-        <div className="flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1">{["Harian", "Mingguan", "Bulanan", "Semua"].map((p, i) => <button key={p} className={`rounded-xl px-3 py-2 text-[9px] font-black uppercase ${i === 0 ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"}`}>{p}</button>)}</div>
+        <div className="flex flex-nowrap gap-1 overflow-x-auto rounded-2xl bg-slate-100 p-1">{["Harian", "Mingguan", "Bulanan", "Semua"].map((p, i) => <button key={p} className={`shrink-0 rounded-xl px-3 py-2 text-[9px] font-black uppercase ${i === 0 ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"}`}>{p}</button>)}</div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">{["Ringkasan", "Penjualan", "Stok & Audit"].map((t, i) => <button key={t} className={`rounded-xl px-4 py-2 text-[9px] font-black uppercase tracking-widest ${i === 0 ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>{t}</button>)}</div>
     </div>

@@ -11,15 +11,27 @@ const nav = [
   { label: "Laporan", icon: Activity },
   { label: "Lainnya", icon: Menu },
 ];
+const adminMobileTitles = new Set([
+  "Dashboard Pusat",
+  "Audit Stok Cabang",
+  "Laporan Shift & Cabang",
+  "Stok per Cabang",
+  "Manajemen Stok Opname",
+  "Bonus & Insentif",
+  "Manajemen Shift",
+  "Pengaturan Cabang",
+  "Karyawan & Akses",
+]);
 
 export function FixtureShell({ title, children }: { title: string; children: ReactNode }) {
+  const prioritizeMobileReadability = adminMobileTitles.has(title);
   const activeNav = title.includes("Dashboard") ? "Dashboard"
     : title.includes("Kasir") || title.includes("Penjualan") ? "Kasir"
     : title.includes("Laporan") || title.includes("Riwayat") ? "Laporan"
     : title.includes("Stok") || title.includes("Opname") || title.includes("Produk") ? "Stok"
     : "Lainnya";
   return (
-    <div className="kasirv10-fixture app-shell flex min-h-screen flex-col">
+    <div className={`kasirv10-fixture app-shell flex min-h-screen flex-col ${prioritizeMobileReadability ? "fixture-admin-mobile" : ""}`}>
       <header className="app-topbar sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between bg-white px-4 shadow-md md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <button aria-label="Menu" className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-blue-600 shadow-sm">
@@ -49,7 +61,7 @@ export function FixtureShell({ title, children }: { title: string; children: Rea
       <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-30 overflow-x-auto bg-white md:hidden">
         <div className="flex h-[68px] min-w-full items-center px-2">
           {nav.map(({ label, icon: Icon }) => (
-            <button key={label} className={`flex h-full min-w-[64px] flex-1 flex-col items-center justify-center gap-1 ${label === activeNav ? "text-blue-600" : "text-slate-400"}`}>
+            <button key={label} className={`flex h-full min-w-[64px] flex-1 flex-col items-center justify-center gap-1 ${label === activeNav ? "fixture-nav-current text-blue-600" : "text-slate-400"}`}>
               <span className={`flex h-9 w-10 items-center justify-center rounded-2xl ${label === activeNav ? "bg-blue-50 shadow-sm" : ""}`}><Icon className="h-5 w-5" /></span>
               <span className="text-[8px] font-black uppercase tracking-wider">{label}</span>
             </button>
@@ -66,7 +78,7 @@ export function FixturePageTitle({ title, subtitle }: { title: string; subtitle?
 
 export function FixtureStat({ label, value, detail, tone = "blue" }: { label: string; value: string; detail?: string; tone?: "blue" | "green" | "amber" | "rose" }) {
   const colors = { blue: "text-blue-700 bg-blue-50", green: "text-emerald-700 bg-emerald-50", amber: "text-amber-700 bg-amber-50", rose: "text-rose-700 bg-rose-50" };
-  return <div className="fixture-panel p-4"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p><p className={`mt-2 text-xl font-black tabular-nums ${colors[tone].split(" ")[0]}`}>{value}</p>{detail && <p className={`mt-2 inline-flex rounded-lg px-2 py-1 text-[9px] font-bold ${colors[tone]}`}>{detail}</p>}</div>;
+  return <div className="fixture-panel p-4"><p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</p><p className={`mt-2 whitespace-nowrap text-lg font-black tabular-nums sm:text-xl ${colors[tone].split(" ")[0]}`}>{value}</p>{detail && <p className={`mt-2 inline-flex rounded-lg px-2 py-1 text-[9px] font-bold ${colors[tone]}`}>{detail}</p>}</div>;
 }
 
 export function FixtureTable({ headings, rows, mobileCards = false }: { headings: string[]; rows: ReactNode[][]; mobileCards?: boolean }) {

@@ -9,7 +9,7 @@ export function POS() {
       <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-emerald-700">Shift Aktif</span>
     </div>
     <div className="mb-4 flex rounded-2xl bg-slate-100 p-1">{["Billing", "Riwayat", "Pemeliharaan", "Transfer"].map((tab, i) => <button key={tab} className={`flex-1 rounded-xl px-2 py-2 text-[8px] font-black uppercase tracking-wide sm:text-[10px] ${i === 0 ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>{tab}</button>)}</div>
-    <div className="grid gap-4 lg:grid-cols-[1.35fr_.85fr]">
+    <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1.25fr)_minmax(300px,.9fr)]">
       <section className="fixture-panel overflow-hidden">
         <div className="flex items-center gap-2 border-b border-slate-200 p-3"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input aria-label="Cari produk" placeholder="Cari nama atau barcode..." className="fixture-inset min-h-10 w-full rounded-xl pl-10 pr-3 text-xs" /></div><button aria-label="Scan barcode" className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white"><Barcode className="h-4 w-4" /></button></div>
         <div className="flex gap-2 overflow-x-auto border-b border-slate-200 p-3">{["Semua", "Aksesoris", "Pulsa", "Voucher"].map((x, i) => <button key={x} className={`shrink-0 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase ${i === 0 ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>{x}</button>)}</div>
