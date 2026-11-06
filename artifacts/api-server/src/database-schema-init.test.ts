@@ -156,9 +156,14 @@ test("non-empty compatible schema is skipped and incomplete schema is rejected w
       }))),
     indexes: Prisma.dmmf.datamodel.models.flatMap(model => [
       ...model.fields.filter(field => field.isId || field.isUnique)
-        .map(field => ({ table_name: model.dbName || model.name, columns: [field.dbName || field.name] })),
+        .map(field => ({
+          table_name: model.dbName || model.name,
+          columns: [field.dbName || field.name],
+          is_unique: true,
+        })),
       ...model.uniqueFields.map(fields => ({
         table_name: model.dbName || model.name,
+        is_unique: true,
         columns: fields.map(name => {
           const field = model.fields.find(candidate => candidate.name === name)!;
           return field.dbName || field.name;

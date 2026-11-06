@@ -100,7 +100,7 @@ test("legacy baseline validates the full 15-model structure before it can be mar
           return field.dbName || field.name;
         })),
       ];
-      return keys.map((columns) => ({ table_name: table, columns }));
+      return keys.map((columns) => ({ table_name: table, columns, is_unique: true }));
     }),
     foreign_keys: legacyModels.flatMap((model) => model.fields
       .filter((field) => field.kind === "object" && field.relationFromFields?.length)
@@ -130,17 +130,36 @@ test("legacy baseline validates the full 15-model structure before it can be mar
     database: "kasirv10_migration_qa",
     schema: "public",
   };
-  assert.doesNotThrow(() => assertCompatibleSchema(snapshot, target, legacyModels));
+  const legacyIndexes = [
+    { table: "Sale", columns: ["branchId", "status", "createdAt"] },
+    { table: "Sale", columns: ["status", "createdAt"] },
+    { table: "Sale", columns: ["createdAt", "id"] },
+    { table: "SaleIdempotency", columns: ["state", "createdAt"] },
+  ];
+  snapshot.indexes.push(...legacyIndexes.map((index) => ({
+    table_name: index.table,
+    columns: index.columns,
+    is_unique: false,
+  })));
+  assert.doesNotThrow(() => assertCompatibleSchema(snapshot, target, legacyModels, legacyIndexes));
 
   const wrongColumn = structuredClone(snapshot);
   wrongColumn.columns.find((column) => column.table_name === "Branch" && column.column_name === "name")!.udt_name = "int4";
-  assert.throws(() => assertCompatibleSchema(wrongColumn, target, legacyModels), /wrong type\/nullability/);
+  assert.throws(() => assertCompatibleSchema(wrongColumn, target, legacyModels, legacyIndexes), /wrong type\/nullability/);
 
   const missingUnique = structuredClone(snapshot);
   missingUnique.indexes = missingUnique.indexes.filter((index) => !(index.table_name === "ProductStock" && index.columns.join(",") === "productId,branchId"));
-  assert.throws(() => assertCompatibleSchema(missingUnique, target, legacyModels), /missing unique key/);
+  assert.throws(() => assertCompatibleSchema(missingUnique, target, legacyModels, legacyIndexes), /missing unique key/);
 
   const wrongRelation = structuredClone(snapshot);
   wrongRelation.foreign_keys[0].delete_action = "c";
-  assert.throws(() => assertCompatibleSchema(wrongRelation, target, legacyModels), /incompatible relation/);
+  assert.throws(() => assertCompatibleSchema(wrongRelation, target, legacyModels, legacyIndexes), /incompatible relation/);
+
+  const missingReadIndex = structuredClone(snapshot);
+  missingReadIndex.indexes = missingReadIndex.indexes.filter((index) =>
+    !(index.table_name === "Sale" && index.columns.join(",") === "createdAt,id"));
+  assert.throws(
+    () => assertCompatibleSchema(missingReadIndex, target, legacyModels, legacyIndexes),
+    /missing or incompatible index/,
+  );
 });

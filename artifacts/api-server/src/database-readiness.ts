@@ -5,7 +5,7 @@ import type { DatabaseTarget } from "./database-target";
 export type SchemaSnapshot = {
   database_name: string;
   columns: { table_name: string; column_name: string; udt_name: string; is_nullable: string }[];
-  indexes: { table_name: string; columns: string[] }[];
+  indexes: { table_name: string; columns: string[]; is_unique: boolean }[];
   foreign_keys: {
     table_name: string; columns: string[]; target_table: string; target_schema: string;
     target_columns: string[]; delete_action: string; update_action: string;
@@ -21,6 +21,7 @@ export function assertCompatibleSchema(
   snapshot: SchemaSnapshot,
   target: DatabaseTarget,
   models = Prisma.dmmf.datamodel.models,
+  expectedIndexes: { table: string; columns: string[]; isUnique?: boolean }[] = [],
 ) {
   if (snapshot.database_name !== target.database) throw new Error("Connected database identity mismatch.");
   for (const model of models) {
@@ -41,7 +42,7 @@ export function assertCompatibleSchema(
       })),
     ];
     for (const columns of uniqueKeys) {
-      if (!snapshot.indexes.some(i => i.table_name === table && same(i.columns, columns))) {
+      if (!snapshot.indexes.some(i => i.table_name === table && i.is_unique && same(i.columns, columns))) {
         throw new Error(`Incompatible schema: missing unique key on ${table}(${columns.join(",")}).`);
       }
     }
@@ -65,6 +66,16 @@ export function assertCompatibleSchema(
       }
     }
   }
+  for (const expected of expectedIndexes) {
+    if (!snapshot.indexes.some((index) =>
+      index.table_name === expected.table &&
+      index.is_unique === Boolean(expected.isUnique) &&
+      same(index.columns, expected.columns))) {
+      throw new Error(
+        `Incompatible schema: missing or incompatible index on ${expected.table}(${expected.columns.join(",")}).`,
+      );
+    }
+  }
 }
 
 // One SELECT and one catalog snapshot. No DDL, data writes or automatic repairs.
@@ -72,6 +83,7 @@ export async function inspectDatabase(
   prisma: Pick<PrismaClient, "$queryRaw">,
   target: DatabaseTarget,
   models = Prisma.dmmf.datamodel.models,
+  expectedIndexes: { table: string; columns: string[]; isUnique?: boolean }[] = [],
 ) {
   const snapshots = await prisma.$queryRaw<SchemaSnapshot[]>`
     SELECT current_database() AS database_name,
@@ -80,13 +92,13 @@ export async function inspectDatabase(
         FROM information_schema.columns WHERE table_schema = ${target.schema}
       ) c), '[]'::json) AS columns,
       COALESCE((SELECT json_agg(i) FROM (
-        SELECT t.relname AS table_name,
+        SELECT t.relname AS table_name, ix.indisunique AS is_unique,
           ARRAY(SELECT a.attname::text FROM unnest(ix.indkey) WITH ORDINALITY k(attnum, ord)
             JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
             WHERE k.ord <= ix.indnkeyatts ORDER BY k.ord) AS columns
         FROM pg_index ix JOIN pg_class t ON t.oid = ix.indrelid
         JOIN pg_namespace n ON n.oid = t.relnamespace
-        WHERE n.nspname = ${target.schema} AND ix.indisunique AND ix.indisvalid
+        WHERE n.nspname = ${target.schema} AND ix.indisvalid
           AND ix.indpred IS NULL AND ix.indexprs IS NULL
       ) i), '[]'::json) AS indexes,
       COALESCE((SELECT json_agg(f) FROM (
@@ -102,7 +114,7 @@ export async function inspectDatabase(
         WHERE con.contype = 'f' AND con.convalidated AND n.nspname = ${target.schema}
       ) f), '[]'::json) AS foreign_keys`;
   if (!snapshots[0]) throw new Error("Database readiness returned no metadata.");
-  assertCompatibleSchema(snapshots[0], target, models);
+  assertCompatibleSchema(snapshots[0], target, models, expectedIndexes);
 }
 
 export function createReadiness(check: () => Promise<void>) {

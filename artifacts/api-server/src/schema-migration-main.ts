@@ -14,6 +14,12 @@ const LEGACY_MODEL_NAMES = new Set([
   "SaleIdempotency", "SaleItem", "Commission", "Adjustment", "GlobalConfig",
   "Shift", "StockSnapshot", "DailyIncomeSummary", "ShoppingPlan",
 ]);
+const LEGACY_INDEXES = [
+  { table: "Sale", columns: ["branchId", "status", "createdAt"] },
+  { table: "Sale", columns: ["status", "createdAt"] },
+  { table: "Sale", columns: ["createdAt", "id"] },
+  { table: "SaleIdempotency", columns: ["state", "createdAt"] },
+];
 
 function safePrismaDiagnostic(error: unknown): string {
   if (!error || typeof error !== "object") return "";
@@ -107,7 +113,7 @@ async function main() {
     }
     // Validate all legacy columns, nullability, unique keys and foreign-key
     // actions before recording the baseline or applying any DDL.
-    await inspectDatabase(client, target, legacyModels);
+    await inspectDatabase(client, target, legacyModels, LEGACY_INDEXES);
 
     if (!baseline) {
       const baselineOutput = execFileSync(process.execPath, [

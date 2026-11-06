@@ -35,12 +35,17 @@ function snapshot(): SchemaSnapshot {
         udt_name: types[field.type]!, is_nullable: field.isRequired ? "NO" : "YES",
       });
       if (field.isId || field.isUnique) {
-        result.indexes.push({ table_name: model.dbName || model.name, columns: [field.dbName || field.name] });
+        result.indexes.push({
+          table_name: model.dbName || model.name,
+          columns: [field.dbName || field.name],
+          is_unique: true,
+        });
       }
     }
     for (const fields of model.uniqueFields) {
       result.indexes.push({
         table_name: model.dbName || model.name,
+        is_unique: true,
         columns: fields.map(name => {
           const field = model.fields.find(candidate => candidate.name === name)!;
           return field.dbName || field.name;
