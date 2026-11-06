@@ -51,7 +51,11 @@ test("fresh isolated PostgreSQL schema initializes once, compatible schema is sk
       SELECT COUNT(*)::int AS table_count
       FROM information_schema.tables
       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`;
-    assert.equal(tableCounts[0]?.table_count, 15, "the current Prisma schema must provision 15 tables");
+    assert.equal(
+      tableCounts[0]?.table_count,
+      Prisma.dmmf.datamodel.models.length,
+      "the current Prisma schema must provision one table per model",
+    );
     const schemaFingerprint = await prisma.$queryRaw<{ digest: string | null }[]>`
       SELECT md5(string_agg(row_to_json(c)::text, '' ORDER BY table_name, ordinal_position)) AS digest
       FROM information_schema.columns c WHERE table_schema = 'public'`;
