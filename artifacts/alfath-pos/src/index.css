@@ -70,12 +70,13 @@
      tema TERANG aplikasi, walau HP/OS sedang dalam mode gelap — agar tidak
      ada lagi popup hitam yang tidak sesuai. */
   color-scheme: light;
-  --canvas-bg: #e0e5ec;
-  --card-bg: #e0e5ec;
-  --text-main: #0f172a;
-  --text-mute: #5b6878;
-  --border-color: #e6ebf3;
-  --input-bg: #f8fafc;
+  --canvas-bg: #e9e6df;
+  --card-bg: #e9e6df;
+  --text-main: #17243a;
+  --text-mute: #68717d;
+  --border-color: #d9d4ca;
+  --input-bg: #f3f0e9;
+  --champagne: #b69b68;
 }
 
 .dark {
@@ -87,6 +88,7 @@
   --text-mute: #94a3b8;
   --border-color: #243352;
   --input-bg: #0f1a30;
+  --champagne: #c8ad78;
 }
 
 body {
@@ -594,19 +596,19 @@ textarea {
   border-radius: 14px !important;
   border-width: 1px !important;
   border-color: transparent !important;
-  background-color: #e0e5ec !important;
+  background-color: #e9e6df !important;
   background-clip: padding-box;
   box-shadow:
-    inset 2px 2px 5px #c2ccd9,
-    inset -2px -2px 4px #ffffff !important;
+    inset 2px 2px 5px #c9c4b8,
+    inset -2px -2px 4px #f8f6f0 !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):hover,
 select:hover,
 textarea:hover {
   box-shadow:
-    inset 3px 3px 6px #bcc6d4,
-    inset -3px -3px 5px #ffffff !important;
+    inset 3px 3px 6px #c1bcaf,
+    inset -3px -3px 5px #fbf9f4 !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):focus,
@@ -614,10 +616,10 @@ select:focus,
 textarea:focus {
   border-color: var(--accent) !important;
   box-shadow:
-    inset 2px 2px 5px #c2ccd9, inset -2px -2px 4px #ffffff,
+    inset 2px 2px 5px #c9c4b8, inset -2px -2px 4px #f8f6f0,
     0 0 0 3px rgba(29, 82, 218, 0.2) !important;
   box-shadow:
-    inset 2px 2px 5px #c2ccd9, inset -2px -2px 4px #ffffff,
+    inset 2px 2px 5px #c9c4b8, inset -2px -2px 4px #f8f6f0,
     0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent) !important;
 }
 
@@ -736,7 +738,7 @@ textarea:focus-visible {
 /* Latar halaman & permukaan konten disamakan dengan warna kartu */
 .bg-slate-50,
 .bg-slate-50\/50 {
-  background-color: #e0e5ec !important;
+  background-color: #e9e6df !important;
 }
 .dark .bg-slate-50,
 .dark .bg-slate-50\/50 {
@@ -752,13 +754,13 @@ textarea:focus-visible {
 
 /* Panel timbul — mode terang */
 .bg-white:is(.rounded-2xl, .rounded-3xl, .rounded-\[32px\]):not(input):not(select):not(textarea):not(button):not(a):not(aside):not(header):not(footer):not(.app-solid) {
-  background-color: #e0e5ec !important;
+  background-color: #e9e6df !important;
   border-color: transparent !important;
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000),
     var(--tw-ring-shadow, 0 0 #0000),
-    5px 5px 12px #c1cad6,
-    -5px -5px 12px #f8faff !important;
+    5px 5px 12px #c9c4b8,
+    -5px -5px 12px #f8f6f0 !important;
 }
 
 /* Panel timbul — mode gelap */
@@ -774,14 +776,14 @@ textarea:focus-visible {
 
 /* Input cekung (CustomSelect trigger) — tetap neumorphic agar serasi */
 .app-select-trigger {
-  background-color: #e0e5ec !important;
+  background-color: #e9e6df !important;
   border-color: transparent !important;
   border-width: 1px !important;
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 #0000),
     var(--tw-ring-shadow, 0 0 #0000),
-    inset 2px 2px 5px #c1cad6,
-    inset -2px -2px 4px #f8faff !important;
+    inset 2px 2px 5px #c9c4b8,
+    inset -2px -2px 4px #f8f6f0 !important;
 }
 .dark .app-select-trigger {
   background-color: #2a2d35 !important;
@@ -794,13 +796,14 @@ textarea:focus-visible {
 
 /* Alfath Pulsa — hybrid fluent controls over bold soft-UI depth. */
 :root {
-  --canvas-bg: #e0e5ec;
-  --card-bg: #e0e5ec;
-  --text-main: #0f172a;
-  --text-mute: #5b6878;
-  --border-color: #e6ebf3;
-  --input-bg: #f8fafc;
+  --canvas-bg: #e9e6df;
+  --card-bg: #e9e6df;
+  --text-main: #17243a;
+  --text-mute: #68717d;
+  --border-color: #d9d4ca;
+  --input-bg: #f3f0e9;
   --accent: #1d52da;
+  --champagne: #b69b68;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -812,6 +815,7 @@ textarea:focus-visible {
   --border-color: #243352;
   --input-bg: #0f1a30;
   --accent: #72a5ff;
+  --champagne: #c8ad78;
 }
 
 html,
@@ -966,12 +970,18 @@ body {
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
-  animation: screen-arrive 180ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  animation: screen-arrive 210ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
 }
 
 @keyframes screen-arrive {
-  from { opacity: 0.84; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.88;
+    transform: translate3d(0, 5px, 0) scale(0.998);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 /* Audit keeps its full financial/stock matrix; only its surfaces join the brand palette. */
@@ -1113,6 +1123,185 @@ body {
   background-color: var(--canvas-bg);
   color: var(--text-main);
   font-family: var(--font-sans);
+}
+
+/* Shared premium feedback surfaces: warm paper in light mode, quiet depth in
+   dark mode. Attribute hooks are limited to the existing global overlays. */
+[data-notification-stack] {
+  gap: 0.625rem;
+  padding: 0 0.25rem;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+[data-alert-toast] {
+  border: 1px solid color-mix(in srgb, var(--champagne) 24%, var(--border-color)) !important;
+  border-left-width: 3px !important;
+  border-radius: 1rem !important;
+  background: color-mix(in srgb, var(--card-bg) 96%, white 4%) !important;
+  color: var(--text-main) !important;
+  box-shadow:
+    0 12px 28px rgba(35, 43, 56, 0.12),
+    0 2px 6px rgba(35, 43, 56, 0.06) !important;
+}
+
+[data-alert-toast] > div:nth-child(2) p:first-child {
+  font-size: 0.6875rem !important;
+}
+
+[data-alert-toast] > div:nth-child(2) p:last-child {
+  font-size: 0.8125rem !important;
+  line-height: 1.5 !important;
+}
+
+[data-confirm-dialog] h3,
+[data-prompt-dialog] h3 {
+  font-size: 0.875rem !important;
+}
+
+[data-confirm-dialog] > div:first-child > p,
+[data-prompt-dialog] form > div:first-child > p {
+  font-size: 0.8125rem !important;
+  line-height: 1.55 !important;
+}
+
+[data-confirm-dialog] button,
+[data-prompt-dialog] button {
+  min-height: 2.75rem;
+  font-size: 0.6875rem !important;
+}
+
+[data-alert-toast][data-alert-type="success"] {
+  border-left-color: #2f9a72 !important;
+}
+
+[data-alert-toast][data-alert-type="warning"] {
+  border-left-color: #c28b36 !important;
+}
+
+[data-alert-toast][data-alert-type="info"] {
+  border-left-color: var(--accent) !important;
+}
+
+[data-alert-toast][data-alert-type="info"] > div:first-child {
+  background-color: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+}
+
+[data-alert-toast][data-alert-type="info"] > div:first-child svg,
+[data-alert-toast][data-alert-type="info"] > div:nth-child(2) p:first-child {
+  color: var(--accent) !important;
+}
+
+[data-alert-toast] > div:nth-child(2) p:last-child {
+  color: var(--text-main) !important;
+}
+
+[data-confirm-overlay],
+[data-prompt-overlay] {
+  background: rgba(20, 29, 43, 0.62) !important;
+}
+
+[data-confirm-dialog],
+[data-prompt-dialog] {
+  border: 1px solid color-mix(in srgb, var(--champagne) 30%, var(--border-color)) !important;
+  background: color-mix(in srgb, var(--card-bg) 96%, white 4%) !important;
+  color: var(--text-main) !important;
+  box-shadow:
+    0 24px 60px rgba(18, 28, 43, 0.2),
+    0 4px 14px rgba(18, 28, 43, 0.1) !important;
+}
+
+[data-confirm-dialog] > div:last-child,
+[data-prompt-dialog] form > div:last-child {
+  background: color-mix(in srgb, var(--canvas-bg) 75%, white 25%) !important;
+  border-color: color-mix(in srgb, var(--champagne) 22%, var(--border-color)) !important;
+}
+
+[data-confirm-dialog] > div:last-child button:first-child,
+[data-prompt-dialog] form > div:last-child button:first-child {
+  background: color-mix(in srgb, var(--card-bg) 90%, white 10%) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-mute) !important;
+}
+
+[data-confirm-dialog] > div:last-child button:last-child,
+[data-prompt-dialog] form > div:last-child button:last-child {
+  background: #1d52da !important;
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(29, 82, 218, 0.18);
+}
+
+[data-payment-success-overlay] {
+  background: rgba(24, 43, 39, 0.36) !important;
+  backdrop-filter: none !important;
+}
+
+[data-payment-success-card] {
+  border: 1px solid color-mix(in srgb, var(--champagne) 48%, #fff) !important;
+  background: color-mix(in srgb, var(--card-bg) 94%, white 6%) !important;
+  backdrop-filter: none !important;
+  box-shadow:
+    0 18px 46px rgba(19, 33, 38, 0.22),
+    0 3px 10px rgba(19, 33, 38, 0.12) !important;
+}
+
+@media (max-width: 640px) {
+  [data-notification-stack] {
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem) !important;
+    left: calc(env(safe-area-inset-left, 0px) + 0.75rem) !important;
+    right: calc(env(safe-area-inset-right, 0px) + 0.75rem) !important;
+    width: auto !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}
+
+.dark [data-alert-toast],
+.dark [data-confirm-dialog],
+.dark [data-prompt-dialog] {
+  background: #2a2d35 !important;
+  border-top-color: rgba(200, 173, 120, 0.26) !important;
+  border-right-color: rgba(200, 173, 120, 0.26) !important;
+  border-bottom-color: rgba(200, 173, 120, 0.26) !important;
+  color: #f4f1e9 !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38) !important;
+}
+
+.dark [data-alert-toast][data-alert-type="success"] {
+  border-left-color: #42b58b !important;
+}
+
+.dark [data-alert-toast][data-alert-type="warning"] {
+  border-left-color: #d5a04b !important;
+}
+
+.dark [data-alert-toast][data-alert-type="info"] {
+  border-left-color: #72a5ff !important;
+}
+
+.dark [data-confirm-dialog] > div:last-child,
+.dark [data-prompt-dialog] form > div:last-child {
+  background: #252830 !important;
+  border-color: rgba(200, 173, 120, 0.2) !important;
+}
+
+.dark [data-confirm-dialog] > div:last-child button:first-child,
+.dark [data-prompt-dialog] form > div:last-child button:first-child {
+  background: #30333b !important;
+  border-color: #424650 !important;
+  color: #c5c9d1 !important;
+}
+
+.dark [data-confirm-dialog] > div:last-child button:last-child,
+.dark [data-prompt-dialog] form > div:last-child button:last-child {
+  background: #1d52da !important;
+  color: #fff !important;
+}
+
+.dark [data-payment-success-card] {
+  background: #2a302f !important;
+  border-color: rgba(200, 173, 120, 0.38) !important;
 }
 
 .app-workspace,

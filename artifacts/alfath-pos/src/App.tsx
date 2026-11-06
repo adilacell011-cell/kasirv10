@@ -10083,10 +10083,12 @@ export default function App() {
     )}
 
     {/* --- BRAND ALERT TOAST MULTIPLE POPUPS (NO WEB ADDRESS NO DOMAIN SHOWN) --- */}
-    <div className="fixed top-4 right-4 z-[99999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    <div data-notification-stack className="fixed top-4 right-4 z-[99999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
       {globalAlerts.map((alert) => (
         <div
           key={alert.id}
+          data-alert-toast
+          data-alert-type={alert.type}
           className={`pointer-events-auto bg-white/90 dark:bg-slate-900/90 text-slate-900 border border-slate-200/80 p-4 rounded-2xl shadow-2xl shadow-slate-900/10 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 relative border-l-4 ${alert.type === 'success' ? 'border-l-emerald-500' : 'border-l-amber-500'}`}
         >
           <div className={`w-5 h-5 rounded-full ${alert.type === 'success' ? 'bg-emerald-500/15' : 'bg-amber-500/15'} flex items-center justify-center shrink-0 mt-0.5`}>
@@ -10109,12 +10111,13 @@ export default function App() {
     {/* --- PAYMENT SUCCESS OVERLAY --- */}
     {paymentSuccessOverlay && (
       <div
-        className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-emerald-950/30 backdrop-blur-md animate-in fade-in duration-200"
+        data-payment-success-overlay
+        className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-emerald-950/30 animate-in fade-in duration-200"
         onClick={() => setPaymentSuccessOverlay(null)}
       >
         <div className="w-full max-w-[320px] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-250 ease-out">
-          {/* glass card */}
-          <div className="rounded-2xl overflow-hidden border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.18)] bg-white/20 backdrop-blur-xl">
+          {/* premium success card */}
+          <div data-payment-success-card className="rounded-2xl overflow-hidden border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.18)]">
             {/* inner content */}
             <div className="px-5 py-4 flex items-center gap-4">
               {/* icon */}
@@ -10151,8 +10154,8 @@ export default function App() {
 
     {/* --- BRAND CONFIRMATION POPUP (NO WEB ADDRESS NO DOMAIN SHOWN) --- */}
     {confirmModal && (
-      <div className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
+      <div data-confirm-overlay className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
+        <div data-confirm-dialog className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
           <div className="p-6 text-center">
             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 stroke-[2.5]" />
@@ -10186,8 +10189,8 @@ export default function App() {
 
     {/* --- BRAND PROMPT POPUP (NO WEB ADDRESS / DOMAIN SHOWN) --- */}
     {promptModal && (
-      <div className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
+      <div data-prompt-overlay className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
+        <div data-prompt-dialog className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
           <form
             onSubmit={(e) => {
               e.preventDefault();

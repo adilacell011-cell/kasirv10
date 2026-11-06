@@ -138,35 +138,16 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
-## Card style is NEUMORPHISM ("soft UI") app-wide — central, class-gated, `.app-solid` opt-out
-The owner picked a clean grey neumorphic look ("Neumorphism Abu Klasik") and asked to apply it to
-ALL pages + harmonize the page background. Implemented ENTIRELY in the NEUMORPHISM block at the END of
-index.css (the old glassmorphism + `prefers-reduced-transparency` blocks were REPLACED). Three parts:
-1. **Tokens:** `--canvas-bg` AND `--card-bg` both = `#e0e5ec` (`:root`) / `#23262e`–`#2a2d35` (`.dark`).
-2. **Harmonized page field:** override plain `.bg-slate-50` and `.bg-slate-50\/50` → `#e0e5ec` (light) /
-   `#23262e` (dark) so every content scroll shell + section header merges into one continuous grey field.
-   SAFE because: no inputs use class `bg-slate-50`; `hover:bg-slate-50` and the opacity variants
-   (`/60`,`/80`) are SEPARATE classes → untouched, so zebra rows + hovers survive. Table rows are
-   `bg-white`/`bg-slate-50/60` (NOT plain, NOT rounded) → stay light/readable on the grey card.
-3. **Raised cards:** selector `.bg-white:is(.rounded-lg,.rounded-xl,.rounded-2xl,.rounded-3xl,.rounded-\[32px\])`
-   + the same `:not(input)...:not(.app-solid)` exclusion chain → bg `#e0e5ec`, `border-color:transparent`,
-   dual neumorphic shadow (`7px 7px 16px #b8c2d0, -7px -7px 16px #ffffff`; dark `#1c1e24`/`#34373f`).
-**CRITICAL — box-shadow IS written directly here (NOT via `--tw-shadow`), unlike the shadow-scale block.**
-Reason: `--tw-shadow` only renders if the element ALSO has a `shadow-*` utility; many cards have none →
-they'd be flat grey-on-grey (invisible). Direct `box-shadow` guarantees the extrude. Focus rings are
-preserved by prepending the v4 ring layers: `box-shadow: var(--tw-ring-offset-shadow,0 0 #0000),
-var(--tw-ring-shadow,0 0 #0000), <dual neu shadows> !important;`. An architect review confirmed this is sound.
-**Do NOT broaden the radius list to `rounded-\[40px\]`/`rounded-\[28px\]`** — `40px` is used by bespoke
-surfaces (a glow-shadow promo card, a zoom-in modal, the big POS panel) whose custom intent should
-survive; `28px` cards are all `bg-*-50` (colored, not `bg-white`) so adding it does nothing. Architect
-flagged the 40px collision; the proven set is exactly lg/xl/2xl/3xl/32px.
-**`.app-solid` = the opt-out marker:** ANY floating dropdown/popover/menu (portal CustomSelect panel, POS
-instant-search dropdown, ProductCombobox typeahead) MUST carry `app-solid` or it adopts the card neu bg.
-**Escaping gotcha:** the `rounded-\[32px\]` selector must keep its backslashes — a careless `sed` once
-stripped them, producing invalid `[32px]` that `:is()` drops. Edit literally.
-**Login screen** has a hardcoded dark background (intentional) — the grey neu card reads as a soft floating
-panel there, fine. The shift cards (App.tsx ~3596) use `bg-[#e0e5ec]` + their own arbitrary dual shadow
-(not `bg-white`, so not matched by the card block) and were the approved reference for this whole style.
+## App-wide premium soft UI and compact operational density
+The owner approved a luxurious Fluent layout across the app while retaining Alfath blue and neumorphic
+depth: warm ivory/greige shared surfaces, restrained champagne detail, consistent global popups, and
+subtle page/button motion. Keep dense product and operational pages compact rather than enlarging cards.
+Use the central CSS tokens and presentation hooks; `.app-solid` remains the opt-out for floating menus.
+**Why:** the owner approved the catalog mockup as the visual direction for every page, and heavy cards or
+glass effects reduce readability in product-heavy workflows.
+**How to apply:** preserve blue actions, keep status colors readable, use warm neutrals/champagne as
+supporting accents, respect reduced-motion and touch targets, and do not change behavior or business logic
+to achieve visual consistency.
 
 ## Extending neu+"lampu" to elements the global card rule SKIPS (buttons/pills/spans)
 The global neu card rule only matches `.bg-white.rounded-*` and excludes `button/a/input/...`,
