@@ -10,6 +10,10 @@ on:
         required: true
         type: boolean
         default: false
+      candidate_source_sha:
+        description: Exact source SHA for the clean stock-audit candidate
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -23,7 +27,8 @@ jobs:
       github.ref == 'refs/heads/main' ||
       (github.event_name == 'workflow_dispatch' &&
        (github.ref == 'refs/heads/validate/multiplatform-arm64' ||
-        github.ref == 'refs/heads/validate/stock-audit-camera') &&
+        github.ref == 'refs/heads/validate/stock-audit-camera' ||
+        github.ref == 'refs/heads/validate/stock-audit-camera-clean') &&
        inputs.publish_validated_candidate == true)
     runs-on: ubuntu-latest
     strategy:
@@ -39,12 +44,27 @@ jobs:
         id: source
         env:
           CONFIRM_CANDIDATE_PUBLISH: ${{ inputs.publish_validated_candidate }}
+          CANDIDATE_SOURCE_SHA: ${{ inputs.candidate_source_sha }}
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "adilacell011-cell/kasirv10"
           source_sha="$GITHUB_SHA"
+          tag_mode="sha"
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             publish_latest=true
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" &&
+                  "$GITHUB_REF" == "refs/heads/validate/stock-audit-camera-clean" ]]; then
+            if [[ "$CONFIRM_CANDIDATE_PUBLISH" != "true" ]]; then
+              echo "Candidate publication requires explicit confirmation."
+              exit 1
+            fi
+            if [[ "$CANDIDATE_SOURCE_SHA" != "e50168c70c0de0f5c2a8619bc77adb377adada8c" ]]; then
+              echo "Refusing to publish: source SHA does not match the approved Audit Stok commit."
+              exit 1
+            fi
+            source_sha="$CANDIDATE_SOURCE_SHA"
+            publish_latest=false
+            tag_mode="candidate"
           elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" &&
                   ( "$GITHUB_REF" == "refs/heads/validate/multiplatform-arm64" ||
                     "$GITHUB_REF" == "refs/heads/validate/stock-audit-camera" ) ]]; then
@@ -63,11 +83,25 @@ jobs:
           fi
           echo "sha=$source_sha" >> "$GITHUB_OUTPUT"
           echo "publish_latest=$publish_latest" >> "$GITHUB_OUTPUT"
+          echo "tag_mode=$tag_mode" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.source.outputs.sha }}
+      - name: Verify pinned source is reachable from the clean candidate branch
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/validate/stock-audit-camera-clean' }}
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+            git fetch --no-tags --unshallow origin refs/heads/validate/stock-audit-camera-clean
+          else
+            git fetch --no-tags origin refs/heads/validate/stock-audit-camera-clean
+          fi
+          git merge-base --is-ancestor "$SOURCE_SHA" FETCH_HEAD
+          echo "Pinned source commit is part of the selected branch history."
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -83,20 +117,27 @@ jobs:
         env:
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
           PUBLISH_LATEST: ${{ steps.source.outputs.publish_latest }}
+          TAG_MODE: ${{ steps.source.outputs.tag_mode }}
         run: |
           set -euo pipefail
           image="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')-${{ matrix.name }}"
+          if [[ "$TAG_MODE" == "candidate" ]]; then
+            image_tag="candidate-${SOURCE_SHA}-run-${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}"
+          else
+            image_tag="sha-${SOURCE_SHA}"
+          fi
           {
             echo "name=$image"
+            echo "tag_value=$image_tag"
             echo "tags<<EOF"
-            echo "$image:sha-$SOURCE_SHA"
+            echo "$image:$image_tag"
             if [[ "$PUBLISH_LATEST" == "true" ]]; then
               echo "$image:latest"
             fi
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
           echo "Image: $image"
-          echo "Source SHA tag: sha-$SOURCE_SHA"
+          echo "Source tag: $image_tag"
           if [[ "$PUBLISH_LATEST" == "true" ]]; then echo "Main release also updates latest."; fi
       - name: Build and push
         id: push
@@ -113,11 +154,17 @@ jobs:
       - name: Verify published multi-platform manifest
         env:
           IMAGE: ${{ steps.img.outputs.name }}
-          IMAGE_TAG: sha-${{ steps.source.outputs.sha }}
+          IMAGE_TAG: ${{ steps.img.outputs.tag_value }}
           IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
         run: |
           set -euo pipefail
           docker buildx imagetools inspect --raw "${IMAGE}:${IMAGE_TAG}" > /tmp/manifest.json
+          published_digest="$(docker buildx imagetools inspect "${IMAGE}:${IMAGE_TAG}" --format '{{.Digest}}')"
+          if [[ "$published_digest" != "$IMAGE_DIGEST" ]]; then
+            echo "Published digest does not match the build result." >&2
+            echo "Build: $IMAGE_DIGEST; registry: $published_digest" >&2
+            exit 1
+          fi
           node <<'NODE'
           const fs = require("node:fs");
           const manifest = JSON.parse(fs.readFileSync("/tmp/manifest.json", "utf8"));
