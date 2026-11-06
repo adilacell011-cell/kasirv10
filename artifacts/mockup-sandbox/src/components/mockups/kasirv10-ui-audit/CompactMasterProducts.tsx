@@ -28,6 +28,9 @@ const QA_PRODUCTS: Product[] = [
   { id: 'demo-pulsa-003', name: 'Pulsa 50.000', barcode: 'QA-100003', category: 'Pulsa', brand: 'Telkomsel', description: 'Pulsa reguler', purchasePrice: 49900, sellingPrice: 52000, discountPrice: 0 },
   { id: 'demo-pulsa-004', name: 'Pulsa 100.000', barcode: 'QA-100004', category: 'Pulsa', brand: 'Telkomsel', description: 'Pulsa reguler', purchasePrice: 99800, sellingPrice: 103000, discountPrice: 0 },
   { id: 'demo-data-004', name: 'Paket Yellow 1 GB — Akses 24 Jam, Berlaku 7 Hari', barcode: 'QA-200031', category: 'Paket Data', brand: 'Indosat', description: 'Kuota utama, 7 hari', purchasePrice: 8000, sellingPrice: 10000, discountPrice: 0 },
+  { id: 'demo-voucher-tsel-001', name: 'Voucher Data 1 GB — 3 Hari', barcode: 'QA-300021', category: 'Voucher', provider: 'Telkomsel', brand: 'Telkomsel', description: 'Kuota data, masa aktif 3 hari', purchasePrice: 9000, sellingPrice: 12000, discountPrice: 0 },
+  { id: 'demo-voucher-tsel-002', name: 'Voucher Data 3 GB — 7 Hari', barcode: 'QA-300022', category: 'Voucher', provider: 'Telkomsel', brand: 'Telkomsel', description: 'Kuota data, masa aktif 7 hari', purchasePrice: 18000, sellingPrice: 22000, discountPrice: 0 },
+  { id: 'demo-voucher-tsel-003', name: 'Voucher Data 12 GB — 30 Hari', barcode: 'QA-300023', category: 'Voucher', provider: 'Telkomsel', brand: 'Telkomsel', description: 'Kuota data, masa aktif 30 hari', purchasePrice: 62000, sellingPrice: 69000, discountPrice: 0 },
   { id: 'demo-voucher-002', name: 'Voucher 50.000', barcode: 'QA-300002', category: 'Voucher', provider: 'PLN', brand: 'PLN', description: 'Token listrik prabayar', purchasePrice: 50100, sellingPrice: 53000, discountPrice: 0 },
   { id: 'demo-perdana-002', name: 'Kartu Perdana XL Xtra Combo Flex S', barcode: 'QA-400012', category: 'Perdana', provider: 'XL', brand: 'XL', description: 'Kuota 3 GB + bonus aplikasi', purchasePrice: 26000, sellingPrice: 30000, discountPrice: 0 },
 ];
@@ -50,6 +53,8 @@ function displayProductName(product: Product) {
 export function CompactMasterProducts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState(QA_PRODUCTS);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set(['Voucher']));
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(() => new Set(['Voucher::Telkomsel']));
   const [editing, setEditing] = useState<Product | null>(null);
   const [savedMessage, setSavedMessage] = useState('');
   const [editDraft, setEditDraft] = useState({ name: '', sellingPrice: '', purchasePrice: '' });
@@ -85,6 +90,24 @@ export function CompactMasterProducts() {
       })),
     };
   }).filter((group) => group.count > 0), [matchingProducts]);
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((current) => {
+      const next = new Set(current);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  };
+
+  const toggleProvider = (key: string) => {
+    setExpandedProviders((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const openEdit = (product: Product) => {
     setEditing(product);
@@ -157,41 +180,72 @@ export function CompactMasterProducts() {
             <span className="col-right">HARGA JUAL</span>
             <span className="col-action">AKSI</span>
           </div>
-          {grouped.length ? grouped.map(({ category, count, groups }) => (
-            <div className="category-section" key={category}>
-              <div className="category-band">
-                <span className="category-name">{category}</span>
-                <span className="category-count">{String(count).padStart(2, '0')} item</span>
+          {grouped.length ? grouped.map(({ category, count, groups }) => {
+            const categoryOpen = searchTerm.trim().length > 0 || expandedCategories.has(category);
+            return (
+              <div className="category-section" key={category}>
+                <button
+                  type="button"
+                  className={`category-band category-toggle ${categoryOpen ? 'is-open' : ''}`}
+                  aria-expanded={categoryOpen}
+                  onClick={() => toggleCategory(category)}
+                >
+                  <span className="category-name">{category}</span>
+                  <span className="category-count">{String(count).padStart(2, '0')} item</span>
+                  <ChevronDown className="accordion-chevron" size={15} />
+                </button>
+                {categoryOpen && (
+                  <div className="category-panel">
+                    {groups.map(({ brand, products: brandProducts }) => {
+                      const providerKey = `${category}::${brand}`;
+                      const providerOpen = searchTerm.trim().length > 0 || expandedProviders.has(providerKey);
+                      return (
+                        <div className="provider-section" key={providerKey}>
+                          <button
+                            type="button"
+                            className={`brand-band provider-toggle ${providerOpen ? 'is-open' : ''}`}
+                            aria-expanded={providerOpen}
+                            onClick={() => toggleProvider(providerKey)}
+                          >
+                            <span className="brand-pip" />
+                            <span className="provider-name">{brand}</span>
+                            <span className="provider-count">{brandProducts.length} produk</span>
+                            <ChevronDown className="accordion-chevron" size={14} />
+                          </button>
+                          {providerOpen && (
+                            <div className="accordion-reveal">
+                              {brandProducts.map((product) => (
+                                <article className="product-row" key={product.id}>
+                                  <div className="product-main">
+                                    <p className="product-name">{displayProductName(product)}</p>
+                                    <div className="product-barcode"><Barcode size={13} strokeWidth={1.7} /><span>{product.barcode}</span></div>
+                                  </div>
+                                  <div className="product-spec">
+                                    <span className={`spec-pill ${category === 'Voucher' || category === 'Perdana' ? 'spec-violet' : ''}`}>{product.brand || product.provider || category}</span>
+                                    <span className="spec-description">{product.description}</span>
+                                  </div>
+                                  <div className="product-purchase"><span className="mobile-label">Modal</span>{rupiah(product.purchasePrice)}</div>
+                                  <div className="product-selling">
+                                    <span className="mobile-label">Harga jual</span>
+                                    {product.discountPrice > 0 ? (
+                                      <><span className="sale-price">{rupiah(product.discountPrice)}</span><span className="original-price">{rupiah(product.sellingPrice)}</span></>
+                                    ) : <span className="sale-price">{rupiah(product.sellingPrice)}</span>}
+                                  </div>
+                                  <button className="product-edit" type="button" onClick={() => openEdit(product)} aria-label={`Atur ${displayProductName(product)}`}>
+                                    <Edit3 size={15} strokeWidth={1.8} /><span>Atur</span>
+                                  </button>
+                                </article>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              {groups.map(({ brand, products: brandProducts }) => (
-                <div key={`${category}-${brand}`}>
-                  <div className="brand-band"><span className="brand-pip" />{brand}</div>
-                  {brandProducts.map((product) => (
-                    <article className="product-row" key={product.id}>
-                      <div className="product-main">
-                        <p className="product-name">{displayProductName(product)}</p>
-                        <div className="product-barcode"><Barcode size={13} strokeWidth={1.7} /><span>{product.barcode}</span></div>
-                      </div>
-                      <div className="product-spec">
-                        <span className={`spec-pill ${category === 'Voucher' || category === 'Perdana' ? 'spec-violet' : ''}`}>{product.brand || product.provider || category}</span>
-                        <span className="spec-description">{product.description}</span>
-                      </div>
-                      <div className="product-purchase"><span className="mobile-label">Modal</span>{rupiah(product.purchasePrice)}</div>
-                      <div className="product-selling">
-                        <span className="mobile-label">Harga jual</span>
-                        {product.discountPrice > 0 ? (
-                          <><span className="sale-price">{rupiah(product.discountPrice)}</span><span className="original-price">{rupiah(product.sellingPrice)}</span></>
-                        ) : <span className="sale-price">{rupiah(product.sellingPrice)}</span>}
-                      </div>
-                      <button className="product-edit" type="button" onClick={() => openEdit(product)} aria-label={`Atur ${displayProductName(product)}`}>
-                        <Edit3 size={15} strokeWidth={1.8} /><span>Atur</span>
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )) : (
+            );
+          }) : (
             <div className="catalog-empty">
               <div className="empty-icon"><Search size={18} /></div>
               <strong>Produk tidak ditemukan</strong>
@@ -272,10 +326,20 @@ export function CompactMasterProducts() {
           .col-right { text-align: right; }
           .col-action { text-align: center; }
           .category-section + .category-section { border-top: 1px solid #e9eef3; }
-          .category-band { min-height: 36px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #f2f6fc; color: #2a4e7e; border-bottom: 1px solid #e3ebf5; }
+          .category-band { min-height: 42px; display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 10px; padding: 0 20px; background: #f2f6fc; color: #2a4e7e; border: 0; border-bottom: 1px solid #e3ebf5; text-align: left; cursor: pointer; }
+          .category-toggle:hover { background: #eaf1fa; }
+          .category-toggle .category-name { flex: 1; }
+          .category-panel { background: #fff; }
+          .provider-section + .provider-section { border-top: 1px solid #f1f4f7; }
           .category-name { font-size: 10px; font-weight: 800; letter-spacing: .105em; text-transform: uppercase; }
           .category-count { color: #8092aa; font: 10px ui-monospace, monospace; }
-          .brand-band { height: 29px; display: flex; align-items: center; gap: 7px; padding: 0 20px; color: #708199; border-bottom: 1px solid #f0f3f6; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+          .brand-band { min-height: 38px; display: flex; width: 100%; align-items: center; gap: 9px; padding: 0 20px; color: #708199; border: 0; background: #fbfcfe; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .015em; cursor: pointer; }
+          .provider-toggle:hover { background: #f7f9fc; }
+          .provider-name { flex: 1; }
+          .provider-count { color: #9aa7b6; font-size: 9px; font-weight: 600; }
+          .accordion-chevron { flex: 0 0 auto; color: #8a9bb1; transition: transform .18s ease; }
+          .category-toggle.is-open .accordion-chevron, .provider-toggle.is-open .accordion-chevron { transform: rotate(180deg); }
+          .accordion-reveal { animation: accordion-enter .18s ease both; transform-origin: top; }
           .brand-pip { width: 5px; height: 5px; border-radius: 2px; background: #9fb5d3; }
           .product-row { min-height: 61px; padding: 8px 20px; border-bottom: 1px solid #f0f3f6; transition: background .16s ease; }
           .product-row:last-child { border-bottom: 0; }
@@ -317,6 +381,7 @@ export function CompactMasterProducts() {
           .edit-cancel { color: #63748b; background: #fff; border: 1px solid #e1e7ee; }
           .edit-save { color: #fff; background: #2857a7; border: 1px solid #2857a7; }
           @keyframes compact-appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes accordion-enter { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
           @media (max-width: 700px) {
             .compact-master { padding: 16px 12px calc(24px + env(safe-area-inset-bottom, 0px)); }
             .compact-header { grid-template-columns: 1fr auto; gap: 6px 8px; margin-bottom: 18px; }
@@ -334,8 +399,8 @@ export function CompactMasterProducts() {
             .summary-caption b { display: block; margin: 2px 0 0; }
             .catalog-frame { border-radius: 9px; }
             .catalog-columns { display: none; }
-            .category-band { min-height: 35px; padding: 0 12px; }
-            .brand-band { height: 27px; padding: 0 12px; }
+            .category-band { min-height: 42px; padding: 0 12px; }
+            .brand-band { min-height: 40px; padding: 0 12px; }
             .product-row { position: relative; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 7px; align-items: start; padding: 11px 12px 10px; }
             .product-main { grid-column: 1; grid-row: 1; padding-right: 2px; }
             .product-name { font-size: 12px; line-height: 1.42; }
