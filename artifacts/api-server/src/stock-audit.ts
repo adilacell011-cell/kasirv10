@@ -157,7 +157,7 @@ function itemDto(item: {
   notes: string | null;
   countedByName: string | null;
   countedAt: Date | null;
-}) {
+}, systemQty: number) {
   return {
     id: item.id,
     productId: item.productId,
@@ -167,6 +167,7 @@ function itemDto(item: {
     status: item.status as StockAuditItemStatus,
     inScope: item.inScope,
     expectedQty: item.expectedQty,
+    systemQty,
     baselineQty: item.baselineQty,
     countedQty: item.countedQty,
     variance: item.variance,
@@ -225,7 +226,7 @@ export function registerStockAuditRoutes(
     try {
       const audit = await prisma.branchStockAudit.findUnique({
         where: { id: auditId },
-        select: { id: true },
+        select: { id: true, branchId: true, status: true },
       });
       if (!audit) return void errorResponse(res, 404, "Sesi audit tidak ditemukan.");
       const where: Prisma.BranchStockAuditItemWhereInput = {
@@ -248,7 +249,20 @@ export function registerStockAuditRoutes(
         }),
         prisma.branchStockAuditItem.count({ where }),
       ]);
-      return void res.json(GetStockAuditItemsResponse.parse({ items: items.map(itemDto), page, pageSize, total }));
+      const currentStocks = audit.status === "IN_PROGRESS" && items.length
+        ? await prisma.productStock.findMany({
+            where: { branchId: audit.branchId, productId: { in: items.map((item) => item.productId) } },
+            select: { productId: true, qty: true },
+          })
+        : [];
+      const currentQtyByProduct = new Map(currentStocks.map((stock) => [stock.productId, stock.qty]));
+      const responseItems = items.map((item) => itemDto(
+        item,
+        audit.status === "IN_PROGRESS"
+          ? currentQtyByProduct.get(item.productId) ?? 0
+          : item.baselineQty ?? item.expectedQty,
+      ));
+      return void res.json(GetStockAuditItemsResponse.parse({ items: responseItems, page, pageSize, total }));
     } catch (error) {
       logger.error({ err: error }, "Failed to read branch stock audit items");
       return void errorResponse(res, 500, "Gagal memuat daftar produk audit.");
@@ -552,7 +566,7 @@ export function registerStockAuditRoutes(
             countedAt: new Date(),
           },
         });
-        return { status: 201 as const, item: itemDto(item) };
+        return { status: 201 as const, item: itemDto(item, product.stocks[0]?.qty ?? 0) };
       });
       if (result.status !== 201) return void errorResponse(res, result.status, ("error" in result ? result.error : undefined) ?? "Sesi audit tidak ditemukan.");
       return void res.status(201).json(ReportStockAuditExceptionResponse.parse({ success: true, item: result.item }));

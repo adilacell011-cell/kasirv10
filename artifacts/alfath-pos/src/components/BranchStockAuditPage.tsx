@@ -55,6 +55,7 @@ export type AuditItem = {
   status: "PENDING" | "COUNTING" | "COUNTED" | "RECOUNT_REQUIRED" | "EXCLUDED";
   inScope: boolean;
   expectedQty: number;
+  systemQty: number;
   baselineQty?: number | null;
   countedQty?: number | null;
   variance?: number | null;
@@ -567,7 +568,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                   <div>
                     <h3 className="text-base font-extrabold tracking-tight text-[#1b3b3d]">Daftar hitung</h3>
-                    <p className="mt-1 text-xs text-[#74847f]">Snapshot stok cabang dan hasil hitung fisik per produk.</p>
+                    <p className="mt-1 text-xs text-[#74847f]">Pindai barcode untuk melihat stok sistem terbaru; tombol hitung mengambil baseline saat hitung dimulai.</p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <label className="relative block min-w-0 sm:w-[280px]">
@@ -617,7 +618,7 @@ export default function BranchStockAuditPage({ branches, role, api }: Props) {
                       <tr className="border-b border-[#dce4de] text-[9px] font-extrabold uppercase tracking-[.15em] text-[#71827d]">
                         <th scope="col" className="px-5 py-3">Produk / identitas</th>
                         <th scope="col" className="px-3 py-3 text-center">Status</th>
-                        <th scope="col" className="px-3 py-3 text-center">Sistem</th>
+                        <th scope="col" className="px-3 py-3 text-center">{session.status === "IN_PROGRESS" ? "Sistem saat ini" : "Sistem saat hitung"}</th>
                         <th scope="col" className="px-3 py-3 text-center">Fisik</th>
                         <th scope="col" className="px-3 py-3 text-center">Selisih</th>
                         <th scope="col" className="px-4 py-3">Petugas / waktu</th>
@@ -830,7 +831,7 @@ function AuditItemRow({ item, canWork, busy, onCount }: { item: AuditItem; canWo
           {isConflict && <AlertCircle className="h-3 w-3 shrink-0" />}{STATUS_LABEL[item.status]}
         </span>
       </td>
-      <td className="px-3 py-3 text-center"><span data-testid={`text-audit-expected-${item.id}`} className="font-mono text-sm font-bold text-[#425d57]">{item.expectedQty}</span></td>
+      <td className="px-3 py-3 text-center"><span data-testid={`text-audit-system-${item.id}`} className="font-mono text-sm font-bold text-[#425d57]">{item.systemQty}</span></td>
       <td className="px-3 py-3 text-center"><span data-testid={`text-audit-counted-${item.id}`} className={`font-mono text-sm font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</span></td>
       <td className="px-3 py-3 text-center">
         <span data-testid={`text-audit-variance-${item.id}`} className={`inline-flex min-w-10 items-center justify-center gap-0.5 rounded-md px-1.5 py-1 font-mono text-xs font-bold ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "bg-[#e8f2e8] text-[#39754a]" : variance < 0 ? "bg-[#f8e9e4] text-[#a34f3d]" : "bg-[#edf1ed] text-[#617770]"}`}>

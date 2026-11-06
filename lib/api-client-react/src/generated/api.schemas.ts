@@ -162,7 +162,10 @@ export interface StockAuditItem {
   masterSN?: string | null;
   status: StockAuditItemStatus;
   inScope: boolean;
+  /** Stock snapshot captured when the audit session started. */
   expectedQty: number;
+  /** Current stock for active audits; count-time stock for completed audits. */
+  systemQty: number;
   /** @nullable */
   baselineQty?: number | null;
   /** @nullable */

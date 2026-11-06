@@ -1246,3 +1246,171 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     last: apiMemorySamples.at(-1),
   }));
 });
+
+test("live branch audit remains correct across successful sales before, during, and at finalization", async () => {
+  const adminLogin = await login(admin.username, admin.password);
+  assert.equal(adminLogin.status, 200);
+  const adminPayload = await adminLogin.json() as { token: string };
+  const headers = {
+    authorization: `Bearer ${adminPayload.token}`,
+    "content-type": "application/json",
+  };
+  const suffix = crypto.randomUUID();
+  const barcode = `audit-${suffix}`;
+  const auditBranch = await prisma.branch.create({ data: { name: `QA Audit Sale Branch ${suffix}` } });
+  const auditProduct = await prisma.product.create({
+    data: {
+      name: `QA Audit Sale Product ${suffix}`,
+      barcode,
+      buyingPrice: 10_000,
+      sellingPrice: 15_000,
+      commissionAmount: 1_000,
+      visibleBranchIds: auditBranch.id,
+    },
+  });
+  await prisma.productStock.create({
+    data: { productId: auditProduct.id, branchId: auditBranch.id, qty: 10 },
+  });
+
+  const auditResponse = await fetch(`${apiUrl}/api/stock-audits`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ branchId: auditBranch.id }),
+  });
+  assert.equal(auditResponse.status, 201);
+  const audit = await auditResponse.json() as { id: string };
+  const auditItemsUrl = (search = "") =>
+    `${apiUrl}/api/stock-audits/items?auditId=${encodeURIComponent(audit.id)}&page=1&pageSize=100${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+  const initialItemsResponse = await fetch(auditItemsUrl(), { headers });
+  const initialItems = await initialItemsResponse.json() as {
+    items: Array<{ id: string; productId: string; expectedQty: number; systemQty: number }>;
+  };
+  assert.equal(initialItemsResponse.status, 200);
+  const auditItem = initialItems.items.find((item) => item.productId === auditProduct.id);
+  assert.ok(auditItem);
+  assert.equal(auditItem.expectedQty, 10);
+  assert.equal(auditItem.systemQty, 10);
+  for (const otherItem of initialItems.items.filter((item) => item.productId !== auditProduct.id)) {
+    const otherBeginResponse = await fetch(`${apiUrl}/api/stock-audits/begin-count`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ auditId: audit.id, itemId: otherItem.id }),
+    });
+    assert.equal(otherBeginResponse.status, 200);
+    const otherBegin = await otherBeginResponse.json() as { baselineQty: number; countToken: string };
+    const otherSaveResponse = await fetch(`${apiUrl}/api/stock-audits/count`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({
+        auditId: audit.id,
+        itemId: otherItem.id,
+        countedQty: otherBegin.baselineQty,
+        finding: "NORMAL",
+        countToken: otherBegin.countToken,
+      }),
+    });
+    assert.equal(otherSaveResponse.status, 200, "Unrelated zero-stock catalog items still need a recorded physical count before finalization.");
+  }
+
+  const makeSale = async (qty: number, key: string) => fetch(`${apiUrl}/api/transactions`, {
+    method: "POST",
+    headers: { ...headers, "x-idempotency-key": key },
+    body: JSON.stringify({
+      branchId: auditBranch.id,
+      cashierId: admin.id,
+      customerName: "QA stock-audit concurrency",
+      items: [{
+        productId: auditProduct.id,
+        qty,
+        price: 15_000,
+        subtotal: qty * 15_000,
+        commission: qty * 1_000,
+      }],
+      total: qty * 15_000,
+      totalCommission: qty * 1_000,
+    }),
+  });
+
+  const saleBeforeCount = await makeSale(2, `audit-before-${suffix}`);
+  assert.equal(saleBeforeCount.status, 200, "A successful sale before physical count must be accepted");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: auditProduct.id, branchId: auditBranch.id } },
+  })).qty, 8);
+  const scannedItemsResponse = await fetch(auditItemsUrl(barcode), { headers });
+  const scannedItems = await scannedItemsResponse.json() as {
+    items: Array<{ id: string; barcode: string | null; expectedQty: number; systemQty: number }>;
+  };
+  assert.equal(scannedItemsResponse.status, 200);
+  assert.equal(scannedItems.items[0]?.barcode, barcode);
+  assert.equal(scannedItems.items[0]?.expectedQty, 10, "The original audit snapshot remains available separately");
+  assert.equal(scannedItems.items[0]?.systemQty, 8, "Barcode search must return current branch stock after a prior sale");
+
+  const beginResponse = await fetch(`${apiUrl}/api/stock-audits/begin-count`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ auditId: audit.id, itemId: auditItem.id }),
+  });
+  assert.equal(beginResponse.status, 200);
+  const begin = await beginResponse.json() as { baselineQty: number; countToken: string };
+  assert.equal(begin.baselineQty, 8, "Physical count must start from stock at count time");
+
+  const saleDuringCount = await makeSale(1, `audit-during-${suffix}`);
+  assert.equal(saleDuringCount.status, 200, "Sales remain allowed while an audit count is in progress");
+  const staleCountResponse = await fetch(`${apiUrl}/api/stock-audits/count`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({
+      auditId: audit.id,
+      itemId: auditItem.id,
+      countedQty: 8,
+      finding: "NORMAL",
+      countToken: begin.countToken,
+    }),
+  });
+  assert.equal(staleCountResponse.status, 409, "A sale during the count window must invalidate that count and require recount");
+  const afterConflict = await fetch(auditItemsUrl(), { headers });
+  const conflictItems = await afterConflict.json() as { items: Array<{ id: string; status: string; systemQty: number }> };
+  const conflictItem = conflictItems.items.find((item) => item.id === auditItem.id);
+  assert.equal(conflictItem?.status, "RECOUNT_REQUIRED");
+  assert.equal(conflictItem?.systemQty, 7);
+
+  const recountResponse = await fetch(`${apiUrl}/api/stock-audits/begin-count`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ auditId: audit.id, itemId: auditItem.id }),
+  });
+  assert.equal(recountResponse.status, 200);
+  const recount = await recountResponse.json() as { baselineQty: number; countToken: string };
+  assert.equal(recount.baselineQty, 7);
+  const saveRecount = await fetch(`${apiUrl}/api/stock-audits/count`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({
+      auditId: audit.id,
+      itemId: auditItem.id,
+      countedQty: 6,
+      finding: "NORMAL",
+      countToken: recount.countToken,
+    }),
+  });
+  assert.equal(saveRecount.status, 200);
+
+  const [saleAfterCount, finalizeResponse] = await Promise.all([
+    makeSale(2, `audit-after-${suffix}`),
+    fetch(`${apiUrl}/api/stock-audits/finalize`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ auditId: audit.id }),
+    }),
+  ]);
+  assert.equal(saleAfterCount.status, 200, "A successful sale concurrent with finalization must be accepted exactly once");
+  assert.equal(finalizeResponse.status, 200, "Finalization must serialize safely with the sale");
+  const finalStock = await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: auditProduct.id, branchId: auditBranch.id } },
+  });
+  assert.equal(finalStock.qty, 4, "Counted 6, then sold 2: final physical stock should be 4, regardless of serialization order");
+  assert.equal(await prisma.sale.count({ where: { branchId: auditBranch.id, cashierId: admin.id, items: { some: { productId: auditProduct.id } } } }), 3);
+  assert.equal(await prisma.adjustment.count({
+    where: { branchId: auditBranch.id, reason: { contains: audit.id } },
+  }), 1, "The confirmed -1 count delta must be recorded once; concurrent sales must not add a duplicate adjustment.");
+});

@@ -549,7 +549,7 @@ components:
           type: integer
     StockAuditItem:
       type: object
-      required: [id, productId, productName, status, inScope, expectedQty]
+      required: [id, productId, productName, status, inScope, expectedQty, systemQty]
       properties:
         id:
           type: string
@@ -568,6 +568,10 @@ components:
           type: boolean
         expectedQty:
           type: integer
+          description: Stock snapshot captured when the audit session started.
+        systemQty:
+          type: integer
+          description: Current stock for active audits; count-time stock for completed audits.
         baselineQty:
           type: ["integer", "null"]
         countedQty:

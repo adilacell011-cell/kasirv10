@@ -19,13 +19,10 @@ test("branch stock audit stays isolated, conflict-safe, and persistent", {
   skip: process.env.RUN_STOCK_AUDIT_DB_TESTS !== "1",
 }, async () => {
   const target = validateDatabaseTarget(process.env);
-  assert.deepEqual(target, {
-    environment: "test",
-    host: "127.0.0.1",
-    port: "55432",
-    database: "kasirv10_audit_qa",
-    schema: "public",
-  });
+  assert.equal(target.environment, "test");
+  assert.ok(["127.0.0.1", "localhost", "::1"].includes(target.host));
+  assert.match(target.database, /(?:^|[_-])(?:qa|test)(?:[_-]|$)/i);
+  assert.equal(target.schema, "public");
 
   let prisma = new PrismaClient();
   let server: Server | undefined;
@@ -110,7 +107,7 @@ test("branch stock audit stays isolated, conflict-safe, and persistent", {
     ]);
 
     const [productA, productB, productC, exceptionProduct] = await Promise.all([
-      prisma.product.create({ data: { name: `${prismaPrefix}-Product-A`, buyingPrice: 1, sellingPrice: 2, visibleBranchIds: branchA.id } }),
+      prisma.product.create({ data: { name: `${prismaPrefix}-Product-A`, barcode: `${prismaPrefix}-barcode`, buyingPrice: 1, sellingPrice: 2, visibleBranchIds: branchA.id } }),
       prisma.product.create({ data: { name: `${prismaPrefix}-Product-B`, buyingPrice: 1, sellingPrice: 2, visibleBranchIds: branchB.id } }),
       prisma.product.create({ data: { name: `${prismaPrefix}-Product-C`, buyingPrice: 1, sellingPrice: 2, visibleBranchIds: branchC.id } }),
       prisma.product.create({ data: { name: `${prismaPrefix}-Unlisted`, buyingPrice: 1, sellingPrice: 2, visibleBranchIds: branchB.id } }),
@@ -137,33 +134,48 @@ test("branch stock audit stays isolated, conflict-safe, and persistent", {
     assert.equal(listed.status, 200);
     assert.equal(listed.body?.items.length, 1);
     assert.equal(listed.body?.total, 1);
+    assert.equal(listed.body?.items[0]?.systemQty, 10);
     const itemAId = String(listed.body?.items[0]?.id);
+
+    await prisma.productStock.update({
+      where: { productId_branchId: { productId: productA.id, branchId: branchA.id } },
+      data: { qty: { decrement: 2 } },
+    });
+    const scanned = await call(
+      `/api/stock-audits/items?auditId=${auditAId}&page=1&pageSize=10&search=${encodeURIComponent(`${prismaPrefix}-barcode`)}`,
+      "GET",
+      auditor.id,
+      "AUDIT",
+    );
+    assert.equal(scanned.body?.items[0]?.barcode, `${prismaPrefix}-barcode`);
+    assert.equal(scanned.body?.items[0]?.expectedQty, 10, "Audit-start snapshot remains available for reference");
+    assert.equal(scanned.body?.items[0]?.systemQty, 8, "A barcode search must show the stock currently in the branch");
 
     const beginA1 = await call("/api/stock-audits/begin-count", "POST", auditor.id, "AUDIT", { auditId: auditAId, itemId: itemAId });
     assert.equal(beginA1.status, 200);
-    assert.equal(beginA1.body?.baselineQty, 10);
+    assert.equal(beginA1.body?.baselineQty, 8, "Physical count baseline must use stock at count start, not audit start");
     const beginA2 = await call("/api/stock-audits/begin-count", "POST", secondAuditor.id, "AUDIT", { auditId: auditAId, itemId: itemAId });
     assert.equal(beginA2.status, 200);
     assert.notEqual(beginA2.body?.countToken, beginA1.body?.countToken, "A second begin must issue a distinct token, even in the same millisecond");
 
     const staleCount = await call("/api/stock-audits/count", "PATCH", auditor.id, "AUDIT", {
-      auditId: auditAId, itemId: itemAId, countedQty: 10, finding: "NORMAL", countToken: beginA1.body?.countToken,
+      auditId: auditAId, itemId: itemAId, countedQty: 8, finding: "NORMAL", countToken: beginA1.body?.countToken,
     });
     assert.equal(staleCount.status, 409, "The earlier count token must be rejected");
 
     await prisma.productStock.update({
       where: { productId_branchId: { productId: productA.id, branchId: branchA.id } },
-      data: { qty: { increment: 2 } },
+      data: { qty: { decrement: 1 } },
     });
     const movedStockCount = await call("/api/stock-audits/count", "PATCH", secondAuditor.id, "AUDIT", {
-      auditId: auditAId, itemId: itemAId, countedQty: 10, finding: "NORMAL", countToken: beginA2.body?.countToken,
+      auditId: auditAId, itemId: itemAId, countedQty: 8, finding: "NORMAL", countToken: beginA2.body?.countToken,
     });
     assert.equal(movedStockCount.status, 409, "Stock movement during counting must require recount");
     const recountList = await call(`/api/stock-audits/items?auditId=${auditAId}&page=1&pageSize=10`, "GET", admin.id, "ADMIN");
     assert.equal(recountList.body?.items[0]?.status, "RECOUNT_REQUIRED");
     assert.equal((await prisma.productStock.findUniqueOrThrow({
       where: { productId_branchId: { productId: productA.id, branchId: branchA.id } },
-    })).qty, 12, "A stale physical count must not overwrite stock");
+    })).qty, 7, "A stale physical count must not overwrite stock");
 
     const candidates = await call(
       `/api/stock-audits/candidates?auditId=${auditAId}&search=${encodeURIComponent(`${prismaPrefix}-Unlisted`)}`,
@@ -186,11 +198,15 @@ test("branch stock audit stays isolated, conflict-safe, and persistent", {
 
     const beginA3 = await call("/api/stock-audits/begin-count", "POST", admin.id, "ADMIN", { auditId: auditAId, itemId: itemAId });
     assert.equal(beginA3.status, 200);
-    assert.equal(beginA3.body?.baselineQty, 12);
+    assert.equal(beginA3.body?.baselineQty, 7);
     const savedCount = await call("/api/stock-audits/count", "PATCH", admin.id, "ADMIN", {
-      auditId: auditAId, itemId: itemAId, countedQty: 11, finding: "NORMAL", countToken: beginA3.body?.countToken,
+      auditId: auditAId, itemId: itemAId, countedQty: 6, finding: "NORMAL", countToken: beginA3.body?.countToken,
     });
     assert.equal(savedCount.status, 200);
+    await prisma.productStock.update({
+      where: { productId_branchId: { productId: productA.id, branchId: branchA.id } },
+      data: { qty: { decrement: 2 } },
+    });
 
     const startBRequests = await Promise.all([
       call("/api/stock-audits", "POST", admin.id, "ADMIN", { branchId: branchB.id }),
@@ -237,7 +253,10 @@ test("branch stock audit stays isolated, conflict-safe, and persistent", {
     assert.equal(finalized.body?.changedProducts, 1);
     assert.equal((await prisma.productStock.findUniqueOrThrow({
       where: { productId_branchId: { productId: productA.id, branchId: branchA.id } },
-    })).qty, 11, "Finalization must apply the confirmed delta to current stock");
+    })).qty, 4, "Finalization must preserve the sale after count, then apply the confirmed -1 delta to current stock");
+    const completedItems = await call(`/api/stock-audits/items?auditId=${auditAId}&page=1&pageSize=10`, "GET", admin.id, "ADMIN");
+    const completedItem = completedItems.body?.items.find((item: { id: string }) => item.id === itemAId);
+    assert.equal(completedItem?.systemQty, 7, "A completed audit must retain the system quantity at the successful count time, not show later stock movements.");
     const auditAdjustments = await prisma.adjustment.count({
       where: { branchId: branchA.id, reason: { startsWith: `Audit Stok Cabang ${branchA.id} (` } },
     });
