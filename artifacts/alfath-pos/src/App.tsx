@@ -2865,6 +2865,21 @@ export default function App() {
         customerName: "" // Optional
       });
 
+      // The cashier's own POS view must not wait for Socket.IO or a page reload.
+      // Use the server-confirmed sale and upsert by ID so an idempotent retry
+      // cannot add the same revenue twice.
+      if (sale?.id) {
+        setSales((currentSales) => {
+          const byId = new Map(currentSales.map((existingSale: any) => [existingSale.id, existingSale]));
+          byId.set(sale.id, sale);
+          return [...byId.values()].sort((left: any, right: any) =>
+            new Date(right.createdAt || right.timestamp || 0).getTime() -
+            new Date(left.createdAt || left.timestamp || 0).getTime()
+          );
+        });
+        salesRefreshRef.current();
+      }
+
       // Clear Cart
       setCart([]);
       setShowMobileCart(false);
@@ -3675,16 +3690,16 @@ export default function App() {
         {/* --- DASHBOARD CONTENT AREA --- */}
         <div className="flex-1 flex flex-col min-w-0 pb-[68px] md:pb-0 relative h-[100dvh]">
           {/* HEADER */}
-          <header className="h-16 bg-white flex items-center justify-between px-4 md:px-6 shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative">
-            <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+          <header className={`h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
+            <div className={`flex items-center gap-3 md:gap-4 overflow-hidden ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
               <button className="p-2 -ml-1 rounded-xl bg-slate-50 text-blue-600 shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_12px_1px_rgba(59,130,246,0.3)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_12px_1px_rgba(59,130,246,0.3)] active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] transition-all" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <Menu className="w-6 h-6" />
               </button>
-              <div className="md:hidden shrink-0 w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_14px_1px_rgba(59,130,246,0.4)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_14px_1px_rgba(59,130,246,0.4)]">
+              <div className={`${activeMenu === "stock_audit" ? "hidden sm:flex" : "md:hidden"} shrink-0 w-9 h-9 rounded-xl bg-slate-50 items-center justify-center shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_14px_1px_rgba(59,130,246,0.4)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_14px_1px_rgba(59,130,246,0.4)]`}>
                 <MdStorefront className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="flex flex-col justify-center">
-                <h2 className="text-sm md:text-md font-extrabold uppercase tracking-tight text-slate-800 truncate leading-tight">
+              <div className={`flex min-w-0 flex-col justify-center ${activeMenu === "stock_audit" ? "max-w-[92px] sm:max-w-none" : ""}`}>
+                <h2 className="max-w-full text-sm md:text-md font-extrabold uppercase tracking-tight text-slate-800 truncate leading-tight">
                   {getPageTitle()}
                 </h2>
               </div>
@@ -3698,14 +3713,15 @@ export default function App() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className={`flex items-center shrink-0 ${activeMenu === "stock_audit" ? "gap-1 sm:gap-2" : "gap-2"}`}>
               {profile?.role === "ADMIN" && (
                 <button
                   onClick={() => setActiveMenu("shopping_list")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${activeMenu === "shopping_list" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                  aria-label="Daftar Belanja"
+                  className={`flex items-center gap-2 rounded-xl py-1.5 font-black text-[9px] uppercase tracking-widest transition-all ${activeMenu === "stock_audit" ? "px-2 sm:px-3" : "px-3"} ${activeMenu === "shopping_list" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  Daftar Belanja
+                  <span className={activeMenu === "stock_audit" ? "hidden sm:inline" : ""}>Daftar Belanja</span>
                   {shopListAlertCount > 0 ? (
                     <span className="w-4 h-4 bg-red-500 text-white flex items-center justify-center rounded-full text-[8px] animate-pulse shadow-[0_0_10px_2px_rgba(239,68,68,0.7)]">
                       {shopListAlertCount}
@@ -3750,7 +3766,7 @@ export default function App() {
                     ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
                     : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                 }`} />
-                <span className="text-[7px] font-black uppercase tracking-widest text-slate-600">
+                <span className={`text-[7px] font-black uppercase tracking-widest text-slate-600 ${activeMenu === "stock_audit" ? "hidden sm:inline" : ""}`}>
                   {!isOnline ? (dataLoadFailed ? "Offline · Data Lama" : "Offline") : dataLoadFailed ? "Data Lama ↺" : "Online"}
                 </span>
               </button>
@@ -3775,7 +3791,7 @@ export default function App() {
           </header>
 
           {/* WORKSPACES */}
-          <main className="flex-1 overflow-hidden flex bg-slate-50/50 relative h-full">
+          <main className={`flex-1 overflow-hidden flex bg-slate-50/50 relative h-full ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
             {/* --- 1. ADMIN: PENGATURAN AKSES KARYAWAN --- */}
             {activeMenu === "employees" && profile?.role === "ADMIN" && (
               <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">

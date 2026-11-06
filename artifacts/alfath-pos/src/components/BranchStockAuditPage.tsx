@@ -174,6 +174,33 @@ function readBranchIdFromUrl() {
   return new URLSearchParams(window.location.search).get(AUDIT_BRANCH_QUERY_PARAM) ?? "";
 }
 
+function auditBranchStorageKey(userId: string) {
+  return `kasirv10:stock-audit-branch:${userId}`;
+}
+
+function readSavedAuditBranchId(userId: string) {
+  if (typeof window === "undefined" || !userId) return "";
+  try {
+    return window.localStorage.getItem(auditBranchStorageKey(userId)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveAuditBranchId(userId: string, branchId: string) {
+  if (typeof window === "undefined" || !userId) return;
+  try {
+    if (branchId) window.localStorage.setItem(auditBranchStorageKey(userId), branchId);
+    else window.localStorage.removeItem(auditBranchStorageKey(userId));
+  } catch {
+    // URL persistence still works if browser storage is unavailable.
+  }
+}
+
+function readInitialBranchId(userId: string) {
+  return readBranchIdFromUrl() || readSavedAuditBranchId(userId);
+}
+
 function writeBranchIdToUrl(branchId: string) {
   const url = new URL(window.location.href);
   if (branchId) url.searchParams.set(AUDIT_BRANCH_QUERY_PARAM, branchId);
@@ -254,7 +281,7 @@ function barcodeMatches(storedValue: string | null | undefined, scannedValue: st
 }
 
 export default function BranchStockAuditPage({ branches, role, userId, api }: Props) {
-  const [branchId, setBranchId] = useState(readBranchIdFromUrl);
+  const [branchId, setBranchId] = useState(() => readInitialBranchId(userId));
   const [session, setSession] = useState<AuditSession | null>(null);
   const [items, setItems] = useState<AuditItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -363,16 +390,25 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
   }, [api, userId]);
 
   useEffect(() => {
-    if (branchId && !branches.some((branch) => branch.id === branchId)) {
+    // The branch list is fetched asynchronously by App. Keep the saved choice
+    // until that list arrives; otherwise a normal reload clears it on first render.
+    if (branchId && branches.length > 0 && !branches.some((branch) => branch.id === branchId)) {
       setBranchId("");
       writeBranchIdToUrl("");
+      saveAuditBranchId(userId, "");
       setSession(null);
       setItems([]);
       setTotalItems(0);
       setLoadedItemsQuery("");
       loadedSessionRef.current = null;
     }
-  }, [branches, branchId]);
+  }, [branches, branchId, userId]);
+
+  useEffect(() => {
+    if (!branchId || !branches.some((branch) => branch.id === branchId)) return;
+    saveAuditBranchId(userId, branchId);
+    writeBranchIdToUrl(branchId);
+  }, [branches, branchId, userId]);
 
   useEffect(() => {
     if (!branchId || !branchAllowed) {
@@ -568,14 +604,18 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
     };
   }, [api, exceptionOpen, exceptionSearch, selectedExceptionProduct, session?.id]);
 
-  const runAction = useCallback(async (label: string, operation: () => Promise<void>) => {
+  const runAction = useCallback(async (
+    label: string,
+    operation: () => Promise<void>,
+    refreshAfter = true,
+  ) => {
     setActionBusy(label);
     setError("");
     setNotice("");
     try {
       await operation();
       setNotice(label);
-      reload();
+      if (refreshAfter) reload();
     } catch (actionError) {
       setError(errorMessage(actionError));
     } finally {
@@ -587,9 +627,10 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
     if (!branchId) return;
     void runAction("Sesi audit dimulai.", async () => {
       const created = await api.start(branchId);
+      loadedSessionRef.current = { branchId, sessionId: created.id };
       setSession(created);
       setPage(1);
-    });
+    }, false);
   };
 
   const openCount = async (item: AuditItem) => {
@@ -733,19 +774,8 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
           ],
         });
         barcodeScannerRef.current = scanner;
-        const cameras = await Html5Qrcode.getCameras();
-        if (cancelled) return;
-        const rearCamera = cameras.find((camera) =>
-          /\b(back|rear|environment|belakang)\b/i.test(camera.label),
-        );
-        const selectedCamera = rearCamera ?? cameras[0];
-        if (!selectedCamera) {
-          throw Object.assign(new Error("Tidak ada kamera yang tersedia."), {
-            name: "NotFoundError",
-          });
-        }
         await scanner.start(
-          selectedCamera.id,
+          { facingMode: "environment" },
           {
             fps: 10,
             qrbox: (width, height) => ({
@@ -905,8 +935,8 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
   const filteredSummary = session?.summary;
 
   return (
-    <div data-testid="page-branch-stock-audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-3 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-5 md:pb-6 lg:px-8">
-      <div className="mx-auto w-full min-w-0 max-w-[1440px] space-y-4 sm:space-y-5">
+    <div data-testid="page-branch-stock-audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-3 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-5 md:pb-6 lg:px-8">
+      <div className="mx-auto w-full min-w-0 max-w-full space-y-4 sm:max-w-[1440px] sm:space-y-5">
         <header className="relative w-full min-w-0 overflow-hidden rounded-[20px] bg-[#173b3d] px-4 py-4 text-[#f4f4e9] shadow-[0_12px_30px_rgba(23,59,61,.13)] sm:rounded-[22px] sm:px-7 sm:py-6">
           <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border border-[#d6b96a]/20" />
           <div className="pointer-events-none absolute -right-1 top-[-5.5rem] h-56 w-56 rounded-full border border-[#d6b96a]/20" />
@@ -917,7 +947,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 Alfath Pulsa <span className="text-[#86a7a1]">/</span> Pengendalian stok
               </div>
               <h1 className="break-words text-xl font-black tracking-[-.035em] sm:text-[32px] sm:tracking-[-.045em]">Audit stok cabang</h1>
-              <p className="mt-1.5 max-w-xl text-xs leading-5 text-[#c5d5d0] sm:text-sm sm:leading-6">
+              <p className="mt-1.5 max-w-full break-words text-xs leading-5 text-[#c5d5d0] sm:max-w-xl sm:text-sm sm:leading-6">
                 Hitung fisik tanpa menghentikan transaksi. Saat finalisasi, selisih terkonfirmasi diterapkan pada stok terkini.
               </p>
             </div>
@@ -930,12 +960,13 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 <select
                   id="audit-branch"
                   data-testid="select-audit-branch"
-                  disabled={Boolean(actionBusy || editorItem || exceptionOpen || confirmAction || cameraOpen)}
+                  disabled={Boolean(actionBusy || loadingSession || isActive || editorItem || exceptionOpen || confirmAction || cameraOpen)}
                   value={branchId}
                   onChange={(event) => {
                     const nextBranchId = event.target.value;
                     setBranchId(nextBranchId);
                     writeBranchIdToUrl(nextBranchId);
+                    saveAuditBranchId(userId, nextBranchId);
                     setSession(null);
                     setItems([]);
                     setTotalItems(0);
@@ -948,7 +979,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                     setError("");
                     setNotice("");
                   }}
-                  className="w-full appearance-none rounded-xl border border-white/15 bg-[#21494a] py-3 pl-10 pr-4 text-sm font-semibold text-[#f4f4e9] shadow-none outline-none transition focus:border-[#d6b96a] focus:ring-2 focus:ring-[#d6b96a]/30"
+                  className="w-full min-w-0 max-w-full appearance-none rounded-xl border border-white/15 bg-[#21494a] py-3 pl-10 pr-4 text-sm font-semibold text-[#f4f4e9] shadow-none outline-none transition focus:border-[#d6b96a] focus:ring-2 focus:ring-[#d6b96a]/30 disabled:cursor-not-allowed disabled:opacity-80"
                 >
                   <option value="">Pilih cabang…</option>
                   {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
@@ -957,9 +988,9 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
             </div>
           </div>
           <div className="relative mt-4 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/10 pt-3 text-[10px] text-[#bdd0ca] sm:mt-5 sm:gap-x-5 sm:text-[11px]">
-            <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#d6b96a]" /> Stok operasional tetap aktif</span>
+            <span className="inline-flex min-w-0 max-w-full items-center gap-2 break-words"><span className="h-2 w-2 shrink-0 rounded-full bg-[#d6b96a]" /> Stok operasional tetap aktif</span>
             <span className="hidden h-3 w-px bg-white/20 sm:block" />
-            <span className="min-w-0">Cabang punya sesi audit yang terpisah</span>
+            <span className="min-w-0 max-w-full break-words">Cabang punya sesi audit yang terpisah</span>
             <span data-testid="status-audit-connection" aria-live="polite" className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] font-semibold ${connectionStatus === "online" ? "border-emerald-200/20 text-[#c8dfd1]" : connectionStatus === "offline" ? "border-amber-200/30 text-[#ffe1a5]" : "border-rose-200/30 text-[#ffc8b9]"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${connectionStatus === "online" ? "bg-emerald-300" : connectionStatus === "offline" ? "bg-amber-300" : "bg-rose-300"}`} />
               {connectionStatus === "online" ? "Terhubung" : connectionStatus === "offline" ? "Offline" : "Server belum tersinkron"}
@@ -1097,19 +1128,19 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                     {session.cancelledAt && <span>Dibatalkan {formatDate(session.cancelledAt)}</span>}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" data-testid="button-refresh-audit" disabled={loadingSession || Boolean(actionBusy)} onClick={reload} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#cfdbd6] bg-[#f5f7f3] px-3 text-xs font-bold text-[#42635e] hover:bg-[#ebf1ec] disabled:opacity-50">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap">
+                  <button type="button" data-testid="button-refresh-audit" disabled={loadingSession || Boolean(actionBusy)} onClick={reload} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#cfdbd6] bg-[#f5f7f3] px-2 text-[10px] font-bold text-[#42635e] hover:bg-[#ebf1ec] disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-xs">
                     <RefreshCw className={`h-3.5 w-3.5 ${loadingSession ? "animate-spin" : ""}`} /> Segarkan
                   </button>
                   {isActive && (
                     <>
-                      <button type="button" data-testid="button-report-exception" disabled={!canWork} onClick={() => { setExceptionOpen(true); setError(""); setExceptionSearch(""); setSelectedExceptionProduct(null); }} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#d8c895] bg-[#f8f2dc] px-3 text-xs font-bold text-[#6c5720] hover:bg-[#f1e7bf] disabled:opacity-50">
+                      <button type="button" data-testid="button-report-exception" disabled={!canWork} onClick={() => { setExceptionOpen(true); setError(""); setExceptionSearch(""); setSelectedExceptionProduct(null); }} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#d8c895] bg-[#f8f2dc] px-2 text-[10px] font-bold text-[#6c5720] hover:bg-[#f1e7bf] disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-xs">
                         <Plus className="h-3.5 w-3.5" /> Catat pengecualian
                       </button>
-                      <button type="button" data-testid="button-cancel-audit" disabled={Boolean(actionBusy)} onClick={() => setConfirmAction("cancel")} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#e2ceca] bg-transparent px-3 text-xs font-bold text-[#87544a] hover:bg-[#f9efec] disabled:opacity-50">
+                      <button type="button" data-testid="button-cancel-audit" disabled={Boolean(actionBusy)} onClick={() => setConfirmAction("cancel")} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#e2ceca] bg-transparent px-2 text-[10px] font-bold text-[#87544a] hover:bg-[#f9efec] disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-xs">
                         <X className="h-3.5 w-3.5" /> Batalkan
                       </button>
-                      <button type="button" data-testid="button-finalize-audit" disabled={!canFinalize} onClick={() => setConfirmAction("finalize")} title={!canFinalize ? "Selesaikan semua item dan hitung ulang konflik terlebih dahulu" : undefined} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#1b5651] px-3.5 text-xs font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:bg-[#9aadaa]">
+                      <button type="button" data-testid="button-finalize-audit" disabled={!canFinalize} onClick={() => setConfirmAction("finalize")} title={!canFinalize ? "Selesaikan semua item dan hitung ulang konflik terlebih dahulu" : undefined} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#1b5651] px-2 text-[10px] font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:bg-[#9aadaa] sm:gap-2 sm:px-3.5 sm:text-xs">
                         <Check className="h-3.5 w-3.5" /> Finalisasi audit
                       </button>
                     </>
@@ -1263,7 +1294,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
           data-testid="dialog-camera-scanner"
           onMouseDown={(event) => { if (event.target === event.currentTarget) setCameraOpen(false); }}
         >
-          <section role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title" className="max-h-[94dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-xl sm:rounded-[22px] sm:p-5">
+          <section role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title" className="max-h-[94dvh] w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-xl sm:rounded-[22px] sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Audit stok cabang</p>
