@@ -1990,12 +1990,68 @@ body,
     margin-bottom: 0.25rem !important;
   }
 
+  [data-ui-screen="opname"] [data-opname-header] > div {
+    gap: 0.5rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-header] [data-opname-branch] .app-select-trigger {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.8125rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-sku-search] input {
+    min-height: 44px;
+    padding-block: 0.375rem !important;
+    font-size: 0.8125rem !important;
+  }
+
   [data-ui-screen="opname"] [data-opname-tabs] {
     padding: 0.5rem 0.625rem !important;
   }
 
   [data-ui-screen="opname"] [data-opname-form] {
     padding: 0.625rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] [data-opname-section-heading] {
+    gap: 0.5rem !important;
+    margin-bottom: 0.75rem !important;
+    padding: 0.625rem !important;
+    border-radius: 0.875rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] [data-opname-section-heading] > div:first-child {
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: 0.625rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] [data-opname-section-heading] svg {
+    width: 1.125rem !important;
+    height: 1.125rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-product-search] input {
+    min-height: 44px;
+    padding: 0.375rem 2.5rem 0.375rem 2.25rem !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-product-search] > svg {
+    left: 0.75rem !important;
+    width: 0.875rem !important;
+    height: 0.875rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-product-result-list] {
+    max-height: 9rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.375rem !important;
   }
 
   [data-ui-screen="opname"] [data-opname-form] .space-y-4 > :not([hidden]) ~ :not([hidden]) {

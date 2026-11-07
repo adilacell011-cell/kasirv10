@@ -363,7 +363,7 @@ function ProductResultGrid({
           Stok
         </div>
       </div>
-      <div className="max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800 bg-white">
+      <div data-opname-product-result-list className="max-h-60 overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-slate-800 bg-white">
         {list.length === 0 ? (
           <div className="px-3 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Produk tidak ditemukan
@@ -6396,7 +6396,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="relative w-full sm:max-w-xs shrink-0 items-center">
+                      <div data-opname-sku-search className="relative w-full sm:max-w-xs shrink-0 items-center">
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                           type="text"
@@ -6754,7 +6754,7 @@ export default function App() {
                       <div data-opname-form className="p-3 md:p-5">
                         {auditSidebarTab === "incoming" ? (
                           <>
-                            <div className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">
+                            <div data-opname-section-heading className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">
                               <div className="w-10 h-10 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl flex items-center justify-center shrink-0">
                                 <PackagePlus className="w-6 h-6" />
                               </div>
@@ -6774,7 +6774,7 @@ export default function App() {
                                   Pilih Barang:
                                 </label>
                                 <div className="space-y-2">
-                                  <div className="relative">
+                                  <div data-opname-product-search className="relative">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
                                       type="text"
@@ -6880,7 +6880,7 @@ export default function App() {
                           </>
                         ) : auditSidebarTab === "disposal" ? (
                           <div className="sidebar-group-disposal">
-                            <div className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">
+                            <div data-opname-section-heading className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">
                               <div className="w-10 h-10 bg-red-50 text-red-600 border border-red-100 rounded-xl flex items-center justify-center shrink-0">
                                 <Trash2 className="w-5 h-5" />
                               </div>
@@ -6900,7 +6900,7 @@ export default function App() {
                                   Pilih Barang:
                                 </label>
                                 <div className="space-y-2">
-                                  <div className="relative">
+                                  <div data-opname-product-search className="relative">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
                                       type="text"
@@ -7021,7 +7021,7 @@ export default function App() {
                           </div>
                         ) : (
                           <div className="sidebar-group-transfer">
-                            <div className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">
+                            <div data-opname-section-heading className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">
                               <div className="w-10 h-10 bg-slate-50 text-slate-700 border border-slate-200 rounded-xl flex items-center justify-center shrink-0">
                                 <ArrowRightLeft className="w-5 h-5" />
                               </div>
@@ -7041,7 +7041,7 @@ export default function App() {
                                   Pilih Barang:
                                 </label>
                                 <div className="space-y-2">
-                                  <div className="relative">
+                                  <div data-opname-product-search className="relative">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
                                       type="text"

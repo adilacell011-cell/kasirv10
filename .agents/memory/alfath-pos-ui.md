@@ -158,6 +158,9 @@ for destructive meaning. Keep the branch cashier-stock permission switch visuall
 an accessible touch target.
 **Why:** the owner asked to replace the prominent green Opname controls and simplify the branch permission toggle.
 **How to apply:** make visual-only changes; keep the setting's API call, permission behavior, and all stock handlers unchanged.
+On mobile Opname, keep fields and product search/results compact with clear, readable text; preserve touch targets of at least 44px.
+**Why:** the owner said the current Opname components, especially product search, still looked too large and wanted a smaller but clear layout.
+**How to apply:** reduce vertical padding, gaps, and result-list height using Opname-scoped responsive styles, not by shrinking text or tap targets.
 For the Admin Dashboard, do not add a separate manual summary-reload button: the hook already refreshes
 on entry, realtime events, visibility return, and its polling interval; the header status control remains
 the manual refresh path.
