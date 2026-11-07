@@ -31,7 +31,7 @@ At checkout, the sale is paid and recorded as a completed transaction; the cashi
 **How to apply:** do not introduce payment-type splits or change revenue formulas. Preserve the success-only, actual-open-to-actual-close basis when auditing shift totals and reports.
 
 For the cashier POS live revenue read, bound transactions by the active shift/day start but do not send a client-clock `endDate`. A server-created sale can have a timestamp slightly ahead of the browser clock; a client-derived upper bound can therefore omit the just-paid sale until a later reload.
-**Why:** Preview logs showed a successful transaction followed by an empty bounded read, while a later read with a newer end time returned the sale.
+**Why:** Preview logs showed a successful transaction followed by an empty bounded read, while a later read with a newer end time returned the sale. The owner confirmed in Preview on 2026-11-07 that the fix updates revenue in real time without refreshing.
 **How to apply:** omit only the POS query's upper bound; keep report date ranges bounded and do not change the revenue formula or shift boundaries.
 
 At API closure, the cashier reports total income (`reportedIncome`), not physical cash in the drawer. The report is required and must be a finite non-negative amount; zero is valid. There is no opening cash for a shift.
