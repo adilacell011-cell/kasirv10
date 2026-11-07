@@ -1975,6 +1975,25 @@ body,
 }
 
 /* Focused Android fit fixes: preserve existing screen behavior and styling. */
+[data-ui-screen="opname"] {
+  background-color: #f1f5f9 !important;
+}
+
+[data-ui-screen="opname"] [data-opname-header],
+[data-ui-screen="opname"] [data-opname-tabs],
+[data-ui-screen="opname"] [data-opname-section-heading],
+[data-ui-screen="opname"] [data-opname-product-result-list] {
+  background-color: #ffffff !important;
+}
+
+[data-ui-screen="opname"] [data-opname-entry] {
+  background-color: #f1f5f9 !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] input:not([type="checkbox"]):not([type="radio"]) {
+  background-color: #ffffff !important;
+}
+
 @media (max-width: 767px) {
   [data-ui-screen="opname"] [data-opname-header] {
     gap: 0.5rem !important;
