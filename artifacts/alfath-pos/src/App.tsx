@@ -7900,7 +7900,7 @@ export default function App() {
                         )}
 
                         {/* 3. SHELF GRID UTAMA: PRODUK DAFTAR DI CABANG INI */}
-                        <div className="flex-1 overflow-y-auto min-h-0 bg-slate-50 relative">
+                        <div data-pos-product-shelf className="flex-1 overflow-y-auto min-h-0 bg-slate-50 relative">
                           <div className="p-3">
                             <div className="flex items-center justify-between mb-2">
                               <p className="text-[8px] font-black text-slate-450 uppercase tracking-widest flex items-center gap-1">
