@@ -148,6 +148,11 @@ motion and touch targets, and do not change behavior or business logic to achiev
 inconsistent forms; the owner explicitly requested white backgrounds and flat surfaces.
 **How to apply:** prefer borders and spacing for grouping; reserve only a subtle elevation for overlays if
 needed for layering, while keeping normal cards, buttons, and fields flat.
+For the Admin Dashboard, do not add a separate manual summary-reload button: the hook already refreshes
+on entry, realtime events, visibility return, and its polling interval; the header status control remains
+the manual refresh path.
+**Why:** the owner approved removing the dashboard button to free space and rely on the existing refresh
+paths rather than forcing a full page reload.
 
 ## Flat buttons, pills, and product hierarchy
 Do not add neumorphic or glow shadows to category rows, pills, inputs, or ordinary buttons. Use a white
