@@ -3690,15 +3690,15 @@ export default function App() {
         {/* --- DASHBOARD CONTENT AREA --- */}
         <div className="flex-1 flex flex-col min-w-0 pb-[68px] md:pb-0 relative h-[100dvh]">
           {/* HEADER */}
-          <header className={`app-topbar h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
+          <header data-topbar-screen={activeMenu} className={`app-topbar h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
             <div className={`flex items-center gap-3 md:gap-4 overflow-hidden ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
               <button className="p-2 -ml-1 rounded-xl bg-slate-50 text-blue-600 shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_12px_1px_rgba(59,130,246,0.3)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_12px_1px_rgba(59,130,246,0.3)] active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] transition-all" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <Menu className="w-6 h-6" />
               </button>
-              <div className={`${activeMenu === "stock_audit" ? "hidden sm:flex" : "md:hidden"} shrink-0 w-9 h-9 rounded-xl bg-slate-50 items-center justify-center shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_14px_1px_rgba(59,130,246,0.4)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_14px_1px_rgba(59,130,246,0.4)]`}>
+              <div data-topbar-branch-icon className={`${activeMenu === "stock_audit" ? "hidden sm:flex" : "md:hidden"} shrink-0 w-9 h-9 rounded-xl bg-slate-50 items-center justify-center shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_14px_1px_rgba(59,130,246,0.4)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_14px_1px_rgba(59,130,246,0.4)]`}>
                 <MdStorefront className="w-5 h-5 text-blue-600" />
               </div>
-              <div className={`flex min-w-0 flex-col justify-center ${activeMenu === "stock_audit" ? "max-w-[92px] sm:max-w-none" : ""}`}>
+              <div data-topbar-title className={`flex min-w-0 flex-col justify-center ${activeMenu === "stock_audit" ? "max-w-[92px] sm:max-w-none" : ""}`}>
                 <h2 className="max-w-full text-sm md:text-md font-extrabold uppercase tracking-tight text-slate-800 truncate leading-tight">
                   {getPageTitle()}
                 </h2>
@@ -3721,7 +3721,7 @@ export default function App() {
                   className={`flex items-center gap-2 rounded-xl py-1.5 font-black text-[9px] uppercase tracking-widest transition-all ${activeMenu === "stock_audit" ? "px-2 sm:px-3" : "px-3"} ${activeMenu === "shopping_list" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span className={activeMenu === "stock_audit" ? "hidden sm:inline" : ""}>Daftar Belanja</span>
+                  <span data-topbar-shopping-label className={activeMenu === "stock_audit" ? "hidden sm:inline" : ""}>Daftar Belanja</span>
                   {shopListAlertCount > 0 ? (
                     <span className="w-4 h-4 bg-red-500 text-white flex items-center justify-center rounded-full text-[8px] animate-pulse shadow-[0_0_10px_2px_rgba(239,68,68,0.7)]">
                       {shopListAlertCount}
@@ -3750,6 +3750,7 @@ export default function App() {
                   if (usesOwnerSync) void ownerDashboard.refresh();
                   else setRefreshTick(t => t + 1);
                 }}
+                aria-label={!isOnline ? (dataLoadFailed ? "Offline, data lama" : "Offline") : dataLoadFailed ? "Online, data lama, coba muat ulang" : "Online"}
                 title={dataLoadFailed ? "Data gagal dimuat — klik untuk refresh" : isOnline ? "Sistem online" : "Koneksi bermasalah — klik untuk coba lagi"}
                 className={`flex items-center gap-1.5 px-2 py-1.5 rounded-xl shrink-0 transition-all active:scale-95 cursor-pointer ${
                   !isOnline
@@ -3766,7 +3767,7 @@ export default function App() {
                     ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse"
                     : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                 }`} />
-                <span className={`text-[7px] font-black uppercase tracking-widest text-slate-600 ${activeMenu === "stock_audit" ? "hidden sm:inline" : ""}`}>
+                <span data-topbar-connection-label className={`text-[7px] font-black uppercase tracking-widest text-slate-600 ${activeMenu === "stock_audit" ? "hidden sm:inline" : ""}`}>
                   {!isOnline ? (dataLoadFailed ? "Offline · Data Lama" : "Offline") : dataLoadFailed ? "Data Lama ↺" : "Online"}
                 </span>
               </button>

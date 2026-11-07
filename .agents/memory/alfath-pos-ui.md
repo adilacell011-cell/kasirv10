@@ -212,7 +212,9 @@ panel min-width) which overflowed or clipped on phones.
 **How to apply:** large numeric/currency text needs a responsive step + `break-words`; fixed
 panel `min-w-[...]` must be `lg:`-gated (parents sometimes have `overflow-hidden` that clips it);
 wide multi-column tables either live in `overflow-x-auto` or shrink fixed column widths on phones
-(`w-20 md:w-32`). Inner pages are login-gated so they can't be screenshotted — audit by code.
+(`w-20 md:w-32`). POS is a tablet workflow and its established two-column layout must not be changed
+during Admin/Android polish; preserve Input Stok Kasir behavior too. Inner pages are login-gated so
+they can't be screenshotted — audit by code.
 
 ## Product catalog visual direction — compact premium, not heavy neumorphism
 The owner approved the compact premium catalog direction after reviewing the Canvas mockup. Large,

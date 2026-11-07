@@ -577,7 +577,7 @@
 
   .mp-category-count,
   .mp-provider-count {
-    font-size: 0.63rem;
+    font-size: 0.6875rem;
   }
 
   .mp-provider-list {
@@ -611,8 +611,8 @@
   }
 
   .mp-product-meta small {
-    max-width: 38vw;
-    font-size: 0.6rem;
+    max-width: 40vw;
+    font-size: 0.65rem;
   }
 
   .mp-product-cost {
@@ -640,16 +640,17 @@
   }
 
   .mp-product-actions button {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
   }
 
   .mp-product-item > strong {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
   }
 
   .mp-product-price {
-    font-size: 0.63rem;
+    font-size: 0.6875rem;
   }
 }
 
@@ -707,25 +708,26 @@
 
   .mp-category-count,
   .mp-provider-count {
-    font-size: 0.58rem;
+    font-size: 0.65rem;
   }
 
   .mp-product-row {
-    grid-template-columns: minmax(0, 1fr) auto 32px;
+    grid-template-columns: minmax(0, 1fr) auto 44px;
     column-gap: 6px;
   }
 
   .mp-product-actions button {
-    width: 31px;
-    height: 31px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
   }
 
   .mp-product-tag {
-    font-size: 0.55rem;
+    font-size: 0.625rem;
   }
 
   .mp-product-meta small {
-    max-width: 33vw;
+    max-width: 40vw;
   }
 }
 
