@@ -2209,3 +2209,8 @@ body,
 :root:not(.dark) .auth-screen {
   background: #f1f5f9 !important;
 }
+
+:root:not(.dark) [data-ui-screen="dashboard"] [data-dashboard-filters],
+:root:not(.dark) [data-ui-screen="inventory"] [data-inventory-toolbar] {
+  background-color: #f1f5f9 !important;
+}

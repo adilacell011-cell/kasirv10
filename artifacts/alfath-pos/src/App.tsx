@@ -5312,7 +5312,7 @@ export default function App() {
                 {/* USER FORM MODAL */ }
                 {/* MOVED TO TOP LEVEL */ }
 
-                <div className="p-3 md:p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-3 shrink-0">
+                <div data-inventory-toolbar className="p-3 md:p-4 border-b border-slate-200 bg-slate-50 flex flex-col gap-3 shrink-0">
                   <div className="flex flex-col sm:flex-row gap-3 justify-between items-center w-full">
                     <div className="relative w-full max-w-sm">
                       <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -9356,7 +9356,7 @@ export default function App() {
             {activeMenu === "dashboard" && profile?.role === "ADMIN" && (
               <div data-ui-screen="dashboard" className="ui-screen-dashboard flex-1 flex flex-col overflow-hidden bg-slate-50">
                 {/* HEADER DASHBOARD COMPACT */}
-                <div className="bg-white py-2 md:py-4 border-b border-slate-200 shrink-0">
+                <div data-dashboard-filters className="bg-white py-2 md:py-4 border-b border-slate-200 shrink-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       {/* Period Filter */}
