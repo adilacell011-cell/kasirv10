@@ -9640,10 +9640,16 @@ export default function App() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                                     <XAxis
                                       dataKey="name"
+                                      tickFormatter={(value: string) =>
+                                        value.length > 12
+                                          ? `${value.slice(0, 11)}…`
+                                          : value
+                                      }
                                       tick={{ fontSize: 10, fontWeight: 700, fill: "#64748b" }}
                                       tickLine={false}
                                       axisLine={{ stroke: "#e2e8f0" }}
-                                      interval={0}
+                                      interval="preserveStartEnd"
+                                      minTickGap={12}
                                     />
                                     <YAxis
                                       tickFormatter={fmtShort}
@@ -9661,8 +9667,14 @@ export default function App() {
                                         boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)",
                                         fontSize: 11,
                                         fontWeight: 700,
+                                        maxWidth: "min(80vw, 320px)",
+                                        overflowWrap: "anywhere",
                                       }}
-                                      labelStyle={{ fontWeight: 800, color: "#0f172a" }}
+                                      labelStyle={{
+                                        fontWeight: 800,
+                                        color: "#0f172a",
+                                        overflowWrap: "anywhere",
+                                      }}
                                     />
                                     <Bar dataKey="revenue" radius={[8, 8, 0, 0]} maxBarSize={56}>
                                       {chartData.map((_, i) => (
