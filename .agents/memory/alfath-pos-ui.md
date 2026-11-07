@@ -138,16 +138,17 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
-## Current app-wide UI direction: compact white and flat
-The owner's latest decision supersedes earlier warm greige/neumorphic mockup guidance: use a white
-light-mode canvas, flat white cards and controls, fine neutral borders, and no raised/inset shadows on
-ordinary components. Preserve Alfath blue actions and restrained semantic status colors. Keep product and
-operational views compact; do not make cards larger merely for decoration. Continue to respect reduced
-motion and touch targets, and do not change behavior or business logic to achieve visual consistency.
-**Why:** screenshots of the earlier styling showed beige backgrounds, oversized raised components, and
-inconsistent forms; the owner explicitly requested white backgrounds and flat surfaces.
-**How to apply:** prefer borders and spacing for grouping; reserve only a subtle elevation for overlays if
-needed for layering, while keeping normal cards, buttons, and fields flat.
+## Current app-wide UI direction: compact light-blue canvas and white surfaces
+The owner's latest decision supersedes earlier warm greige/neumorphic mockup guidance: use `#F1F5F9` for
+light-mode page backgrounds across every screen, including POS, while keeping component surfaces white,
+flat, and clearly separated with fine neutral borders. Preserve Alfath blue actions and restrained semantic
+status colors. Keep product and operational views compact; do not make cards larger merely for decoration.
+Continue to respect reduced motion and touch targets, and do not change behavior or business logic to achieve
+visual consistency.
+**Why:** screenshots showed oversized components and the owner approved a light-blue page canvas with white
+components, explicitly including the cashier page.
+**How to apply:** scope the color to page-level backgrounds, keep white cards and controls intact, and do not
+change the POS tablet's established two-column layout.
 For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing;
 prefer slate/navy-filled primary buttons over bright-blue fills, while retaining blue for restrained accents.
 **Why:** the owner asked for tighter Android reports, clearer component divisions, and calmer button colors.

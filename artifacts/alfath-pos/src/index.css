@@ -1975,19 +1975,11 @@ body,
 }
 
 /* Focused Android fit fixes: preserve existing screen behavior and styling. */
-[data-ui-screen="opname"] {
-  background-color: #f1f5f9 !important;
-}
-
 [data-ui-screen="opname"] [data-opname-header],
 [data-ui-screen="opname"] [data-opname-tabs],
 [data-ui-screen="opname"] [data-opname-section-heading],
 [data-ui-screen="opname"] [data-opname-product-result-list] {
   background-color: #ffffff !important;
-}
-
-[data-ui-screen="opname"] [data-opname-entry] {
-  background-color: #f1f5f9 !important;
 }
 
 [data-ui-screen="opname"] [data-opname-form] input:not([type="checkbox"]):not([type="radio"]) {
@@ -2204,4 +2196,16 @@ body,
   [data-ui-screen="reports"] [data-report-date-end] {
     grid-column: 1 / -1;
   }
+}
+
+/* Owner-approved light canvas across all screens; explicit white components stay white. */
+:root:not(.dark) body,
+:root:not(.dark) .app-shell,
+:root:not(.dark) .app-workspace,
+:root:not(.dark) .app-shell [data-ui-screen] {
+  background-color: #f1f5f9 !important;
+}
+
+:root:not(.dark) .auth-screen {
+  background: #f1f5f9 !important;
 }
