@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { makeSalesReadWindows } from "./sales-read-scope";
+import { makeSalesReadQueries, makeSalesReadWindows } from "./sales-read-scope";
 
 test("POS reads begin at the active shift start when the shift is open", () => {
   const now = new Date("2026-11-05T17:00:00.000Z");
@@ -13,6 +13,26 @@ test("POS reads begin at the active shift start when the shift is open", () => {
   });
   assert.equal(window.start.toISOString(), start);
   assert.equal(window.end.toISOString(), now.toISOString());
+});
+
+test("POS sale reads do not cap results at the client clock", () => {
+  const now = new Date("2026-11-05T17:00:00.000Z");
+  const start = "2026-11-05T06:40:00.000Z";
+  const [query] = makeSalesReadQueries(
+    { view: "pos", shiftOpen: true, shiftStartTime: start, now },
+    { branchId: "branch-1" },
+  );
+
+  assert.equal(query.branchId, "branch-1");
+  assert.equal(query.startDate, start);
+  assert.equal(query.endDate, undefined);
+});
+
+test("report reads retain their explicit end-date boundary", () => {
+  const now = new Date("2026-11-05T17:00:00.000Z");
+  const [query] = makeSalesReadQueries({ view: "reports", now });
+
+  assert.equal(query.endDate, now.toISOString());
 });
 
 test("POS falls back to the logical-day boundary when no valid active shift exists", () => {

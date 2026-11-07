@@ -69,7 +69,7 @@ import {
 import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api, createReadRefresh, isSessionError, ReadError } from "./services/api";
-import { makeSalesReadWindows } from "./services/sales-read-scope";
+import { makeSalesReadQueries } from "./services/sales-read-scope";
 import { isShiftOverdue } from "./services/shift-time";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
@@ -1985,22 +1985,20 @@ export default function App() {
     const loadSales = async () => {
       if (!current()) return;
       try {
-        const branchParams = effectiveReadBranch && effectiveReadBranch !== "N/A"
+        const branchParams: Record<string, string> = effectiveReadBranch && effectiveReadBranch !== "N/A"
           ? { branchId: effectiveReadBranch }
           : {};
-        const windows = makeSalesReadWindows({
+        const queries = makeSalesReadQueries({
           view: activeMenu as "pos" | "reports",
           reportStartDate,
           reportEndDate,
           shiftOpen,
           shiftStartTime,
           shiftLogicalDate,
-        });
-        const saleLists = await Promise.all(windows.map((window) => api.getSales({
-          ...branchParams,
-          startDate: window.start.toISOString(),
-          endDate: window.end.toISOString(),
-        }, controller.signal)));
+        }, branchParams);
+        const saleLists = await Promise.all(queries.map((query) =>
+          api.getSales(query, controller.signal)
+        ));
         if (!current()) return;
         const uniqueSales = new Map<string, any>();
         saleLists.flat().forEach((sale: any) => uniqueSales.set(sale.id, sale));

@@ -1,5 +1,9 @@
 export type SalesReadWindow = { start: Date; end: Date };
 export type SalesReadView = "pos" | "reports";
+export type SalesReadQuery = Record<string, string> & {
+  startDate: string;
+  endDate?: string;
+};
 
 export type SalesReadScopeInput = {
   view: SalesReadView;
@@ -63,4 +67,18 @@ export function makeSalesReadWindows(input: SalesReadScopeInput): SalesReadWindo
     ? shiftStart
     : storedShiftDay?.start || todayStart;
   return [{ start, end: now }];
+}
+
+export function makeSalesReadQueries(
+  input: SalesReadScopeInput,
+  extraParams: Record<string, string> = {},
+): SalesReadQuery[] {
+  return makeSalesReadWindows(input).map(({ start, end }) => ({
+    ...extraParams,
+    startDate: start.toISOString(),
+    // POS is bounded by the actual shift/day start. Omitting a client-clock
+    // endDate prevents a just-committed server sale from being excluded when
+    // the server clock is slightly ahead; reports remain explicitly bounded.
+    ...(input.view === "reports" ? { endDate: end.toISOString() } : {}),
+  }));
 }
