@@ -840,6 +840,13 @@ export default function App() {
       return false;
     }
   });
+  const [currentShiftId, setCurrentShiftId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("current_shift_id");
+    } catch {
+      return null;
+    }
+  });
   const [cashierName, setCashierName] = useState(() => {
     try {
       return (
@@ -1109,6 +1116,8 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem("shift_open", shiftOpen.toString());
+      if (currentShiftId) localStorage.setItem("current_shift_id", currentShiftId);
+      else localStorage.removeItem("current_shift_id");
       localStorage.setItem("cashier_name", cashierName);
       if (shiftType) localStorage.setItem("shift_type", shiftType);
       else localStorage.removeItem("shift_type");
@@ -1121,7 +1130,7 @@ export default function App() {
     } catch (e) {
       console.warn("Storage access failed:", e);
     }
-  }, [shiftOpen, cashierName, shiftType, shiftStartTime, shiftLogicalDate]);
+  }, [shiftOpen, currentShiftId, cashierName, shiftType, shiftStartTime, shiftLogicalDate]);
 
   // Handle Initial Redirect based on Role
   useEffect(() => {
@@ -1697,7 +1706,7 @@ export default function App() {
   const effectiveReadBranch = activeMenu === "audit"
     ? auditSelectedBranch || (profile?.role === "ADMIN" ? "" : "N/A")
     : profile?.role === "ADMIN" ? adminSalesBranchFilter : profile?.branchId;
-  const currentPosShiftId = shiftOpen ? localStorage.getItem("current_shift_id") : null;
+  const currentPosShiftId = shiftOpen ? currentShiftId : null;
   const readScope = JSON.stringify([profile?.id, profile?.role, profile?.branchId, effectiveReadBranch]);
   const fullSyncEnabled = Boolean(profile && profile.role !== "PENDING" && !authLoading && !usesOwnerSync);
   const syncKey = `${readScope}:${fullSyncEnabled}`;
@@ -1866,6 +1875,7 @@ export default function App() {
           );
           if (openShift) {
             setShiftOpen(true);
+            setCurrentShiftId(openShift.id);
             const type = openShift.shiftType || "Pagi";
             let parsedType = type;
             let parsedName = openShift.cashier?.name || "Kasir";
@@ -1884,13 +1894,16 @@ export default function App() {
             localStorage.setItem("cashier_name", parsedName);
             localStorage.setItem("shift_start_time", openShift.openTime);
             localStorage.setItem("shift_logical_date", openShift.shiftDate);
-          } else if (localStorage.getItem("shift_open") === "true") {
-            setShiftOpen(false);
-            setCashierName("");
-            setShiftType(null);
-            setShiftStartTime(null);
-            localStorage.removeItem("shift_open");
+          } else {
+            setCurrentShiftId(null);
             localStorage.removeItem("current_shift_id");
+            if (localStorage.getItem("shift_open") === "true") {
+              setShiftOpen(false);
+              setCashierName("");
+              setShiftType(null);
+              setShiftStartTime(null);
+              localStorage.removeItem("shift_open");
+            }
           }
         }
       } catch (error) {
@@ -3010,6 +3023,7 @@ export default function App() {
         shiftDate: activeLogicalDate,
         shiftType: `${shiftType} - ${cashierName.trim() || profile?.name || "Kasir"}`
       });
+      setCurrentShiftId(shift.id);
       localStorage.setItem("current_shift_id", shift.id);
       setShiftStartTime(shift.openTime);
       localStorage.setItem("shift_start_time", shift.openTime);
@@ -3095,6 +3109,7 @@ export default function App() {
 
       // 2. Reset shift state
       setShiftOpen(false);
+      setCurrentShiftId(null);
       setCashierName("");
       setShiftType(null);
       setShiftStartTime(null);

@@ -19,7 +19,7 @@ test("POS reads begin at the active shift start when the shift is open", () => {
   assert.equal(window.end.toISOString(), now.toISOString());
 });
 
-test("POS sale reads do not cap results at the client clock", () => {
+test("POS reads delegate the upper bound to the server, not the client clock", () => {
   const now = new Date("2026-11-05T17:00:00.000Z");
   const start = "2026-11-05T06:40:00.000Z";
   const [query] = makeSalesReadQueries(

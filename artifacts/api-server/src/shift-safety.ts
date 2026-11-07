@@ -53,7 +53,13 @@ export function closeShiftSafely(prisma: PrismaClient, id: string, branchId: str
     // Never recalculate an already closed snapshot, even after another shift opens.
     if (shift.status === "closed") return shift;
     if (shift.status !== "open") throw new ShiftConflict("Status shift tidak dapat ditutup.");
-    const closeTime = new Date();
+    const clockRows = await tx.$queryRaw<Array<{ asOf: Date }>>`
+      SELECT clock_timestamp() AS "asOf"
+    `;
+    const closeTime = clockRows[0]?.asOf;
+    if (!(closeTime instanceof Date) || !Number.isFinite(closeTime.getTime())) {
+      throw new Error("Database clock is unavailable while closing shift.");
+    }
     const aggregate = await tx.sale.aggregate({
       where: { branchId, status: "success", createdAt: { gte: shift.openTime, lte: closeTime } },
       _sum: { total: true },
