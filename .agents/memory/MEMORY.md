@@ -10,6 +10,7 @@
 - [AlfathPOS shift & day boundaries](alfathpos-shift-day-boundaries.md) — distinguish 06:00 operational reset, actual shift times, and 07:00 WIB Owner revenue cutoff; preserve old 06:00 summaries.
 - [AlfathPOS sidebar z-index & PWA cache](alfathpos-z-index-pwa.md) — drawer must be z-[80]/[90] above content bars at z-50; PWA SW caches bundle so device shows stale UI until full reopen/republish.
 - [AlfathPOS stock & SN model](alfathpos-stock-model.md) — one masterSN per product for recall + plain Pcs qty stock; per-unit Voucher SN intake removed (dead code); VoucherSN model kept for legacy cleanup only.
+- [Pilihan cabang Opname](alfathpos-opname-branch-selection.md) — Opname starts without a target branch; keep each user's valid choice across refresh, including an intentional empty selection.
 - [AlfathPOS crash hardening](alfathpos-crash-hardening.md) — process error handlers log-and-stay-alive (POS uptime); numeric inputs must be validated AND normalized before DB writes, never written raw.
 - [AlfathPOS bonus accounting](alfathpos-bonus-accounting.md) — bonus = sum of Commission rows status=earned per BRANCH (single source of truth); User.bonusBalance is vestigial, refund only flips earned→refunded.
 - [AlfathPOS owner read constraints](alfathpos-laporan-perf.md) — load summaries independently; preserve stored history and day boundaries; archive integrity is a separate audit.

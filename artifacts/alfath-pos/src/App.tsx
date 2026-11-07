@@ -1208,7 +1208,18 @@ export default function App() {
 
   // Form States
   const [newBranch, setNewBranch] = useState("");
-  const [auditSelectedBranch, setAuditSelectedBranch] = useState("");
+  const [auditBranchSelection, setAuditBranchSelection] = useState<{
+    userId: string;
+    branchId: string;
+  } | null>(null);
+  const auditSelectedBranch =
+    auditBranchSelection && auditBranchSelection.userId === profile?.id
+      ? auditBranchSelection.branchId
+      : "";
+  const setAuditSelectedBranch = (branchId: string) => {
+    if (!profile?.id) return;
+    setAuditBranchSelection({ userId: profile.id, branchId });
+  };
   const activeAuditBranch = useRef(auditSelectedBranch);
   activeAuditBranch.current = auditSelectedBranch;
   const [drillPath, setDrillPath] = useState<string[]>([]);
@@ -2102,14 +2113,40 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (
-      branches.length > 0 &&
-      !auditSelectedBranch &&
-      (profile?.role === "AUDIT" || profile?.role === "ADMIN")
-    ) {
-      setAuditSelectedBranch(profile?.branchId || branches[0]?.id || "");
+    if (!profile?.id || branches.length === 0) return;
+
+    let savedBranchId = "";
+    try {
+      const saved = localStorage.getItem(
+        `alfathpos:opname-branch:${profile.id}`,
+      );
+      if (saved && branches.some((branch) => branch.id === saved)) {
+        savedBranchId = saved;
+      }
+    } catch {
+      // Opname still opens safely without a saved branch when storage is unavailable.
     }
-  }, [branches, profile, auditSelectedBranch]);
+    setAuditBranchSelection({ userId: profile.id, branchId: savedBranchId });
+  }, [branches, profile?.id]);
+
+  useEffect(() => {
+    if (
+      !profile?.id ||
+      !auditBranchSelection ||
+      auditBranchSelection?.userId !== profile.id
+    ) {
+      return;
+    }
+    try {
+      // An empty string is an intentional "no branch selected" preference.
+      localStorage.setItem(
+        `alfathpos:opname-branch:${profile.id}`,
+        auditBranchSelection.branchId,
+      );
+    } catch {
+      // Selection remains available for the current session.
+    }
+  }, [auditBranchSelection, profile?.id]);
 
   // Handle Global Barcode Scanner
   useBarcodeScanner((barcode) => {
@@ -6329,7 +6366,7 @@ export default function App() {
             {activeMenu === "audit" &&
               (profile?.role === "AUDIT" || profile?.role === "ADMIN") && (
                 <div data-ui-screen="opname" className="ui-screen-opname flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden">
-                  <div className="p-3 md:p-4 border-b border-slate-200 bg-white flex flex-col gap-3 justify-between shrink-0">
+                  <div data-opname-header className="p-3 md:p-4 border-b border-slate-200 bg-white flex flex-col gap-3 justify-between shrink-0">
                     <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
                       <div className="flex-1 w-full text-left">
                         <div className="flex items-center gap-4 mb-2">
@@ -6685,7 +6722,7 @@ export default function App() {
                           </p>
                         </div>
                       )}
-                      <div className="p-3 md:p-4 bg-white lg:bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-left">
+                      <div data-opname-tabs className="p-3 md:p-4 bg-white lg:bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-left">
                         <div className="flex gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
                           <button
                             onClick={() => setAuditSidebarTab("incoming")}
@@ -6714,7 +6751,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="p-3 md:p-5">
+                      <div data-opname-form className="p-3 md:p-5">
                         {auditSidebarTab === "incoming" ? (
                           <>
                             <div className="flex items-center gap-3 mb-4 bg-white p-3 md:p-4 rounded-2xl border border-slate-200 text-left">

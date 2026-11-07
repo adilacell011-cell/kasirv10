@@ -1976,6 +1976,32 @@ body,
 
 /* Focused Android fit fixes: preserve existing screen behavior and styling. */
 @media (max-width: 767px) {
+  [data-ui-screen="opname"] [data-opname-header] {
+    gap: 0.5rem !important;
+    padding: 0.625rem 0.75rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-header] h2 {
+    margin-bottom: 0.125rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-header] p {
+    margin-bottom: 0.25rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-tabs] {
+    padding: 0.5rem 0.625rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] {
+    padding: 0.625rem !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem !important;
+  }
+
   [data-ui-screen="reports"] [data-report-filters] {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
