@@ -1,18 +1,19 @@
 ---
-name: AlfathPOS shift & day-reset boundaries
-description: Why the day-reset hour (6 AM) intentionally differs from the shift-overdue hour (7 AM) — do not "fix" the mismatch.
+name: AlfathPOS shift, operational-day, and revenue boundaries
+description: Keep the 06:00 operational reset distinct from actual shifts and the chosen 07:00 WIB Owner revenue cutoff; preserve existing 06:00 summaries.
 ---
 
-# Shift & day-reset time boundaries (intentional, confirmed by owner)
+# Shift, operational-day, and revenue boundaries (confirmed by owner)
 
-Two DIFFERENT hour thresholds coexist on purpose in the frontend shift logic:
+Three separate time rules coexist:
 
-- **Day/date reset = 06:00.** `getLogicalShiftDate()` counts anything before 6 AM as the *previous* logical date, so a night shift crossing midnight stays on the same report day.
-- **Shift-overdue boundary = 07:00 / 19:00.** A "Pagi" shift is flagged overdue when hour >= 19 or < 7; "Malam" when 7 <= hour < 19. Auto-detected shift type on opening uses the same 7/19 split.
+- **Operational date reset = 06:00.** Existing non-revenue operational-date behavior remains distinct and must not be globally changed.
+- **Shift handover reference = 07:00 / 19:00.** These are nominal schedule times, not mandatory opening or closing times.
+- **Owner and daily revenue cutoff = 07:00 WIB across all branches.** The owner chose this for daily revenue; a shift crossing 07:00 can contribute sales to two daily revenue buckets while remaining one actual shift total.
 
-**Why:** The owner confirmed the store runs 24 hours with two keepers. The day rolls over at 6 AM, while 07:00 / 19:00 are handover reference times, not mandatory closing or opening times. A morning keeper may take over at 06:40; a morning shift may close late at 19:20. Transactions belong to the actually active shift from opening until actual closing. Between 06:00–07:00, transactions belong to the night shift only while that shift is still active; after an early handover they belong to the morning shift.
+**Why:** The owner confirmed the store runs 24 hours with nominal day shift 07:00–19:00 and night shift 19:00–07:00, while actual arrival and handover times may vary. Shift totals follow actual open and close times. Daily Owner revenue uses a fixed 07:00 WIB boundary, independent of shift handover.
 
-**How to apply:** Do NOT harmonize the 6 AM and 7 AM thresholds — the gap is the feature. If you ever change the day-reset hour, re-confirm with the owner first; the 6 vs 7 difference is a business rule, not a bug.
+**How to apply:** Keep operational-date and revenue-date helpers separate. Do not auto-close shifts at 06:00, 07:00, or 19:00. Use server/database time for live revenue windows, never the browser clock. The owner explicitly chose to preserve existing daily summaries built with the 06:00 cutoff; do not rewrite or recalculate that history without separate approval. Before enabling 07:00 summaries, resolve how daily rows and archive/backfill remain idempotent.
 
 ## Checkout requires an opened shift
 
@@ -30,9 +31,9 @@ At checkout, the sale is paid and recorded as a completed transaction; the cashi
 
 **How to apply:** do not introduce payment-type splits or change revenue formulas. Preserve the success-only, actual-open-to-actual-close basis when auditing shift totals and reports.
 
-For POS revenue reads, never use the browser clock as the final upper bound. Use persisted shift `openTime` through server time while active, then stored `closeTime` after closure. Sales belong to the active shift's assigned operational date until its actual close—even when a night shift passes 06:00; a handover before or after schedule changes ownership at the recorded close/open times. Only `success` sales contribute to revenue; `refunded` and `cancelled` remain visible but are not summed.
-**Why:** The owner clarified that the store runs 07:00–19:00 and 19:00–07:00 shifts, with actual arrivals/handover sometimes varying. The 06:00 day marker does not split a still-open night shift's sales; accurate shift attribution follows actual recorded shift times.
-**How to apply:** Keep shift revenue bounded by persisted open/close times and validate shift/branch access. Do not globally move the 06:00 business-date helper without approval; daily sales attribution must follow the shift date through that shift's close. Leave history status-neutral and preserve revenue/commission formulas.
+POS/shift revenue is bounded by persisted `openTime` and actual `closeTime`; while active, use server time as the upper bound. Owner daily revenue uses a separate fixed window [07:00 WIB, next 07:00 WIB), across branches. Only `success` sales contribute; `refunded` and `cancelled` are not summed.
+**Why:** Shift accounting must reflect the real cashier handover, while Owner daily income has one consistent cutoff for all branches.
+**How to apply:** Keep shift totals and daily revenue aggregation distinct. Do not assign a whole crossing shift to one daily bucket, auto-close at schedule times, or change historical 06:00 summaries without separate approval.
 
 At API closure, the cashier reports total income (`reportedIncome`), not physical cash in the drawer. The report is required and must be a finite non-negative amount; zero is valid. There is no opening cash for a shift.
 
