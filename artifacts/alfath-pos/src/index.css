@@ -1567,6 +1567,10 @@ body {
 }
 
 @media (max-width: 767px) {
+  [data-ui-screen="dashboard"] {
+    padding: 0.75rem !important;
+  }
+
   [data-ui-screen="reports"],
   [data-ui-screen="branch-stocks"],
   [data-ui-screen="shopping-list"],
