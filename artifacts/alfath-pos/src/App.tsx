@@ -9319,7 +9319,7 @@ export default function App() {
             {activeMenu === "dashboard" && profile?.role === "ADMIN" && (
               <div data-ui-screen="dashboard" className="ui-screen-dashboard flex-1 flex flex-col overflow-hidden bg-slate-50">
                 {/* HEADER DASHBOARD COMPACT */}
-                <div className="bg-white px-4 md:px-8 py-4 md:py-6 border-b border-slate-200 shrink-0">
+                <div className="bg-white px-3 md:px-8 py-4 md:py-6 border-b border-slate-200 shrink-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="text-left">
                       <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">
@@ -9388,7 +9388,7 @@ export default function App() {
                 </div>
               </div>
 
-                <div className={`flex-1 ${dashboardTab === "sales" ? "p-2 sm:p-3 md:p-8" : "p-4 md:p-8"} overflow-y-auto w-full content-fade`}>
+                <div className={`flex-1 ${dashboardTab === "sales" ? "p-2 sm:p-3 md:p-6" : "p-3 md:p-6"} overflow-y-auto w-full content-fade`}>
                   {dashboardTab !== "inventory" && <div className="mb-4 text-xs" role="status" aria-live="polite">
                     {ownerDashboard.error ? (
                       <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">
@@ -9859,49 +9859,51 @@ export default function App() {
         </div>
 
         {/* MOBILE BOTTOM NAV */}
-        <nav 
-          className="app-bottom-nav md:hidden fixed bottom-0 w-full bg-white shadow-[0_-6px_14px_rgba(184,194,208,0.45)] dark:shadow-[0_-6px_14px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-        >
-          <div className="flex items-center h-[68px] px-2 min-w-max">
-            {getMobileNav().map((item: any) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveMenu(item.id);
-                  setShowMobileCart(false);
-                }}
-                className={`shrink-0 w-20 sm:flex-1 shrink-0 flex flex-col items-center justify-center h-full gap-1 transition-colors relative ${
-                  activeMenu === item.id
-                    ? "text-blue-600"
-                    : "text-slate-400 hover:text-slate-600"
-                } ${item.locked ? "opacity-60" : ""}`}
-              >
-                <div className="relative">
-                  <div
-                    className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
-                      activeMenu === item.id
-                        ? "bg-blue-50 scale-105 shadow-sm"
-                        : ""
-                    }`}
-                  >
-                    <item.icon
-                      className={`w-5 h-5 ${activeMenu === item.id ? "fill-current" : ""}`}
-                    />
-                  </div>
-                  {item.locked && (
-                    <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 border border-white shadow-[0_0_8px_1px_rgba(245,158,11,0.6)]">
-                      <Lock className="w-2 h-2" />
+        {!showProductForm && (
+          <nav
+            className="app-bottom-nav md:hidden fixed bottom-0 w-full bg-white shadow-[0_-6px_14px_rgba(184,194,208,0.45)] dark:shadow-[0_-6px_14px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          >
+            <div className="flex items-center h-[68px] px-2 min-w-max">
+              {getMobileNav().map((item: any) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveMenu(item.id);
+                    setShowMobileCart(false);
+                  }}
+                  className={`shrink-0 w-20 sm:flex-1 shrink-0 flex flex-col items-center justify-center h-full gap-1 transition-colors relative ${
+                    activeMenu === item.id
+                      ? "text-blue-600"
+                      : "text-slate-400 hover:text-slate-600"
+                  } ${item.locked ? "opacity-60" : ""}`}
+                >
+                  <div className="relative">
+                    <div
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
+                        activeMenu === item.id
+                          ? "bg-blue-50 scale-105 shadow-sm"
+                          : ""
+                      }`}
+                    >
+                      <item.icon
+                        className={`w-5 h-5 ${activeMenu === item.id ? "fill-current" : ""}`}
+                      />
                     </div>
-                  )}
-                </div>
-                <span className="text-[9px] font-black uppercase tracking-widest">
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </nav>
+                    {item.locked && (
+                      <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 border border-white shadow-[0_0_8px_1px_rgba(245,158,11,0.6)]">
+                        <Lock className="w-2 h-2" />
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        )}
       </div>
 
       {/* --- GLOBAL MODALS --- */}
