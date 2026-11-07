@@ -13,7 +13,7 @@ Three separate time rules coexist:
 
 **Why:** The owner confirmed the store runs 24 hours with nominal day shift 07:00–19:00 and night shift 19:00–07:00, while actual arrival and handover times may vary. Shift totals follow actual open and close times. Daily Owner revenue uses a fixed 07:00 WIB boundary, independent of shift handover.
 
-**How to apply:** Keep operational-date and revenue-date helpers separate. Do not auto-close shifts at 06:00, 07:00, or 19:00. Use server/database time for live revenue windows, never the browser clock. The owner explicitly chose to preserve existing daily summaries built with the 06:00 cutoff and agreed to design a separate additive 07:00 summary path; this is not approval to implement a schema or code change. Do not rewrite or recalculate 06:00 history without separate approval. Before enabling 07:00 summaries, resolve archive/backfill idempotency.
+**How to apply:** Keep operational-date and revenue-date helpers separate. Do not auto-close shifts at 06:00, 07:00, or 19:00. Use server/database time for live revenue windows, never the browser clock. The owner explicitly chose to preserve existing daily summaries built with the 06:00 cutoff and agreed to design a separate additive 07:00 summary path; this is not approval to implement a schema or code change. Do not rewrite or recalculate 06:00 history without separate approval. Hold pre-cutoff Sale rows from archival until reconciliation confirms safe treatment; do not run archive/backfill meanwhile.
 
 ## Checkout requires an opened shift
 
