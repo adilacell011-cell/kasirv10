@@ -4833,7 +4833,7 @@ export default function App() {
               <div data-ui-screen="inventory" className="ui-screen-inventory flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
-                  <div data-product-form-overlay role="presentation" className="absolute inset-x-0 top-0 bottom-[calc(68px+env(safe-area-inset-bottom,0px))] z-[40] bg-slate-900/50 flex items-center justify-center p-2 md:inset-0 md:z-[120] md:p-4">
+                  <div data-product-form-overlay role="presentation" className="absolute inset-0 z-[40] bg-white flex items-center justify-center p-2 pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:z-[120] md:p-4 md:pb-4">
                     <div data-product-form-card role="dialog" aria-modal="true" aria-labelledby="product-form-title" className="bg-white rounded-2xl shadow-xl w-full max-w-2xl h-full max-h-full overflow-hidden flex flex-col min-h-0 md:h-auto md:max-h-[90dvh]">
                       <div data-product-form-header className="sticky top-0 z-10 px-3 py-3 sm:p-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
                         <h3 id="product-form-title" className="font-black text-slate-800 uppercase tracking-tight">
@@ -9319,14 +9319,8 @@ export default function App() {
             {activeMenu === "dashboard" && profile?.role === "ADMIN" && (
               <div data-ui-screen="dashboard" className="ui-screen-dashboard flex-1 flex flex-col overflow-hidden bg-slate-50">
                 {/* HEADER DASHBOARD COMPACT */}
-                <div className="bg-white py-4 md:py-6 border-b border-slate-200 shrink-0">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="text-left">
-                      <h2 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">
-                        Dashboard Pusat
-                      </h2>
-                    </div>
-
+                <div className="bg-white py-2 md:py-4 border-b border-slate-200 shrink-0">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       {/* Period Filter */}
                       <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
