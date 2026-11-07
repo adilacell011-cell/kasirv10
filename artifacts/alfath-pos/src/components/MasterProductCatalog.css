@@ -1015,3 +1015,93 @@
     width: 100% !important;
   }
 }
+
+/* White, flat catalogue and form surfaces. */
+.mp-catalog {
+  background: #ffffff !important;
+}
+
+.mp-category,
+.mp-provider,
+.mp-product-row,
+[data-product-form-card],
+[data-product-form-header],
+[data-product-pricing],
+[data-product-profit-preview],
+[data-product-visibility] {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+.mp-category-toggle,
+.mp-provider-toggle,
+.mp-product-row,
+[data-product-form] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea
+) {
+  box-shadow: none !important;
+}
+
+.mp-category-toggle,
+.mp-provider-toggle {
+  background-color: #ffffff !important;
+}
+
+.mp-category-toggle:hover,
+.mp-provider-toggle:hover,
+.mp-product-row:hover {
+  background-color: #f8fafc !important;
+}
+
+[data-product-form-section-heading],
+[data-product-visibility-summary],
+[data-product-form-actions] {
+  background-color: #ffffff !important;
+}
+
+@media (max-width: 640px) {
+  [data-product-pair="brand-options"] {
+    display: contents !important;
+  }
+
+  [data-product-taxonomy] > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+  }
+}
+
+.dark .mp-catalog,
+.dark .mp-category,
+.dark .mp-provider,
+.dark .mp-product-row,
+.dark [data-product-form-card],
+.dark [data-product-form-header],
+.dark [data-product-pricing],
+.dark [data-product-profit-preview],
+.dark [data-product-visibility],
+.dark [data-product-form-actions] {
+  background-color: #2a2d35 !important;
+  border-color: #3a414d !important;
+  box-shadow: none !important;
+}
+
+.dark [data-product-form] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea
+) {
+  background-color: #2a2d35 !important;
+  border-color: #3a414d !important;
+  box-shadow: none !important;
+}
+
+.dark .mp-category-toggle,
+.dark .mp-provider-toggle {
+  background-color: #2a2d35 !important;
+}
+
+.dark .mp-category-toggle:hover,
+.dark .mp-provider-toggle:hover,
+.dark .mp-product-row:hover {
+  background-color: #303540 !important;
+}

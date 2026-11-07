@@ -4848,9 +4848,6 @@ export default function App() {
                             {/* Column 1: Identity */}
                             <div data-product-taxonomy className="space-y-5">
                               <div data-product-field="category">
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5 focus-within:text-blue-600 transition-colors">
-                                  Kategori Produk
-                                </label>
                                 <ProductCombobox 
                                   label="Kategori Produk"
                                   value={prodCategory}
@@ -4867,9 +4864,11 @@ export default function App() {
 
                                 <div data-product-pair="brand-options" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div data-product-field="brand">
-                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 focus-within:text-blue-600 transition-colors">
-                                    { (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Provider / Operator" : "Merek (Brand)" }
-                                  </label>
+                                  {prodCategory === "Parfum" && (
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 focus-within:text-blue-600 transition-colors">
+                                      Merek (Brand)
+                                    </label>
+                                  )}
                                   <div className="relative group">
                                   {prodCategory === "Parfum" ? (
                                     <input
@@ -4900,13 +4899,6 @@ export default function App() {
                                 </div>
                                 { (prodCategory === "Aksesoris" || prodCategory === "Handphone" || prodCategory === "Parfum") && (
                                   <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                                      {prodCategory === "Parfum"
-                                        ? "Jenis Parfum"
-                                        : prodCategory === "Handphone"
-                                          ? "Tipe / Model HP"
-                                          : "Model / Sub-Kategori"}
-                                    </label>
                                     <div className="relative">
                                     <ProductCombobox 
                                       label={prodCategory === "Parfum" ? "Jenis Parfum" : "Model / Sub-Kategori"}

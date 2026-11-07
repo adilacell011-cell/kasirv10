@@ -138,30 +138,21 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
-## App-wide premium soft UI and compact operational density
-The owner approved a luxurious Fluent layout across the app while retaining Alfath blue and neumorphic
-depth: warm ivory/greige shared surfaces, restrained champagne detail, consistent global popups, and
-subtle page/button motion. Keep dense product and operational pages compact rather than enlarging cards.
-Use the central CSS tokens and presentation hooks; `.app-solid` remains the opt-out for floating menus.
-**Why:** the owner approved the catalog mockup as the visual direction for every page, and heavy cards or
-glass effects reduce readability in product-heavy workflows.
-**How to apply:** preserve blue actions, keep status colors readable, use warm neutrals/champagne as
-supporting accents, respect reduced-motion and touch targets, and do not change behavior or business logic
-to achieve visual consistency.
+## Current app-wide UI direction: compact white and flat
+The owner's latest decision supersedes earlier warm greige/neumorphic mockup guidance: use a white
+light-mode canvas, flat white cards and controls, fine neutral borders, and no raised/inset shadows on
+ordinary components. Preserve Alfath blue actions and restrained semantic status colors. Keep product and
+operational views compact; do not make cards larger merely for decoration. Continue to respect reduced
+motion and touch targets, and do not change behavior or business logic to achieve visual consistency.
+**Why:** screenshots of the earlier styling showed beige backgrounds, oversized raised components, and
+inconsistent forms; the owner explicitly requested white backgrounds and flat surfaces.
+**How to apply:** prefer borders and spacing for grouping; reserve only a subtle elevation for overlays if
+needed for layering, while keeping normal cards, buttons, and fields flat.
 
-## Extending neu+"lampu" to elements the global card rule SKIPS (buttons/pills/spans)
-The global neu card rule only matches `.bg-white.rounded-*` and excludes `button/a/input/...`,
-so buttons, category pills, status spans etc. stay flat. To give them the neu look inline, set
-the surface to `bg-slate-50` (it is centrally remapped to the neu base `#e0e5ec` light /
-`#23262e` dark — NOT plain white) and add an arbitrary `shadow-[...]`: raised
-(`4px 4px 9px #b8c2d0,-4px -4px 9px #ffffff`) or inset (`inset 3px 3px 6px ...`).
-**"Lampu" (glow) = a colored `shadow-[0_0_Npx_Mpx_rgba(...)]`** — blue for the primary CTA/active
-pill, and per-level hues for the category icon tiles (blue len0 / emerald len1 / purple len2,
-matching the existing drillPath color logic). Active accent pills already sit on `bg-blue-600`
-so they only need the glow added (no neu surface).
-**ALWAYS pair arbitrary neu/structural shadows with an explicit `dark:shadow-[...]` variant** —
-arbitrary `shadow-[...]` is NOT caught by the `.dark` override map, so a light-on-light neu shadow
-would leak into dark mode. Pure colored glows (rgba) read fine in both modes, dark variant optional.
+## Flat buttons, pills, and product hierarchy
+Do not add neumorphic or glow shadows to category rows, pills, inputs, or ordinary buttons. Use a white
+surface, a thin border, clear blue active state, and compact spacing. Category drill-down remains
+accordion-based; keep all product names and counts readable without floating-card effects.
 
 ## Master-produk is ONE shared `<table>` with two mutually-exclusive row modes
 The product page renders EITHER category-drill "group" summary rows (icon + name + "X Macam",
@@ -174,9 +165,8 @@ table column model breaks:** `<thead>` column count (6 leaf / 2 group), `<table>
 (leaf only — dividers would draw lines between cards), AND the group row's `<td colSpan>` (must
 equal the group-mode header count = 2, NOT 6 — architect caught a 2-col-header / colSpan-6-body
 mismatch). The inline JSX condition must be byte-identical to the IIFE's isEndLevel.
-**Why:** group rows are floating cards (single `<td>` wrapping a `bg-slate-50 rounded-2xl` neu card);
-the leaf 6-col data table must stay a normal table. Put the scroll container on `bg-slate-50`
-(neu base) so the card glows read instead of washing out on white.
+**Why:** group rows and the leaf 6-col data table have distinct information density; retain the correct
+table structure while using flat bordered white rows and a dedicated horizontal scroll container.
 
 ## Dropdowns: two distinct custom-select components (no native `<select>` left)
 All 18 native `<select>` were replaced by a portal-based custom dropdown, so the
