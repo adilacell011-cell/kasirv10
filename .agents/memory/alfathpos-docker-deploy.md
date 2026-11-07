@@ -17,8 +17,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 - **VPS staging is a separate Kasir V10 installation, not an update to the STB.**
   The VPS is Ubuntu/AMD64 with about 1.9 GiB RAM and also runs ZETAS; the same application images must continue to support ARM64. Keep staging containers, network, database, volumes, and backup path isolated from ZETAS; never point staging at the STB database.
-  **Why:** the STB remains in active use, ZETAS must not be disrupted, and staging resource limits must leave host capacity for the existing service.
-  **How to apply:** use immutable candidate SHA tags in a uniquely named staging stack; do not pin the application to one CPU architecture or reuse another stack's network/data. The Owner selected `compose.staging.yaml` for the new Dockge VPS stack; keep the generic `compose.dockge.yaml` separate from staging.
+  The Owner clarified that the VPS Kasir installation is still for testing and is not yet used by cashiers; migration of STB data to the VPS is deferred until the application is finished.
+  **Why:** keep the test installation separate from STB data and other VPS services; the production data move is a later, intentional step.
+  **How to apply:** use immutable candidate SHA tags in the existing isolated staging stack; preserve its database volume during image updates and never point it at the STB database. Do not pin the application to one CPU architecture or reuse another stack's network/data. The Owner selected `compose.staging.yaml` for the Dockge VPS stack; keep the generic `compose.dockge.yaml` separate from staging.
 
 - **API image is single-stage and keeps the WHOLE monorepo + node_modules intact.**
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
