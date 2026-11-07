@@ -14,3 +14,9 @@ Archive/backfill correctness requires a separate approved audit. Do not describe
 **Why:** The user approved a read-path optimization, not changes to archival or recalculation of past income. The development database does not establish the correctness of live STB history.
 
 **How to apply:** Compare optimized reads with existing values to check parity; distinguish that from an integrity audit. Coordinate live inspection or restart separately with the user.
+
+The owner confirmed the supplied retired SQL copy is an old schema baseline, not the current API schema. It can inform offline legacy 06:00 reconciliation but must not be assumed migration-ready or representative of current production.
+
+**Why:** The dump's structure lacks current idempotency schema, and the owner confirmed its account data is obsolete.
+
+**How to apply:** Keep it as a legacy-only reference. Do not restore or migrate it into a live/shared database; require isolated QA and separate approval for any import or schema operation.
