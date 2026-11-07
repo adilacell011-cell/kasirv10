@@ -3306,14 +3306,14 @@ export default function App() {
 
   if (!profile) {
     return (
-      <div className="auth-screen dark flex min-h-[100dvh] font-sans items-center justify-center p-4">
-        {/* app-solid: exclude from neumorphic selector — no white halo on dark background */}
+      <div className="auth-screen flex min-h-[100dvh] font-sans items-center justify-center p-4">
+        {/* app-solid keeps the login surface controlled by its focused styles. */}
         <div className="auth-card app-solid rounded-3xl max-w-sm w-full animate-in zoom-in-95 duration-300 overflow-hidden">
 
           {/* Header strip */}
-          <div className="px-8 pt-9 pb-6 text-center" style={{ borderBottom: '1px solid rgba(71,85,105,0.4)' }}>
+          <div data-auth-header className="px-8 pt-9 pb-6 text-center" style={{ borderBottom: '1px solid rgba(71,85,105,0.4)' }}>
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden flex items-center justify-center"
-                 style={{ backgroundColor: 'rgba(51,65,85,0.7)', border: '1px solid rgba(71,85,105,0.5)' }}>
+                 style={{ backgroundColor: '#f3f0e9', border: '1px solid rgba(182,155,104,0.28)' }}>
               <img
                 src={`${import.meta.env.BASE_URL}logo.png`}
                 alt="Alfath Pulsa"
@@ -3323,7 +3323,7 @@ export default function App() {
             <h1 className="text-lg font-black text-white tracking-tight mb-0.5">
               Alfath Pulsa POS
             </h1>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#68717d' }}>
               Sistem Manajemen Multi-Cabang
             </p>
           </div>
@@ -3339,27 +3339,27 @@ export default function App() {
               className="space-y-4"
             >
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#68717d' }}>
                   Username
                 </label>
                 <input
                   name="username"
                   type="text"
                   required
-                  style={{ backgroundColor: '#0f172a', borderColor: 'rgba(71,85,105,0.6)', color: '#f1f5f9' }}
+                  style={{ backgroundColor: '#f3f0e9', borderColor: 'rgba(29,82,218,0.14)', color: '#17243a' }}
                   className="auth-field w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
                   placeholder="Masukkan username"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>
+                <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#68717d' }}>
                   Password
                 </label>
                 <input
                   name="password"
                   type="password"
                   required
-                  style={{ backgroundColor: '#0f172a', borderColor: 'rgba(71,85,105,0.6)', color: '#f1f5f9' }}
+                  style={{ backgroundColor: '#f3f0e9', borderColor: 'rgba(29,82,218,0.14)', color: '#17243a' }}
                   className="auth-field w-full rounded-xl px-4 py-3 text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-500"
                   placeholder="••••••••"
                 />
@@ -3375,7 +3375,7 @@ export default function App() {
 
           {/* Footer */}
           <div className="px-8 pb-6 text-center">
-            <p className="text-[9px] font-medium uppercase tracking-widest" style={{ color: '#475569' }}>
+            <p className="text-[9px] font-medium uppercase tracking-widest" style={{ color: '#68717d' }}>
               Hubungi Admin Pusat untuk Aktivasi Akun
             </p>
           </div>
@@ -3406,7 +3406,7 @@ export default function App() {
 
   if (profile?.role === "PENDING") {
     return (
-      <div className="auth-screen dark flex min-h-[100dvh] bg-slate-50 font-sans items-center justify-center p-4">
+      <div className="auth-screen flex min-h-[100dvh] bg-slate-50 font-sans items-center justify-center p-4">
         <div className="auth-card app-solid p-4 md:p-8 rounded border border-amber-200 max-w-md w-full text-center shadow-sm">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-800 mb-2 tracking-tight">
@@ -3795,7 +3795,7 @@ export default function App() {
             {/* --- 1. ADMIN: PENGATURAN AKSES KARYAWAN --- */}
             {activeMenu === "employees" && profile?.role === "ADMIN" && (
               <div data-ui-screen="employees" className="ui-screen-employees flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
-                <div className="bg-white rounded-3xl flex flex-col h-full overflow-hidden">
+                <div data-ui-panel="employee-access-list" className="bg-white rounded-3xl flex flex-col h-full overflow-hidden">
                   <div className="p-3 md:p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 shrink-0 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
@@ -4623,9 +4623,9 @@ export default function App() {
 
             {activeMenu === "settings" && profile?.role === "ADMIN" && (
               <div data-ui-screen="settings" className="ui-screen-settings flex-1 p-4 md:p-4 md:p-6 overflow-y-auto">
-                <div className="max-w-3xl mx-auto space-y-6 text-left pb-20">
+                <div data-settings-content className="max-w-3xl mx-auto space-y-6 text-left pb-20">
                   {/* Card Configuration Switch */}
-                  <div className="bg-white p-4 md:p-7 rounded-2xl md:rounded-[32px]">
+                  <div data-ui-panel="global-access" className="bg-white p-4 md:p-7 rounded-2xl md:rounded-[32px]">
                     <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-4 md:mb-8 flex items-center gap-2">
                       <Settings className="w-4 h-4 text-emerald-500" />
                       Fitur & Hak Akses Global
@@ -4674,7 +4674,7 @@ export default function App() {
                   </div>
 
                   {/* Card Add Branch */}
-                  <div className="bg-white p-3 md:p-4 rounded-2xl">
+                  <div data-ui-panel="branch-registration" className="bg-white p-3 md:p-4 rounded-2xl">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b border-slate-200/60 pb-3 mb-4 flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-blue-500 drop-shadow-[0_0_5px_rgba(59,130,246,0.6)]" /> Registrasi
                       Cabang Baru
@@ -4698,7 +4698,7 @@ export default function App() {
                   </div>
 
                   {/* List Branches */}
-                  <div className="bg-white rounded-2xl overflow-hidden">
+                  <div data-ui-panel="branch-list" className="bg-white rounded-2xl overflow-hidden">
                     <div className="p-4 border-b border-slate-200/60 bg-slate-50">
                       <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">
                         Daftar Cabang Aktif
@@ -4815,7 +4815,7 @@ export default function App() {
                 {showProductForm && (
                   <div data-product-form-overlay className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
                     <div data-product-form-card className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
-                      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                      <div data-product-form-header className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                         <h3 className="font-black text-slate-800 uppercase tracking-tight">
                           {editingProduct
                             ? "Ubah Master Produk"
@@ -4831,16 +4831,23 @@ export default function App() {
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="p-4 md:p-6 overflow-y-auto flex-1">
+                      <div data-product-form-body className="p-4 md:p-6 overflow-y-auto flex-1">
                         <form
                           onSubmit={handleSaveProduct}
                           className="space-y-5"
                           data-product-form
                         >
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div data-product-form-section-heading="identity" className="flex items-center gap-2.5">
+                            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#c9aa6d]/30 bg-[#c9aa6d]/10 font-mono text-[10px] font-bold text-[#8a7040]">01</span>
+                            <div className="min-w-0">
+                              <h4 className="text-[12px] font-black text-slate-800">Identitas produk</h4>
+                              <p className="mt-0.5 text-[9px] font-medium text-slate-400">Susun kategori dan varian agar mudah ditemukan kasir.</p>
+                            </div>
+                          </div>
+                          <div data-product-identity className="grid grid-cols-1 gap-4">
                             {/* Column 1: Identity */}
-                            <div className="space-y-5">
-                              <div>
+                            <div data-product-taxonomy className="space-y-5">
+                              <div data-product-field="category">
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5 focus-within:text-blue-600 transition-colors">
                                   Kategori Produk
                                 </label>
@@ -4858,8 +4865,8 @@ export default function App() {
                                 />
                               </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
+                                <div data-product-pair="brand-options" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div data-product-field="brand">
                                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 focus-within:text-blue-600 transition-colors">
                                     { (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Provider / Operator" : "Merek (Brand)" }
                                   </label>
@@ -4928,54 +4935,9 @@ export default function App() {
                               </div>
 
                             </div>
-
-                            {/* Column 2: Visibility & Settings */}
-                            <div className="space-y-5 bg-slate-50/50 p-4 rounded-3xl border border-slate-100">
-                              <div>
-                                <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                  <Eye className="w-4 h-4 text-blue-600" /> Visibilitas Cabang
-                                </p>
-                                <div className="space-y-2">
-                                  <label className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-200 cursor-pointer hover:border-blue-300 transition-all group">
-                                    <input
-                                      type="checkbox"
-                                      checked={prodVisibleBranchIds === "*"}
-                                      onChange={(e) => setProdVisibleBranchIds(e.target.checked ? "*" : "")}
-                                      className="w-5 h-5 rounded-lg text-blue-600 border-slate-300 focus:ring-blue-500"
-                                    />
-                                    <span className="text-[11px] font-black uppercase text-slate-600 group-hover:text-blue-700">Semua Cabang Toko</span>
-                                  </label>
-                                  
-                                  {prodVisibleBranchIds !== "*" && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                      {branches.map(b => {
-                                        const ids = prodVisibleBranchIds ? prodVisibleBranchIds.split(",") : [];
-                                        const isChecked = ids.includes(b.id);
-                                        return (
-                                          <label key={b.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${isChecked ? "bg-blue-50 border-blue-200" : "bg-white border-slate-200 hover:border-slate-300"}`}>
-                                            <input
-                                              type="checkbox"
-                                              checked={isChecked}
-                                              onChange={(e) => {
-                                                const newIds = e.target.checked
-                                                  ? [...ids, b.id]
-                                                  : ids.filter(id => id !== b.id);
-                                                setProdVisibleBranchIds(newIds.join(","));
-                                              }}
-                                              className="w-4 h-4 rounded text-blue-600 border-slate-300"
-                                            />
-                                            <span className={`text-[10px] font-bold uppercase truncate ${isChecked ? "text-blue-700" : "text-slate-500"}`}>{b.name}</span>
-                                          </label>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div data-product-details className="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                                 {prodCategory === "Voucher" || prodCategory?.includes("Perdana")
@@ -5012,7 +4974,7 @@ export default function App() {
                                 className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                                 required
                               />
-                              <div className="mt-2 flex items-start gap-2 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 px-3 py-2">
+                              <div data-product-name-preview className="mt-2 flex items-start gap-2 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 px-3 py-2">
                                 <Sparkles className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 mt-0.5 shrink-0" />
                                 <div className="min-w-0">
                                   <p className="text-[8px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-widest leading-none">
@@ -5084,7 +5046,7 @@ export default function App() {
 
                           </div>
 
-                          <div>
+                          <div data-product-description>
                             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                               Deskripsi Operasional Barang (Opsional)
                             </label>
@@ -5097,6 +5059,61 @@ export default function App() {
                             />
                           </div>
 
+                          <details data-product-visibility>
+                            <summary data-product-visibility-summary>
+                              <Eye className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+                              <span>Visibilitas cabang</span>
+                              <span data-product-visibility-status>
+                                {prodVisibleBranchIds === "*" ? "Semua cabang" : "Pilih cabang"}
+                              </span>
+                            </summary>
+                            <div data-product-visibility-content>
+                              <div className="space-y-2">
+                                <label className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-200 cursor-pointer hover:border-blue-300 transition-all group">
+                                  <input
+                                    type="checkbox"
+                                    checked={prodVisibleBranchIds === "*"}
+                                    onChange={(e) => setProdVisibleBranchIds(e.target.checked ? "*" : "")}
+                                    className="w-5 h-5 rounded-lg text-blue-600 border-slate-300 focus:ring-blue-500"
+                                  />
+                                  <span className="text-[11px] font-black uppercase text-slate-600 group-hover:text-blue-700">Semua Cabang Toko</span>
+                                </label>
+
+                                {prodVisibleBranchIds !== "*" && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                                    {branches.map(b => {
+                                      const ids = prodVisibleBranchIds ? prodVisibleBranchIds.split(",") : [];
+                                      const isChecked = ids.includes(b.id);
+                                      return (
+                                        <label key={b.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${isChecked ? "bg-blue-50 border-blue-200" : "bg-white border-slate-200 hover:border-slate-300"}`}>
+                                          <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              const newIds = e.target.checked
+                                                ? [...ids, b.id]
+                                                : ids.filter(id => id !== b.id);
+                                              setProdVisibleBranchIds(newIds.join(","));
+                                            }}
+                                            className="w-4 h-4 rounded text-blue-600 border-slate-300"
+                                          />
+                                          <span className={`text-[10px] font-bold uppercase truncate ${isChecked ? "text-blue-700" : "text-slate-500"}`}>{b.name}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </details>
+
+                          <div data-product-form-section-heading="pricing" className="flex items-center gap-2.5 pt-1">
+                            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#c9aa6d]/30 bg-[#c9aa6d]/10 font-mono text-[10px] font-bold text-[#8a7040]">02</span>
+                            <div className="min-w-0">
+                              <h4 className="text-[12px] font-black text-slate-800">Harga &amp; pengendalian</h4>
+                              <p className="mt-0.5 text-[9px] font-medium text-slate-400">Nilai jual dan laba terlihat dalam satu area.</p>
+                            </div>
+                          </div>
                           <div data-product-pricing className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded border border-slate-200 shadow-inner">
                             <div>
                               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
@@ -5154,7 +5171,7 @@ export default function App() {
                             </div>
                             
                             {/* PROFIT ANALYSIS PREVIEW */}
-                            <div className="col-span-full mt-2 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
+                            <div data-product-profit-preview className="col-span-full mt-2 p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-sm">
                               <div className="text-left">
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 text-left">ESTIMASI LABA BERSIH</p>
                                 <div className="flex items-baseline gap-2">
@@ -5174,7 +5191,7 @@ export default function App() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 mt-4 pt-4 border-t border-slate-200">
+                            <div data-product-extra-fields className="grid grid-cols-1 sm:grid-cols-2 gap-4 col-span-2 mt-4 pt-4 border-t border-slate-200">
                               <div>
                                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 flex justify-between">
                                   <span>Stok Minimal Aman</span>
@@ -5209,12 +5226,19 @@ export default function App() {
                               )}
                             </div>
                           </div>
-                          <button
-                            type="submit"
-                            className="w-full bg-blue-600 text-white font-black py-3 md:py-4 rounded shadow-lg uppercase tracking-widest text-[11px] hover:bg-blue-700 active:scale-[0.99] transition-all"
-                          >
-                            Patenkan Master Produk ke Server Sentral
-                          </button>
+                          <div data-product-form-actions>
+                            <p className="text-[9px] font-medium leading-4 text-slate-400">
+                              <strong className="font-black text-slate-500">* Wajib diisi</strong>
+                              <span className="block">Periksa nama dan harga sebelum lanjut.</span>
+                            </p>
+                            <button
+                              type="submit"
+                              className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-black py-3 md:py-4 rounded shadow-lg uppercase tracking-widest text-[11px] hover:bg-blue-700 active:scale-[0.99] transition-all"
+                            >
+                              Simpan &amp; publikasikan
+                              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                          </div>
                         </form>
                       </div>
                     </div>
@@ -5740,7 +5764,7 @@ export default function App() {
                 {!isCreatingPlan ? (
                   <div className="space-y-8">
                     {/* LOW STOCK ALERTS SECTION */}
-                    <div className="bg-white rounded-[32px] overflow-hidden text-left">
+                    <div data-ui-panel="low-stock-alerts" className="bg-white rounded-[32px] overflow-hidden text-left">
                       <div className="p-4 md:p-6 border-b border-slate-100 bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="text-left">
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest text-left flex items-center gap-2">
@@ -5912,7 +5936,7 @@ export default function App() {
                     </div>
 
                     {/* COMPLETED PLANS HISTORY */}
-                    <div className="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div data-shopping-plans className="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-2 gap-6">
                       {shoppingPlans.map((plan) => (
                         <div
                           key={plan.id}
@@ -7180,7 +7204,7 @@ export default function App() {
                 ) : (
                   <>
                     {/* ── LEFT: product browser ── */}
-                    <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] lg:min-h-0">
+                    <div data-cashier-stock-products className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] lg:min-h-0">
                       {/* header */}
                       <div className="px-3 py-2.5 border-b border-slate-100 shrink-0 flex items-center gap-2">
                         <div className="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
@@ -7356,7 +7380,7 @@ export default function App() {
                     </div>
 
                     {/* ── RIGHT: input form ── */}
-                    <div className="w-full lg:w-[300px] xl:w-[320px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+                    <div data-cashier-stock-entry className="w-full lg:w-[300px] xl:w-[320px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
                       {/* product info */}
                       <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 shrink-0">
                         <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-2">Input Detail Stok</p>
@@ -7598,9 +7622,9 @@ export default function App() {
                 <div className="flex-1 overflow-hidden relative flex flex-col">
                   {/* --- TAMPILAN BILLING (RE-DESIGNED PREMIUM POS COHESIVE SYSTEM) --- */}
                   {posSubView === "billing" && (
-                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-full bg-slate-100">
+                    <div data-pos-billing className="flex-1 flex flex-col md:flex-row overflow-hidden h-full bg-slate-100">
                       {/* AREA KIRI: KATALOG PRODUK INTERAKTIF & FILTER KATEGORI RAILING (LEBIH LUAS - 60% Width) */}
-                      <div className="flex-1 flex flex-col overflow-hidden relative border-r border-slate-200">
+                    <div data-pos-catalog className="flex-1 flex flex-col overflow-hidden relative border-r border-slate-200">
                         
                         {/* 1. BAR PENCARIAN & SCANNER UTAMA */}
                         <div className="px-3 pt-3 pb-2.5 bg-slate-100 dark:bg-slate-900 shrink-0">
@@ -7723,7 +7747,7 @@ export default function App() {
                         {/* 1.5 PANEL PRODUK TERLARIS — compact strip */}
                         {bestSellers.length > 0 && !searchTerm && (
                           <div className="bg-white px-2 py-1.5 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                            <span className="text-[7px] font-black text-slate-300 uppercase tracking-widest shrink-0 leading-none">⭐</span>
+                            <TrendingUp className="h-3 w-3 shrink-0 text-blue-500" aria-hidden="true" />
                             {bestSellers.map(p => (
                               <button
                                 key={p.id}
@@ -7926,7 +7950,7 @@ export default function App() {
                       </div>
 
                       {/* AREA KANAN: NOTA TAGIHAN & CHECKOUT KASIR PERSISTEN (370px - 410px Width di Desktop) */}
-                      <div className="w-full md:w-[370px] lg:w-[410px] bg-white flex flex-col shrink-0 overflow-hidden relative z-30 border-l border-slate-200">
+                      <div data-pos-cart className="w-full md:w-[370px] lg:w-[410px] bg-white flex flex-col shrink-0 overflow-hidden relative z-30 border-l border-slate-200">
                         
                         {/* HEADER DAFTAR NOTA */}
                         <div className="p-3 border-b border-slate-150 flex justify-between items-center bg-white shrink-0">
@@ -8207,7 +8231,7 @@ export default function App() {
                                         <div className="min-w-0 flex-1 flex flex-col justify-between text-left">
                                           <p className="text-[9.5px] font-black uppercase text-slate-800 leading-tight">
                                             {getProductName(p)}
-                                            {p.salesCount > 0 && <span className="inline-block mt-1 px-1.5 py-0.5 bg-amber-500 text-white text-[7px] rounded font-black tracking-widest uppercase animate-pulse">🔥 Terlaris ({p.salesCount})</span>}
+                                            {p.salesCount > 0 && <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 bg-amber-500 text-white text-[7px] rounded font-black tracking-widest uppercase"><TrendingUp className="w-2.5 h-2.5" aria-hidden="true" /> Terlaris ({p.salesCount})</span>}
                                             {p.masterSN && <span className="block text-[7px] text-blue-500 font-bold mt-0.5">SN: {p.masterSN}</span>}
                                           </p>
                                           <div className="flex items-center justify-between mt-1">
@@ -8942,7 +8966,7 @@ export default function App() {
               </div>
             )}
             {activeMenu === "shift" && profile?.role === "CASHIER" && (
-              <div data-ui-screen="shift" className="ui-screen-shift flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
+                <div data-ui-screen="shift" className="ui-screen-shift flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
                 <div className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden relative shrink-0">
                   <div className="p-4 md:p-8 border-b border-slate-200 bg-white text-slate-900 text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16"></div>
@@ -9369,7 +9393,7 @@ export default function App() {
                     )}
                   </div>}
                   {dashboardTab === "overview" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-6">
+                   <div data-dashboard-metrics className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 mb-6">
                        {[
                         { label: "Total Omset", val: ownerDashboard.hasSummary ? `Rp ${dashboardStats.revenue.toLocaleString("id-ID")}` : "—", sub: "Periode terpilih", icon: TrendingUp, tile: "bg-blue-600 shadow-blue-200" },
                         { label: "Total Transaksi", val: ownerDashboard.hasSummary ? dashboardStats.count.toLocaleString("id-ID") : "—", sub: "transaksi", icon: ShoppingBag, tile: "bg-emerald-500 shadow-emerald-200" },
@@ -10081,12 +10105,12 @@ export default function App() {
           data-alert-type={alert.type}
           className={`pointer-events-auto bg-white/90 dark:bg-slate-900/90 text-slate-900 border border-slate-200/80 p-4 rounded-2xl shadow-2xl shadow-slate-900/10 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 relative border-l-4 ${alert.type === 'success' ? 'border-l-emerald-500' : 'border-l-amber-500'}`}
         >
-          <div className={`w-5 h-5 rounded-full ${alert.type === 'success' ? 'bg-emerald-500/15' : 'bg-amber-500/15'} flex items-center justify-center shrink-0 mt-0.5`}>
+          <div data-alert-icon className={`w-5 h-5 rounded-full ${alert.type === 'success' ? 'bg-emerald-500/15' : 'bg-amber-500/15'} flex items-center justify-center shrink-0 mt-0.5`}>
             {alert.type === 'success' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-[10px] font-black uppercase ${alert.type === 'success' ? 'text-emerald-500' : 'text-amber-500'} tracking-widest`}>{alert.type === 'success' ? 'Berhasil' : 'Informasi Sistem'}</p>
-            <p className="text-[11px] font-bold text-slate-700 mt-0.5 leading-relaxed break-words">{alert.message}</p>
+            <p data-alert-title className={`text-[10px] font-black uppercase ${alert.type === 'success' ? 'text-emerald-500' : 'text-amber-500'} tracking-widest`}>{alert.type === 'success' ? 'Berhasil' : 'Informasi Sistem'}</p>
+            <p data-alert-message className="text-[11px] font-bold text-slate-700 mt-0.5 leading-relaxed break-words">{alert.message}</p>
           </div>
           <button
             onClick={() => setGlobalAlerts((prev) => prev.filter((a) => a.id !== alert.id))}
@@ -10146,15 +10170,16 @@ export default function App() {
     {confirmModal && (
       <div data-confirm-overlay className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
         <div data-confirm-dialog className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
-          <div className="p-6 text-center">
+          <div data-dialog-content className="p-6 text-center">
             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 stroke-[2.5]" />
             </div>
             <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-2">Konfirmasi Tindakan</h3>
             <p className="text-xs text-slate-500 font-bold leading-relaxed">{confirmModal.message}</p>
           </div>
-          <div className="p-4 bg-slate-50 border-t border-slate-150 flex gap-2">
+          <div data-dialog-actions className="p-4 bg-slate-50 border-t border-slate-150 flex gap-2">
             <button
+              data-dialog-action="cancel"
               onClick={() => {
                 confirmModal.resolve(false);
                 setConfirmModal(null);
@@ -10164,6 +10189,7 @@ export default function App() {
               Batal
             </button>
             <button
+              data-dialog-action="confirm"
               onClick={() => {
                 confirmModal.resolve(true);
                 setConfirmModal(null);
@@ -10188,7 +10214,7 @@ export default function App() {
               setPromptModal(null);
             }}
           >
-            <div className="p-6 text-center">
+            <div data-dialog-content className="p-6 text-center">
               <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Edit className="w-6 h-6 stroke-[2.5]" />
               </div>
@@ -10201,8 +10227,9 @@ export default function App() {
                 className="w-full bg-slate-50 border border-slate-200 py-3 px-4 rounded-2xl text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 text-center"
               />
             </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-150 flex gap-2">
+            <div data-dialog-actions className="p-4 bg-slate-50 border-t border-slate-150 flex gap-2">
               <button
+                data-dialog-action="cancel"
                 type="button"
                 onClick={() => {
                   promptModal.resolve(null);
@@ -10213,6 +10240,7 @@ export default function App() {
                 Batal
               </button>
               <button
+                data-dialog-action="confirm"
                 type="submit"
                 className="flex-1 bg-slate-900 text-white hover:bg-black py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all text-center cursor-pointer"
               >

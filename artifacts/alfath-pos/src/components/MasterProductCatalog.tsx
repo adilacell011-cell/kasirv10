@@ -123,10 +123,10 @@ export function MasterProductCatalog({
       <div className="mp-catalog-columns" aria-hidden="true">
         <span>Produk</span>
         <span>Kategori &amp; spesifikasi</span>
-        <span>Modal</span>
-        <span>Harga aktif</span>
-        <span>Cabang</span>
-        <span>Aksi</span>
+        <span className="mp-column-number">Modal</span>
+        <span className="mp-column-number">Harga aktif</span>
+        <span className="mp-column-number">Cabang</span>
+        <span className="mp-column-actions">Aksi</span>
       </div>
 
       <div className="mp-catalog-list">

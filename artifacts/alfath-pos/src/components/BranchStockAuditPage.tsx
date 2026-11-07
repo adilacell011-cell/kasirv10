@@ -935,7 +935,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
   const filteredSummary = session?.summary;
 
   return (
-    <div data-testid="page-branch-stock-audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-3 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-5 md:pb-6 lg:px-8">
+    <div data-testid="page-branch-stock-audit" data-ui-screen="stock_audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-3 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-5 md:pb-6 lg:px-8">
       <div className="mx-auto w-full min-w-0 max-w-full space-y-4 sm:max-w-[1440px] sm:space-y-5">
         <header className="relative w-full min-w-0 overflow-hidden rounded-[20px] bg-[#173b3d] px-4 py-4 text-[#f4f4e9] shadow-[0_12px_30px_rgba(23,59,61,.13)] sm:rounded-[22px] sm:px-7 sm:py-6">
           <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border border-[#d6b96a]/20" />
