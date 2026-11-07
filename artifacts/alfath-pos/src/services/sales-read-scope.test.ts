@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { makeSalesReadQueries, makeSalesReadWindows } from "./sales-read-scope";
+import {
+  isRevenueEligibleSaleStatus,
+  makeSalesReadQueries,
+  makeSalesReadWindows,
+} from "./sales-read-scope";
 
 test("POS reads begin at the active shift start when the shift is open", () => {
   const now = new Date("2026-11-05T17:00:00.000Z");
@@ -19,13 +23,38 @@ test("POS sale reads do not cap results at the client clock", () => {
   const now = new Date("2026-11-05T17:00:00.000Z");
   const start = "2026-11-05T06:40:00.000Z";
   const [query] = makeSalesReadQueries(
-    { view: "pos", shiftOpen: true, shiftStartTime: start, now },
+    { view: "pos", shiftOpen: true, shiftId: "shift-1", shiftStartTime: start, now },
     { branchId: "branch-1" },
   );
 
   assert.equal(query.branchId, "branch-1");
   assert.equal(query.startDate, start);
+  assert.equal(query.scope, "pos");
+  assert.equal(query.posShiftOpen, "true");
+  assert.equal(query.shiftId, "shift-1");
   assert.equal(query.endDate, undefined);
+});
+
+test("POS without an active shift still requests a server-bounded day read", () => {
+  const [query] = makeSalesReadQueries({
+    view: "pos",
+    shiftOpen: false,
+    shiftStartTime: null,
+    now: new Date("2026-11-05T17:00:00.000Z"),
+  });
+
+  assert.equal(query.scope, "pos");
+  assert.equal(query.posShiftOpen, "false");
+  assert.equal(query.shiftId, undefined);
+  assert.equal(query.endDate, undefined);
+});
+
+test("only successful transactions qualify for revenue aggregates", () => {
+  assert.equal(isRevenueEligibleSaleStatus("success"), true);
+  assert.equal(isRevenueEligibleSaleStatus("refunded"), false);
+  assert.equal(isRevenueEligibleSaleStatus("cancelled"), false);
+  assert.equal(isRevenueEligibleSaleStatus("unknown"), false);
+  assert.equal(isRevenueEligibleSaleStatus(null), false);
 });
 
 test("report reads retain their explicit end-date boundary", () => {

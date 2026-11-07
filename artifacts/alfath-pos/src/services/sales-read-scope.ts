@@ -3,6 +3,8 @@ export type SalesReadView = "pos" | "reports";
 export type SalesReadQuery = Record<string, string> & {
   startDate: string;
   endDate?: string;
+  scope?: "pos";
+  shiftId?: string;
 };
 
 export type SalesReadScopeInput = {
@@ -10,6 +12,7 @@ export type SalesReadScopeInput = {
   reportStartDate?: string;
   reportEndDate?: string;
   shiftOpen?: boolean;
+  shiftId?: string | null;
   shiftStartTime?: string | null;
   shiftLogicalDate?: string;
   now?: Date;
@@ -75,10 +78,20 @@ export function makeSalesReadQueries(
 ): SalesReadQuery[] {
   return makeSalesReadWindows(input).map(({ start, end }) => ({
     ...extraParams,
+    ...(input.view === "pos"
+      ? {
+          scope: "pos" as const,
+          posShiftOpen: input.shiftOpen ? "true" : "false",
+          ...(input.shiftId ? { shiftId: input.shiftId } : {}),
+        }
+      : {}),
     startDate: start.toISOString(),
-    // POS is bounded by the actual shift/day start. Omitting a client-clock
-    // endDate prevents a just-committed server sale from being excluded when
-    // the server clock is slightly ahead; reports remain explicitly bounded.
+    // The POS API resolves this window from persisted shift times and its own
+    // database clock. Never use the browser clock as the final upper bound.
     ...(input.view === "reports" ? { endDate: end.toISOString() } : {}),
   }));
+}
+
+export function isRevenueEligibleSaleStatus(status: unknown): boolean {
+  return status === "success";
 }

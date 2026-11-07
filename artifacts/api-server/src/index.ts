@@ -27,6 +27,7 @@ import {
   finishSalePage,
   parseSalePageInput,
 } from "./sale-pagination";
+import { resolvePosSaleReadWindow } from "./sale-read-window";
 import {
   archivedSaleReplay,
   createSaleIdempotencySnapshot,
@@ -911,9 +912,30 @@ class SaleRejected extends Error {
 }
 
 app.get("/api/transactions", authenticateToken, async (req, res) => {
-  const { branchId, startDate, endDate, limit, cursor } = req.query;
+  const {
+    branchId,
+    startDate,
+    endDate,
+    limit,
+    cursor,
+    scope,
+    shiftId: rawShiftId,
+    posShiftOpen: rawPosShiftOpen,
+  } = req.query;
   const requester = (req as any).user;
   try {
+    if (scope !== undefined && scope !== "pos") {
+      return void res.status(400).json({ error: "Cakupan pembacaan transaksi tidak valid." });
+    }
+    if (rawPosShiftOpen !== undefined &&
+        rawPosShiftOpen !== "true" && rawPosShiftOpen !== "false") {
+      return void res.status(400).json({ error: "Status shift POS tidak valid." });
+    }
+    if (rawShiftId !== undefined &&
+        (typeof rawShiftId !== "string" || rawShiftId.trim() === "")) {
+      return void res.status(400).json({ error: "Identitas shift POS tidak valid." });
+    }
+
     const where: any = {};
     // CASHIER reads are locked to their own branch; client-supplied branchId is ignored.
     // ADMIN/AUDIT may read any/all branches.
@@ -924,8 +946,65 @@ app.get("/api/transactions", authenticateToken, async (req, res) => {
       where.branchId = requester.branchId;
     }
     else if (branchId) where.branchId = branchId as string;
-    
-    if (startDate || endDate) {
+
+    if (scope === "pos") {
+      let shift: {
+        id: string;
+        branchId: string;
+        openTime: Date;
+        closeTime: Date | null;
+        status: string;
+      } | null = null;
+
+      if (typeof rawShiftId === "string") {
+        shift = await prisma.shift.findUnique({
+          where: { id: rawShiftId },
+          select: { id: true, branchId: true, openTime: true, closeTime: true, status: true },
+        });
+        if (!shift) return void res.status(404).json({ error: "Shift POS tidak ditemukan." });
+      } else if (rawPosShiftOpen === "true") {
+        const shiftBranchId = requester.role === "CASHIER"
+          ? requester.branchId
+          : typeof branchId === "string" ? branchId : undefined;
+        if (!shiftBranchId) {
+          return void res.status(409).json({ error: "Pilih cabang untuk membaca omzet shift." });
+        }
+        shift = await prisma.shift.findFirst({
+          where: { branchId: shiftBranchId, status: "open" },
+          select: { id: true, branchId: true, openTime: true, closeTime: true, status: true },
+          orderBy: [{ openTime: "desc" }, { id: "desc" }],
+        });
+        if (!shift) return void res.status(409).json({ error: "Tidak ada shift aktif yang tersimpan di server." });
+      }
+
+      if (shift) {
+        if (requester.role === "CASHIER" && shift.branchId !== requester.branchId) {
+          return void res.status(403).json({ error: "Shift POS bukan milik cabang akun ini." });
+        }
+        if (requester.role !== "CASHIER" &&
+            typeof branchId === "string" && shift.branchId !== branchId) {
+          return void res.status(403).json({ error: "Shift POS tidak sesuai dengan cabang yang dipilih." });
+        }
+        where.branchId = shift.branchId;
+      }
+
+      // Sale.createdAt and Shift.openTime are database timestamps. Use the same
+      // database clock for the active-shift upper bound, never the browser clock.
+      const clockRows = await prisma.$queryRaw<Array<{ asOf: Date }>>`
+        SELECT clock_timestamp() AS "asOf"
+      `;
+      const serverNow = clockRows[0]?.asOf;
+      if (!(serverNow instanceof Date) || !Number.isFinite(serverNow.getTime())) {
+        throw new Error("Database clock is unavailable for POS sales read.");
+      }
+
+      const fallbackStart = typeof startDate === "string" ? startDate : null;
+      const posWindow = resolvePosSaleReadWindow({ shift, fallbackStart, serverNow });
+      if (!posWindow) {
+        return void res.status(409).json({ error: "Batas waktu shift POS tidak valid." });
+      }
+      where.createdAt = { gte: posWindow.start, lte: posWindow.end };
+    } else if (startDate || endDate) {
       where.createdAt = {};
       if (startDate && startDate !== "undefined" && startDate !== "null") {
         const d = new Date(startDate as string);
@@ -1085,7 +1164,13 @@ app.get("/api/shifts/:id/close-summary", authenticateToken, requireRole("ADMIN",
     }
     if (shift.status !== "open") return void res.status(409).json({ error: "Shift sudah tidak aktif." });
 
-    const asOf = new Date();
+    const clockRows = await prisma.$queryRaw<Array<{ asOf: Date }>>`
+      SELECT clock_timestamp() AS "asOf"
+    `;
+    const asOf = clockRows[0]?.asOf;
+    if (!(asOf instanceof Date) || !Number.isFinite(asOf.getTime())) {
+      throw new Error("Database clock is unavailable for shift summary.");
+    }
     const aggregate = await prisma.sale.aggregate({
       where: {
         branchId: shift.branchId,

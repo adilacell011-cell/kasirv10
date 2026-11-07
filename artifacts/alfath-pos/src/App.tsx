@@ -69,7 +69,10 @@ import {
 import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
 import { api, createReadRefresh, isSessionError, ReadError } from "./services/api";
-import { makeSalesReadQueries } from "./services/sales-read-scope";
+import {
+  isRevenueEligibleSaleStatus,
+  makeSalesReadQueries,
+} from "./services/sales-read-scope";
 import { isShiftOverdue } from "./services/shift-time";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
@@ -1694,6 +1697,7 @@ export default function App() {
   const effectiveReadBranch = activeMenu === "audit"
     ? auditSelectedBranch || (profile?.role === "ADMIN" ? "" : "N/A")
     : profile?.role === "ADMIN" ? adminSalesBranchFilter : profile?.branchId;
+  const currentPosShiftId = shiftOpen ? localStorage.getItem("current_shift_id") : null;
   const readScope = JSON.stringify([profile?.id, profile?.role, profile?.branchId, effectiveReadBranch]);
   const fullSyncEnabled = Boolean(profile && profile.role !== "PENDING" && !authLoading && !usesOwnerSync);
   const syncKey = `${readScope}:${fullSyncEnabled}`;
@@ -1961,6 +1965,7 @@ export default function App() {
     shiftOpen,
     shiftStartTime,
     shiftLogicalDate,
+    currentPosShiftId,
   ]);
   const liveSalesSyncKey = useRef(salesSyncKey);
   liveSalesSyncKey.current = salesSyncKey;
@@ -1993,6 +1998,7 @@ export default function App() {
           reportStartDate,
           reportEndDate,
           shiftOpen,
+          shiftId: currentPosShiftId,
           shiftStartTime,
           shiftLogicalDate,
         }, branchParams);
@@ -3123,7 +3129,9 @@ export default function App() {
   }, [sales, shiftOpen, shiftStartTime, profile?.branchId]);
 
   const currentShiftTotalSales = useMemo(() => {
-    return currentShiftSales.reduce((sum, s) => sum + (s.total || 0), 0);
+    return currentShiftSales
+      .filter((sale) => isRevenueEligibleSaleStatus(sale.status))
+      .reduce((sum, sale) => sum + (sale.total || 0), 0);
   }, [currentShiftSales]);
 
   const [dashboardDateRange, setDashboardDateRange] = useState<"today" | "week" | "month" | "all">("today");
@@ -4204,7 +4212,7 @@ export default function App() {
                             const stats = sales.filter(s => 
                               (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === logical &&
                               (!adminSalesBranchFilter || s.branchId === adminSalesBranchFilter) &&
-                              s.status !== "refunded"
+                              isRevenueEligibleSaleStatus(s.status)
                             ).reduce((acc, s) => {
                               acc.revenue += (s.total || 0);
                               const capital = (s.items || []).reduce((sum: number, it: any) => {
@@ -4256,7 +4264,7 @@ export default function App() {
                               }
 
                               const sType = s.shiftType || (physicalDate.getHours() >= 7 && physicalDate.getHours() < 19 ? "Pagi" : "Malam");
-                              return branchMatch && sType === type && dateMatch && s.status !== "refunded";
+                              return branchMatch && sType === type && dateMatch && isRevenueEligibleSaleStatus(s.status);
                             });
 
                             const totalRevenue = filteredForType.reduce((acc, s) => acc + (s.total || 0), 0);
@@ -7558,7 +7566,7 @@ export default function App() {
                               .filter(
                                 (s) =>
                                   s.branchId === profile.branchId &&
-                                  s.status !== "refunded" &&
+                                  isRevenueEligibleSaleStatus(s.status) &&
                                   (shiftOpen && shiftStartTime
                                     ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
                                     : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === getLogicalShiftDate()),
@@ -8301,8 +8309,8 @@ export default function App() {
                                       Rp {(sale.total || 0).toLocaleString("id-ID")}
                                     </td>
                                     <td className="py-1 px-2 text-center">
-                                      <span className={`font-black uppercase px-1.5 py-0.5 rounded-sm leading-none ${sale.status === "refunded" ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-700"}`}>
-                                        {sale.status === "refunded" ? "REFUND" : "OK"}
+                                      <span className={`font-black uppercase px-1.5 py-0.5 rounded-sm leading-none ${sale.status === "refunded" ? "bg-red-100 text-red-600" : sale.status === "cancelled" ? "bg-slate-100 text-slate-600" : sale.status === "success" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                        {sale.status === "refunded" ? "REFUND" : sale.status === "cancelled" ? "BATAL" : sale.status === "success" ? "OK" : "LAINNYA"}
                                       </span>
                                     </td>
                                     <td className="py-1 px-2 text-center">
