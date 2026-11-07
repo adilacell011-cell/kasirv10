@@ -63,8 +63,8 @@ jobs:
               echo "Candidate publication requires explicit confirmation."
               exit 1
             fi
-            if [[ "$CANDIDATE_SOURCE_SHA" != "e12d1781df6313902752598902051e046c56f01b" ]]; then
-              echo "Refusing to publish: source SHA does not match the approved Audit Stok commit."
+            if [[ "$CANDIDATE_SOURCE_SHA" != "ab22dfb7f03b9beed13905df176e0cf79e70e1cd" ]]; then
+              echo "Refusing to publish: source SHA does not match the approved clean stock-audit candidate."
               exit 1
             fi
             source_sha="$CANDIDATE_SOURCE_SHA"
