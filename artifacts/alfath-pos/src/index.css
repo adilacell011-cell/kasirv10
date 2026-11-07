@@ -1956,3 +1956,134 @@ body,
     padding: 0.875rem !important;
   }
 }
+
+/* Focused Android fit fixes: preserve existing screen behavior and styling. */
+@media (max-width: 767px) {
+  [data-ui-screen="reports"] [data-report-filters] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 0.625rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-ui-screen="reports"] [data-report-subtabs] {
+    grid-column: 1 / -1;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  [data-ui-screen="reports"] [data-report-date-start],
+  [data-ui-screen="reports"] [data-report-date-end] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-ui-screen="reports"] [data-report-date-start] input,
+  [data-ui-screen="reports"] [data-report-date-end] input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 0.625rem;
+    font-size: 0.75rem !important;
+  }
+
+  [data-ui-screen="reports"] [data-report-branch],
+  [data-ui-screen="reports"] [data-report-reset] {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-ui-screen="reports"] [data-report-branch] .app-select-trigger,
+  [data-ui-screen="reports"] [data-report-reset] {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  [data-ui-screen="employees"] [data-employee-mobile-list] {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  [data-ui-screen="employees"] [data-employee-card] {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-ui-screen="employees"] [data-employee-primary-row] {
+    display: grid !important;
+    grid-template-columns: 2rem minmax(0, 1fr) 5.25rem;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-ui-screen="employees"] [data-employee-name],
+  [data-ui-screen="employees"] [data-employee-alias] {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-ui-screen="employees"] [data-employee-role] {
+    width: 5.25rem;
+    min-width: 0;
+  }
+
+  [data-ui-screen="employees"] [data-employee-role] .app-select-trigger {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 0.35rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-ui-screen="employees"] [data-employee-branch-row] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-ui-screen="employees"] [data-employee-branch-select] {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  [data-ui-screen="employees"] [data-employee-branch-select] .app-select-trigger {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-ui-screen="employees"] [data-employee-actions] {
+    flex: 0 0 auto;
+  }
+
+  [data-ui-screen="opname"] [data-opname-entry] {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    overscroll-behavior-y: contain;
+  }
+
+  [data-ui-screen="settings"] [data-ui-panel="branch-registration"] input {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 359px) {
+  [data-ui-screen="reports"] [data-report-date-start],
+  [data-ui-screen="reports"] [data-report-date-end] {
+    grid-column: 1 / -1;
+  }
+}

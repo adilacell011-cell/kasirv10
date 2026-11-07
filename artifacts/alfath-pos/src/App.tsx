@@ -3802,7 +3802,7 @@ export default function App() {
                     </button>
                   </div>
                   {/* === MOBILE CARD LIST (< md) === */}
-                  <div className="md:hidden flex-1 overflow-auto divide-y divide-slate-100">
+                  <div data-employee-mobile-list className="md:hidden flex-1 overflow-y-auto overflow-x-hidden divide-y divide-slate-100">
                     {users.length === 0 && (
                       <div className="py-12 flex flex-col items-center gap-2">
                         <Users className="w-8 h-8 text-slate-200" />
@@ -3816,34 +3816,39 @@ export default function App() {
                         return an.localeCompare(bn) || (a.name || a.displayName || "").localeCompare(b.name || b.displayName || "");
                       })
                       .map((emp) => (
-                      <div key={emp.id} className="p-3 space-y-2 hover:bg-slate-50/60 transition-colors">
+                      <div data-employee-card key={emp.id} className="min-w-0 max-w-full p-3 space-y-2 hover:bg-slate-50/60 transition-colors">
                         {/* Baris 1: Avatar + Nama + Role badge */}
-                        <div className="flex items-center gap-2">
+                        <div data-employee-primary-row className="flex min-w-0 items-center gap-2">
                           <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shrink-0 border border-blue-100">
                             {(emp.name || emp.displayName || emp.email || "?")[0].toUpperCase()}
                           </div>
                           <input
+                            data-employee-name
                             type="text"
                             defaultValue={emp.name || emp.displayName || ""}
                             onBlur={(e) => { if (e.target.value !== (emp.name || emp.displayName || "")) updateUser(emp.id, "name", e.target.value); }}
                             placeholder="Nama penjaga utama..."
                             className="flex-1 min-w-0 text-xs font-bold text-slate-800 bg-white border border-slate-200 focus:border-blue-400 focus:outline-none px-2 py-1 rounded-lg transition-all"
                           />
-                          <CustomSelect
-                            value={emp.role}
-                            onChange={(v) => updateUser(emp.id, "role", v)}
-                            options={[
-                              { value: "PENDING", label: "PENDING" },
-                              { value: "ADMIN", label: "ADMIN" },
-                              { value: "CASHIER", label: "KASIR" },
-                              { value: "AUDIT", label: "AUDIT" },
-                            ]}
-                            keepTriggerBg
-                            buttonClassName={`text-[9px] font-black uppercase px-2 py-1 rounded-lg border ${emp.role === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-200" : emp.role === "ADMIN" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}
-                          />
+                          <div data-employee-role className="w-[5.25rem] min-w-0 shrink-0">
+                            <CustomSelect
+                              value={emp.role}
+                              onChange={(v) => updateUser(emp.id, "role", v)}
+                              options={[
+                                { value: "PENDING", label: "PENDING" },
+                                { value: "ADMIN", label: "ADMIN" },
+                                { value: "CASHIER", label: "KASIR" },
+                                { value: "AUDIT", label: "AUDIT" },
+                              ]}
+                              keepTriggerBg
+                              className="w-full min-w-0"
+                              buttonClassName={`w-full min-w-0 text-[9px] font-black uppercase px-2 py-1 rounded-lg border ${emp.role === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-200" : emp.role === "ADMIN" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}
+                            />
+                          </div>
                         </div>
                         {/* Baris 2: Nama alternatif */}
                         <input
+                          data-employee-alias
                           type="text"
                           defaultValue={emp.alternativeNames || ""}
                           onBlur={(e) => { if (e.target.value !== (emp.alternativeNames || "")) updateUser(emp.id, "alternativeNames", e.target.value); }}
@@ -3860,26 +3865,30 @@ export default function App() {
                         </div>
                         <p className="text-[8px] text-slate-400">Perubahan tersimpan setelah Anda keluar dari kolom.</p>
                         {/* Baris 3: Cabang + tombol aksi */}
-                        <div className="flex items-center gap-1.5">
-                          <CustomSelect
-                            value={emp.branchId || ""}
-                            onChange={(v) => updateUser(emp.id, "branchId", v)}
-                            placeholder="Belum ditempatkan"
-                            options={[
-                              { value: "", label: "-- Belum Ditempatkan --" },
-                              ...branches.map((b) => ({ value: b.id, label: b.name })),
-                            ]}
-                            className="flex-1"
-                            buttonClassName="w-full text-[9px] font-bold uppercase tracking-tight px-2 py-1 rounded-lg border border-slate-200 bg-white"
-                          />
-                          <button onClick={() => setResetUser(emp)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all active:scale-95 shrink-0" title="Reset Password">
-                            <Key className="w-3.5 h-3.5" />
-                          </button>
-                          {emp.id !== user?.uid && (
-                            <button onClick={() => deleteUser(emp.id, emp.name)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all active:scale-90 shrink-0" title="Hapus">
-                              <Trash2 className="w-3.5 h-3.5" />
+                        <div data-employee-branch-row className="flex min-w-0 items-center gap-1.5">
+                          <div data-employee-branch-select className="min-w-0 flex-1">
+                            <CustomSelect
+                              value={emp.branchId || ""}
+                              onChange={(v) => updateUser(emp.id, "branchId", v)}
+                              placeholder="Belum ditempatkan"
+                              options={[
+                                { value: "", label: "-- Belum Ditempatkan --" },
+                                ...branches.map((b) => ({ value: b.id, label: b.name })),
+                              ]}
+                              className="w-full min-w-0"
+                              buttonClassName="w-full min-w-0 text-[9px] font-bold uppercase tracking-tight px-2 py-1 rounded-lg border border-slate-200 bg-white"
+                            />
+                          </div>
+                          <div data-employee-actions className="flex shrink-0 items-center gap-1">
+                            <button onClick={() => setResetUser(emp)} className="h-11 w-11 min-w-[44px] p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all active:scale-95 shrink-0" title="Reset Password">
+                              <Key className="w-3.5 h-3.5" />
                             </button>
-                          )}
+                            {emp.id !== user?.uid && (
+                              <button onClick={() => deleteUser(emp.id, emp.name)} className="h-11 w-11 min-w-[44px] p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-all active:scale-90 shrink-0" title="Hapus">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <p className="text-[8px] text-slate-300 font-mono">{emp.email}</p>
                       </div>
@@ -4089,8 +4098,8 @@ export default function App() {
                         Analisis Perbandingan Pendapatan Siang vs Malam
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2 md:gap-3 items-end">
-                      <div className="flex bg-slate-100 p-1 rounded-xl">
+                    <div data-report-filters className="flex flex-wrap gap-2 md:gap-3 items-end">
+                      <div data-report-subtabs className="flex bg-slate-100 p-1 rounded-xl">
                         <button
                           onClick={() => setReportSubTab("summary")}
                           className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportSubTab === "summary" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
@@ -4104,7 +4113,7 @@ export default function App() {
                           Tabel Excel
                         </button>
                       </div>
-                      <div className="flex flex-col gap-1">
+                      <div data-report-date-start className="flex flex-col gap-1">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                           Dari Tanggal
                         </span>
@@ -4112,10 +4121,10 @@ export default function App() {
                           type="date"
                           value={reportStartDate}
                           onChange={(e) => setReportStartDate(e.target.value)}
-                          className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
+                          className="min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
                         />
                       </div>
-                      <div className="flex flex-col gap-1">
+                      <div data-report-date-end className="flex flex-col gap-1">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                           Sampai Tanggal
                         </span>
@@ -4123,23 +4132,27 @@ export default function App() {
                           type="date"
                           value={reportEndDate}
                           onChange={(e) => setReportEndDate(e.target.value)}
-                          className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
+                          className="min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
                         />
                       </div>
-                      <CustomSelect
-                        value={adminSalesBranchFilter}
-                        onChange={(v) => setAdminSalesBranchFilter(v)}
-                        options={[
-                          { value: "", label: "Semua Cabang" },
-                          ...branches.map((b) => ({
-                            value: b.id,
-                            label: b.name,
-                          })),
-                        ]}
-                        buttonClassName="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-100 h-[38px]"
-                      />
+                      <div data-report-branch className="min-w-0">
+                        <CustomSelect
+                          value={adminSalesBranchFilter}
+                          onChange={(v) => setAdminSalesBranchFilter(v)}
+                          options={[
+                            { value: "", label: "Semua Cabang" },
+                            ...branches.map((b) => ({
+                              value: b.id,
+                              label: b.name,
+                            })),
+                          ]}
+                          className="min-w-0"
+                          buttonClassName="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-blue-100 h-[38px]"
+                        />
+                      </div>
                       {(reportStartDate || reportEndDate) && (
                         <button
+                          data-report-reset
                           onClick={() => {
                             setReportStartDate("");
                             setReportEndDate("");
@@ -4666,7 +4679,7 @@ export default function App() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input
                         type="text"
-                        placeholder="Nama Cabang (Contoh: Cabang Jakarta Pusat)"
+                        placeholder="Nama cabang baru"
                         value={newBranch}
                         onChange={(e) => setNewBranch(e.target.value)}
                         className="flex-1 bg-slate-50 rounded-xl px-4 py-2 text-sm font-medium border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
@@ -6620,7 +6633,7 @@ export default function App() {
                   </div>
 
                   {/* SIDEBAR: AUDIT OPERATIONS */}
-                  <div className="w-full lg:w-[350px] bg-white lg:bg-slate-50 overflow-y-auto shrink-0 flex flex-col h-full border-t border-slate-200 lg:border-t-0 lg:border-l relative">
+                  <div data-opname-entry className="w-full lg:w-[350px] bg-white lg:bg-slate-50 overflow-y-auto shrink-0 flex flex-col h-full border-t border-slate-200 lg:border-t-0 lg:border-l relative">
                       {!auditSelectedBranch && (
                         <div className="absolute inset-0 bg-slate-50/70 z-20 flex flex-col items-center justify-center p-4 md:p-8 text-center">
                           <div className="w-16 h-16 bg-white rounded-2xl md:rounded-3xl shadow-xl flex items-center justify-center mb-4 border border-slate-100">
