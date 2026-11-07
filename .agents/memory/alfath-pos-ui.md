@@ -148,6 +148,11 @@ motion and touch targets, and do not change behavior or business logic to achiev
 inconsistent forms; the owner explicitly requested white backgrounds and flat surfaces.
 **How to apply:** prefer borders and spacing for grouping; reserve only a subtle elevation for overlays if
 needed for layering, while keeping normal cards, buttons, and fields flat.
+For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing;
+prefer slate/navy-filled primary buttons over bright-blue fills, while retaining blue for restrained accents.
+**Why:** the owner asked for tighter Android reports, clearer component divisions, and calmer button colors.
+**How to apply:** keep the existing page structure and actions; adjust only spacing, borders, and visual color
+classes unless the owner separately approves behavior changes.
 For the Admin Dashboard, do not add a separate manual summary-reload button: the hook already refreshes
 on entry, realtime events, visibility return, and its polling interval; the header status control remains
 the manual refresh path.

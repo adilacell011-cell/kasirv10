@@ -4081,8 +4081,8 @@ export default function App() {
             {/* --- 2. ADMIN: PENGATURAN CABANG --- */}
             {activeMenu === "reports" &&
               (profile?.role === "ADMIN" || profile?.role === "AUDIT") && (
-                <div data-ui-screen="reports" className="ui-screen-reports flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 text-left">
+                <div data-ui-screen="reports" className="ui-screen-reports flex-1 p-3 md:p-6 overflow-y-auto w-full bg-slate-50 content-fade">
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4 mb-5 md:mb-6 text-left">
                     <div>
                       <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
                         Laporan Shift & Cabang
@@ -4091,7 +4091,7 @@ export default function App() {
                         Analisis Perbandingan Pendapatan Siang vs Malam
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-4 items-end">
+                    <div className="flex flex-wrap gap-2 md:gap-3 items-end">
                       <div className="flex bg-slate-100 p-1 rounded-xl">
                         <button
                           onClick={() => setReportSubTab("summary")}
@@ -4156,8 +4156,8 @@ export default function App() {
 
                   <div className="content-fade">
                     {reportSubTab === "summary" ? (
-                      <div className="grid grid-cols-1 xl:grid-cols-1 sm:grid-cols-2 gap-8">
-                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center justify-between">
+                      <div className="grid grid-cols-1 gap-4">
+                      <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-2 flex items-center justify-between border-b border-slate-200 pb-2">
                         <div className="flex items-center gap-2">
                           <TrendingUp className="w-4 h-4 text-emerald-500" />{" "}
                           Laporan Pendapatan Shift
@@ -4168,25 +4168,25 @@ export default function App() {
                             : "3 Hari Terakhir"}
                         </span>
                       </h3>
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {/* Summary Today & Yesterday */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                           {[
                             {
                               label: "Shift Hari Ini", date: new Date(),
-                              card: "bg-[#e0e5ec] shadow-[7px_7px_16px_#b8c2d0,-7px_-7px_16px_#ffffff] dark:bg-[#2a2d35] dark:shadow-[6px_6px_14px_#1e2027,-6px_-6px_14px_#363a44]",
+                              card: "bg-white border border-slate-200",
                               blob: "hidden",
-                              labelColor: "text-[#8794a8] dark:text-[#9aa3b5]",
-                              amount: "text-[#3d4859] dark:text-[#e2e6ed]",
-                              labaPill: "bg-[#e0e5ec] text-[#5b9279] shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:bg-[#2a2d35] dark:text-[#74b894] dark:shadow-[inset_3px_3px_6px_#1e2027,inset_-3px_-3px_6px_#363a44]",
+                              labelColor: "text-slate-500",
+                              amount: "text-slate-900",
+                              labaPill: "bg-emerald-50 border border-emerald-100 text-emerald-700",
                             },
                             {
                               label: "Shift Kemarin", date: new Date(Date.now() - 86400000),
-                              card: "bg-[#e0e5ec] shadow-[7px_7px_16px_#b8c2d0,-7px_-7px_16px_#ffffff] dark:bg-[#2a2d35] dark:shadow-[6px_6px_14px_#1e2027,-6px_-6px_14px_#363a44]",
+                              card: "bg-white border border-slate-200",
                               blob: "hidden",
-                              labelColor: "text-[#8794a8] dark:text-[#9aa3b5]",
-                              amount: "text-[#3d4859] dark:text-[#e2e6ed]",
-                              labaPill: "bg-[#e0e5ec] text-[#5b9279] shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:bg-[#2a2d35] dark:text-[#74b894] dark:shadow-[inset_3px_3px_6px_#1e2027,inset_-3px_-3px_6px_#363a44]",
+                              labelColor: "text-slate-500",
+                              amount: "text-slate-900",
+                              labaPill: "bg-emerald-50 border border-emerald-100 text-emerald-700",
                             }
                           ].map((day) => {
                             const logical = getLogicalShiftDate(day.date);
@@ -4209,7 +4209,7 @@ export default function App() {
                             }, { revenue: 0, profit: 0 });
                             
                             return (
-                              <div key={day.label} className={`relative overflow-hidden p-4 rounded-3xl group ${day.card}`}>
+                              <div key={day.label} className={`relative overflow-hidden p-3 md:p-4 rounded-2xl group ${day.card}`}>
                                 <div className={`absolute top-0 right-0 w-20 h-20 rounded-bl-full transform translate-x-5 -translate-y-5 transition-transform group-hover:scale-110 ${day.blob}`}></div>
                                 <p className={`relative text-[9px] font-black ${day.labelColor} uppercase tracking-wider mb-1`}>{day.label}</p>
                                 <div className="relative flex flex-col items-start gap-1.5">
@@ -4221,7 +4221,7 @@ export default function App() {
                           })}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {["Pagi", "Malam"].map((type) => {
                             const filteredForType = sales.filter((s) => {
                               const physicalDate = new Date(s.createdAt || s.timestamp || 0);
@@ -4254,15 +4254,15 @@ export default function App() {
                             return (
                               <div
                                 key={type}
-                                className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border transition-all ${type === "Pagi" ? "bg-amber-50 border-amber-200" : "bg-indigo-50 border-indigo-200"}`}
+                                className={`p-3 md:p-5 rounded-2xl border transition-all ${type === "Pagi" ? "bg-amber-50 border-amber-200" : "bg-indigo-50 border-indigo-200"}`}
                               >
-                                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${type === "Pagi" ? "text-amber-600" : "text-indigo-600"}`}>
+                                <p className={`text-[10px] font-black uppercase tracking-widest mb-1.5 ${type === "Pagi" ? "text-amber-600" : "text-indigo-600"}`}>
                                   TOTAL {type.toUpperCase()} (PERIODE)
                                 </p>
                                 <p className="text-lg md:text-2xl font-black text-slate-900 tracking-tight">
                                   Rp {totalRevenue.toLocaleString("id-ID")}
                                 </p>
-                                <div className="mt-3 pt-3 border-t border-black/5 flex items-center justify-between">
+                                <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between">
                                   <span className="text-[9px] text-slate-400 font-bold uppercase">Estimasi Komisi</span>
                                   <span className="text-[10px] font-bold text-slate-600">Rp {totalComm.toLocaleString("id-ID")}</span>
                                 </div>
@@ -4273,7 +4273,7 @@ export default function App() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {/* Summary Header: Shift Totals */}
                         {(() => {
                           let grandTotalPagi = 0;
@@ -4297,19 +4297,19 @@ export default function App() {
 
                           return (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-                              <div className="bg-amber-50 border border-amber-100 rounded-2xl md:rounded-[28px] p-4 md:p-6 shadow-sm text-left relative overflow-hidden group">
+                              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-amber-100/50 rounded-bl-full transform translate-x-4 -translate-y-4 transition-transform group-hover:scale-110"></div>
                                 <p className="text-[8px] md:text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] mb-1">Shift Siang (Pagi)</p>
                                 <p className="text-xl md:text-2xl font-black text-amber-900 font-mono leading-none">Rp {grandTotalPagi.toLocaleString("id-ID")}</p>
                                 <p className="text-[7px] md:text-[9px] text-amber-500 font-bold uppercase mt-2">Pemasukan Siff Pagi</p>
                               </div>
-                              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl md:rounded-[28px] p-4 md:p-6 shadow-sm text-left relative overflow-hidden group">
+                              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-100/50 rounded-bl-full transform translate-x-4 -translate-y-4 transition-transform group-hover:scale-110"></div>
                                 <p className="text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Shift Malam</p>
                                 <p className="text-xl md:text-2xl font-black text-indigo-900 font-mono leading-none">Rp {grandTotalMalam.toLocaleString("id-ID")}</p>
                                 <p className="text-[7px] md:text-[9px] text-indigo-500 font-bold uppercase mt-2">Pemasukan Siff Malam</p>
                               </div>
-                              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl md:rounded-[28px] p-4 md:p-6 shadow-sm text-left relative overflow-hidden group sm:col-span-2 md:col-span-1">
+                              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group sm:col-span-2 md:col-span-1">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/50 rounded-bl-full transform translate-x-4 -translate-y-4 transition-transform group-hover:scale-110"></div>
                                 <p className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Total Pendapatan</p>
                                 <p className="text-xl md:text-2xl font-black text-emerald-900 font-mono leading-none">Rp {(grandTotalPagi + grandTotalMalam).toLocaleString("id-ID")}</p>
@@ -4319,8 +4319,8 @@ export default function App() {
                           );
                         })()}
 
-                        <div className="bg-white rounded-2xl md:rounded-[32px] border border-slate-200 shadow-xl overflow-hidden mt-4 md:mt-8">
-                          <div className="p-4 md:p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mt-4">
+                          <div className="p-3 md:p-5 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-left">
                             <div>
                               <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
                                 <div className="w-7 h-7 md:w-8 md:h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
@@ -4485,8 +4485,8 @@ export default function App() {
                   </div>
  
                   {/* RIWAYAT TUTUP SHIFT (DAILY REPORTS) */}
-                    <div className="xl:col-span-1 border border-slate-200 bg-white rounded-[32px] shadow-xl overflow-hidden mt-8">
-                      <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between">
+                    <div className="xl:col-span-1 border border-slate-200 bg-white rounded-2xl overflow-hidden mt-5">
+                      <div className="p-3 md:p-5 border-b border-slate-200 flex items-center justify-between">
                         <div className="text-left">
                           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                             <Clock className="w-4 h-4 text-blue-500" /> Riwayat Tutup Shift (Laporan Kasir)
@@ -4655,9 +4655,9 @@ export default function App() {
                   </div>
 
                   {/* Card Add Branch */}
-                  <div data-ui-panel="branch-registration" className="bg-white p-3 md:p-4 rounded-2xl">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b border-slate-200/60 pb-3 mb-4 flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-blue-500 drop-shadow-[0_0_5px_rgba(59,130,246,0.6)]" /> Registrasi
+                  <div data-ui-panel="branch-registration" className="bg-white p-3 md:p-4 rounded-2xl border border-slate-200">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest border-b border-slate-200 pb-3 mb-4 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-slate-600" /> Registrasi
                       Cabang Baru
                     </h3>
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -4671,7 +4671,7 @@ export default function App() {
                       <button
                         onClick={handleAddBranch}
                         disabled={!newBranch.trim()}
-                        className="bg-blue-600 disabled:opacity-50 text-white px-4 md:px-6 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest shrink-0 transition-all hover:bg-blue-700 shadow-sm disabled:shadow-none"
+                        className="bg-slate-800 disabled:opacity-50 text-white px-4 md:px-6 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest shrink-0 transition-all hover:bg-slate-900 shadow-sm disabled:shadow-none"
                       >
                         Simpan Cabang
                       </button>
@@ -4679,13 +4679,13 @@ export default function App() {
                   </div>
 
                   {/* List Branches */}
-                  <div data-ui-panel="branch-list" className="bg-white rounded-2xl overflow-hidden">
-                    <div className="p-4 border-b border-slate-200/60 bg-slate-50">
+                  <div data-ui-panel="branch-list" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="p-4 border-b border-slate-200 bg-slate-50">
                       <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">
                         Daftar Cabang Aktif
                       </h3>
                     </div>
-                    <div className="divide-y divide-slate-100">
+                    <div className="divide-y divide-slate-200">
                       {branches.length === 0 ? (
                         <p className="p-4 text-xs text-center text-slate-500 font-medium">
                           Belum ada cabang terdaftar.
@@ -4724,7 +4724,7 @@ export default function App() {
                                       setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
                                     } catch (err: any) { alert(err.message || "Gagal mengubah nama cabang"); }
                                   }}
-                                  className="p-0.5 text-slate-300 hover:text-blue-500 transition-colors shrink-0"
+                                  className="p-0.5 text-slate-400 hover:text-slate-800 transition-colors shrink-0"
                                   title="Ubah Nama"
                                 >
                                   <Edit className="w-3 h-3" />
@@ -4750,7 +4750,7 @@ export default function App() {
                                 </button>
                                 <button
                                   onClick={() => toggleBranchShoppingHidden(b.id)}
-                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-blue-50 text-blue-600" : "bg-rose-50 text-rose-500"}`}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-rose-50 text-rose-600 border border-rose-100"}`}
                                   title={!hiddenShoppingBranchIds.includes(b.id) ? "Tampil di Daftar Belanja" : "Disembunyikan dari Daftar Belanja"}
                                 >
                                   {!hiddenShoppingBranchIds.includes(b.id) ? "Belanja ✓" : "Belanja ✗"}
@@ -8782,33 +8782,33 @@ export default function App() {
                   {profile?.role === "ADMIN" ? (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl md:rounded-[32px] overflow-hidden">
-                          <div className="p-4 md:p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                          <div className="p-3 md:p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                             <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight">Ringkasan Saldo Per Cabang</h3>
                             <Store className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                           </div>
-                          <div className="divide-y divide-slate-50">
+                          <div className="divide-y divide-slate-200">
                             {branches.map(b => {
                               const summary = branchSummaries[b.id] || { totalEarned: 0 };
                               const balance = summary.totalEarned || 0;
                               
                               return (
-                                <div key={b.id} className="p-4 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                                <div key={b.id} className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50 transition-colors">
                                   <div className="flex items-center gap-3 md:gap-4">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-700 shrink-0">
                                       <Store className="w-5 h-5 md:w-6 md:h-6" />
                                     </div>
                                     <div>
                                       <p className="font-black text-slate-800 uppercase tracking-tight">{b.name}</p>
                                       <button 
                                         onClick={() => syncCommissionsSummary(b.id)}
-                                        className="flex items-center gap-1 text-[8px] font-bold text-blue-500 uppercase tracking-widest mt-1 hover:text-blue-700"
+                                        className="flex items-center gap-1 text-[10px] font-bold text-slate-600 uppercase tracking-wide mt-1 hover:text-slate-900"
                                       >
                                         <RefreshCw className="w-2.5 h-2.5" /> Sinkronkan Data
                                       </button>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-4 md:gap-6">
+                                  <div className="flex items-center gap-3 md:gap-5">
                                     <div className="text-right">
                                       <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5 md:mb-1">Saldo Cabang</p>
                                       <p className="text-lg md:text-xl font-black text-emerald-600 tracking-tighter">Rp {(balance || 0).toLocaleString("id-ID")}</p>
@@ -8816,7 +8816,7 @@ export default function App() {
                                     <button
                                       disabled={balance <= 0 || isProcessingWithdraw}
                                       onClick={() => handleWithdrawCommission(b.id)}
-                                      className={`px-4 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-all shrink-0 ${balance > 0 ? "bg-blue-600 text-white shadow-lg shadow-blue-100 hover:scale-105" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
+                                      className={`px-4 py-2 md:px-6 md:py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-colors shrink-0 ${balance > 0 ? "bg-slate-800 text-white hover:bg-slate-900" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
                                     >
                                       {isProcessingWithdraw ? "Proses..." : "Cairkan"}
                                     </button>
