@@ -54,13 +54,13 @@ export function OpnameStockInput({ branchId, productId, currentStock, onSave }: 
           void save();
         }}
         onKeyDown={(event) => { if (event.key === "Enter") void save(); }}
-        className="min-h-10 w-full rounded-xl border border-slate-200/80 bg-slate-50 px-2 py-2 text-center text-sm font-extrabold tabular-nums text-slate-800 focus:ring-2 focus:ring-blue-600 focus:bg-white focus:outline-none transition-all outline-none"
+        className="min-h-10 w-full rounded-xl border border-slate-200 bg-white px-2 py-2 text-center text-sm font-extrabold tabular-nums text-slate-800 focus:ring-2 focus:ring-slate-400 focus:outline-none transition-colors outline-none"
       />
       <button
         aria-label="Simpan opname" disabled={saving}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => void save()}
-        className="min-h-10 min-w-10 shrink-0 rounded-xl bg-emerald-50 p-2.5 text-emerald-700 hover:bg-emerald-100 transition-colors"
+        className="min-h-10 min-w-10 shrink-0 rounded-xl border border-slate-200 bg-slate-100 p-2.5 text-slate-700 hover:bg-slate-200 transition-colors"
       >
         <Check className="w-4 h-4" />
       </button>

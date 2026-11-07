@@ -153,6 +153,11 @@ prefer slate/navy-filled primary buttons over bright-blue fills, while retaining
 **Why:** the owner asked for tighter Android reports, clearer component divisions, and calmer button colors.
 **How to apply:** keep the existing page structure and actions; adjust only spacing, borders, and visual color
 classes unless the owner separately approves behavior changes.
+For Stok Opname, use slate/navy for generic active controls and intake actions instead of green; retain red
+for destructive meaning. Keep the branch cashier-stock permission switch visually compact while preserving
+an accessible touch target.
+**Why:** the owner asked to replace the prominent green Opname controls and simplify the branch permission toggle.
+**How to apply:** make visual-only changes; keep the setting's API call, permission behavior, and all stock handlers unchanged.
 For the Admin Dashboard, do not add a separate manual summary-reload button: the hook already refreshes
 on entry, realtime events, visibility return, and its polling interval; the header status control remains
 the manual refresh path.
