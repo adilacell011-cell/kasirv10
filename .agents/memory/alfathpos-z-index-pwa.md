@@ -13,6 +13,6 @@ The slide-out sidebar (`aside`, fixed left drawer) and its dark backdrop must pa
 
 # PWA caching hides UI changes
 
-App is a PWA via `vite-plugin-pwa` (`registerType: "autoUpdate"`, workbox `skipWaiting`+`clientsClaim`). The service worker is only active in the built/published app (disabled in vite dev). On a phone viewing the published/installed app, a code fix will NOT show until the user fully closes & reopens the app (often twice) or it is republished.
-**Why:** a stale fix that "didn't work" is often just the cached old bundle, not a wrong fix.
-**How to apply:** when a user reports a UI fix "still" not working on their device, suspect the SW cache — tell them to fully reopen, and republish if they are on the live app, before assuming the fix is wrong.
+App is a PWA via `vite-plugin-pwa` (`registerType: "autoUpdate"`, workbox `skipWaiting`+`clientsClaim`). The service worker is only active in the built/published app (disabled in vite dev). On 2026-11-07, the Owner confirmed that clearing Chrome site data immediately made the newly deployed UI visible.
+**Why:** a deployed image can be correct while an installed PWA or browser keeps serving the old cached bundle.
+**How to apply:** if the Web image tag/digest is verified but UI still looks old, test a private tab and clear Chrome site storage/PWA data, then fully close and reopen the app before changing application code.
