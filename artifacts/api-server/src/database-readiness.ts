@@ -4,6 +4,7 @@ import type { DatabaseTarget } from "./database-target";
 
 export type SchemaSnapshot = {
   database_name: string;
+  tables: string[];
   columns: { table_name: string; column_name: string; udt_name: string; is_nullable: string }[];
   indexes: { table_name: string; columns: string[]; is_unique: boolean }[];
   foreign_keys: {
@@ -16,6 +17,42 @@ const scalarTypes: Record<string, string> = {
   DateTime: "timestamp", Json: "jsonb", BigInt: "int8", Decimal: "numeric", Bytes: "bytea",
 };
 const same = (a: string[], b: readonly string[]) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+export function assertExactModelTablesAndColumns(
+  snapshot: SchemaSnapshot,
+  models: readonly { name: string; dbName?: string | null; fields: readonly { kind: string; name: string; dbName?: string | null }[] }[],
+  allowedExtraTables: readonly string[] = ["_prisma_migrations"],
+): void {
+  const expectedTables = new Set(models.map((model) => model.dbName || model.name));
+  const allowedExtras = new Set(allowedExtraTables);
+  const actualTables = new Set(snapshot.tables);
+  const unexpectedTables = [...actualTables].filter(
+    (table) => !expectedTables.has(table) && !allowedExtras.has(table),
+  );
+  const missingTables = [...expectedTables].filter((table) => !actualTables.has(table));
+  if (unexpectedTables.length || missingTables.length) {
+    throw new Error(
+      `Incompatible schema table set: missing [${missingTables.sort().join(",")}], unexpected [${unexpectedTables.sort().join(",")}].`,
+    );
+  }
+
+  for (const model of models) {
+    const table = model.dbName || model.name;
+    const expectedColumns = new Set(
+      model.fields.filter((field) => field.kind === "scalar").map((field) => field.dbName || field.name),
+    );
+    const actualColumns = new Set(
+      snapshot.columns.filter((column) => column.table_name === table).map((column) => column.column_name),
+    );
+    const missingColumns = [...expectedColumns].filter((column) => !actualColumns.has(column));
+    const unexpectedColumns = [...actualColumns].filter((column) => !expectedColumns.has(column));
+    if (missingColumns.length || unexpectedColumns.length) {
+      throw new Error(
+        `Incompatible schema columns for ${table}: missing [${missingColumns.sort().join(",")}], unexpected [${unexpectedColumns.sort().join(",")}].`,
+      );
+    }
+  }
+}
 
 export function assertCompatibleSchema(
   snapshot: SchemaSnapshot,
@@ -79,14 +116,16 @@ export function assertCompatibleSchema(
 }
 
 // One SELECT and one catalog snapshot. No DDL, data writes or automatic repairs.
-export async function inspectDatabase(
+export async function readDatabaseSnapshot(
   prisma: Pick<PrismaClient, "$queryRaw">,
   target: DatabaseTarget,
-  models = Prisma.dmmf.datamodel.models,
-  expectedIndexes: { table: string; columns: string[]; isUnique?: boolean }[] = [],
 ) {
   const snapshots = await prisma.$queryRaw<SchemaSnapshot[]>`
     SELECT current_database() AS database_name,
+      COALESCE((SELECT json_agg(t.table_name ORDER BY t.table_name) FROM (
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = ${target.schema} AND table_type = 'BASE TABLE'
+      ) t), '[]'::json) AS tables,
       COALESCE((SELECT json_agg(c) FROM (
         SELECT table_name, column_name, udt_name, is_nullable
         FROM information_schema.columns WHERE table_schema = ${target.schema}
@@ -114,7 +153,17 @@ export async function inspectDatabase(
         WHERE con.contype = 'f' AND con.convalidated AND n.nspname = ${target.schema}
       ) f), '[]'::json) AS foreign_keys`;
   if (!snapshots[0]) throw new Error("Database readiness returned no metadata.");
-  assertCompatibleSchema(snapshots[0], target, models, expectedIndexes);
+  return snapshots[0];
+}
+
+export async function inspectDatabase(
+  prisma: Pick<PrismaClient, "$queryRaw">,
+  target: DatabaseTarget,
+  models = Prisma.dmmf.datamodel.models,
+  expectedIndexes: { table: string; columns: string[]; isUnique?: boolean }[] = [],
+) {
+  const snapshot = await readDatabaseSnapshot(prisma, target);
+  assertCompatibleSchema(snapshot, target, models, expectedIndexes);
 }
 
 export function createReadiness(check: () => Promise<void>) {

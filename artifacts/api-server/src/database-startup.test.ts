@@ -27,7 +27,7 @@ function snapshot(): SchemaSnapshot {
   const types: Record<string, string> = {
     String: "text", Int: "int4", Float: "float8", Boolean: "bool", DateTime: "timestamp", Json: "jsonb",
   };
-  const result: SchemaSnapshot = { database_name: "isolated", columns: [], indexes: [], foreign_keys: [] };
+  const result: SchemaSnapshot = { database_name: "isolated", tables: [], columns: [], indexes: [], foreign_keys: [] };
   for (const model of Prisma.dmmf.datamodel.models) {
     for (const field of model.fields.filter(f => f.kind === "scalar")) {
       result.columns.push({

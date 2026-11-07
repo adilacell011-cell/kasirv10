@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import { Prisma } from "@prisma/client";
-import { assertCompatibleSchema, type SchemaSnapshot } from "./database-readiness";
+import {
+  assertCompatibleSchema,
+  assertExactModelTablesAndColumns,
+  type SchemaSnapshot,
+} from "./database-readiness";
 import type { DatabaseTarget } from "./database-target";
 import { approveStagingSchemaMigration } from "./schema-migration";
 
@@ -82,6 +86,7 @@ test("legacy baseline validates the full 15-model structure before it can be mar
   };
   const snapshot: SchemaSnapshot = {
     database_name: "kasirv10_migration_qa",
+    tables: legacyModels.map((model) => model.dbName || model.name),
     columns: legacyModels.flatMap((model) => model.fields
       .filter((field) => field.kind === "scalar")
       .map((field) => ({
@@ -162,4 +167,64 @@ test("legacy baseline validates the full 15-model structure before it can be mar
     () => assertCompatibleSchema(missingReadIndex, target, legacyModels, legacyIndexes),
     /missing or incompatible index/,
   );
+});
+
+test("legacy 14-table preflight rejects unexpected tables and columns", () => {
+  const legacy14Names = new Set([
+    "User", "Branch", "Product", "ProductStock", "VoucherSN", "Sale", "SaleItem",
+    "Commission", "Adjustment", "GlobalConfig", "Shift", "StockSnapshot",
+    "DailyIncomeSummary", "ShoppingPlan",
+  ]);
+  const legacy14Models = Prisma.dmmf.datamodel.models
+    .filter((model) => legacy14Names.has(model.name))
+    .map((model) => model.name === "Sale"
+      ? {
+          ...model,
+          fields: model.fields.filter(
+            (field) => !["idempotencyKeyHash", "idempotencyPayloadHash", "idempotencyRecord"].includes(field.name),
+          ),
+        }
+      : model);
+  const snapshot: SchemaSnapshot = {
+    database_name: "kasirv10_migration_qa",
+    tables: legacy14Models.map((model) => model.dbName || model.name),
+    columns: legacy14Models.flatMap((model) => model.fields
+      .filter((field) => field.kind === "scalar")
+      .map((field) => ({
+        table_name: model.dbName || model.name,
+        column_name: field.dbName || field.name,
+        udt_name: "text",
+        is_nullable: field.isRequired ? "NO" : "YES",
+      }))),
+    indexes: [],
+    foreign_keys: [],
+  };
+  assert.doesNotThrow(() => assertExactModelTablesAndColumns(snapshot, legacy14Models));
+
+  const withExtraTable = structuredClone(snapshot);
+  withExtraTable.tables.push("UnexpectedTable");
+  assert.throws(() => assertExactModelTablesAndColumns(withExtraTable, legacy14Models), /unexpected/);
+
+  const withExtraSaleColumn = structuredClone(snapshot);
+  withExtraSaleColumn.columns.push({
+    table_name: "Sale", column_name: "idempotencyKeyHash", udt_name: "text", is_nullable: "YES",
+  });
+  assert.throws(() => assertExactModelTablesAndColumns(withExtraSaleColumn, legacy14Models), /unexpected/);
+});
+
+test("legacy 14-to-15 migration is guarded and strictly additive", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261106105000_upgrade_legacy14_sale_idempotency/migration.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(sql, /SaleIdempotency/);
+  assert.match(sql, /idempotencyKeyHash/);
+  assert.match(sql, /idempotencyPayloadHash/);
+  assert.match(sql, /ON DELETE SET NULL ON UPDATE CASCADE/);
+  assert.match(sql, /Sale_createdAt_id_idx/);
+  assert.match(sql, /ix\.indnkeyatts = 2/);
+  assert.match(sql, /indexed_column\.attname/);
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });

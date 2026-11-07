@@ -1,0 +1,2 @@
+-- Marker only. The guarded schema migration runner records this only after
+-- validating the exact supported legacy table and column structure.
