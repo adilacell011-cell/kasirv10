@@ -1,8 +1,8 @@
 name: kasirv10-staging
 
-# Isolated staging stack. Set KASIRV10_IMAGE_SHA to the full SHA published by
-# the approved workflow. The stack does not build from main or mount existing
-# application data.
+# Isolated staging stack pinned to the published Audit Stok candidate images.
+# schema-init and API use the same immutable API image; this stack does not
+# build from main or mount application data outside its named staging volume.
 services:
   db:
     image: postgres:16-alpine
@@ -23,8 +23,10 @@ services:
       timeout: 5s
       retries: 12
 
+  # Runs the approved legacy staging baseline + Audit migration once; API waits
+  # for this service to finish successfully before it can start.
   schema-init:
-    image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-e12d1781df6313902752598902051e046c56f01b-run-42359254620-attempt-1"
     pull_policy: always
     container_name: kasirv10-staging-schema-init
     restart: "no"
@@ -40,14 +42,16 @@ services:
       DB_EXPECTED_NAME: kasirv10_staging
       DB_EXPECTED_PORT: "5432"
       DB_EXPECTED_SCHEMA: public
-      SCHEMA_INIT_AUTO_TARGET: "production:db:5432/kasirv10_staging/public"
-    entrypoint: ["node", "--enable-source-maps", "/app/artifacts/api-server/dist/schema-init-main.mjs"]
-    command: ["--compose-auto-if-empty"]
+      STAGING_SCHEMA_INIT_TARGET: "production:db:5432/kasirv10_staging/public"
+    entrypoint: ["node", "--enable-source-maps", "/app/artifacts/api-server/dist/schema-migration-main.mjs"]
+    command:
+      - --execute
+      - --approve=schema-migrate:production:db:5432/kasirv10_staging/public
     networks:
       - kasirv10_staging_net
 
   api:
-    image: "ghcr.io/adilacell011-cell/kasirv10-api:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-e12d1781df6313902752598902051e046c56f01b-run-42359254620-attempt-1"
     pull_policy: always
     container_name: kasirv10-staging-api
     restart: unless-stopped
@@ -82,7 +86,7 @@ services:
       start_period: 30s
 
   web:
-    image: "ghcr.io/adilacell011-cell/kasirv10-web:sha-${KASIRV10_IMAGE_SHA:?Set the full published candidate SHA}"
+    image: "ghcr.io/adilacell011-cell/kasirv10-web:candidate-e12d1781df6313902752598902051e046c56f01b-run-42359254620-attempt-1"
     pull_policy: always
     container_name: kasirv10-staging-web
     restart: unless-stopped
@@ -97,6 +101,38 @@ services:
     networks:
       - kasirv10_staging_net
 
+  adminer:
+    image: adminer:latest
+    container_name: kasirv10-staging-adminer
+    restart: unless-stopped
+    mem_limit: 192m
+    command:
+      - php
+      - -d
+      - upload_max_filesize=32M
+      - -d
+      - post_max_size=32M
+      - -d
+      - max_execution_time=600
+      - -d
+      - max_input_time=600
+      - -d
+      - memory_limit=128M
+      - -S
+      - 0.0.0.0:8080
+      - -t
+      - /var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - 127.0.0.1:18082:8080
+    networks:
+      - kasirv10_staging_net
+
+  # Intentionally profile-gated; the Owner declined backups for current test data.
   backup:
     image: postgres:16-alpine
     container_name: kasirv10-staging-backup

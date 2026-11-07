@@ -62,14 +62,34 @@ test("legacy migration SQL is additive and gated to a staging/QA schema", () => 
   assert.doesNotMatch(entrypoint, /schema-migration-main|migrate deploy/i);
 });
 
-test("staging Compose pins schema-init and API to the same immutable image expression", () => {
+test("staging Compose pins schema-init and API to the same immutable candidate image", () => {
   const compose = fs.readFileSync(new URL("../../../compose.staging.yaml", import.meta.url), "utf8");
+  const schemaInitSection = compose.match(/schema-init:([\s\S]*?)\n\s+api:/)?.[1];
   const schemaInit = compose.match(/schema-init:[\s\S]*?\n\s+image:\s+"([^"]+)"/)?.[1];
   const api = compose.match(/\n\s+api:[\s\S]*?\n\s+image:\s+"([^"]+)"/)?.[1];
+  const web = compose.match(/\n\s+web:[\s\S]*?\n\s+image:\s+"([^"]+)"/)?.[1];
+  assert.ok(schemaInitSection);
   assert.ok(schemaInit);
   assert.ok(api);
+  assert.ok(web);
   assert.equal(schemaInit, api);
-  assert.match(schemaInit, /KASIRV10_IMAGE_SHA/);
+  const candidateTag = /:candidate-[a-f0-9]{40}-run-\d+-attempt-\d+$/;
+  assert.match(schemaInit, candidateTag);
+  assert.match(web, candidateTag);
+  assert.equal(schemaInit.split(":").at(-1), web.split(":").at(-1));
+  assert.match(schemaInitSection, /NODE_ENV: production/);
+  assert.match(schemaInitSection, /DB_RUNTIME_ENV: production/);
+  assert.match(schemaInitSection, /DATABASE_URL:/);
+  assert.match(schemaInitSection, /DB_EXPECTED_HOST: db/);
+  assert.match(schemaInitSection, /DB_EXPECTED_NAME: kasirv10_staging/);
+  assert.match(schemaInitSection, /DB_EXPECTED_PORT: "5432"/);
+  assert.match(schemaInitSection, /DB_EXPECTED_SCHEMA: public/);
+  assert.match(schemaInitSection, /STAGING_SCHEMA_INIT_TARGET: "production:db:5432\/kasirv10_staging\/public"/);
+  assert.match(schemaInitSection, /schema-migration-main\.mjs/);
+  assert.match(schemaInitSection, /--execute/);
+  assert.match(schemaInitSection, /--approve=schema-migrate:production:db:5432\/kasirv10_staging\/public/);
+  assert.match(schemaInitSection, /condition: service_healthy/);
+  assert.match(compose, /condition: service_completed_successfully/);
 });
 
 test("legacy baseline validates the full 15-model structure before it can be marked applied", () => {

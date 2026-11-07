@@ -24,9 +24,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
   **How to apply:** keep `COPY . .` + `pnpm install` in the same image you run from; don't "optimize" into a copy-only runtime stage without testing Prisma resolution.
 
-- **Compose may provision schema only on an explicitly allowlisted, empty local Kasir database.**
-  **Why:** the owner explicitly authorized first-install schema creation after VPS startup failed on a database without tables, while requiring existing/incompatible data to remain untouched.
-  **How to apply:** run the guarded one-shot Compose schema initializer after the internal `db` service is healthy; skip a compatible schema, reject a partial/incompatible one, and keep API startup itself read-only with `db:check`. Never run an unguarded `prisma db push`, seed, archive, or backfill at startup.
+- **Keep empty-database initialization separate from the existing-schema staging migration.**
+  **Why:** first-install databases and the Owner's legacy 14/15-table staging database require different guarded paths; the staging upgrade must preserve existing tables/data and only add Audit Stok tables.
+  **How to apply:** local/first-install Compose uses the guarded empty-schema initializer; staging uses the exact allowlisted migration runner before API startup. Never substitute `prisma db push`, seed, archive, or backfill for either path.
 
 - **Web is nginx serving the Vite static build + proxying `/api` and `/socket.io` to `api:8080`.**
   **Why:** frontend uses same-origin `BASE_URL='/api'` and `io({auth:{token}})` (default path `/socket.io`). nginx must preserve those paths (`proxy_pass http://api:8080;` with NO path segment) and send WebSocket upgrade headers on `/socket.io/`.
@@ -37,3 +37,7 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 - **Automated backups run as a separate `backup` service** (`docker/db-backup.sh`): loop of `pg_dump --clean --if-exists --no-owner --no-privileges | gzip` to `./backups` host bind-mount, atomic `.tmp`→`mv`, rotation via `find -mtime +KEEP_DAYS -delete`.
   **Why `user: "0:0"`:** the postgres image can run the override entrypoint as root, but to deterministically guarantee write access to a root-owned `./backups` bind mount on any host, the service is pinned to root. pg_dump connects over TCP so running the client as root is safe.
   **Gap to remember:** dumps sit on the SAME host disk → not true DR. Off-host copy (rclone/S3/NAS) + periodic test-restore are the remaining professional steps, intentionally left to the operator's infra choice.
+
+- **The current VPS staging dataset is test data; the Owner has explicitly declined backups for this stage.**
+  **Why:** the Owner said the staging data is only test data and chose not to back it up.
+  **How to apply:** keep the `manual-backup` profile disabled and omit `backup` from staging commands; do not run it unless the Owner changes this decision.
