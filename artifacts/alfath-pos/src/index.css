@@ -2214,3 +2214,13 @@ body,
 :root:not(.dark) [data-ui-screen="inventory"] [data-inventory-toolbar] {
   background-color: #f1f5f9 !important;
 }
+
+@media (min-width: 768px) {
+  :root:not(.dark) [data-ui-screen="pos"] [data-pos-subnavigation],
+  :root:not(.dark) [data-ui-screen="pos"] [data-pos-content-viewport],
+  :root:not(.dark) [data-ui-screen="pos"] [data-pos-billing],
+  :root:not(.dark) [data-ui-screen="pos"] [data-pos-catalog],
+  :root:not(.dark) [data-ui-screen="pos"] [data-pos-catalog-toolbar] {
+    background-color: #f1f5f9 !important;
+  }
+}

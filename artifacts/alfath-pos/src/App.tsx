@@ -7661,7 +7661,7 @@ export default function App() {
                   </div>
 
                   {/* SUB-NAVIGATION TABS */}
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-2xl shadow-[inset_2px_2px_5px_#b8c2d0,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1c1e24,inset_-2px_-2px_5px_#34373f]">
+                  <div data-pos-subnavigation className="flex gap-1 bg-slate-100 p-1 rounded-2xl shadow-[inset_2px_2px_5px_#b8c2d0,inset_-2px_-2px_5px_#ffffff] dark:shadow-[inset_2px_2px_5px_#1c1e24,inset_-2px_-2px_5px_#34373f]">
                     {[
                       { id: "billing", label: "Billing", icon: Calculator },
                       { id: "history", label: "Riwayat", icon: Clock },
@@ -7683,7 +7683,7 @@ export default function App() {
                 </div>
 
                 {/* CONTENT VIEWPORT */}
-                <div className="flex-1 overflow-hidden relative flex flex-col">
+                <div data-pos-content-viewport className="flex-1 overflow-hidden relative flex flex-col">
                   {/* --- TAMPILAN BILLING (RE-DESIGNED PREMIUM POS COHESIVE SYSTEM) --- */}
                   {posSubView === "billing" && (
                     <div data-pos-billing className="flex-1 flex flex-col md:flex-row overflow-hidden h-full bg-slate-100">
@@ -7691,7 +7691,7 @@ export default function App() {
                     <div data-pos-catalog className="flex-1 flex flex-col overflow-hidden relative border-r border-slate-200">
                         
                         {/* 1. BAR PENCARIAN & SCANNER UTAMA */}
-                        <div className="px-3 pt-3 pb-2.5 bg-slate-100 dark:bg-slate-900 shrink-0">
+                        <div data-pos-catalog-toolbar className="px-3 pt-3 pb-2.5 bg-slate-100 dark:bg-slate-900 shrink-0">
                           <div className="relative group">
                             <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors z-10" />
                             <input
