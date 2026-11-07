@@ -90,6 +90,8 @@ test("staging Compose pins schema-init and API to the same immutable candidate i
   assert.match(schemaInitSection, /--approve=schema-migrate:production:db:5432\/kasirv10_staging\/public/);
   assert.match(schemaInitSection, /condition: service_healthy/);
   assert.match(compose, /condition: service_completed_successfully/);
+  assert.match(compose, /KASIRV10_STAGING_WEB_PORT:-18081/);
+  assert.match(compose, /127\.0\.0\.1:18082:8080/);
 });
 
 test("legacy baseline validates the full 15-model structure before it can be marked applied", () => {

@@ -1,5 +1,3 @@
-name: kasirv10-staging
-
 # Isolated staging stack pinned to the published Audit Stok candidate images.
 # schema-init and API use the same immutable API image; this stack does not
 # build from main or mount application data outside its named staging volume.
@@ -11,7 +9,7 @@ services:
     mem_limit: 576m
     environment:
       POSTGRES_USER: kasirv10_staging
-      POSTGRES_PASSWORD: "${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}"
+      POSTGRES_PASSWORD: "${KASIRV10_STAGING_DB_PASSWORD:?Isi di .env}"
       POSTGRES_DB: kasirv10_staging
     volumes:
       - staging_db_data:/var/lib/postgresql/data
@@ -37,7 +35,7 @@ services:
     environment:
       NODE_ENV: production
       DB_RUNTIME_ENV: production
-      DATABASE_URL: "postgresql://kasirv10_staging:${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}@db:5432/kasirv10_staging?schema=public"
+      DATABASE_URL: "postgresql://kasirv10_staging:${KASIRV10_STAGING_DB_PASSWORD:?Isi di .env}@db:5432/kasirv10_staging?schema=public"
       DB_EXPECTED_HOST: db
       DB_EXPECTED_NAME: kasirv10_staging
       DB_EXPECTED_PORT: "5432"
@@ -62,14 +60,14 @@ services:
       NODE_ENV: production
       PORT: "8080"
       DB_RUNTIME_ENV: production
-      DATABASE_URL: "postgresql://kasirv10_staging:${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}@db:5432/kasirv10_staging?schema=public"
+      DATABASE_URL: "postgresql://kasirv10_staging:${KASIRV10_STAGING_DB_PASSWORD:?Isi di .env}@db:5432/kasirv10_staging?schema=public"
       DB_EXPECTED_HOST: db
       DB_EXPECTED_NAME: kasirv10_staging
       DB_EXPECTED_PORT: "5432"
       DB_EXPECTED_SCHEMA: public
       STAGING_SCHEMA_INIT_TARGET: "production:db:5432/kasirv10_staging/public"
       STAGING_OWNER_BOOTSTRAP_TARGET: "production:db:5432/kasirv10_staging/public"
-      JWT_SECRET: "${KASIRV10_STAGING_JWT_SECRET:?Set a unique staging JWT secret}"
+      JWT_SECRET: "${KASIRV10_STAGING_JWT_SECRET:?Isi di .env}"
     networks:
       - kasirv10_staging_net
     healthcheck:
@@ -97,7 +95,7 @@ services:
     ports:
       # Local-only: access through an SSH tunnel or a separately reviewed proxy.
       # Check this port on the VPS before starting the stack.
-      - "127.0.0.1:${KASIRV10_STAGING_WEB_PORT:-18081}:80"
+      - 127.0.0.1:${KASIRV10_STAGING_WEB_PORT:-18081}:80
     networks:
       - kasirv10_staging_net
 
@@ -147,7 +145,7 @@ services:
       PGHOST: db
       PGPORT: "5432"
       PGUSER: kasirv10_staging
-      PGPASSWORD: "${KASIRV10_STAGING_DB_PASSWORD:?Set a unique staging DB password}"
+      PGPASSWORD: ${KASIRV10_STAGING_DB_PASSWORD:?Isi di .env}
       PGDATABASE: kasirv10_staging
       BACKUP_DIR: /backups
       BACKUP_INTERVAL_SECONDS: "${KASIRV10_STAGING_BACKUP_INTERVAL_SECONDS:-21600}"
