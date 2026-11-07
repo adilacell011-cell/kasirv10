@@ -30,9 +30,9 @@ At checkout, the sale is paid and recorded as a completed transaction; the cashi
 
 **How to apply:** do not introduce payment-type splits or change revenue formulas. Preserve the success-only, actual-open-to-actual-close basis when auditing shift totals and reports.
 
-For POS revenue reads, never use the browser clock as the final upper bound. Use the persisted shift `openTime` as the lower bound, database server time while active, and the stored `closeTime` after closure. Only `success` sales contribute to revenue; `refunded` and `cancelled` remain visible in history but are not summed.
-**Why:** The owner approved replacing the old unbounded POS read with server/database-controlled shift bounds, preserving just-committed sales without allowing future or post-close records into the shift total. The existing shift-close aggregate already counts only `success`.
-**How to apply:** Keep the POS-specific bound server-owned and validate the shift/branch against the authenticated reader. Leave general transaction history status-neutral, preserve the existing report date windows and 06:00 WIB day boundary, and do not alter the revenue/commission formulas.
+For POS revenue reads, never use the browser clock as the final upper bound. Use persisted shift `openTime` through server time while active, then stored `closeTime` after closure. Sales belong to the active shift's assigned operational date until its actual close—even when a night shift passes 06:00; a handover before or after schedule changes ownership at the recorded close/open times. Only `success` sales contribute to revenue; `refunded` and `cancelled` remain visible but are not summed.
+**Why:** The owner clarified that the store runs 07:00–19:00 and 19:00–07:00 shifts, with actual arrivals/handover sometimes varying. The 06:00 day marker does not split a still-open night shift's sales; accurate shift attribution follows actual recorded shift times.
+**How to apply:** Keep shift revenue bounded by persisted open/close times and validate shift/branch access. Do not globally move the 06:00 business-date helper without approval; daily sales attribution must follow the shift date through that shift's close. Leave history status-neutral and preserve revenue/commission formulas.
 
 At API closure, the cashier reports total income (`reportedIncome`), not physical cash in the drawer. The report is required and must be a finite non-negative amount; zero is valid. There is no opening cash for a shift.
 
