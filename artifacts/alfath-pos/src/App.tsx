@@ -7648,11 +7648,11 @@ export default function App() {
                             {searchSuggestions.length > 0 && (
                               <div className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
                                 {/* Header tabel Excel */}
-                                <div className="grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 border-b border-slate-200 bg-blue-600 px-2 py-1.5">
-                                  <span className="text-[8px] font-black text-white/80 uppercase tracking-widest text-center">#</span>
-                                  <span className="text-[8px] font-black text-white uppercase tracking-widest">Nama Produk</span>
-                                  <span className="text-[8px] font-black text-white uppercase tracking-widest text-center">Stok</span>
-                                  <span className="text-[8px] font-black text-white uppercase tracking-widest text-right pr-1">Harga</span>
+                                <div className="grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 border-b border-slate-300 bg-slate-100 px-2 py-2">
+                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-wide text-center">#</span>
+                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide">Nama Produk</span>
+                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide text-center">Stok</span>
+                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide text-right pr-1">Harga</span>
                                 </div>
                                 <div className="max-h-[320px] overflow-y-auto">
                                   {searchSuggestions.slice(0, 15).map((p, idx) => {
@@ -7660,7 +7660,7 @@ export default function App() {
                                     const hasDiscount = p.discountPrice > 0;
                                     const price = hasDiscount ? p.discountPrice : p.sellingPrice;
                                     const isEmpty = stock <= 0;
-                                    const rowBg = idx % 2 === 0 ? "bg-white" : "bg-blue-50/60";
+                                    const rowBg = idx % 2 === 0 ? "bg-white" : "bg-slate-50";
                                     return (
                                     <button
                                       key={p.id}
@@ -7670,29 +7670,29 @@ export default function App() {
                                         setSearchSuggestions([]);
                                         searchInputRef.current?.focus();
                                       }}
-                                      className={`w-full text-left grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 items-center px-2 py-1 border-b border-slate-100 last:border-0 hover:bg-blue-600 group transition-colors ${rowBg}`}
+                                      className={`w-full min-h-11 text-left grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 items-center px-2.5 py-2 border-l-[3px] border-l-transparent border-b border-slate-200 last:border-0 hover:border-l-blue-600 hover:bg-blue-50 group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${rowBg}`}
                                     >
                                       {/* No urut */}
-                                      <span className="text-[8px] font-bold text-slate-400 group-hover:text-white/70 text-center tabular-nums">{idx + 1}</span>
+                                      <span className="text-[9px] font-bold text-slate-400 group-hover:text-slate-500 text-center tabular-nums">{idx + 1}</span>
 
                                       {/* Nama produk */}
-                                      <span className={`text-[9.5px] font-black uppercase tracking-tight leading-tight text-left pr-1 truncate transition-colors ${isEmpty ? "text-slate-300 line-through decoration-slate-300" : "text-slate-800"} group-hover:text-white group-hover:no-underline`}>
+                                      <span className={`text-[11px] font-black uppercase tracking-normal leading-tight text-left pr-1 line-clamp-2 transition-colors ${isEmpty ? "text-slate-400 line-through decoration-slate-400" : "text-slate-900"} group-hover:text-blue-800 group-hover:no-underline`}>
                                         {getProductName(p)}
                                         {p.masterSN && <span className="ml-1 font-mono text-[8px] text-purple-400 group-hover:text-purple-200">·{p.masterSN}</span>}
                                       </span>
 
                                       {/* Stok */}
-                                      <span className={`text-[9px] font-black text-center tabular-nums transition-colors ${isEmpty ? "text-rose-400 group-hover:text-rose-200" : "text-emerald-600 group-hover:text-white"}`}>
+                                      <span className={`text-[10px] font-black text-center tabular-nums transition-colors ${isEmpty ? "text-rose-500 group-hover:text-rose-700" : "text-emerald-700 group-hover:text-emerald-800"}`}>
                                         {isEmpty ? "HABIS" : `${stock}`}
                                       </span>
 
                                       {/* Harga */}
                                       <div className="text-right pr-1">
-                                        <span className={`text-[9.5px] font-black tabular-nums font-mono block transition-colors ${isEmpty ? "text-slate-300" : "text-slate-800"} group-hover:text-white`}>
+                                        <span className={`text-[10.5px] font-black tabular-nums font-mono block transition-colors ${isEmpty ? "text-slate-400" : "text-slate-900"} group-hover:text-slate-900`}>
                                           {price.toLocaleString("id-ID")}
                                         </span>
                                         {hasDiscount && (
-                                          <span className="text-[7.5px] font-bold text-slate-300 group-hover:text-white/50 line-through font-mono block">
+                                          <span className="text-[8px] font-bold text-slate-400 group-hover:text-slate-500 line-through font-mono block">
                                             {p.sellingPrice.toLocaleString("id-ID")}
                                           </span>
                                         )}
@@ -7724,13 +7724,13 @@ export default function App() {
 
                         {/* 1.5 PANEL PRODUK TERLARIS — compact strip */}
                         {bestSellers.length > 0 && !searchTerm && (
-                          <div className="bg-white px-2 py-1.5 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                          <div className="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                             <TrendingUp className="h-3 w-3 shrink-0 text-blue-500" aria-hidden="true" />
                             {bestSellers.map(p => (
                               <button
                                 key={p.id}
                                 onClick={() => addToCart(p)}
-                                className="flex-shrink-0 bg-slate-50 hover:bg-blue-50 active:scale-95 border border-slate-150 hover:border-blue-200 px-2 py-1 rounded-lg text-left transition-all"
+                                className="flex-shrink-0 bg-white hover:bg-blue-50 active:scale-95 border border-slate-300 hover:border-blue-400 px-2 py-1 rounded-lg text-left transition-colors"
                               >
                                 <p className="text-[8px] font-black uppercase text-slate-700 truncate max-w-[90px] leading-none mb-0.5">{getProductName(p)}</p>
                                 <p className="text-[8px] text-slate-500 font-mono leading-none">Rp {p.sellingPrice.toLocaleString("id-ID")}</p>
@@ -7838,7 +7838,7 @@ export default function App() {
                                 </p>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+                              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                 {posFilteredProducts
                                   .filter(p => {
                                     if (posSelectedCategory === "Aksesoris" && posSelectedBrand !== "Semua") {
@@ -7865,7 +7865,7 @@ export default function App() {
                                           setScanIndicator(`Ditambahkan: ${getProductName(p)}`);
                                           setTimeout(() => setScanIndicator(null), 1000);
                                         }}
-                                        className={`group text-left bg-slate-50 rounded-2xl p-2.5 flex flex-col justify-between transition-all shadow-[4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] hover:bg-slate-100 active:scale-[0.97] duration-150 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-60" : ""}`}
+                                        className={`group text-left bg-white border-2 border-slate-300 rounded-xl p-3 min-h-[116px] flex flex-col justify-between transition-colors shadow-sm hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 active:bg-blue-100 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-60" : ""}`}
                                       >
                                         {/* Expiry ribbon */}
                                         {expiry && (
@@ -7887,7 +7887,7 @@ export default function App() {
                                                 : (p.brand || p.category || "Umum")
                                             } />
                                             
-                                            <span className={`text-[7.5px] font-black px-1.5 py-0.5 rounded leading-none ${
+                                              <span className={`text-[8px] font-black px-2 py-1 rounded-md leading-none ${
                                               isOutOfStock 
                                                 ? "bg-rose-50 text-rose-600" 
                                                 : stock < 5 
@@ -7898,24 +7898,24 @@ export default function App() {
                                             </span>
                                           </div>
 
-                                          <h5 className="text-[10px] font-black text-slate-850 uppercase leading-snug tracking-tight mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                          <h5 className="text-[11px] md:text-xs font-black text-slate-900 uppercase leading-snug tracking-normal mb-2 group-hover:text-blue-700 transition-colors line-clamp-2 min-h-[2.4em]">
                                             {getProductName(p)}
                                           </h5>
                                         </div>
 
-                                        <div className="mt-auto pt-2 border-t border-slate-150 flex items-end justify-between">
+                                        <div className="mt-auto pt-2 border-t border-slate-200 flex items-end justify-between">
                                           <div>
                                             {hasDiscount && (
                                               <p className="text-[7.5px] font-black text-slate-400 line-through leading-none mb-0.5">
                                                 Rp {p.sellingPrice.toLocaleString("id-ID")}
                                               </p>
                                             )}
-                                            <p className="text-[12px] font-black text-slate-900 tracking-tight leading-none">
+                                            <p className="text-sm font-black text-slate-900 tracking-tight leading-none">
                                               Rp {price.toLocaleString("id-ID")}
                                             </p>
                                           </div>
-                                          <div className="w-5 h-5 bg-white group-hover:bg-blue-600 text-slate-400 group-hover:text-white rounded-lg flex items-center justify-center transition-all border border-slate-200 group-hover:border-blue-600">
-                                            <Plus className="w-3 h-3 group-hover:stroke-[3]" />
+                                          <div className="w-7 h-7 bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white rounded-lg flex items-center justify-center transition-colors border border-blue-200 group-hover:border-blue-600">
+                                            <Plus className="w-4 h-4 group-hover:stroke-[3]" />
                                           </div>
                                         </div>
                                       </button>

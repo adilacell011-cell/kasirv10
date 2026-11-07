@@ -243,3 +243,7 @@ clear, easy-to-tap product targets.
 **How to apply:** in Master Produk, use accordion disclosure from category to provider to individual
 products/packages; distinguish this management list from the tablet POS picker; avoid blanket card-sizing
 changes across unrelated pages.
+In the tablet POS picker, keep product tiles visually distinct with clear borders, readable two-line names,
+and a visible add affordance; do not change its established two-column transaction layout.
+**Why:** the owner reported that catalog boundaries were hard to see and wanted to prevent accidental product selection.
+**How to apply:** strengthen only product-tile and search-result styling; preserve category filters, cart handlers, prices, stock rules, and POS layout.
