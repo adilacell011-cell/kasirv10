@@ -16,3 +16,11 @@ The slide-out sidebar (`aside`, fixed left drawer) and its dark backdrop must pa
 App is a PWA via `vite-plugin-pwa` (`registerType: "autoUpdate"`, workbox `skipWaiting`+`clientsClaim`). The service worker is only active in the built/published app (disabled in vite dev). On 2026-11-07, the Owner confirmed that clearing Chrome site data immediately made the newly deployed UI visible.
 **Why:** a deployed image can be correct while an installed PWA or browser keeps serving the old cached bundle.
 **How to apply:** if the Web image tag/digest is verified but UI still looks old, test a private tab and clear Chrome site storage/PWA data, then fully close and reopen the app before changing application code.
+
+## PWA update delivery and HTTP caching
+
+Keep the app shell and PWA control files (`index.html`, `sw.js`, `registerSW.js`, and the web manifest) revalidated or uncached by the web server. Long-lived immutable caching is appropriate only for Vite's content-hashed `/assets/` files. The existing auto-update service worker still needs to be able to fetch its new script after a web image update.
+
+**Why:** service-worker auto-update does not prevent the browser or reverse proxy from serving a stale HTML shell or registration script from its ordinary HTTP cache; users should not need to erase Chrome site data after routine releases.
+
+**How to apply:** preserve these cache headers in the Nginx configuration copied into the Web image. Verify both control-file revalidation and hashed-asset caching when changing deployment serving rules; do not mark the whole site immutable.
