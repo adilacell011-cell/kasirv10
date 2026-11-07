@@ -7810,7 +7810,7 @@ export default function App() {
 
                         {/* 1.5 PANEL PRODUK TERLARIS — compact strip */}
                         {bestSellers.length > 0 && !searchTerm && (
-                          <div className="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                          <div data-pos-best-sellers className="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                             <TrendingUp className="h-3 w-3 shrink-0 text-blue-500" aria-hidden="true" />
                             {bestSellers.map(p => (
                               <button
