@@ -4833,28 +4833,31 @@ export default function App() {
               <div data-ui-screen="inventory" className="ui-screen-inventory flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
-                  <div data-product-form-overlay className="absolute inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-                    <div data-product-form-card className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90dvh]">
-                      <div data-product-form-header className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
-                        <h3 className="font-black text-slate-800 uppercase tracking-tight">
+                  <div data-product-form-overlay role="presentation" className="fixed inset-0 z-[120] bg-slate-900/50 flex items-center justify-center p-2 sm:p-4">
+                    <div data-product-form-card role="dialog" aria-modal="true" aria-labelledby="product-form-title" className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col min-h-0 max-h-[calc(100dvh-1rem)] sm:max-h-[90dvh]">
+                      <div data-product-form-header className="sticky top-0 z-10 px-3 py-3 sm:p-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                        <h3 id="product-form-title" className="font-black text-slate-800 uppercase tracking-tight">
                           {editingProduct
                             ? "Ubah Master Produk"
                             : "Formulir Master Produk Baru"}
                         </h3>
                         <button
+                          type="button"
                           onClick={() => {
                             setShowProductForm(false);
                             resetProductForm();
                           }}
-                          className="text-slate-400 hover:text-red-500"
+                          aria-label="Tutup formulir produk"
+                          title="Tutup formulir"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-red-600"
                         >
                           <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <div data-product-form-body className="p-4 md:p-6 overflow-y-auto flex-1">
+                      <div data-product-form-body className="min-h-0 p-3 sm:p-4 md:p-6 overflow-y-auto overscroll-contain flex-1">
                         <form
                           onSubmit={handleSaveProduct}
-                          className="space-y-5"
+                          className="space-y-4"
                           data-product-form
                         >
                           <div data-product-form-section-heading="identity" className="flex items-center gap-2.5">
@@ -5238,18 +5241,30 @@ export default function App() {
                               )}
                             </div>
                           </div>
-                          <div data-product-form-actions>
-                            <p className="text-[9px] font-medium leading-4 text-slate-400">
+                          <div data-product-form-actions className="sticky bottom-0 z-10 -mx-3 sm:-mx-4 md:-mx-6 mt-4 grid gap-2 border-t border-slate-200 bg-white/95 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] backdrop-blur sm:-mx-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-4 md:px-6">
+                            <p className="text-[9px] font-medium leading-4 text-slate-500">
                               <strong className="font-black text-slate-500">* Wajib diisi</strong>
                               <span className="block">Periksa nama dan harga sebelum lanjut.</span>
                             </p>
-                            <button
-                              type="submit"
-                              className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-black py-3 md:py-4 rounded shadow-lg uppercase tracking-widest text-[11px] hover:bg-blue-700 active:scale-[0.99] transition-all"
-                            >
-                              Simpan &amp; publikasikan
-                              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                            </button>
+                            <div className="grid grid-cols-[minmax(5.5rem,0.8fr)_minmax(0,1.5fr)] gap-2 sm:flex sm:justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowProductForm(false);
+                                  resetProductForm();
+                                }}
+                                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+                              >
+                                Batal
+                              </button>
+                              <button
+                                type="submit"
+                                className="inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-blue-700 px-3 text-[10px] font-black uppercase tracking-normal text-white hover:bg-blue-800 active:scale-[0.99] transition-all sm:min-w-52 sm:px-4 sm:text-[11px]"
+                              >
+                                Simpan &amp; publikasikan
+                                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                              </button>
+                            </div>
                           </div>
                         </form>
                       </div>
@@ -9373,7 +9388,7 @@ export default function App() {
                 </div>
               </div>
 
-                <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full content-fade">
+                <div className={`flex-1 ${dashboardTab === "sales" ? "p-2 sm:p-3 md:p-8" : "p-4 md:p-8"} overflow-y-auto w-full content-fade`}>
                   {dashboardTab !== "inventory" && <div className="mb-4 text-xs" role="status" aria-live="polite">
                     {ownerDashboard.error ? (
                       <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">
@@ -9653,24 +9668,24 @@ export default function App() {
                   )}
 
                   {dashboardTab === "sales" && (
-                    <div className="bg-white rounded-3xl border border-slate-200/60 shadow-2xl overflow-hidden flex flex-col min-h-[500px]">
+                    <div className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col min-h-[420px]">
                       {/* LIVE TRANSACTIONS COMPACT */}
-                      <div className="p-4 md:p-6 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
+                      <div className="p-3 sm:p-4 md:p-6 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-left">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
                             <Activity className="w-5 h-5 animate-pulse" />
                           </div>
                           <div className="text-left">
-                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none mb-1">
+                            <h4 className="text-[11px] sm:text-xs font-black text-slate-900 uppercase tracking-widest leading-tight mb-1">
                                10 Transaksi Terakhir (Live)
                             </h4>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">
+                            <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide leading-tight">
                               Hanya Memuat Data Terbaru Untuk Efisiensi
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex gap-2 items-center">
+                        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
                           <CustomSelect
                             value={adminSalesDateFilter}
                             onChange={(v) => setAdminSalesDateFilter(v)}
@@ -9679,7 +9694,7 @@ export default function App() {
                               { value: "3days", label: "3 Hari" },
                               { value: "all", label: "Semua" },
                             ]}
-                            buttonClassName="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-100"
+                            buttonClassName="w-full bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wide rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100"
                           />
                           <CustomSelect
                             value={adminSalesBranchFilter}
@@ -9691,13 +9706,13 @@ export default function App() {
                                 label: b.name,
                               })),
                             ]}
-                            buttonClassName="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-100"
+                            buttonClassName="w-full bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wide rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100"
                           />
                         </div>
                       </div>
 
-                      <div className="flex-1 overflow-auto max-h-[300px]">
-                        <table className="w-full border-collapse">
+                      <div data-dashboard-sales-table className="flex-1 overflow-x-auto md:overflow-auto md:max-h-[420px]">
+                        <table className="mobile-cards w-full min-w-[720px] border-collapse md:min-w-0">
                           <tbody className="divide-y divide-slate-100">
                             {dashboardRecentSales
                               .slice(0, 10) // Force UI limit for dashboard consistency
@@ -9713,25 +9728,25 @@ export default function App() {
                                 const profit = (s.total || 0) - capital;
                                 
                                 return (
-                                <tr key={s.id} className="hover:bg-slate-50 transition-colors text-[10px]">
-                                  <td className="px-4 py-3 font-mono font-bold text-slate-500">
-                                    {new Date(s.createdAt || s.timestamp || 0).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-                                  </td>
-                                  <td className="px-4 py-3 font-black text-slate-800 uppercase tracking-tighter">
-                                    {branches.find((b) => b.id === s.branchId)?.name || "Pusat"}
-                                  </td>
-                                  <td className="px-4 py-3 font-bold text-blue-600 uppercase tracking-tight truncate max-w-[80px]">
-                                    {getSaleCashierName(s)}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    <div className="truncate max-w-[150px]">
-                                      {s.items?.map((i: any) => `${i.product?.name || i.name || "Produk"} (x${i.qty})`).join(", ")}
+                                <tr key={s.id} className="hover:bg-slate-50 transition-colors text-[11px]">
+                                  <td data-card-title className="px-3 py-3 font-bold text-slate-800 sm:px-4">
+                                    <div className="min-w-0 break-words leading-snug">
+                                      {s.items?.map((i: any) => `${i.product?.name || i.name || "Produk"} (x${i.qty})`).join(", ") || "Transaksi"}
                                     </div>
                                   </td>
-                                  <td className="px-4 py-3 text-right font-black text-slate-900">
+                                  <td data-label="Cabang" className="px-3 py-3 font-bold text-slate-700 sm:px-4">
+                                    <span className="min-w-0 break-words text-right">{branches.find((b) => b.id === s.branchId)?.name || "Pusat"}</span>
+                                  </td>
+                                  <td data-label="Kasir" className="px-3 py-3 font-semibold text-blue-700 sm:px-4">
+                                    <span className="min-w-0 break-words text-right">{getSaleCashierName(s)}</span>
+                                  </td>
+                                  <td data-label="Waktu" className="px-3 py-3 font-mono font-semibold text-slate-600 sm:px-4">
+                                    {new Date(s.createdAt || s.timestamp || 0).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                                  </td>
+                                  <td data-label="Total" className="px-3 py-3 text-right font-black text-slate-900 sm:px-4">
                                     {(s.total || 0).toLocaleString("id-ID")}
                                   </td>
-                                  <td className="px-4 py-3 text-right font-black text-emerald-600">
+                                  <td data-label="Laba" className="px-3 py-3 text-right font-black text-emerald-700 sm:px-4">
                                     {profit.toLocaleString("id-ID")}
                                   </td>
                                 </tr>

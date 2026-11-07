@@ -493,6 +493,19 @@ body {
   table.mobile-cards td[colspan]::before {
     content: none;
   }
+
+  [data-dashboard-sales-table] table.mobile-cards {
+    min-width: 0 !important;
+  }
+
+  [data-dashboard-sales-table] table.mobile-cards td[data-card-title] {
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+
+  [data-dashboard-sales-table] table.mobile-cards td:not([data-card-title]) {
+    align-items: flex-start;
+  }
 }
 
 /* === Fase 0: Polesan global micro-interaksi (aman, tanpa ubah JSX) ===
