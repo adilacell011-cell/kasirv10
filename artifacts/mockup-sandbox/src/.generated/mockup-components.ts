@@ -30,6 +30,8 @@ export const modules: ModuleMap = {
   "./components/mockups/kasirv10-ui-audit/CompactMasterProducts.tsx": () => import("../components/mockups/kasirv10-ui-audit/CompactMasterProducts.tsx"),
   "./components/mockups/kasirv10-ui-audit/CurrentProducts.tsx": () => import("../components/mockups/kasirv10-ui-audit/CurrentProducts.tsx"),
   "./components/mockups/operator-logos/OperatorLogoPreview.tsx": () => import("../components/mockups/operator-logos/OperatorLogoPreview.tsx"),
+  "./components/mockups/pos-luxe/Current.tsx": () => import("../components/mockups/pos-luxe/Current.tsx"),
+  "./components/mockups/pos-luxe/Premium.tsx": () => import("../components/mockups/pos-luxe/Premium.tsx"),
   "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
   "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
 };

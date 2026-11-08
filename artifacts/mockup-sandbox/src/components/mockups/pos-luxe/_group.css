@@ -1,0 +1,54 @@
+@theme {
+  --font-sans: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --color-blue-50: #eff5ff;
+  --color-blue-100: #dbe8fe;
+  --color-blue-200: #bdd5fd;
+  --color-blue-300: #90b8fb;
+  --color-blue-400: #5d91f7;
+  --color-blue-500: #2f6cef;
+  --color-blue-600: #1d52da;
+  --color-blue-700: #1a42b8;
+  --color-blue-800: #1b3a93;
+  --color-blue-900: #1c3675;
+  --color-blue-950: #131f46;
+  --color-slate-50: #ffffff;
+  --color-slate-100: #f8fafc;
+  --color-slate-200: #e5e7eb;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+}
+
+:root {
+  color-scheme: light;
+  --canvas-bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --text-main: #17243a;
+  --text-mute: #68717d;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --accent: #1d52da;
+}
+
+.pos-current {
+  min-height: 100dvh;
+  color: var(--text-main);
+  background: #f1f5f9;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.pos-current-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 228px;
+}
+
+@media (max-width: 560px) {
+  .pos-current-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
