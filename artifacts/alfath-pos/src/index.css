@@ -2233,6 +2233,11 @@ body,
   container-name: pos-screen;
 }
 
+[data-pos-catalog] {
+  container-type: inline-size;
+  container-name: pos-catalog;
+}
+
 @container pos-screen (min-width: 560px) and (max-width: 767px) {
   [data-pos-billing] {
     flex-direction: row !important;
@@ -2304,5 +2309,150 @@ body,
 
   [data-pos-product-card] [class*="text-sm"] {
     font-size: 0.75rem;
+  }
+}
+
+@container pos-catalog (max-width: 340px) {
+  [data-pos-search-results] > div:first-child,
+  [data-pos-search-result-list] > button {
+    grid-template-columns: 1.25rem minmax(0, 1fr) 2.5rem 4.25rem;
+  }
+}
+
+@media (max-width: 760px), (max-height: 600px) {
+  [data-pos-search-results] {
+    display: flex;
+    max-height: min(320px, 40vh);
+    max-height: min(320px, 40dvh);
+    flex-direction: column;
+  }
+
+  [data-pos-search-result-list] {
+    min-height: 0;
+    max-height: none !important;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  [data-pos-modal-context="true"] {
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px)) !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px)) !important;
+  }
+
+  [data-pos-modal-context="true"] [data-confirm-dialog],
+  [data-pos-modal-context="true"] [data-prompt-dialog],
+  [data-pos-modal-context="true"] [data-pos-held-dialog],
+  [data-pos-modal-context="true"] [data-pos-scanner-panel] {
+    width: min(100%, 24rem);
+    max-height: calc(
+      100vh - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) - 1rem
+    );
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) - 1rem
+    );
+    border-radius: 1.25rem !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  [data-pos-modal-context="true"] [data-confirm-dialog],
+  [data-pos-modal-context="true"] [data-prompt-dialog] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  [data-pos-modal-context="true"] [data-confirm-dialog] [data-dialog-content],
+  [data-pos-modal-context="true"] [data-prompt-dialog] [data-dialog-content] {
+    padding: 1rem !important;
+  }
+
+  [data-pos-modal-context="true"] [data-confirm-dialog] [data-dialog-actions],
+  [data-pos-modal-context="true"] [data-prompt-dialog] [data-dialog-actions] {
+    flex-shrink: 0;
+    padding: 0.75rem !important;
+  }
+
+  [data-pos-modal-context="true"] [data-dialog-action] {
+    min-height: 2.75rem;
+  }
+
+  [data-pos-modal-context="true"] [data-pos-held-dialog] {
+    max-height: calc(
+      100vh - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) - 1rem
+    ) !important;
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) - 1rem
+    ) !important;
+  }
+
+  [data-pos-modal-context="true"] [data-pos-held-dialog] > div:first-child {
+    flex-shrink: 0;
+    padding: 0.75rem !important;
+  }
+
+  [data-pos-modal-context="true"] [data-pos-held-dialog] > div:nth-child(2) {
+    min-height: 0;
+    padding: 0.75rem !important;
+    overscroll-behavior: contain;
+  }
+
+  [data-pos-modal-context="true"] [data-pos-held-dialog] button {
+    min-height: 2.75rem;
+  }
+
+  [data-pos-scanner-overlay] {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  [data-pos-scanner-overlay][data-pos-modal-context="true"] [data-pos-scanner-panel] {
+    flex-shrink: 0;
+    border-radius: 1.25rem !important;
+  }
+
+  [data-pos-scanner-overlay][data-pos-modal-context="true"] [data-pos-scanner-panel] > div:first-child,
+  [data-pos-scanner-overlay][data-pos-modal-context="true"] [data-pos-scanner-panel] > div:last-child {
+    padding: 0.75rem !important;
+  }
+
+  [data-pos-modal-context="true"][data-payment-success-overlay] {
+    align-items: center;
+    justify-content: center;
+  }
+
+  [data-pos-modal-context="true"] [data-payment-success-card] > div:first-child {
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+@media (max-height: 600px) {
+  [data-pos-scanner-overlay][data-pos-modal-context="true"] {
+    justify-content: flex-start !important;
+  }
+
+  [data-pos-modal-context="true"] [data-confirm-dialog],
+  [data-pos-modal-context="true"] [data-prompt-dialog] {
+    max-height: calc(
+      100vh - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) - 1rem
+    );
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) - 1rem
+    );
+  }
+
+  [data-pos-modal-context="true"][data-payment-success-overlay] {
+    align-items: center;
+    justify-content: center;
   }
 }

@@ -256,3 +256,6 @@ and a visible add affordance; do not change its established two-column transacti
 The cashier uses the POS on an Android tablet alongside another app and prefers a more compact product search toolbar and product tiles when the POS has a narrow pane.
 **Why:** the owner showed the actual split-screen setup and said the search and product controls looked too large.
 **How to apply:** adapt POS density to its available container width, keep product names legible and scan/add controls usable, and retain the side-by-side catalog/cart layout whenever the pane is wide enough.
+The POS is the cashier's primary, frequently used workspace; its search field and popups should stay comfortable to read and use without becoming oversized, and should adapt to the available screen.
+**Why:** the owner explicitly prioritized cashier comfort across screen sizes.
+**How to apply:** review POS search suggestions, scanner, held-sale, confirmation, and success overlays as one focused workflow; keep their actions and business behavior unchanged, and do not apply POS-specific sizing globally to unrelated pages.

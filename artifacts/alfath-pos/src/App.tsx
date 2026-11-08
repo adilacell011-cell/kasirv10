@@ -120,9 +120,11 @@ const branchStockAuditApi: AuditPageApi = {
 const ScannerModal = ({
   onClose,
   onScan,
+  posContext = false,
 }: {
   onClose: () => void;
   onScan: (result: string) => void;
+  posContext?: boolean;
 }) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
@@ -181,8 +183,12 @@ const ScannerModal = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[3000] bg-black/95 flex flex-col items-center justify-center p-4 overflow-hidden">
-      <div className="w-full max-w-sm bg-white rounded-[40px] overflow-hidden relative shadow-[0_0_80px_rgba(30,58,138,0.4)] border border-white/20">
+    <div
+      data-pos-modal-context={posContext ? "true" : undefined}
+      data-pos-scanner-overlay={posContext ? "true" : undefined}
+      className="fixed inset-0 z-[3000] bg-black/95 flex flex-col items-center justify-center p-4 overflow-hidden"
+    >
+      <div data-pos-scanner-panel className="w-full max-w-sm bg-white rounded-[40px] overflow-hidden relative shadow-[0_0_80px_rgba(30,58,138,0.4)] border border-white/20">
         <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-200 animate-pulse">
@@ -7734,15 +7740,15 @@ export default function App() {
 
                             {/* DROPDOWN HASIL PENCARIAN CEPAT */}
                             {searchSuggestions.length > 0 && (
-                              <div className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
+                              <div data-pos-search-results className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
                                 {/* Header tabel Excel */}
-                                <div className="grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 border-b border-slate-300 bg-slate-100 px-2 py-2">
+                                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-slate-100 px-2 py-2">
                                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-wide text-center">#</span>
                                   <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide">Nama Produk</span>
                                   <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide text-center">Stok</span>
                                   <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide text-right pr-1">Harga</span>
                                 </div>
-                                <div className="max-h-[320px] overflow-y-auto">
+                                <div data-pos-search-result-list className="max-h-[320px] overflow-y-auto">
                                   {searchSuggestions.slice(0, 15).map((p, idx) => {
                                     const stock = getBranchStock(profile?.branchId || "", p.id);
                                     const hasDiscount = p.discountPrice > 0;
@@ -7758,7 +7764,7 @@ export default function App() {
                                         setSearchSuggestions([]);
                                         searchInputRef.current?.focus();
                                       }}
-                                      className={`w-full min-h-11 text-left grid grid-cols-[1.5rem_1fr_4.5rem_6rem] gap-0 items-center px-2.5 py-2 border-l-[3px] border-l-transparent border-b border-slate-200 last:border-0 hover:border-l-blue-600 hover:bg-blue-50 group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${rowBg}`}
+                                      className={`w-full min-h-11 text-left grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 items-center px-2 py-1.5 border-l-[3px] border-l-transparent border-b border-slate-200 last:border-0 hover:border-l-blue-600 hover:bg-blue-50 group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${rowBg}`}
                                     >
                                       {/* No urut */}
                                       <span className="text-[9px] font-bold text-slate-400 group-hover:text-slate-500 text-center tabular-nums">{idx + 1}</span>
@@ -9955,6 +9961,7 @@ export default function App() {
         <ScannerModal
           onClose={() => setShowScanner(false)}
           onScan={(res) => scannerCallback(res)}
+          posContext={activeMenu === "pos"}
         />
       )}
 
@@ -10188,6 +10195,7 @@ export default function App() {
     {paymentSuccessOverlay && (
       <div
         data-payment-success-overlay
+          data-pos-modal-context={activeMenu === "pos" ? "true" : undefined}
         className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-emerald-950/30 animate-in fade-in duration-200"
         onClick={() => setPaymentSuccessOverlay(null)}
       >
@@ -10230,7 +10238,7 @@ export default function App() {
 
     {/* --- BRAND CONFIRMATION POPUP (NO WEB ADDRESS NO DOMAIN SHOWN) --- */}
     {confirmModal && (
-      <div data-confirm-overlay className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
+      <div data-confirm-overlay data-pos-modal-context={activeMenu === "pos" ? "true" : undefined} className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
         <div data-confirm-dialog className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
           <div data-dialog-content className="p-6 text-center">
             <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -10267,7 +10275,7 @@ export default function App() {
 
     {/* --- BRAND PROMPT POPUP (NO WEB ADDRESS / DOMAIN SHOWN) --- */}
     {promptModal && (
-      <div data-prompt-overlay className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
+      <div data-prompt-overlay data-pos-modal-context={activeMenu === "pos" ? "true" : undefined} className="fixed inset-0 z-[99999] bg-slate-950/80 flex items-center justify-center p-4">
         <div data-prompt-dialog className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200">
           <form
             onSubmit={(e) => {
@@ -10316,8 +10324,9 @@ export default function App() {
 
     {/* MODAL DAFTAR TRANSAKSI DITAHAN */}
     {showHeldList && (
-      <div className="fixed inset-0 z-[99998] bg-slate-950/80 flex items-center justify-center p-4" onClick={() => setShowHeldList(false)}>
+      <div data-pos-modal-context="true" data-pos-held-overlay className="fixed inset-0 z-[99998] bg-slate-950/80 flex items-center justify-center p-4" onClick={() => setShowHeldList(false)}>
         <div
+          data-pos-held-dialog
           className="bg-white w-full max-w-md rounded-[32px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]"
           onClick={(e) => e.stopPropagation()}
         >
