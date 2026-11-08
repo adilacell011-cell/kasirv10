@@ -814,7 +814,7 @@ body {
 }
 
 .app-topbar {
-  min-height: 4rem;
+  min-height: 3.75rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   box-shadow: 0 5px 16px rgba(55, 77, 111, 0.08) !important;
 }
@@ -827,14 +827,14 @@ body {
 
 .app-bottom-nav {
   padding-bottom: var(--safe-bottom) !important;
-  min-height: 68px;
+  min-height: 64px;
   border-top: 1px solid rgba(148, 163, 184, 0.22);
   background: color-mix(in srgb, var(--card-bg) 94%, white 6%) !important;
   box-shadow: 0 -8px 24px rgba(39, 61, 95, 0.13) !important;
 }
 
 .app-bottom-nav > div {
-  height: 68px;
+  height: 64px;
   width: max-content;
   min-width: 100%;
 }
@@ -2240,9 +2240,13 @@ body,
 
 [data-pos-search-input] {
   box-sizing: border-box;
-  height: 2.25rem;
+  height: 2.75rem;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+}
+
+.app-shell [data-pos-search-input] {
+  font-size: 14px !important;
 }
 
 [data-pos-search-icon] {
@@ -2281,10 +2285,10 @@ body,
 
   [data-pos-search-input] {
     box-sizing: border-box;
-    height: 2.25rem;
-    padding: 0 5.5rem 0 2.25rem !important;
+    height: 2.75rem;
+    padding: 0 6rem 0 2.25rem !important;
     border-radius: 0.75rem;
-    font-size: 10px;
+    font-size: 13px !important;
   }
 
   [data-pos-search-actions] {
@@ -2294,14 +2298,23 @@ body,
   }
 
   [data-pos-scan-button] {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 0 !important;
   }
 
   [data-pos-search-actions] > button {
-    min-width: 2.25rem;
-    min-height: 2.25rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  [data-pos-subnavigation] button {
+    min-height: 2.75rem;
+  }
+
+  [data-pos-category-nav] button,
+  [data-pos-best-sellers] button {
+    min-height: 2.75rem;
   }
 
   [data-pos-product-shelf] > div {
@@ -2314,18 +2327,43 @@ body,
 
   [data-pos-product-card] {
     min-height: 5.25rem !important;
-    padding: 0.4rem !important;
+    padding: 0.5rem !important;
     border-width: 1px !important;
   }
 
   [data-pos-product-card] h5 {
-    min-height: 2em;
+    min-height: 2.2em;
     margin-bottom: 0.25rem;
-    font-size: 9.5px;
+    font-size: 11px;
   }
 
   [data-pos-product-card] [class*="text-sm"] {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
+  }
+}
+
+[data-pos-product-card] {
+  min-height: 5.5rem !important;
+  padding: 0.5rem !important;
+}
+
+[data-pos-product-card] h5 {
+  font-size: 11.5px;
+}
+
+@container pos-screen (max-width: 760px) {
+  [data-pos-product-card] {
+    min-height: 5.25rem !important;
+  }
+
+  [data-pos-product-card] h5 {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-topbar {
+    min-height: 3.75rem;
   }
 }
 

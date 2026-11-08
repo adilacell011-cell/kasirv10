@@ -3775,7 +3775,7 @@ export default function App() {
         {/* --- DASHBOARD CONTENT AREA --- */}
         <div className="flex-1 flex flex-col min-w-0 pb-[68px] md:pb-0 relative h-[100dvh]">
           {/* HEADER */}
-          <header data-topbar-screen={activeMenu} className={`app-topbar h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
+          <header data-topbar-screen={activeMenu} className={`app-topbar h-[60px] md:h-16 bg-white flex items-center justify-between shrink-0 z-10 shadow-[0_6px_16px_rgba(184,194,208,0.45)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] relative ${activeMenu === "stock_audit" ? "min-w-0 px-2 sm:px-4 md:px-6" : "px-4 md:px-6"}`}>
             <div className={`flex items-center gap-3 md:gap-4 overflow-hidden ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
               <button className="p-2 -ml-1 rounded-xl bg-slate-50 text-blue-600 shadow-[3px_3px_7px_#b8c2d0,-3px_-3px_7px_#ffffff,0_0_12px_1px_rgba(59,130,246,0.3)] dark:shadow-[3px_3px_7px_#1c1e24,-3px_-3px_7px_#34373f,0_0_12px_1px_rgba(59,130,246,0.3)] active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] transition-all" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                 <Menu className="w-6 h-6" />
@@ -4917,7 +4917,7 @@ export default function App() {
               <div data-ui-screen="inventory" className="ui-screen-inventory flex-1 flex flex-col bg-white md:m-4 md:rounded-2xl overflow-hidden relative">
                 {/* PRODUCT FORM MODAL */}
                 {showProductForm && (
-                  <div data-product-form-overlay role="presentation" className="absolute inset-0 z-[40] bg-white flex items-center justify-center p-2 pb-[calc(68px+env(safe-area-inset-bottom,0px))] md:z-[120] md:p-4 md:pb-4">
+                  <div data-product-form-overlay role="presentation" className="absolute inset-0 z-[40] bg-white flex items-center justify-center p-2 pb-[env(safe-area-inset-bottom,0px)] md:z-[120] md:p-4 md:pb-4">
                     <div data-product-form-card role="dialog" aria-modal="true" aria-labelledby="product-form-title" className="bg-white rounded-2xl shadow-xl w-full max-w-2xl h-full max-h-full overflow-hidden flex flex-col min-h-0 md:h-auto md:max-h-[90dvh]">
                       <div data-product-form-header className="sticky top-0 z-10 px-3 py-3 sm:p-4 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
                         <h3 id="product-form-title" className="font-black text-slate-800 uppercase tracking-tight">
@@ -7860,7 +7860,7 @@ export default function App() {
                         )}
 
                         {/* 2. CAPSULE SCROLL BAR KATEGORI (INTERAKTIF & INDAH) */}
-                        <div className="bg-white px-3 py-2 border-b border-slate-200/60 shrink-0 flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth items-center">
+                        <div data-pos-category-nav className="bg-white px-3 py-2 border-b border-slate-200/60 shrink-0 flex gap-1.5 overflow-x-auto no-scrollbar scroll-smooth items-center">
                           <button
                             onClick={() => {
                               setPosSelectedCategory("Semua");
@@ -9941,7 +9941,7 @@ export default function App() {
           className="app-bottom-nav md:hidden fixed bottom-0 w-full bg-white shadow-[0_-6px_14px_rgba(184,194,208,0.45)] dark:shadow-[0_-6px_14px_rgba(0,0,0,0.45)] z-[50] overflow-x-auto hide-scrollbar"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          <div className="flex items-center h-[68px] px-2 min-w-max">
+          <div className="flex items-center h-16 px-2 min-w-max">
             {getMobileNav().map((item: any) => (
               <button
                 key={item.id}
