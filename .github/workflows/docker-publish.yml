@@ -63,7 +63,7 @@ jobs:
               echo "Candidate publication requires explicit confirmation."
               exit 1
             fi
-            if [[ "$CANDIDATE_SOURCE_SHA" != "6a514476c3eb0cfc3cfef9bd442fb268cea14f8a" ]]; then
+            if [[ "$CANDIDATE_SOURCE_SHA" != "e699ba766c97b0c7dda35dc87cc231f3eff63e78" ]]; then
               echo "Refusing to publish: source SHA does not match the approved clean stock-audit candidate."
               exit 1
             fi
