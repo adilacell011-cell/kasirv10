@@ -7742,7 +7742,7 @@ export default function App() {
                             {searchSuggestions.length > 0 && (
                               <div data-pos-search-results className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
                                 {/* Header tabel Excel */}
-                                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-white">
+                                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-white pl-[3px]">
                                   <span className="border-r border-slate-200 bg-slate-100 py-2 text-[9px] font-black uppercase tracking-wide text-center text-slate-600">#</span>
                                   <span className="border-r border-slate-200 bg-blue-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-blue-800">Nama Produk</span>
                                   <span className="border-r border-slate-200 bg-emerald-50 py-2 text-[9px] font-black uppercase tracking-wide text-center text-emerald-800">Stok</span>
@@ -7754,7 +7754,7 @@ export default function App() {
                                     const hasDiscount = p.discountPrice > 0;
                                     const price = hasDiscount ? p.discountPrice : p.sellingPrice;
                                     const isEmpty = stock <= 0;
-                                    const rowBg = idx % 2 === 0 ? "bg-white" : "bg-slate-50";
+                                    const rowBg = idx % 2 === 0 ? "bg-white" : "bg-sky-50/70";
                                     return (
                                     <button
                                       key={p.id}
@@ -7764,10 +7764,10 @@ export default function App() {
                                         setSearchSuggestions([]);
                                         searchInputRef.current?.focus();
                                       }}
-                                      className={`w-full min-h-11 text-left grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 items-center px-2 py-1.5 border-l-[3px] border-l-transparent border-b border-slate-200 last:border-0 hover:border-l-blue-600 hover:bg-blue-50 group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${rowBg}`}
+                                      className={`w-full min-h-11 text-left grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 items-center py-1.5 border-l-[3px] border-l-transparent border-b border-slate-200 last:border-0 hover:border-l-blue-600 hover:bg-blue-50 group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${rowBg}`}
                                     >
                                       {/* No urut */}
-                                      <span className="flex self-stretch items-center justify-center border-r border-slate-200 bg-slate-50 text-[9px] font-bold text-slate-400 group-hover:text-slate-500 tabular-nums">{idx + 1}</span>
+                                      <span className={`flex self-stretch items-center justify-center border-r border-slate-200 text-[9px] font-bold text-slate-400 group-hover:text-slate-500 tabular-nums ${idx % 2 === 0 ? "bg-slate-50" : "bg-blue-50"}`}>{idx + 1}</span>
 
                                       {/* Nama produk */}
                                       <span className={`flex min-w-0 self-stretch items-center border-r border-slate-200 px-2 py-1 ${rowBg}`}>
@@ -7934,7 +7934,7 @@ export default function App() {
                                 </p>
                               </div>
                             ) : (
-                              <div data-pos-product-grid className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                              <div data-pos-product-grid className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                                 {posFilteredProducts
                                   .filter(p => {
                                     if (posSelectedCategory === "Aksesoris" && posSelectedBrand !== "Semua") {
@@ -7942,7 +7942,7 @@ export default function App() {
                                     }
                                     return true;
                                   })
-                                  .map((p) => {
+                                  .map((p, idx) => {
                                     const stock = getBranchStock(profile?.branchId || "", p.id);
                                     const isOutOfStock = stock <= 0;
                                     const hasDiscount = p.discountPrice > 0;
@@ -7962,7 +7962,7 @@ export default function App() {
                                           setScanIndicator(`Ditambahkan: ${getProductName(p)}`);
                                           setTimeout(() => setScanIndicator(null), 1000);
                                         }}
-                                        className={`group text-left bg-white border-2 border-slate-300 rounded-xl p-3 min-h-[116px] flex flex-col justify-between transition-colors shadow-sm hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 active:bg-blue-100 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-60" : ""}`}
+                                        className={`group text-left border border-slate-200 rounded-xl p-2.5 min-h-[100px] flex flex-col justify-between transition-colors shadow-sm hover:border-blue-500 hover:bg-blue-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 active:bg-blue-100 cursor-pointer relative overflow-hidden border-l-[3px] ${idx % 2 === 0 ? "bg-white border-l-blue-300" : "bg-sky-50/50 border-l-indigo-300"} ${isOutOfStock ? "opacity-60" : ""}`}
                                       >
                                         {/* Expiry ribbon */}
                                         {expiry && (
@@ -8067,12 +8067,12 @@ export default function App() {
                         {/* LIST ACTIVE ITEMS */}
                         <div className="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-0">
                           {cart.length === 0 ? (
-                            <div className="py-28 px-6 text-center flex flex-col items-center justify-center opacity-70">
-                              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                                <Calculator className="w-7 h-7 text-slate-300" />
+                            <div className="py-20 px-6 text-center flex flex-col items-center justify-center opacity-70">
+                              <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                                <Calculator className="w-6 h-6 text-slate-300" />
                               </div>
                               <h5 className="text-[9px] font-black text-slate-750 uppercase tracking-widest mb-1">Nota Kosong</h5>
-                              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
+                              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
                                 Silakan ketik nama produk, scan barcode, atau tap katalog di rak sebelah kiri untuk mengisi penjualan nota.
                               </p>
                             </div>
