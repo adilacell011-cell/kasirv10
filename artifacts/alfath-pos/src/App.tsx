@@ -7742,11 +7742,11 @@ export default function App() {
                             {searchSuggestions.length > 0 && (
                               <div data-pos-search-results className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
                                 {/* Header tabel Excel */}
-                                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-slate-100 px-2 py-2">
-                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-wide text-center">#</span>
-                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide">Nama Produk</span>
-                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide text-center">Stok</span>
-                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wide text-right pr-1">Harga</span>
+                                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-white">
+                                  <span className="border-r border-slate-200 bg-slate-100 py-2 text-[9px] font-black uppercase tracking-wide text-center text-slate-600">#</span>
+                                  <span className="border-r border-slate-200 bg-blue-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-blue-800">Nama Produk</span>
+                                  <span className="border-r border-slate-200 bg-emerald-50 py-2 text-[9px] font-black uppercase tracking-wide text-center text-emerald-800">Stok</span>
+                                  <span className="bg-indigo-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-right text-indigo-800">Harga</span>
                                 </div>
                                 <div data-pos-search-result-list className="max-h-[320px] overflow-y-auto">
                                   {searchSuggestions.slice(0, 15).map((p, idx) => {
@@ -7767,22 +7767,24 @@ export default function App() {
                                       className={`w-full min-h-11 text-left grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 items-center px-2 py-1.5 border-l-[3px] border-l-transparent border-b border-slate-200 last:border-0 hover:border-l-blue-600 hover:bg-blue-50 group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${rowBg}`}
                                     >
                                       {/* No urut */}
-                                      <span className="text-[9px] font-bold text-slate-400 group-hover:text-slate-500 text-center tabular-nums">{idx + 1}</span>
+                                      <span className="flex self-stretch items-center justify-center border-r border-slate-200 bg-slate-50 text-[9px] font-bold text-slate-400 group-hover:text-slate-500 tabular-nums">{idx + 1}</span>
 
                                       {/* Nama produk */}
-                                      <span className={`text-[11px] font-black uppercase tracking-normal leading-tight text-left pr-1 line-clamp-2 transition-colors ${isEmpty ? "text-slate-400 line-through decoration-slate-400" : "text-slate-900"} group-hover:text-blue-800 group-hover:no-underline`}>
-                                        {getProductName(p)}
-                                        {p.masterSN && <span className="ml-1 font-mono text-[8px] text-purple-400 group-hover:text-purple-200">·{p.masterSN}</span>}
+                                      <span className={`flex min-w-0 self-stretch items-center border-r border-slate-200 px-2 py-1 ${rowBg}`}>
+                                        <span className={`line-clamp-2 text-[11px] font-black uppercase tracking-normal leading-tight text-left transition-colors ${isEmpty ? "text-slate-400 line-through decoration-slate-400" : "text-slate-900"} group-hover:text-blue-800 group-hover:no-underline`}>
+                                          {getProductName(p)}
+                                          {p.masterSN && <span className="ml-1 font-mono text-[8px] text-purple-400 group-hover:text-purple-200">·{p.masterSN}</span>}
+                                        </span>
                                       </span>
 
                                       {/* Stok */}
-                                      <span className={`text-[10px] font-black text-center tabular-nums transition-colors ${isEmpty ? "text-rose-500 group-hover:text-rose-700" : "text-emerald-700 group-hover:text-emerald-800"}`}>
+                                      <span className={`flex self-stretch items-center justify-center border-r border-slate-200 text-[10px] font-black text-center tabular-nums transition-colors ${isEmpty ? "bg-rose-50 text-rose-600 group-hover:text-rose-700" : "bg-emerald-50 text-emerald-700 group-hover:text-emerald-800"}`}>
                                         {isEmpty ? "HABIS" : `${stock}`}
                                       </span>
 
                                       {/* Harga */}
-                                      <div className="text-right pr-1">
-                                        <span className={`text-[10.5px] font-black tabular-nums font-mono block transition-colors ${isEmpty ? "text-slate-400" : "text-slate-900"} group-hover:text-slate-900`}>
+                                      <div className="flex self-stretch flex-col justify-center bg-indigo-50 pr-1 text-right">
+                                        <span className={`block text-[10.5px] font-black tabular-nums font-mono transition-colors ${isEmpty ? "text-slate-400" : "text-indigo-900"} group-hover:text-indigo-900`}>
                                           {price.toLocaleString("id-ID")}
                                         </span>
                                         {hasDiscount && (
