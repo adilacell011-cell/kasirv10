@@ -74,6 +74,7 @@ import {
   makeSalesReadQueries,
 } from "./services/sales-read-scope";
 import { isShiftOverdue } from "./services/shift-time";
+import { buildProductSuggestions } from "./lib/product-suggestions";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
 import { OperatorBadge } from "./components/OperatorLogo";
@@ -1367,37 +1368,77 @@ export default function App() {
   }, [products]);
 
   const dynamicBrands = useMemo(() => {
-    if (prodCategory === "Aksesoris") return PRODUCT_HIERARCHY["Aksesoris"].brands;
-    if (prodCategory === "Handphone") return Object.keys(PRODUCT_HIERARCHY["Handphone"].brands);
+    if (prodCategory === "Aksesoris") {
+      return buildProductSuggestions(
+        PRODUCT_HIERARCHY["Aksesoris"].brands,
+        products,
+        prodCategory,
+        "brand",
+      );
+    }
+    if (prodCategory === "Handphone") {
+      return buildProductSuggestions(
+        Object.keys(PRODUCT_HIERARCHY["Handphone"].brands),
+        products,
+        prodCategory,
+        "brand",
+      );
+    }
     if (["Voucher", "Kartu Perdana Kuota", "Kartu Perdana Biasa"].includes(prodCategory))
-      return PRODUCT_HIERARCHY["Voucher"].providers;
-    
-    const existing = products.map((p) => p.brand).filter(Boolean);
-    return Array.from(new Set([...BRANDS, ...existing]));
+      return buildProductSuggestions(
+        PRODUCT_HIERARCHY["Voucher"].providers,
+        products,
+        prodCategory,
+        "provider",
+      );
+
+    return buildProductSuggestions(BRANDS, products, prodCategory, "brand");
   }, [products, prodCategory]);
 
   const dynamicSubCategories = useMemo(() => {
     if (prodCategory === "Aksesoris") {
-      return PRODUCT_HIERARCHY["Aksesoris"].models;
+      return buildProductSuggestions(
+        PRODUCT_HIERARCHY["Aksesoris"].models,
+        products,
+        prodCategory,
+        "subCategory",
+      );
     }
     if (prodCategory === "Parfum") {
-      return PARFUM_TYPES;
+      return buildProductSuggestions(
+        PARFUM_TYPES,
+        products,
+        prodCategory,
+        "subCategory",
+      );
     }
     if (prodCategory === "Handphone" && prodBrand) {
       const brands: Readonly<Record<string, string[] | undefined>> =
         PRODUCT_HIERARCHY["Handphone"].brands;
-      const models = brands[prodBrand];
-      if (models) return models;
+      const matchingBrand = Object.keys(brands).find(
+        (brand) => brand.trim().toLowerCase() === prodBrand.trim().toLowerCase(),
+      );
+      return buildProductSuggestions(
+        matchingBrand ? brands[matchingBrand] || [] : [],
+        products,
+        prodCategory,
+        "subCategory",
+        prodBrand,
+      );
     }
     return [];
   }, [products, prodCategory, prodBrand]);
 
   const dynamicProviders = useMemo(() => {
     if (["Voucher", "Kartu Perdana Kuota", "Kartu Perdana Biasa"].includes(prodCategory))
-      return PRODUCT_HIERARCHY["Voucher"].providers;
-    
-    const existing = products.map((p) => p.provider).filter(Boolean);
-    return Array.from(new Set([...PROVIDERS, ...existing]));
+      return buildProductSuggestions(
+        PRODUCT_HIERARCHY["Voucher"].providers,
+        products,
+        prodCategory,
+        "provider",
+      );
+
+    return buildProductSuggestions(PROVIDERS, products, prodCategory, "provider");
   }, [products, prodCategory]);
 
 
@@ -4930,38 +4971,21 @@ export default function App() {
 
                                 <div data-product-pair="brand-options" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div data-product-field="brand">
-                                  {prodCategory === "Parfum" && (
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 focus-within:text-blue-600 transition-colors">
-                                      Merek (Brand)
-                                    </label>
-                                  )}
-                                  <div className="relative group">
-                                  {prodCategory === "Parfum" ? (
-                                    <input
-                                      type="text"
-                                      value={prodBrand}
-                                      onChange={(e) => setProdBrand(e.target.value)}
-                                      placeholder="Ketik Merek"
-                                      className="w-full border border-slate-300 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold transition-all shadow-sm"
-                                    />
-                                  ) : (
-                                    <ProductCombobox 
-                                      label={ (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Merek (Brand)" }
-                                      value={ (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? prodProvider : prodBrand }
-                                      onChange={(val) => {
-                                        if (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) {
-                                          setProdProvider(val);
-                                          setProdBrand(val); // Keep brand in sync for legacy or generic checks
-                                        } else {
-                                          setProdBrand(val);
-                                        }
-                                        setProdSubCategory("");
-                                      }}
-                                      options={ (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? dynamicProviders : dynamicBrands }
-                                      placeholder={ (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Ketik Merek" }
-                                    />
-                                  )}
-                                  </div>
+                                  <ProductCombobox
+                                    label={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Merek (Brand)"}
+                                    value={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? prodProvider : prodBrand}
+                                    onChange={(val) => {
+                                      if (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) {
+                                        setProdProvider(val);
+                                        setProdBrand(val); // Keep brand in sync for legacy or generic checks
+                                      } else {
+                                        setProdBrand(val);
+                                      }
+                                      setProdSubCategory("");
+                                    }}
+                                    options={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? dynamicProviders : dynamicBrands}
+                                    placeholder={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Ketik Merek"}
+                                  />
                                 </div>
                                 { (prodCategory === "Aksesoris" || prodCategory === "Handphone" || prodCategory === "Parfum") && (
                                   <div>

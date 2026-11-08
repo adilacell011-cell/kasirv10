@@ -27,9 +27,15 @@ live preview box in the popup), and editing relies on name segments staying in t
 
 ## Custom categories (creatable CustomSelect)
 product.category is a FREE-TEXT string (saved as `category: prodCategory`), no DB enum — so
-adding a category needs no backend change; a typed value persists and auto-appears in
-`dynamicCategories` and `ALL_CATEGORIES` (POS filter). The shared `components/CustomSelect.tsx`
+adding a category needs no backend change; a typed value persists and auto-appears in the
+product-form suggestions. The POS category rail currently renders the fixed `DEFAULT_CATEGORIES`
+list, so a custom category does not automatically get its own POS filter button. The shared `components/CustomSelect.tsx`
 was originally pick-only (readOnly input) despite "Ketik atau pilih" placeholders. It is now a
 creatable combobox (type to filter + "+ Tambah \"X\"" row, commit on click/Enter/blur,
 allowCreate default true). Used by category, brand/provider, sub-category/model fields — all
 become creatable. Dropdown items use onMouseDown+preventDefault to beat the input blur.
+
+Brand/provider and model/sub-category suggestions combine the defaults with values already
+saved for the selected product category; phone models are further scoped to the selected brand.
+Suggestions dedupe case-insensitively but preserve the original saved product values. This is
+only a form suggestion behavior; it does not rename existing product data.
