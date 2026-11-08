@@ -223,10 +223,16 @@ test("Compose services initialize before API and API performs a read-only schema
   const local = fs.readFileSync(new URL("../../../docker-compose.yml", import.meta.url), "utf8");
   for (const compose of [staging, regular, local]) {
     assert.match(compose, /schema-init:/);
-    assert.match(compose, /SCHEMA_INIT_AUTO_TARGET:/);
-    assert.match(compose, /--compose-auto-if-empty/);
     assert.match(compose, /service_completed_successfully/);
   }
+  for (const compose of [regular, local]) {
+    assert.match(compose, /SCHEMA_INIT_AUTO_TARGET:/);
+    assert.match(compose, /--compose-auto-if-empty/);
+  }
+  assert.match(staging, /STAGING_SCHEMA_INIT_TARGET:/);
+  assert.match(staging, /--approve=schema-migrate:/);
+  assert.doesNotMatch(staging, /--compose-auto-if-empty/);
+
   const entrypoint = fs.readFileSync(new URL("../docker-entrypoint.sh", import.meta.url), "utf8");
   assert.match(entrypoint, /dist\/database-check-cli\.mjs/);
   assert.ok(entrypoint.indexOf("database-check-cli.mjs") < entrypoint.indexOf("dist/index.mjs"));
