@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import {
   AlertCircle,
@@ -1286,9 +1287,9 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
         )}
       </div>
 
-      {cameraOpen && (
+      {cameraOpen && createPortal(
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#102d2b]/65 p-3 sm:p-4"
+          className="fixed inset-0 z-[3000] flex items-center justify-center bg-[#102d2b]/65 p-3 sm:p-4"
           data-testid="dialog-camera-scanner"
           onMouseDown={(event) => { if (event.target === event.currentTarget) setCameraOpen(false); }}
         >
@@ -1382,7 +1383,8 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               </div>
             )}
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {editorItem && (
