@@ -24,7 +24,7 @@ services:
   # Runs the approved legacy staging baseline + Audit migration once; API waits
   # for this service to finish successfully before it can start.
   schema-init:
-    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-ab22dfb7f03b9beed13905df176e0cf79e70e1cd-run-42375700344-attempt-1"
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-e699ba766c97b0c7dda35dc87cc231f3eff63e78-run-42442517023-attempt-1"
     pull_policy: always
     container_name: kasirv10-staging-schema-init
     restart: "no"
@@ -49,7 +49,7 @@ services:
       - kasirv10_staging_net
 
   api:
-    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-ab22dfb7f03b9beed13905df176e0cf79e70e1cd-run-42375700344-attempt-1"
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-e699ba766c97b0c7dda35dc87cc231f3eff63e78-run-42442517023-attempt-1"
     pull_policy: always
     container_name: kasirv10-staging-api
     restart: unless-stopped
@@ -84,7 +84,7 @@ services:
       start_period: 30s
 
   web:
-    image: "ghcr.io/adilacell011-cell/kasirv10-web:candidate-ab22dfb7f03b9beed13905df176e0cf79e70e1cd-run-42375700344-attempt-1"
+    image: "ghcr.io/adilacell011-cell/kasirv10-web:candidate-e699ba766c97b0c7dda35dc87cc231f3eff63e78-run-42442517023-attempt-1"
     pull_policy: always
     container_name: kasirv10-staging-web
     restart: unless-stopped
