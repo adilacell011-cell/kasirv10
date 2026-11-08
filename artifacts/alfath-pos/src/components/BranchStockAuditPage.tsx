@@ -765,7 +765,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
 
         scanner = new Html5Qrcode("audit-camera-reader", {
           verbose: false,
-          useBarCodeDetectorIfSupported: false,
+          useBarCodeDetectorIfSupported: true,
           formatsToSupport: [
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8,
@@ -777,11 +777,9 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
         await scanner.start(
           { facingMode: "environment" },
           {
-            fps: 10,
-            qrbox: (width, height) => ({
-              width: Math.max(1, Math.min(360, Math.floor(width * 0.9))),
-              height: Math.max(1, Math.min(130, Math.floor(height * 0.28))),
-            }),
+            fps: 15,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
           },
           (decodedText) => {
             if (cancelled || scannerHandledRef.current) return;
@@ -1290,11 +1288,11 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
 
       {cameraOpen && (
         <div
-          className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/65 p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#102d2b]/65 p-3 sm:p-4"
           data-testid="dialog-camera-scanner"
           onMouseDown={(event) => { if (event.target === event.currentTarget) setCameraOpen(false); }}
         >
-          <section role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title" className="max-h-[94dvh] w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-xl sm:rounded-[22px] sm:p-5">
+          <section role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title" className="max-h-[92dvh] w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto rounded-[22px] border border-[#d7e0dc] bg-[#f8f9f5] p-3 shadow-2xl sm:max-w-xl sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Audit stok cabang</p>
@@ -1307,14 +1305,21 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
             </div>
 
             <div
-              id="audit-camera-reader"
-              data-testid="camera-barcode-reader"
-              className="mt-4 min-h-[220px] overflow-hidden rounded-2xl bg-[#101819] sm:min-h-[280px] [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+              className="relative mx-auto mt-4 aspect-square w-full max-w-[352px] overflow-hidden rounded-2xl bg-[#101819]"
               style={{
-                aspectRatio: "4 / 3",
                 display: cameraStatus === "starting" || cameraStatus === "scanning" ? "block" : "none",
               }}
-            />
+            >
+              <div
+                id="audit-camera-reader"
+                data-testid="camera-barcode-reader"
+                className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-[8%] top-1/2 h-[2px] -translate-y-1/2 bg-red-500/70 shadow-[0_0_12px_rgba(239,68,68,0.8)]"
+              />
+            </div>
 
             {(cameraStatus === "starting" || cameraStatus === "scanning") && (
               <div aria-live="polite" data-testid="status-camera-scanner" className="mt-3 flex items-start gap-2 rounded-xl bg-[#e9eeea] px-3 py-2.5 text-xs leading-5 text-[#526b65]">
