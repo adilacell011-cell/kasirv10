@@ -251,3 +251,8 @@ In the tablet POS picker, keep product tiles visually distinct with clear border
 and a visible add affordance; do not change its established two-column transaction layout.
 **Why:** the owner reported that catalog boundaries were hard to see and wanted to prevent accidental product selection.
 **How to apply:** strengthen only product-tile and search-result styling; preserve category filters, cart handlers, prices, stock rules, and POS layout.
+
+## Android split-screen POS density
+The cashier uses the POS on an Android tablet alongside another app and prefers a more compact product search toolbar and product tiles when the POS has a narrow pane.
+**Why:** the owner showed the actual split-screen setup and said the search and product controls looked too large.
+**How to apply:** adapt POS density to its available container width, keep product names legible and scan/add controls usable, and retain the side-by-side catalog/cart layout whenever the pane is wide enough.

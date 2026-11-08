@@ -7693,8 +7693,9 @@ export default function App() {
                         {/* 1. BAR PENCARIAN & SCANNER UTAMA */}
                         <div data-pos-catalog-toolbar className="px-3 pt-3 pb-2.5 bg-slate-100 dark:bg-slate-900 shrink-0">
                           <div className="relative group">
-                            <Search className="w-4 h-4 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors z-10" />
+                            <Search data-pos-search-icon className="w-4 h-4 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors z-10" />
                             <input
+                              data-pos-search-input
                               ref={searchInputRef}
                               type="text"
                               placeholder="CARI ATAU PINDAI BARCODE..."
@@ -7703,7 +7704,7 @@ export default function App() {
                               className="w-full bg-white dark:bg-slate-800 rounded-2xl pl-11 pr-[4.5rem] py-3 text-[11px] font-black focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all uppercase tracking-tight placeholder:text-slate-400 text-slate-800 dark:text-slate-100 shadow-[inset_3px_3px_7px_#c5cdd8,inset_-2px_-2px_6px_#ffffff] dark:shadow-[inset_3px_3px_7px_#1c1e24,inset_-2px_-2px_6px_#34373f]"
                             />
                             
-                            <div className="absolute right-2 top-[7px] flex items-center gap-1">
+                            <div data-pos-search-actions className="absolute right-2 top-[7px] flex items-center gap-1">
                               {searchTerm && (
                                 <button
                                   onClick={() => {
@@ -7717,6 +7718,7 @@ export default function App() {
                                 </button>
                               )}
                               <button
+                                data-pos-scan-button
                                 onClick={() => {
                                   setShowScanner(true);
                                   setScannerCallback(
@@ -7924,7 +7926,7 @@ export default function App() {
                                 </p>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                              <div data-pos-product-grid className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                 {posFilteredProducts
                                   .filter(p => {
                                     if (posSelectedCategory === "Aksesoris" && posSelectedBrand !== "Semua") {
@@ -7941,6 +7943,7 @@ export default function App() {
                                     
                                     return (
                                       <button
+                                        data-pos-product-card
                                         key={p.id}
                                         onClick={async () => {
                                           if (isOutOfStock) {
