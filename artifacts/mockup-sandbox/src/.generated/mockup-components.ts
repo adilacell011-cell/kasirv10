@@ -32,6 +32,7 @@ export const modules: ModuleMap = {
   "./components/mockups/operator-logos/OperatorLogoPreview.tsx": () => import("../components/mockups/operator-logos/OperatorLogoPreview.tsx"),
   "./components/mockups/pos-luxe/Current.tsx": () => import("../components/mockups/pos-luxe/Current.tsx"),
   "./components/mockups/pos-luxe/Premium.tsx": () => import("../components/mockups/pos-luxe/Premium.tsx"),
+  "./components/mockups/pos-luxe/SearchTable.tsx": () => import("../components/mockups/pos-luxe/SearchTable.tsx"),
   "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
   "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
 };
