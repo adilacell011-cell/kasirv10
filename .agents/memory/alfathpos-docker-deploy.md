@@ -17,9 +17,14 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 - **VPS staging is a separate Kasir V10 installation, not an update to the STB.**
   The VPS is Ubuntu/AMD64 with about 1.9 GiB RAM and also runs ZETAS; the same application images must continue to support ARM64. Keep staging containers, network, database, volumes, and backup path isolated from ZETAS; never point staging at the STB database.
-  The Owner clarified that the VPS Kasir installation is still for testing and is not yet used by cashiers; migration of STB data to the VPS is deferred until the application is finished.
+  The Owner clarified that the VPS Kasir installation is still for testing and is not yet used by cashiers; the Owner is now discussing a safe production migration, but no cutover has been authorized.
   **Why:** keep the test installation separate from STB data and other VPS services; the production data move is a later, intentional step.
   **How to apply:** use immutable candidate SHA tags in the existing isolated staging stack; preserve its database volume during image updates and never point it at the STB database. Do not pin the application to one CPU architecture or reuse another stack's network/data. The Owner selected `compose.staging.yaml` for the Dockge VPS stack; keep the generic `compose.dockge.yaml` separate from staging.
+
+- **The previously shared STB SQL dump is an outdated test copy, not a production source.**
+  The Owner says the current VPS uses an older STB copy and the account names/passwords have since changed.
+  **Why:** restoring the stale dump could roll back account and transaction state.
+  **How to apply:** use a fresh, verified dump from the live STB for a future cutover; restore it to a separate empty VPS database after a test restore, never merge it into the current test database.
 
 - **API image is single-stage and keeps the WHOLE monorepo + node_modules intact.**
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
