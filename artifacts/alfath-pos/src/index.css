@@ -2330,7 +2330,7 @@ body,
 }
 
 @container pos-catalog (max-width: 340px) {
-  [data-pos-search-results] > div:first-child,
+  [data-pos-search-result-list] > div:first-child,
   [data-pos-search-result-list] > button {
     grid-template-columns: 1.25rem minmax(0, 1fr) 2.5rem 4.25rem;
   }

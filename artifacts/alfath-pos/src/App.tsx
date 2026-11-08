@@ -7741,14 +7741,14 @@ export default function App() {
                             {/* DROPDOWN HASIL PENCARIAN CEPAT */}
                             {searchSuggestions.length > 0 && (
                               <div data-pos-search-results className="app-solid absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-200">
-                                {/* Header tabel Excel */}
-                                <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-white pl-[3px]">
-                                  <span className="border-r border-slate-200 bg-slate-100 py-2 text-[9px] font-black uppercase tracking-wide text-center text-slate-600">#</span>
-                                  <span className="border-r border-slate-200 bg-blue-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-blue-800">Nama Produk</span>
-                                  <span className="border-r border-slate-200 bg-emerald-50 py-2 text-[9px] font-black uppercase tracking-wide text-center text-emerald-800">Stok</span>
-                                  <span className="bg-indigo-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-right text-indigo-800">Harga</span>
-                                </div>
                                 <div data-pos-search-result-list className="max-h-[320px] overflow-y-auto">
+                                  {/* Header berbagi area gulir agar lebar kolom selalu sama */}
+                                  <div className="sticky top-0 z-10 grid grid-cols-[1.5rem_minmax(0,1fr)_3.25rem_5rem] gap-0 border-b border-slate-300 bg-white pl-[3px]">
+                                    <span className="border-r border-slate-200 bg-slate-100 py-2 text-[9px] font-black uppercase tracking-wide text-center text-slate-600">#</span>
+                                    <span className="border-r border-slate-200 bg-blue-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-blue-800">Nama Produk</span>
+                                    <span className="border-r border-slate-200 bg-emerald-50 py-2 text-[9px] font-black uppercase tracking-wide text-center text-emerald-800">Stok</span>
+                                    <span className="bg-indigo-50 px-2 py-2 text-[9px] font-black uppercase tracking-wide text-right text-indigo-800">Harga</span>
+                                  </div>
                                   {searchSuggestions.slice(0, 15).map((p, idx) => {
                                     const stock = getBranchStock(profile?.branchId || "", p.id);
                                     const hasDiscount = p.discountPrice > 0;
@@ -7942,7 +7942,7 @@ export default function App() {
                                     }
                                     return true;
                                   })
-                                  .map((p, idx) => {
+                                  .map((p) => {
                                     const stock = getBranchStock(profile?.branchId || "", p.id);
                                     const isOutOfStock = stock <= 0;
                                     const hasDiscount = p.discountPrice > 0;
@@ -7962,7 +7962,7 @@ export default function App() {
                                           setScanIndicator(`Ditambahkan: ${getProductName(p)}`);
                                           setTimeout(() => setScanIndicator(null), 1000);
                                         }}
-                                        className={`group text-left border border-slate-200 rounded-xl p-2.5 min-h-[100px] flex flex-col justify-between transition-colors shadow-sm hover:border-blue-500 hover:bg-blue-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 active:bg-blue-100 cursor-pointer relative overflow-hidden border-l-[3px] ${idx % 2 === 0 ? "bg-white border-l-blue-300" : "bg-sky-50/50 border-l-indigo-300"} ${isOutOfStock ? "opacity-60" : ""}`}
+                                        className={`group text-left bg-white border border-slate-200 rounded-xl p-2.5 min-h-[100px] flex flex-col justify-between transition-colors shadow-sm hover:border-blue-500 hover:bg-blue-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 active:bg-blue-100 cursor-pointer relative overflow-hidden ${isOutOfStock ? "opacity-60" : ""}`}
                                       >
                                         {/* Expiry ribbon */}
                                         {expiry && (
