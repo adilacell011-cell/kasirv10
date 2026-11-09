@@ -9783,3 +9783,162 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
 #root .app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-form-actions] {
   background-color: #102640 !important;
 }
+
+/* Admin branch stock matrix: navy surfaces, readable quantities, gold search. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] {
+  color: #edf3f9 !important;
+  background-color: #0b1b31 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-toolbar] h2 {
+  color: #f3f5f8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-toolbar] p {
+  color: #bdcbd9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search-box] svg {
+  color: #e3c77f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search] {
+  min-height: 44px !important;
+  border: 1px solid rgba(218, 189, 123, 0.48) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, #102943, #091a30) !important;
+  color: #f3f5f8 !important;
+  -webkit-text-fill-color: #f3f5f8 !important;
+  caret-color: #e3c77f !important;
+  color-scheme: dark;
+  box-shadow: inset 0 1px 4px rgba(0, 6, 16, 0.32), 0 2px 7px rgba(0, 6, 16, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search]::placeholder {
+  color: #bdc9d6 !important;
+  -webkit-text-fill-color: #bdc9d6 !important;
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search]:focus {
+  border-color: #e6cb88 !important;
+  background: #0d223b !important;
+  box-shadow: 0 0 0 3px rgba(227, 199, 127, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search]:-webkit-autofill,
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search]:-webkit-autofill:hover,
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-search]:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f3f5f8 !important;
+  -webkit-box-shadow: inset 0 0 0 1000px #102943 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table-card] {
+  border: 1px solid rgba(218, 189, 123, 0.34) !important;
+  background: #0d223b !important;
+  box-shadow: 0 8px 20px rgba(0, 6, 16, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-branch-stock-matrix] {
+  background: #0b1b31 !important;
+  scrollbar-color: #9a8150 #0b1b31;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] {
+  background: #0b1b31 !important;
+  color: #edf3f9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] th,
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] td {
+  border-color: rgba(158, 181, 205, 0.32) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] thead th {
+  background: linear-gradient(110deg, #102943, #173653) !important;
+  color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody tr:nth-child(odd) td {
+  background: #102640 !important;
+  color: #e9eff5 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody tr:nth-child(even) td {
+  background: #142e49 !important;
+  color: #e9eff5 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody tr:hover td:not([data-stock-level="low"]) {
+  background: #1b3b5b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-column="product"] {
+  background: #102640 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody tr:nth-child(even) td[data-column="product"] {
+  background: #142e49 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-product-name] {
+  color: #f3f5f8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-product-meta] > span:first-child {
+  border-color: rgba(150, 175, 200, 0.28) !important;
+  background: #0b1d33 !important;
+  color: #c3cfdb !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-product-meta] > span:nth-child(2) {
+  border-color: rgba(226, 184, 99, 0.4) !important;
+  background: #40351f !important;
+  color: #f0d18a !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-product-meta] > span:nth-child(3) {
+  border-color: rgba(121, 173, 211, 0.38) !important;
+  background: #173653 !important;
+  color: #c5e0f2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-column="branch-qty"][data-stock-level="normal"] {
+  color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-stock-level="zero"] {
+  color: #c3cfdb !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-stock-level="zero"] span,
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-stock-level="hidden"] span {
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-stock-level="hidden"] {
+  background: #0b1d33 !important;
+  color: #aab9c8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-stock-level="low"] {
+  background: #482832 !important;
+  color: #ffb6ba !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] [data-stock-table] tbody td[data-column="total"] {
+  background: #2d2d26 !important;
+  color: #f0d999 !important;
+  font-weight: 900;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] button[data-stock-delete] {
+  border: 1px solid rgba(239, 132, 133, 0.28) !important;
+  background: #321f2b !important;
+  color: #ffb2b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] button[data-stock-delete]:hover {
+  border-color: rgba(255, 155, 155, 0.48) !important;
+  background: #512b35 !important;
+}
