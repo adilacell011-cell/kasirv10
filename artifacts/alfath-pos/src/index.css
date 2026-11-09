@@ -1167,7 +1167,7 @@ body {
   color: var(--text-main) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] {
+[data-notification-stack][data-notification-screen="premium"] {
   top: max(calc(env(safe-area-inset-top, 0px) + 4.5rem), 4.75rem) !important;
   left: 50% !important;
   right: auto !important;
@@ -1178,7 +1178,7 @@ body {
   gap: 0.75rem !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-toast] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-toast] {
   border: 1px solid rgba(218, 188, 126, 0.82) !important;
   border-left-width: 5px !important;
   border-radius: 1.125rem !important;
@@ -1190,80 +1190,80 @@ body {
     0 3px 10px rgba(4, 14, 29, 0.2) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-title] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-title] {
   font-size: 0.8rem !important;
   letter-spacing: 0.08em !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-message] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-message] {
   color: #f8fafc !important;
   font-size: 0.9375rem !important;
   font-weight: 700 !important;
   line-height: 1.45 !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-icon] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-icon] {
   width: 2rem !important;
   height: 2rem !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="success"] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="success"] {
   border-left-color: #45c79a !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="success"] [data-alert-title],
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="success"] [data-alert-icon] svg {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="success"] [data-alert-title],
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="success"] [data-alert-icon] svg {
   color: #83e7bd !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="error"] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="error"] {
   border-left-color: #ff6576 !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="error"] [data-alert-title],
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="error"] [data-alert-icon] svg {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="error"] [data-alert-title],
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="error"] [data-alert-icon] svg {
   color: #ff9ba6 !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="warning"] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="warning"] {
   border-left-color: #e3ba6b !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="warning"] [data-alert-title],
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="warning"] [data-alert-icon] svg {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="warning"] [data-alert-title],
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="warning"] [data-alert-icon] svg {
   color: #f2d58e !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="info"] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="info"] {
   border-left-color: #86b7ff !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="info"] [data-alert-title],
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="info"] [data-alert-icon] svg {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="info"] [data-alert-title],
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="info"] [data-alert-icon] svg {
   color: #a9caff !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="success"] [data-alert-icon] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="success"] [data-alert-icon] {
   background: rgba(69, 199, 154, 0.18) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="error"] [data-alert-icon] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="error"] [data-alert-icon] {
   background: rgba(255, 101, 118, 0.18) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="warning"] [data-alert-icon] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="warning"] [data-alert-icon] {
   background: rgba(227, 186, 107, 0.18) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-type="info"] [data-alert-icon] {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-type="info"] [data-alert-icon] {
   background: rgba(134, 183, 255, 0.18) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-toast] > button {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-toast] > button {
   color: rgba(248, 250, 252, 0.7) !important;
 }
 
-[data-notification-stack][data-notification-screen="pos"] [data-alert-toast] > button:hover {
+[data-notification-stack][data-notification-screen="premium"] [data-alert-toast] > button:hover {
   color: #ffffff !important;
 }
 
@@ -1323,7 +1323,7 @@ body {
     padding: 0 !important;
   }
 
-  [data-notification-stack][data-notification-screen="pos"] {
+  [data-notification-stack][data-notification-screen="premium"] {
     top: max(calc(env(safe-area-inset-top, 0px) + 4.5rem), 4.75rem) !important;
     left: 50% !important;
     right: auto !important;
@@ -3052,7 +3052,14 @@ body,
 
 /* Stronger visual match for the Admin reference screenshot. */
 .app-shell[data-admin-surface="true"] {
-  background-color: #e9eff8 !important;
+  --admin-navy: #102744;
+  --admin-navy-mid: #1b3b5b;
+  --admin-navy-soft: #294967;
+  --admin-gold: #c4a66d;
+  --admin-gold-pale: #f4ecd9;
+  --admin-paper: #f3f5f7;
+  --admin-line: #d9e0e8;
+  background-color: #e9edf2 !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-topbar {
@@ -3061,10 +3068,19 @@ body,
   min-height: 50px !important;
   margin: 8px 12px 2px;
   padding-inline: 12px !important;
-  border: 1px solid #dce5f2;
+  border: 1px solid rgba(212, 184, 126, 0.48);
   border-radius: 18px;
-  background: rgba(250, 252, 255, 0.96) !important;
-  --tw-shadow: 0 4px 14px rgba(39, 58, 91, 0.14) !important;
+  color: #f8fafc !important;
+  background: linear-gradient(112deg, #0b1931 0%, #142d4b 58%, #203a58 100%) !important;
+  --tw-shadow: 0 8px 18px rgba(3, 12, 27, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-topbar [data-topbar-title] h2 {
+  color: #f8fafc !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-topbar button {
+  color: #f1dba7;
 }
 
 .app-shell[data-admin-surface="true"] .app-topbar > div {
@@ -3085,7 +3101,7 @@ body,
   [data-ui-screen="stock_audit"],
   [data-testid="page-branch-stock-audit"]
 ) {
-  background-color: #e9eff8 !important;
+  background-color: #edf0f4 !important;
   color: #1b2b45;
 }
 
@@ -3093,9 +3109,10 @@ body,
   left: 10px !important;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 7px) !important;
   width: calc(100% - 20px) !important;
-  border: 1px solid #dce5f2;
+  border: 1px solid rgba(212, 184, 126, 0.42);
   border-radius: 20px;
-  background: rgba(250, 252, 255, 0.97) !important;
+  background: rgba(16, 39, 68, 0.98) !important;
+  color: #dbe4ef;
   padding-bottom: max(3px, env(safe-area-inset-bottom, 0px)) !important;
   --tw-shadow: 0 6px 18px rgba(34, 53, 83, 0.16) !important;
 }
@@ -3123,18 +3140,18 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] {
-  color: #20385f !important;
+  color: #f1dba7 !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] > div > div {
-  background: #20385f !important;
-  color: #ffffff !important;
+  background: linear-gradient(145deg, #ddc98f, #bea064) !important;
+  color: #102744 !important;
   transform: none !important;
-  --tw-shadow: 0 3px 9px rgba(32, 56, 95, 0.28) !important;
+  --tw-shadow: 0 3px 9px rgba(0, 0, 0, 0.24) !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] svg {
-  color: #ffffff !important;
+  color: #102744 !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav button > span {
@@ -3178,9 +3195,9 @@ body,
 
 .app-shell[data-admin-surface="true"] [data-dashboard-period-option][data-active="true"],
 .app-shell[data-admin-surface="true"] [data-dashboard-view-option][data-active="true"] {
-  background: #20385f !important;
-  color: #ffffff !important;
-  --tw-shadow: 0 3px 9px rgba(32, 56, 95, 0.24) !important;
+  background: linear-gradient(120deg, #102744, #1b3b5b) !important;
+  color: #f4e4b9 !important;
+  --tw-shadow: 0 3px 9px rgba(16, 39, 68, 0.24) !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger {
@@ -3282,8 +3299,8 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] [data-report-view-option][data-active="true"] {
-  background: #20385f !important;
-  color: #ffffff !important;
+  background: linear-gradient(120deg, #102744, #1b3b5b) !important;
+  color: #f4e4b9 !important;
   border-radius: 12px !important;
 }
 
@@ -3304,7 +3321,7 @@ body,
 .app-shell[data-admin-surface="true"] [data-inventory-toolbar] > div > button {
   min-height: 42px;
   border-radius: 14px !important;
-  background: #20385f !important;
+  background: linear-gradient(120deg, #102744, #1b3b5b) !important;
   --tw-shadow: 0 3px 9px rgba(32, 56, 95, 0.22) !important;
 }
 
@@ -3315,13 +3332,20 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] {
-  background-color: #151b26 !important;
+  --admin-navy: #09182b;
+  --admin-navy-mid: #102744;
+  --admin-navy-soft: #1b3b5b;
+  --admin-gold: #c4a66d;
+  --admin-gold-pale: #413a2d;
+  --admin-paper: #182333;
+  --admin-line: #364457;
+  background-color: #111b29 !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-topbar,
 .dark .app-shell[data-admin-surface="true"] .app-bottom-nav {
-  border-color: #354155 !important;
-  background: rgba(31, 40, 55, 0.97) !important;
+  border-color: rgba(196, 166, 109, 0.44) !important;
+  background: linear-gradient(112deg, #09182b 0%, #102744 58%, #1b3b5b 100%) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] :where(
@@ -3338,7 +3362,7 @@ body,
   [data-ui-screen="stock_audit"],
   [data-testid="page-branch-stock-audit"]
 ) {
-  background-color: #151b26 !important;
+  background-color: #111b29 !important;
   color: #e7edf6;
 }
 
@@ -3488,19 +3512,28 @@ body,
   left: 8px !important;
   width: min(17rem, calc(100vw - 24px)) !important;
   height: calc(100dvh - 16px) !important;
-  border: 1px solid #d4dfef !important;
+  border: 1px solid rgba(212, 184, 126, 0.48) !important;
   border-radius: 24px !important;
   overflow: hidden;
-  background: #e9eff8 !important;
-  --tw-shadow: 0 14px 34px rgba(28, 47, 78, 0.2) !important;
+  color: #e8eef6 !important;
+  background: linear-gradient(180deg, #102744 0%, #0d2039 100%) !important;
+  --tw-shadow: 0 14px 34px rgba(4, 14, 29, 0.3) !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar > div:first-child {
   min-height: 58px;
   height: 58px;
   padding-inline: 14px !important;
-  border-bottom-color: #d8e2f0 !important;
-  background: rgba(255, 255, 255, 0.52);
+  border-bottom-color: rgba(212, 184, 126, 0.34) !important;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar > div:first-child h1 {
+  color: #f8fafc !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar > div:first-child p {
+  color: #d9c38f !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar nav {
@@ -3522,40 +3555,50 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar nav button:not([class*="bg-blue-600"]):hover {
-  border-color: #d8e2f0;
-  background-color: rgba(255, 255, 255, 0.75);
-  color: #20385f !important;
-  --tw-shadow: 0 2px 6px rgba(35, 54, 85, 0.08) !important;
+  border-color: rgba(212, 184, 126, 0.34);
+  background-color: rgba(255, 255, 255, 0.09);
+  color: #f1dba7 !important;
+  --tw-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar nav button[class*="bg-blue-600"] {
-  border-color: #20385f !important;
-  background: #20385f !important;
-  color: #ffffff !important;
-  --tw-shadow: 0 4px 10px rgba(32, 56, 95, 0.22) !important;
+  border-color: #c4a66d !important;
+  background: linear-gradient(110deg, #cbb274, #dfcd9e) !important;
+  color: #102744 !important;
+  --tw-shadow: 0 4px 10px rgba(0, 0, 0, 0.18) !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar nav button span {
   letter-spacing: 0.025em !important;
 }
 
+.app-shell[data-admin-surface="true"] .app-sidebar nav button:not([class*="bg-blue-600"]) {
+  color: #d6dfeb;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar nav button[class*="bg-blue-600"] svg {
+  color: #102744 !important;
+}
+
 .app-shell[data-admin-surface="true"] .app-sidebar > div:last-child {
   padding: 11px !important;
-  border-top-color: #d8e2f0 !important;
-  background: rgba(255, 255, 255, 0.36);
+  border-top-color: rgba(212, 184, 126, 0.34) !important;
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar > div:last-child > div:first-child {
-  border-color: #dce5f2 !important;
+  border-color: rgba(212, 184, 126, 0.32) !important;
   border-radius: 14px !important;
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #e8eef6 !important;
 }
 
 .app-shell[data-admin-surface="true"] .app-sidebar > div:last-child > button {
   min-height: 44px;
-  border-color: #dce5f2 !important;
+  border-color: rgba(212, 184, 126, 0.32) !important;
   border-radius: 13px !important;
-  background: rgba(255, 255, 255, 0.75);
+  color: #e8eef6 !important;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav {
@@ -3667,15 +3710,15 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-sidebar {
-  border-color: #344156 !important;
-  background: #202a39 !important;
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(180deg, #09182b 0%, #0d2039 100%) !important;
   --tw-shadow: 0 14px 34px rgba(0, 0, 0, 0.42) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-sidebar > div:first-child,
 .dark .app-shell[data-admin-surface="true"] .app-sidebar > div:last-child {
-  border-color: #344156 !important;
-  background: rgba(32, 42, 57, 0.82);
+  border-color: rgba(196, 166, 109, 0.32) !important;
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-sidebar nav > div[class*="mt-5"] p {
@@ -3683,22 +3726,23 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-sidebar nav button:not([class*="bg-blue-600"]):hover {
-  border-color: #3b4b64;
-  background-color: #2a374b;
-  color: #f2f6fc !important;
+  border-color: rgba(196, 166, 109, 0.42);
+  background-color: rgba(255, 255, 255, 0.09);
+  color: #f1dba7 !important;
   --tw-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-sidebar nav button[class*="bg-blue-600"] {
-  border-color: #29436d !important;
-  background: #29436d !important;
+  border-color: #c4a66d !important;
+  background: linear-gradient(110deg, #c4a66d, #dfcd9e) !important;
+  color: #102744 !important;
   --tw-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-sidebar > div:last-child > div:first-child,
 .dark .app-shell[data-admin-surface="true"] .app-sidebar > div:last-child > button {
-  border-color: #3b4b64 !important;
-  background: #263244 !important;
+  border-color: rgba(196, 166, 109, 0.34) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-bottom-nav {
@@ -3708,7 +3752,8 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] > div > div {
-  background: #29436d !important;
+  background: linear-gradient(145deg, #ddc98f, #bea064) !important;
+  color: #102744 !important;
   --tw-shadow: 0 3px 8px rgba(0, 0, 0, 0.32) !important;
 }
 
@@ -3720,8 +3765,8 @@ body,
 
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-period-option][data-active="true"],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-view-option][data-active="true"] {
-  background: #29436d !important;
-  color: #ffffff !important;
+  background: linear-gradient(120deg, #102744, #1b3b5b) !important;
+  color: #f1dba7 !important;
 }
 
 @media (max-width: 767px) {
@@ -3911,6 +3956,59 @@ body,
   .app-shell[data-admin-surface="true"] .admin-excel-table td {
     padding: 7px 8px;
   }
+}
+
+/* Admin-specific action and metric accents. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+ ) button[class*="bg-blue-600"]:not([data-dashboard-period-option]):not([data-dashboard-view-option]):not([data-report-view-option]) {
+  border-color: #183654 !important;
+  background: linear-gradient(112deg, #102744, #1b3b5b) !important;
+  color: #f7f3e8 !important;
+  --tw-shadow: 0 3px 9px rgba(16, 39, 68, 0.16) !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+ ) :where(h1, h2, h3, h4) {
+  text-wrap: pretty;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(1) > div:first-child {
+  background: linear-gradient(130deg, #102744, #294967) !important;
+  box-shadow: 0 4px 12px rgba(16, 39, 68, 0.16) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(3) > div:first-child {
+  color: #20344d !important;
+  background: linear-gradient(145deg, #f0e4c5, #d5bd83) !important;
+  box-shadow: 0 4px 12px rgba(162, 132, 74, 0.16) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(3) > div:first-child svg {
+  color: #20344d !important;
 }
 
 .app-shell[data-admin-surface="true"] .admin-excel-branch-modal th[data-column="branch"] {
@@ -7399,4 +7497,134 @@ body,
 :root:not(.dark) .app-shell [data-ui-screen="cashier-stock"] table tbody tr[class*="bg-emerald-50"]:hover,
 .dark .app-shell [data-ui-screen="cashier-stock"] table tbody tr[class*="bg-emerald-50"]:hover {
   background: #dff1e5 !important;
+}
+
+/* Final Admin-only color guard: keep later legacy page rules from reintroducing
+   the former blue treatment, without changing any POS or cashier surfaces. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) table thead th {
+  color: #f6f2e8 !important;
+  background: linear-gradient(110deg, #102744, #1b3b5b) !important;
+  border-color: rgba(196, 166, 109, 0.48) !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where([data-ui-panel], [data-bonus-panel], [data-stock-table-card], [data-product-form-card]) {
+  border-color: #d9e0e8 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger) {
+  border-color: #d5dde7 !important;
+  background-color: #fff !important;
+  color: #20344d !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger):focus {
+  border-color: #c4a66d !important;
+  --tw-ring-color: rgba(196, 166, 109, 0.34) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) table thead th {
+  color: #f3e6c4 !important;
+  background: linear-gradient(110deg, #09182b, #102744) !important;
+  border-color: rgba(196, 166, 109, 0.4) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where([data-ui-panel], [data-bonus-panel], [data-stock-table-card], [data-product-form-card]) {
+  border-color: #364457 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger) {
+  border-color: #3c4b5f !important;
+  background-color: #192638 !important;
+  color: #e7edf6 !important;
 }

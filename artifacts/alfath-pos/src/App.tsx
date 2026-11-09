@@ -10330,7 +10330,11 @@ export default function App() {
     {/* --- BRAND ALERT TOAST MULTIPLE POPUPS (NO WEB ADDRESS NO DOMAIN SHOWN) --- */}
     <div
       data-notification-stack
-      data-notification-screen={activeMenu === "pos" ? "pos" : "default"}
+      data-notification-screen={
+        activeMenu === "pos" || profile?.role === "ADMIN"
+          ? "premium"
+          : "default"
+      }
       className="fixed top-4 right-4 z-[99999] flex flex-col gap-3 max-w-sm w-full pointer-events-none"
     >
       {globalAlerts.map((alert) => (
