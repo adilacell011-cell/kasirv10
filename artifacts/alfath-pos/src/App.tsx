@@ -5382,8 +5382,8 @@ export default function App() {
 
                 </div>
                 {searchTerm ? (
-                <div className="flex-1 overflow-x-auto bg-slate-50">
-                  <table className={`w-full text-left border-collapse ${(searchTerm || drillPath.length >= 3 || (drillPath.length === 2 && drillPath[0] !== "Aksesoris")) ? "min-w-[700px]" : ""}`}>
+                <div data-inventory-search-results className="flex-1 overflow-x-auto bg-slate-50">
+                  <table data-inventory-search-table aria-label="Hasil pencarian master barang" className={`w-full text-left border-collapse ${(searchTerm || drillPath.length >= 3 || (drillPath.length === 2 && drillPath[0] !== "Aksesoris")) ? "min-w-[700px]" : ""}`}>
                     <thead className="bg-slate-50 sticky top-0 border-b border-slate-200 z-10">
                       {(searchTerm || drillPath.length >= 3 || (drillPath.length === 2 && drillPath[0] !== "Aksesoris")) ? (
                       <tr>

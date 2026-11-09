@@ -5526,3 +5526,136 @@ body,
   border-color: #405c88 !important;
   color: #ffffff !important;
 }
+
+/* Excel-style styling for Master Barang search results only. */
+[data-ui-screen="inventory"] [data-inventory-search-results] {
+  background: #ffffff !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] {
+  width: 100%;
+  min-width: 700px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  color: #26364d;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 8px 7px !important;
+  background: #20385f !important;
+  color: #ffffff !important;
+  border: 1px solid #344c70 !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] tbody td {
+  padding: 7px !important;
+  border-right: 1px solid #d9e2ef;
+  border-bottom: 1px solid #d9e2ef;
+  vertical-align: middle;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] tbody td:first-child {
+  border-left: 1px solid #d9e2ef;
+  overflow-wrap: anywhere;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:nth-child(odd) td {
+  background: #ffffff;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:nth-child(even) td {
+  background: #f1f5f9;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:hover td {
+  background: #e8eff8;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] th:nth-child(1),
+[data-ui-screen="inventory"] [data-inventory-search-table] td:nth-child(1) {
+  width: 24%;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] th:nth-child(2),
+[data-ui-screen="inventory"] [data-inventory-search-table] td:nth-child(2) {
+  width: 23%;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] th:nth-child(3),
+[data-ui-screen="inventory"] [data-inventory-search-table] td:nth-child(3),
+[data-ui-screen="inventory"] [data-inventory-search-table] th:nth-child(4),
+[data-ui-screen="inventory"] [data-inventory-search-table] td:nth-child(4) {
+  width: 13%;
+  white-space: nowrap;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] th:nth-child(5),
+[data-ui-screen="inventory"] [data-inventory-search-table] td:nth-child(5) {
+  width: 13%;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] th:nth-child(6),
+[data-ui-screen="inventory"] [data-inventory-search-table] td:nth-child(6) {
+  width: 14%;
+}
+
+[data-ui-screen="inventory"] [data-inventory-search-table] tbody td:nth-child(6) > div {
+  gap: 2px !important;
+}
+
+@media (max-width: 640px) {
+  [data-ui-screen="inventory"] [data-inventory-search-table] thead th {
+    padding: 7px 6px !important;
+    font-size: 8px !important;
+  }
+
+  [data-ui-screen="inventory"] [data-inventory-search-table] tbody td {
+    padding: 6px !important;
+    font-size: 10px;
+  }
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-results] {
+  background: #202a39 !important;
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-table] {
+  color: #dbe5f2;
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-table] thead th {
+  background: #182944 !important;
+  border-color: #344762 !important;
+  color: #f8fafc !important;
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-table] tbody td {
+  border-color: #3a4658 !important;
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:nth-child(odd) td {
+  background: #202a39 !important;
+  color: #dbe5f2;
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:nth-child(even) td {
+  background: #263347 !important;
+  color: #dbe5f2;
+}
+
+.dark [data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:hover td {
+  background: #33435b !important;
+}
