@@ -2770,7 +2770,7 @@ body,
 /* Admin soft-surface pilot.
    Deliberately limited to page-body markers; POS, cashier-stock, the shared
    shell, and its navigation are not included. */
-:where(
+:where(.app-shell[data-admin-surface="true"]) :where(
   [data-ui-screen="dashboard"],
   [data-ui-screen="reports"],
   [data-ui-screen="inventory"],
@@ -2788,7 +2788,7 @@ body,
   color: #17243a;
 }
 
-:where(
+:where(.app-shell[data-admin-surface="true"]) :where(
   [data-ui-screen="dashboard"],
   [data-ui-screen="reports"],
   [data-ui-screen="inventory"],
@@ -2847,7 +2847,7 @@ body,
     0 8px 18px rgba(31, 50, 78, 0.045) !important;
 }
 
-.dark :where(
+.dark :where(.app-shell[data-admin-surface="true"]) :where(
   [data-ui-screen="dashboard"],
   [data-ui-screen="reports"],
   [data-ui-screen="inventory"],
@@ -2865,7 +2865,7 @@ body,
   color: #e5edf8;
 }
 
-.dark :where(
+.dark :where(.app-shell[data-admin-surface="true"]) :where(
   [data-ui-screen="dashboard"],
   [data-ui-screen="reports"],
   [data-ui-screen="inventory"],
@@ -2924,10 +2924,440 @@ body,
     0 8px 18px rgba(0, 0, 0, 0.12) !important;
 }
 
-[data-testid="page-branch-stock-audit"] {
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] {
   background-color: #f1f5f9 !important;
 }
 
-.dark [data-testid="page-branch-stock-audit"] {
+.dark .app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] {
   background-color: #232b38 !important;
+}
+
+/* Stronger visual match for the Admin reference screenshot. */
+.app-shell[data-admin-surface="true"] {
+  background-color: #e9eff8 !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-topbar {
+  box-sizing: border-box;
+  height: 50px !important;
+  min-height: 50px !important;
+  margin: 8px 12px 2px;
+  padding-inline: 12px !important;
+  border: 1px solid #dce5f2;
+  border-radius: 18px;
+  background: rgba(250, 252, 255, 0.96) !important;
+  --tw-shadow: 0 4px 14px rgba(39, 58, 91, 0.14) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-topbar > div {
+  min-width: 0;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) {
+  background-color: #e9eff8 !important;
+  color: #1b2b45;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav {
+  left: 10px !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 7px) !important;
+  width: calc(100% - 20px) !important;
+  border: 1px solid #dce5f2;
+  border-radius: 20px;
+  background: rgba(250, 252, 255, 0.97) !important;
+  padding-bottom: max(3px, env(safe-area-inset-bottom, 0px)) !important;
+  --tw-shadow: 0 6px 18px rgba(34, 53, 83, 0.16) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav > div {
+  width: 100%;
+  min-width: 0 !important;
+  height: 56px !important;
+  justify-content: space-around;
+  padding-inline: 4px !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav button {
+  width: auto !important;
+  min-width: 48px;
+  min-height: 52px;
+  flex: 1 1 0;
+  gap: 0;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav button > div > div {
+  width: 34px !important;
+  height: 32px !important;
+  border-radius: 12px !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] {
+  color: #20385f !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] > div > div {
+  background: #20385f !important;
+  color: #ffffff !important;
+  transform: none !important;
+  --tw-shadow: 0 3px 9px rgba(32, 56, 95, 0.28) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav button[data-nav-active="true"] svg {
+  color: #ffffff !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-bottom-nav button > span {
+  font-size: 8px !important;
+  letter-spacing: 0.035em !important;
+  line-height: 1.1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] {
+  background: #e9eff8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-filters] {
+  padding: 8px 14px 5px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-filters] > div,
+.app-shell[data-admin-surface="true"] [data-dashboard-filters] > div > div {
+  gap: 8px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-periods],
+.app-shell[data-admin-surface="true"] [data-dashboard-view-tabs] {
+  align-items: center;
+  min-height: 44px;
+  padding: 4px !important;
+  border: 1px solid #dce5f2 !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  --tw-shadow: 0 3px 10px rgba(41, 60, 92, 0.13) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-period-option],
+.app-shell[data-admin-surface="true"] [data-dashboard-view-option] {
+  min-height: 38px;
+  border-radius: 14px !important;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-period-option][data-active="true"],
+.app-shell[data-admin-surface="true"] [data-dashboard-view-option][data-active="true"] {
+  background: #20385f !important;
+  color: #ffffff !important;
+  --tw-shadow: 0 3px 9px rgba(32, 56, 95, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger {
+  min-height: 44px;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  border-color: #dce5f2 !important;
+  --tw-shadow: 0 3px 10px rgba(41, 60, 92, 0.11) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-content] {
+  padding: 0 14px 82px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-content] > [role="status"] {
+  margin: 2px 0 8px !important;
+  font-size: 11px;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] {
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 12px !important;
+  border: 1px solid #dce5f2 !important;
+  border-radius: 19px !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%) !important;
+  --tw-shadow: 0 3px 8px rgba(35, 54, 85, 0.12), 0 8px 18px rgba(35, 54, 85, 0.08) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > *::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: -18px;
+  bottom: -28px;
+  width: 100px;
+  height: 72px;
+  border-radius: 60% 40% 0 0;
+  pointer-events: none;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(1)::after {
+  background: radial-gradient(ellipse, rgba(52, 102, 208, 0.20), rgba(52, 102, 208, 0) 72%);
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(2)::after {
+  background: radial-gradient(ellipse, rgba(15, 173, 132, 0.18), rgba(15, 173, 132, 0) 72%);
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(3)::after {
+  background: radial-gradient(ellipse, rgba(141, 83, 226, 0.18), rgba(141, 83, 226, 0) 72%);
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(4)::after {
+  background: radial-gradient(ellipse, rgba(234, 155, 41, 0.20), rgba(234, 155, 41, 0) 72%);
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * > div {
+  position: relative;
+  z-index: 1;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card],
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card],
+.app-shell[data-admin-surface="true"] [data-dashboard-recent-card],
+.app-shell[data-admin-surface="true"] [data-dashboard-branch-performance],
+.app-shell[data-admin-surface="true"] [data-dashboard-top-products],
+.app-shell[data-admin-surface="true"] [data-dashboard-sales-table] {
+  border: 1px solid #dce5f2 !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  --tw-shadow: 0 3px 9px rgba(35, 54, 85, 0.10), 0 8px 18px rgba(35, 54, 85, 0.06) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] > div:first-child {
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-filters] {
+  width: 100%;
+  padding: 8px !important;
+  border: 1px solid #dce5f2;
+  border-radius: 18px;
+  background: #ffffff;
+  --tw-shadow: 0 3px 10px rgba(41, 60, 92, 0.12) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-subtabs] {
+  border-radius: 14px !important;
+  background: #f2f5fa !important;
+  padding: 3px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-view-option][data-active="true"] {
+  background: #20385f !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] {
+  padding: 10px 14px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-inventory-toolbar] input {
+  min-height: 42px;
+  border-radius: 14px !important;
+  border-color: #dce5f2 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-inventory-toolbar] > div > button {
+  min-height: 42px;
+  border-radius: 14px !important;
+  background: #20385f !important;
+  --tw-shadow: 0 3px 9px rgba(32, 56, 95, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] input,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .app-select-trigger {
+  min-height: 40px;
+  border-radius: 13px !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] {
+  background-color: #151b26 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] .app-topbar,
+.dark .app-shell[data-admin-surface="true"] .app-bottom-nav {
+  border-color: #354155 !important;
+  background: rgba(31, 40, 55, 0.97) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) {
+  background-color: #151b26 !important;
+  color: #e7edf6;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * {
+  border-color: #354155 !important;
+  background: linear-gradient(145deg, #263144 0%, #202a39 100%) !important;
+  --tw-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-trend-card],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-margin-card],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-recent-card],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-branch-performance],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-top-products],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-sales-table],
+.dark .app-shell[data-admin-surface="true"] [data-report-filters] {
+  border-color: #354155 !important;
+  background: #202a39 !important;
+  --tw-shadow: 0 4px 14px rgba(0, 0, 0, 0.28) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-periods],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-view-tabs],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger,
+.dark .app-shell[data-admin-surface="true"] [data-report-subtabs] {
+  border-color: #354155 !important;
+  background-color: #293548 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-inventory-toolbar] input {
+  border-color: #354155 !important;
+  background-color: #202a39 !important;
+  color: #e7edf6 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > *::after {
+  opacity: 0.65;
+}
+
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] .app-topbar {
+    margin-inline: 10px;
+    padding-inline: 9px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div,
+  .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div > div:first-child {
+    width: 100%;
+    align-items: stretch !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div > div:first-child {
+    flex-direction: column !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-periods],
+  .app-shell[data-admin-surface="true"] [data-dashboard-view-tabs] {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-period-option] {
+    flex: 1 1 0;
+    padding-inline: 4px !important;
+    font-size: 10px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-view-option] {
+    flex: 1 1 0;
+    justify-content: center;
+    padding-inline: 8px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger {
+    min-width: 136px;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-dashboard-content] {
+    padding-inline: 14px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-filters] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-subtabs],
+  .app-shell[data-admin-surface="true"] [data-report-branch],
+  .app-shell[data-admin-surface="true"] [data-report-reset] {
+    grid-column: 1 / -1;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-date-start],
+  .app-shell[data-admin-surface="true"] [data-report-date-end] {
+    min-width: 0;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-date-start] input,
+  .app-shell[data-admin-surface="true"] [data-report-date-end] input {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 8px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-branch] .app-select-trigger {
+    width: 100%;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-inventory-toolbar] > div {
+    align-items: stretch !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-inventory-toolbar] > div > div {
+    max-width: none;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-inventory-toolbar] > div > button {
+    width: 100%;
+    align-self: stretch !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-shell[data-admin-surface="true"] .app-topbar {
+    height: 56px !important;
+    min-height: 56px !important;
+    margin: 10px 16px 4px;
+    padding-inline: 18px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-content] {
+    padding-inline: 20px !important;
+  }
 }

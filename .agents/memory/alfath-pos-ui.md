@@ -264,3 +264,8 @@ The POS is the cashier's primary, frequently used workspace; its search field an
 Use platform system fonts throughout the app: San Francisco on Apple devices and Roboto/system sans-serif on Android. On phones, keep primary text around 14–16px, secondary text 12–13px, and metadata at least 11px; keep inputs/search fields and touch targets around 44px while reducing excess card padding instead of shrinking hit areas.
 **Why:** the owner wants every page to feel comfortable like a native Android app without oversized cards or tiny labels.
 **How to apply:** use compact 10–14px card padding on phones, preserve readable product names/prices and the tablet POS side-by-side layout, and verify at narrow phone widths plus tablet sizes.
+
+## Admin screenshot-style pilot stays separate from POS
+When the owner provides a visual reference for Admin, match its visible visual system clearly across Admin screens rather than making only subtle surface changes. Keep the POS untouched until the owner reviews and approves extending the style.
+**Why:** the owner said the first Admin pass did not look like the reference and explicitly asked to focus on Admin before touching the cashier page.
+**How to apply:** scope shared header/navigation styling to Admin sessions, keep Admin content and POS layout/behavior separate, and preserve readable compact controls and semantic status colors.

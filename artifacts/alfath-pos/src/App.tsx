@@ -3564,7 +3564,10 @@ export default function App() {
   // --- MAIN UI ---
   return (
     <>
-      <div className="app-shell flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden">
+      <div
+        className="app-shell flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden"
+        data-admin-surface={profile?.role === "ADMIN" && activeMenu !== "pos" ? "true" : undefined}
+      >
         {/* --- DESKTOP/TABLET SIDEBAR --- */}
         <div
           className={`fixed inset-0 bg-black/50 z-[80] transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -4205,16 +4208,20 @@ export default function App() {
                         Analisis Perbandingan Pendapatan Siang vs Malam
                       </p>
                     </div>
-                    <div data-report-filters className="flex flex-wrap gap-2 md:gap-3 items-end">
+                    <div data-report-filters className="flex flex-wrap gap-2 md:gap-3 items-end shadow-sm">
                       <div data-report-subtabs className="flex bg-slate-100 p-1 rounded-xl">
                         <button
                           onClick={() => setReportSubTab("summary")}
+                          data-report-view-option
+                          data-active={reportSubTab === "summary" ? "true" : undefined}
                           className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportSubTab === "summary" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                         >
                           Analisis
                         </button>
                         <button
                           onClick={() => setReportSubTab("excel")}
+                          data-report-view-option
+                          data-active={reportSubTab === "excel" ? "true" : undefined}
                           className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${reportSubTab === "excel" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                         >
                           Tabel Excel
@@ -9395,7 +9402,7 @@ export default function App() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       {/* Period Filter */}
-                      <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                      <div data-dashboard-periods className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-sm">
                         {[
                           { id: "today", label: "Harian" },
                           { id: "week", label: "Mingguan" },
@@ -9404,6 +9411,8 @@ export default function App() {
                         ].map((p) => (
                           <button
                             key={p.id}
+                            data-dashboard-period-option
+                            data-active={dashboardDateRange === p.id ? "true" : undefined}
                             onClick={() => setDashboardDateRange(p.id as any)}
                             className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-tighter transition-all ${
                               dashboardDateRange === p.id
@@ -9417,20 +9426,22 @@ export default function App() {
                       </div>
 
                       {/* Branch Filter in Dashboard */}
-                      <CustomSelect
-                        value={adminSalesBranchFilter}
-                        onChange={(v) => setAdminSalesBranchFilter(v)}
-                        options={[
-                          { value: "", label: "Semua Cabang" },
-                          ...branches.map((b) => ({
-                            value: b.id,
-                            label: b.name,
-                          })),
-                        ]}
-                        buttonClassName="bg-white border border-slate-200 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-100 outline-none"
-                      />
+                      <div data-dashboard-branch-filter>
+                        <CustomSelect
+                          value={adminSalesBranchFilter}
+                          onChange={(v) => setAdminSalesBranchFilter(v)}
+                          options={[
+                            { value: "", label: "Semua Cabang" },
+                            ...branches.map((b) => ({
+                              value: b.id,
+                              label: b.name,
+                            })),
+                          ]}
+                          buttonClassName="bg-white border border-slate-200 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-100 outline-none shadow-sm"
+                        />
+                      </div>
                       
-                      <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                      <div data-dashboard-view-tabs className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-sm">
                       {[
                         { id: "overview", label: "Ringkasan", icon: LayoutDashboard },
                         { id: "sales", label: "Penjualan", icon: Activity },
@@ -9438,6 +9449,8 @@ export default function App() {
                       ].map((tab) => (
                         <button
                           key={tab.id}
+                          data-dashboard-view-option
+                          data-active={dashboardTab === tab.id ? "true" : undefined}
                           onClick={() => setDashboardTab(tab.id as any)}
                           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                             dashboardTab === tab.id
@@ -9945,6 +9958,7 @@ export default function App() {
             {getMobileNav().map((item: any) => (
               <button
                 key={item.id}
+                data-nav-active={activeMenu === item.id ? "true" : undefined}
                 onClick={() => {
                   setActiveMenu(item.id);
                   setShowMobileCart(false);
