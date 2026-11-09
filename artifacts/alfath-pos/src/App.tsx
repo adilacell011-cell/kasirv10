@@ -65,6 +65,7 @@ import {
   Zap,
   Sun,
   Moon,
+  CalendarDays,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { io } from "socket.io-client";
@@ -105,6 +106,12 @@ import {
   Tooltip as RechartsTooltip,
   Cell,
 } from "recharts";
+
+const formatReportDateLabel = (value: string) => {
+  if (!value) return "Pilih tanggal";
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day}/${month}/${year.slice(-2)}` : "Pilih tanggal";
+};
 
 const branchStockAuditApi: AuditPageApi = {
   getCurrent: (branchId, signal) => api.getStockAuditCurrent(branchId, signal),
@@ -4251,23 +4258,39 @@ export default function App() {
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                           Dari Tanggal
                         </span>
-                        <input
-                          type="date"
-                          value={reportStartDate}
-                          onChange={(e) => setReportStartDate(e.target.value)}
-                          className="min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
-                        />
+                        <div data-report-date-shell className="relative flex h-11 min-w-0 items-center justify-between gap-2 rounded-xl px-3">
+                          <span data-report-date-label aria-hidden="true">
+                            {formatReportDateLabel(reportStartDate)}
+                          </span>
+                          <CalendarDays data-report-calendar-icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                          <input
+                            type="date"
+                            value={reportStartDate}
+                            onChange={(e) => setReportStartDate(e.target.value)}
+                            aria-label="Dari tanggal laporan"
+                            data-report-date-input
+                            className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                          />
+                        </div>
                       </div>
                       <div data-report-date-end className="flex flex-col gap-1">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                           Sampai Tanggal
                         </span>
-                        <input
-                          type="date"
-                          value={reportEndDate}
-                          onChange={(e) => setReportEndDate(e.target.value)}
-                          className="min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"
-                        />
+                        <div data-report-date-shell className="relative flex h-11 min-w-0 items-center justify-between gap-2 rounded-xl px-3">
+                          <span data-report-date-label aria-hidden="true">
+                            {formatReportDateLabel(reportEndDate)}
+                          </span>
+                          <CalendarDays data-report-calendar-icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                          <input
+                            type="date"
+                            value={reportEndDate}
+                            onChange={(e) => setReportEndDate(e.target.value)}
+                            aria-label="Sampai tanggal laporan"
+                            data-report-date-input
+                            className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                          />
+                        </div>
                       </div>
                       <div data-report-branch className="min-w-0">
                         <CustomSelect
