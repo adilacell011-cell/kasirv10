@@ -9454,7 +9454,7 @@ export default function App() {
                 </div>
               </div>
 
-                <div className="flex-1 overflow-y-auto w-full content-fade">
+                <div data-dashboard-content className="flex-1 overflow-y-auto w-full content-fade">
                   {dashboardTab !== "inventory" && <div className="mb-4 text-xs" role="status" aria-live="polite">
                     {ownerDashboard.error ? (
                       <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-red-700">
@@ -9502,8 +9502,8 @@ export default function App() {
                   {dashboardTab === "overview" && (
                     <div className="space-y-6">
                       {/* TREND + MARGIN GAUGE */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                      <div data-dashboard-trend-grid className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div data-dashboard-trend-card className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                           <div className="mb-5">
                             <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                               <Activity className="w-4 h-4 text-blue-500" /> Tren Transaksi
@@ -9567,7 +9567,7 @@ export default function App() {
                           })()}
                         </div>
 
-                        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                        <div data-dashboard-margin-card className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
                           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                             <Percent className="w-4 h-4 text-emerald-500" /> Margin Laba
                           </h4>
@@ -9607,7 +9607,7 @@ export default function App() {
                       </div>
 
                       {/* RECENT TRANSACTIONS FEED */}
-                      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                      <div data-dashboard-recent-card className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                             <Activity className="w-4 h-4 text-emerald-500 animate-pulse" /> Transaksi Terakhir
@@ -9637,9 +9637,9 @@ export default function App() {
                       </div>
 
                       {/* CHART + TOP PRODUCTS */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div data-dashboard-performance-grid className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       {/* PERFORMANCE CHART SIMULATION */}
-                      <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                      <div data-dashboard-branch-performance className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-6">
                             <Activity className="w-4 h-4 text-blue-500" /> Performa Cabang Periode Ini
                           </h4>
@@ -9724,7 +9724,7 @@ export default function App() {
                       </div>
 
                       {/* TOP PRODUCTS */}
-                      <div className="lg:col-span-1 bg-white rounded-3xl p-6 text-slate-900 border border-slate-200/60 shadow-sm overflow-hidden relative">
+                      <div data-dashboard-top-products className="lg:col-span-1 bg-white rounded-3xl p-6 text-slate-900 border border-slate-200/60 shadow-sm overflow-hidden relative">
                          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16" />
                          <h4 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-6 text-blue-600 relative z-10">
                             <TrendingUp className="w-4 h-4" /> Produk Terlaris

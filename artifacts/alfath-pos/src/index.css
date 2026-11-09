@@ -2511,3 +2511,102 @@ body,
     justify-content: center;
   }
 }
+
+/* Compact owner dashboard without changing its filters, totals, or calculations. */
+[data-ui-screen="dashboard"] [data-dashboard-filters] {
+  padding-block: 0.5rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-filters] > div,
+[data-ui-screen="dashboard"] [data-dashboard-filters] > div > div {
+  gap: 0.5rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-content] > [role="status"] {
+  margin-bottom: 0.625rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-metrics] {
+  gap: 0.625rem !important;
+  margin-bottom: 0.875rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-metrics] > * {
+  gap: 0.625rem !important;
+  padding: 0.875rem !important;
+  border-radius: 1rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-trend-grid],
+[data-ui-screen="dashboard"] [data-dashboard-performance-grid] {
+  gap: 0.875rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-trend-card],
+[data-ui-screen="dashboard"] [data-dashboard-margin-card],
+[data-ui-screen="dashboard"] [data-dashboard-recent-card],
+[data-ui-screen="dashboard"] [data-dashboard-branch-performance],
+[data-ui-screen="dashboard"] [data-dashboard-top-products] {
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-trend-card] > div:first-child,
+[data-ui-screen="dashboard"] [data-dashboard-recent-card] > div:first-child {
+  margin-bottom: 0.75rem !important;
+}
+
+[data-ui-screen="dashboard"] [data-dashboard-top-products] > div:last-child > div {
+  margin-top: 0.625rem !important;
+}
+
+@media (min-width: 360px) and (max-width: 767px) {
+  [data-ui-screen="dashboard"] [data-dashboard-metrics] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-ui-screen="dashboard"] [data-dashboard-filters] {
+    padding-inline: 0.625rem !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-filters] button {
+    min-height: 2.75rem;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-metrics] > * {
+    gap: 0.5rem !important;
+    padding: 0.75rem !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-metrics] > * > div:first-child {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    border-radius: 0.75rem !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-metrics] h3 {
+    font-size: 1.125rem !important;
+    line-height: 1.25 !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-trend-card] > div.h-\[200px\] {
+    height: 11rem !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-margin-card] [class*="w-\[150px\]"] {
+    width: 7.5rem !important;
+    height: 7.5rem !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-branch-performance] [class*="h-\[260px\]"] {
+    height: 13rem !important;
+  }
+}
+
+@media (max-width: 359px) {
+  [data-ui-screen="dashboard"] [data-dashboard-metrics] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
