@@ -259,3 +259,8 @@ The cashier uses the POS on an Android tablet alongside another app and prefers 
 The POS is the cashier's primary, frequently used workspace; its search field and popups should stay comfortable to read and use without becoming oversized, and should adapt to the available screen.
 **Why:** the owner explicitly prioritized cashier comfort across screen sizes.
 **How to apply:** review POS search suggestions, scanner, held-sale, confirmation, and success overlays as one focused workflow; keep their actions and business behavior unchanged, and do not apply POS-specific sizing globally to unrelated pages.
+
+## Native mobile typography and sizing across screens
+Use platform system fonts throughout the app: San Francisco on Apple devices and Roboto/system sans-serif on Android. On phones, keep primary text around 14–16px, secondary text 12–13px, and metadata at least 11px; keep inputs/search fields and touch targets around 44px while reducing excess card padding instead of shrinking hit areas.
+**Why:** the owner wants every page to feel comfortable like a native Android app without oversized cards or tiny labels.
+**How to apply:** use compact 10–14px card padding on phones, preserve readable product names/prices and the tablet POS side-by-side layout, and verify at narrow phone widths plus tablet sizes.

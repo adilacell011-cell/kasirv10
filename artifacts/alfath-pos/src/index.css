@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  --font-serif: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --animate-marquee: marquee 15s linear infinite;
 
   /* "Premium Blue" accent: a refined, confident azure-royal blue applied to
@@ -2616,14 +2616,6 @@ body,
   padding-inline: 0 !important;
 }
 
-/* Use Apple's native San Francisco font on Apple devices, with safe system fallbacks elsewhere. */
-[data-ui-screen="dashboard"] {
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial,
-    sans-serif;
-  font-family: var(--font-sans) !important;
-}
-
 /* A restrained lift separates dashboard cards from the light-blue page canvas. */
 [data-ui-screen="dashboard"] [data-dashboard-metrics] > *,
 [data-ui-screen="dashboard"] [data-dashboard-trend-card],
@@ -2647,4 +2639,96 @@ body,
   --tw-shadow:
     0 2px 5px rgba(0, 0, 0, 0.24),
     0 8px 18px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Native-feeling type scale for Android phones and compact tablets.
+   Keep touch targets and control heights intact; enlarge only undersized text. */
+@media (max-width: 1100px) {
+  [data-ui-screen] [class*="text-[7px]"],
+  [data-ui-screen] [class*="text-[8px]"],
+  [data-ui-screen] [class*="text-[9px]"] {
+    font-size: 0.6875rem !important;
+    line-height: 1.3 !important;
+  }
+
+  [data-ui-screen] [class*="text-[10px]"] {
+    font-size: 0.75rem !important;
+    line-height: 1.35 !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-metrics] > * {
+    padding: 0.625rem !important;
+  }
+
+  [data-ui-screen="dashboard"] [data-dashboard-trend-card],
+  [data-ui-screen="dashboard"] [data-dashboard-margin-card],
+  [data-ui-screen="dashboard"] [data-dashboard-recent-card],
+  [data-ui-screen="dashboard"] [data-dashboard-branch-performance],
+  [data-ui-screen="dashboard"] [data-dashboard-top-products] {
+    padding: 0.75rem !important;
+  }
+
+  [data-ui-screen="inventory"] [data-product-form-body] {
+    padding: 0.625rem !important;
+  }
+
+  [data-ui-screen="inventory"] [data-product-form] {
+    gap: 0.75rem !important;
+  }
+
+  [data-ui-screen="inventory"] [data-product-form] .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem !important;
+  }
+
+  [data-ui-screen="employees"] [data-employee-name] {
+    font-size: 0.875rem !important;
+  }
+
+  [data-ui-screen="employees"] [data-employee-alias] {
+    font-size: 0.75rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-search-input] {
+    font-size: 0.875rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-category-nav] button {
+    font-size: 0.6875rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-category-nav] button span[class*="text-[8px]"] {
+    font-size: 0.625rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-best-sellers] button p:first-child {
+    font-size: 0.6875rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-best-sellers] button p:nth-child(2) {
+    font-size: 0.625rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-product-card] h5 {
+    font-size: 0.75rem !important;
+    line-height: 1.25 !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-product-card] [class*="text-sm"] {
+    font-size: 0.8125rem !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-search-result-list] button > span:nth-child(2) span {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+  }
+
+  [data-ui-screen="pos"] [data-pos-search-result-list] button > span:nth-child(3),
+  [data-ui-screen="pos"] [data-pos-search-result-list] button > div {
+    font-size: 0.6875rem !important;
+  }
+
+  [data-testid="empty-audit-branch"],
+  [data-testid="empty-audit-session"] {
+    min-height: 14rem !important;
+  }
 }
