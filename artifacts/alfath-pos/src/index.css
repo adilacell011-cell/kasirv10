@@ -5845,15 +5845,33 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-icon],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-search-icon] {
-  color: #7189a5 !important;
+  color: #a18248 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-input],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-input] {
+  color: #17243a !important;
+  background: #f4ebd7 !important;
+  border: 1px solid #d6bd83 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-input]::placeholder,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-input]::placeholder {
+  color: #718096 !important;
+  opacity: 1;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-input]:focus,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-input]:focus {
+  border-color: #b8944e !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-scan-button],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-scan-button] {
   color: #1b2d43 !important;
-  background: linear-gradient(145deg, #e6d6b3, #bb995c) !important;
-  border: 1px solid rgba(250, 235, 199, 0.72);
-  box-shadow: 0 3px 9px rgba(189, 151, 82, 0.2) !important;
+  background: linear-gradient(145deg, #e8d9b8, #cbb27b) !important;
+  border: 1px solid rgba(250, 235, 199, 0.58);
+  box-shadow: 0 2px 6px rgba(189, 151, 82, 0.14) !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-best-sellers],
@@ -5871,9 +5889,15 @@ body,
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] button,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] button {
   color: #25384e !important;
-  background: #fff !important;
-  border-color: #e4d8c0 !important;
+  background: #f4ebd7 !important;
+  border-color: #d6bd83 !important;
   box-shadow: 0 2px 6px rgba(3, 13, 29, 0.16) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] button:hover,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] button:hover {
+  background: #eee0be !important;
+  border-color: #b8944e !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-category-nav],
@@ -5962,38 +5986,43 @@ body,
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-cart] {
   background: #fff !important;
-  border-left-color: rgba(202, 172, 112, 0.45) !important;
+  border-left-color: #e2e8f0 !important;
   box-shadow: -8px 0 24px rgba(4, 13, 27, 0.12) !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:first-child,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:first-child {
-  border-bottom-color: #e6ddcc !important;
-  box-shadow: inset 0 2px 0 rgba(202, 172, 112, 0.22);
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.08);
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:last-child,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:last-child {
-  background: linear-gradient(180deg, #fff 0%, #fcfaf5 100%) !important;
-  border-top-color: #d8c69f !important;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%) !important;
+  border-top-color: #e2e8f0 !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] {
-  background: linear-gradient(110deg, #f5efdf, #edf2f5) !important;
-  border: 1px solid #e5d8bb;
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
 }
 
-:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span,
-.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span {
-  color: #725d37 !important;
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span:first-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span:first-child {
+  color: #64748b !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span:last-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span:last-child {
+  color: #0f766e !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-checkout],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-checkout] {
   color: #fff !important;
   background: linear-gradient(115deg, #112744 0%, #1b3b5b 76%, #294967 100%) !important;
-  border: 1px solid #c4a66d;
+  border: 1px solid rgba(198, 169, 112, 0.46);
   --tw-shadow: 0 4px 12px rgba(15, 38, 66, 0.22), 0 1px 3px rgba(15, 38, 66, 0.12) !important;
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
 }
@@ -6008,10 +6037,17 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-hold],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-hold] {
-  color: #665536 !important;
-  background: linear-gradient(145deg, #fbf8f0, #f1e8d5) !important;
-  border: 1px solid #dfd0ad;
+  color: #475569 !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #dbe3ec;
   box-shadow: 0 2px 7px rgba(24, 39, 60, 0.08) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-hold]:hover,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-hold]:hover {
+  color: #1e293b !important;
+  background: #e8eef5 !important;
+  border-color: #cbd5e1;
 }
 
 /* Cashier follow-on surfaces: clearer shift numbers, history, transfer, and drawer. */

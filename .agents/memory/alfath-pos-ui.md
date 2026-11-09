@@ -156,6 +156,11 @@ semantic stock-status colors.
 the cashier's navy background.
 **How to apply:** scope this treatment only to POS product tiles; preserve their size, layout, add controls,
 search, pricing, and stock behavior.
+The POS search field and best-seller buttons may share the restrained champagne palette, but keep the invoice
+and cart mostly neutral white/slate with only small muted-gold accents.
+**Why:** the owner requested a coordinated search/best-seller look while reducing gold in the invoice area.
+**How to apply:** keep search text and product names navy, preserve status colors, and reserve gold on the invoice
+for a fine detail rather than broad fills.
 For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing.
 Excel-style tables use navy headers and total rows with white text, alternating white/light blue-gray body cells,
 and no raised shadow per cell; reserve dark fills for the header and summary row.
