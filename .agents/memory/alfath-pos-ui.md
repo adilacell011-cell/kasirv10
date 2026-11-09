@@ -94,6 +94,13 @@ trigger, ring layers preserved through `var(--tw-ring-*)`, and NO `outline:none`
 focus outline always remains as a fallback). **Color-coded/status selects must opt OUT** via prop
 `keepTriggerBg` or they lose their semantic background — role-coding is functional, not decoration. The
 other input-based combobox (components/CustomSelect.tsx) is already covered by the field block.
+**Android/WebKit white-fill exception:** On navy Admin surfaces, `background-color: ... !important`
+alone may still leave focused or native/autofilled text and number inputs white. Pair it with
+`-webkit-text-fill-color` and `-webkit-box-shadow: inset 0 0 0 1000px <navy>`; define a separate
+focused/autofilled variant with the gold focus ring. Keep native search appearance enabled so its
+clear affordance remains available.
+**Why:** the Admin Opname supplier and quantity fields stayed white while its search controls were navy.
+**How to apply:** use this stronger fill only on Admin inputs; keep the cashier/POS controls outside its scope.
 **Slide toggles:** style inline (inset track + raised knob, ON=accent / OFF=neutral) and ALWAYS add `dark:`
 variants — arbitrary `bg-[#hex]`/`shadow-[...]` values are NOT caught by the `.dark` override map.
 **Sidebar drawer (`aside`) is EXCLUDED from every global neu/dark rule** (the card selector & `.dark
