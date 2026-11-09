@@ -9165,6 +9165,254 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
   color: #f0e2bd !important;
 }
 
+/* Master Produk: final high-specificity contrast pass. Keep this limited to the
+   Admin inventory screen; the POS and all other Admin surfaces are unaffected. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] {
+  --mp-admin-canvas: #0b1b31;
+  --mp-admin-panel: #122943;
+  --mp-admin-raised: #183653;
+  --mp-admin-inset: #091a30;
+  --mp-admin-line: rgba(169, 190, 211, 0.32);
+  --mp-admin-gold: #e3c77f;
+  --mp-admin-text: #f2f5f8;
+  --mp-admin-muted: #b9c7d6;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-list {
+  border-color: var(--mp-admin-line) !important;
+  background: #0e223b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle:not(:hover) {
+  border: 0 !important;
+  border-radius: 8px;
+  background: #142d49 !important;
+  color: var(--mp-admin-text) !important;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle:hover,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle:focus-visible {
+  background: #1c3b5a !important;
+  color: #fff7e5 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle strong,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle .mp-provider-count,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle .mp-chevron {
+  color: inherit !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-card],
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-header],
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-body] {
+  border-color: rgba(218, 189, 123, 0.34) !important;
+  background: #102640 !important;
+  color: var(--mp-admin-text) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-header] {
+  background: linear-gradient(110deg, #102943, #153451) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-header] h3,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-section-heading] h4 {
+  color: #f5f1e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-section-heading] {
+  border-color: rgba(218, 189, 123, 0.28) !important;
+  background: #132c47 !important;
+  color: var(--mp-admin-text) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-section-heading] p {
+  color: var(--mp-admin-muted) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] label {
+  color: #d3deea !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea
+) {
+  border: 1px solid rgba(164, 190, 216, 0.4) !important;
+  background: #091a30 !important;
+  color: #f4f6f8 !important;
+  caret-color: var(--mp-admin-gold) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 6, 16, 0.28) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea
+)::placeholder {
+  color: #aebdcd !important;
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea
+):focus {
+  border-color: var(--mp-admin-gold) !important;
+  background: #0c2038 !important;
+  box-shadow: 0 0 0 3px rgba(227, 199, 127, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] input[readonly] {
+  background: #142b44 !important;
+  color: #c2cfdb !important;
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-taxonomy] .relative.group > label {
+  color: #d3deea !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] .app-solid {
+  overflow: hidden;
+  border-color: rgba(218, 189, 123, 0.42) !important;
+  background: #102943 !important;
+  color: #edf3f9 !important;
+  box-shadow: 0 12px 28px rgba(0, 8, 19, 0.44) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] .app-solid > div {
+  border-color: rgba(164, 190, 216, 0.15) !important;
+  background: #102943 !important;
+  color: #e3ebf2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] .app-solid > div:hover {
+  background: #1a3857 !important;
+  color: #fff4d8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-name-preview],
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-pricing],
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-visibility],
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-profit-preview] {
+  border-color: rgba(218, 189, 123, 0.28) !important;
+  background: #132c47 !important;
+  color: var(--mp-admin-text) !important;
+  box-shadow: inset 0 1px 0 rgba(220, 236, 250, 0.045) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-name-preview] :is(p, span),
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-profit-preview] :is(p, span) {
+  color: #d2dce6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-visibility-summary] {
+  border-color: rgba(218, 189, 123, 0.24) !important;
+  background: #142f4c !important;
+  color: #f0e5c8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-visibility-content] label {
+  border-color: rgba(164, 190, 216, 0.24) !important;
+  background: #102640 !important;
+  color: #e6edf4 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-visibility-content] label:has(input:checked) {
+  border-color: rgba(106, 202, 151, 0.42) !important;
+  background: #123b31 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-actions] {
+  border-color: rgba(218, 189, 123, 0.38) !important;
+  background: rgba(13, 34, 57, 0.98) !important;
+  box-shadow: 0 -8px 20px rgba(0, 6, 16, 0.3) !important;
+  backdrop-filter: blur(12px);
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-actions] > button[type="button"] {
+  border: 1px solid rgba(164, 190, 216, 0.38) !important;
+  background: #142d49 !important;
+  color: #e5edf5 !important;
+  box-shadow: none !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-actions] > button[type="button"]:hover {
+  border-color: rgba(218, 189, 123, 0.58) !important;
+  background: #1b3b5b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-actions] > button[type="submit"] {
+  border: 1px solid rgba(255, 235, 187, 0.72) !important;
+  background: linear-gradient(135deg, #e7cd8d, #c4a35e) !important;
+  color: #11263f !important;
+  box-shadow: 0 4px 12px rgba(0, 7, 18, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form-actions] > button[type="submit"]:hover {
+  background: linear-gradient(135deg, #f0dda9, #d5b775) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-field="category"] ~ div input,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-field="brand"] input,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-field="subcategory"] input {
+  border-radius: 11px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-field="brand"] input:hover,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-field="subcategory"] input:hover {
+  border-color: rgba(218, 189, 123, 0.52) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-form-actions] {
+  color: var(--mp-admin-muted) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-form-actions] button {
+  min-height: 44px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] [data-product-name-preview] {
+  border-color: rgba(126, 176, 211, 0.34) !important;
+  background: #102943 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-name-preview] svg {
+  color: var(--mp-admin-gold) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-name-preview] p:first-child {
+  color: #bdd7ea !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-name-preview] p:last-child {
+  color: #f1f4f6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] .relative > div.absolute.right-2 button {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  border: 1px solid rgba(218, 189, 123, 0.42) !important;
+  border-radius: 8px !important;
+  background: #173653 !important;
+  color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] .relative > div.absolute.right-2 button:hover {
+  background: #214566 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] .relative > div.absolute.right-2 button:has(svg.lucide-x) {
+  border-color: rgba(243, 111, 116, 0.4) !important;
+  background: #431e2a !important;
+  color: #ffb1b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-product-form] input[type="date"] {
+  color-scheme: dark;
+}
+
 .app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="day-income"],
 .app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-income"] {
   background: rgba(169, 119, 47, 0.27) !important;
@@ -9317,4 +9565,46 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
   box-shadow:
     0 0 0 2px rgba(225, 198, 128, 0.22),
     inset 0 1px 0 rgba(241, 221, 174, 0.1);
+}
+
+/* Keep the Master Produk search and primary action above earlier light-theme
+   toolbar rules; these selectors intentionally stay Admin-inventory scoped. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] input {
+  min-height: 44px !important;
+  border: 1px solid rgba(218, 189, 123, 0.44) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, #0d233d, #091a30) !important;
+  color: #f2f5f8 !important;
+  caret-color: #e3c77f !important;
+  box-shadow:
+    inset 0 1px 4px rgba(0, 6, 16, 0.32),
+    0 2px 6px rgba(0, 6, 16, 0.18) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] input::placeholder {
+  color: #b8c6d5 !important;
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] input:focus {
+  border-color: #e3c77f !important;
+  background: #0b1d33 !important;
+  box-shadow: 0 0 0 3px rgba(227, 199, 127, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] > div > div.relative > svg {
+  color: #e3c77f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] > div > button {
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 235, 187, 0.72) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(135deg, #e7cd8d, #c4a35e) !important;
+  color: #11263f !important;
+  box-shadow: 0 4px 12px rgba(0, 7, 18, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] > div > button:hover {
+  background: linear-gradient(135deg, #f0dda9, #d5b775) !important;
 }
