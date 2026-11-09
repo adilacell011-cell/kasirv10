@@ -8047,3 +8047,872 @@ body,
     padding-inline: 12px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Alfath Pulsa Admin surfaces — compact navy glass with champagne accents.
+   Deliberately scoped to the authenticated Admin shell; POS and cashier
+   workspaces retain their own visual system and all existing layout rules.
+   -------------------------------------------------------------------------- */
+.app-shell[data-admin-surface="true"] {
+  --admin-canvas: #09182d;
+  --admin-panel: #10233d;
+  --admin-panel-raised: #15304e;
+  --admin-panel-inset: #0b1d34;
+  --admin-line: rgba(164, 190, 216, 0.2);
+  --admin-line-gold: rgba(218, 189, 123, 0.48);
+  --admin-text: #f0f4f8;
+  --admin-muted: #c0ccda;
+  --admin-subtle: #a6b5c7;
+  --admin-gold: #dfc27f;
+  --admin-gold-strong: #f0d999;
+  color: var(--admin-text);
+  background: var(--admin-canvas) !important;
+  color-scheme: dark;
+}
+
+.app-shell[data-admin-surface="true"] .app-workspace {
+  background: #0b1b31 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"]) {
+  color: var(--admin-text) !important;
+  background-color: #0b1b31 !important;
+  background-image:
+    radial-gradient(ellipse at 92% 0%, rgba(48, 91, 128, 0.17), transparent 38%),
+    linear-gradient(145deg, #0a1a30 0%, #0d2039 58%, #102541 100%) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-topbar {
+  border-color: var(--admin-line-gold) !important;
+  background:
+    linear-gradient(112deg, rgba(7, 22, 41, 0.98), rgba(18, 43, 70, 0.98)) !important;
+  color: var(--admin-text) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar {
+  color: #e5edf5 !important;
+  background: linear-gradient(180deg, #0d2039 0%, #0a192e 100%) !important;
+  border-color: rgba(212, 184, 126, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar :where(a, button)[aria-current="page"],
+.app-shell[data-admin-surface="true"] .app-sidebar :where(a, button)[data-active="true"] {
+  color: #f2d997 !important;
+  background: linear-gradient(110deg, rgba(221, 194, 127, 0.2), rgba(221, 194, 127, 0.08)) !important;
+  border-color: rgba(221, 194, 127, 0.38) !important;
+}
+
+/* White utility surfaces become a three-level navy material system. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [data-ui-panel],
+  [data-bonus-panel]:not([data-bonus-panel="cashier-summary"]),
+  [data-stock-table-card],
+  [data-product-form-card],
+  [data-shift-control-card],
+  [data-dashboard-trend-card],
+  [data-dashboard-margin-card],
+  [data-dashboard-recent-card],
+  [data-dashboard-branch-performance],
+  [data-dashboard-top-products],
+  [data-dashboard-sales-table],
+  [class*="bg-white"]:not(button):not(a):not(input):not(select):not(textarea)
+):not([data-ui-screen]) {
+  color: var(--admin-text) !important;
+  border-color: var(--admin-line) !important;
+  background-color: #122943 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(220, 236, 250, 0.055),
+    0 7px 18px rgba(1, 8, 18, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="bg-slate-50"],
+  [class*="bg-slate-100"],
+  [class*="bg-gray-50"],
+  [class*="bg-gray-100"],
+  [class*="bg-blue-50"],
+  [class*="bg-amber-50"]
+):not(button):not(a) {
+  border-color: rgba(153, 180, 207, 0.18) !important;
+  background-color: #0d2038 !important;
+  color: #d5dfeb !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="border-slate-100"],
+  [class*="border-slate-200"],
+  [class*="border-gray-100"],
+  [class*="border-gray-200"],
+  [class*="divide-slate-100"] > *,
+  [class*="divide-slate-200"] > *
+) {
+  border-color: var(--admin-line) !important;
+}
+
+/* Text utility colors on operational screens are lifted to readable cool
+   whites; semantic success/error/warning colors remain untouched. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="text-slate-900"],
+  [class*="text-slate-800"],
+  [class*="text-slate-700"],
+  [class*="text-slate-600"],
+  [class*="text-gray-900"],
+  [class*="text-gray-800"],
+  [class*="text-gray-700"]
+):not([class*="text-red-"]):not([class*="text-green-"]):not([class*="text-emerald-"]) {
+  color: #edf3f9 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="text-slate-500"],
+  [class*="text-slate-400"],
+  [class*="text-gray-500"],
+  [class*="text-gray-400"]
+):not([class*="text-red-"]):not([class*="text-green-"]):not([class*="text-emerald-"]) {
+  color: #b6c4d3 !important;
+}
+
+/* Inputs and selects sit on an inset tone, visibly distinct from their cards. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger) {
+  min-height: 40px;
+  border-color: rgba(169, 190, 211, 0.32) !important;
+  background-color: #091a30 !important;
+  color: #f0f4f8 !important;
+  caret-color: #e4c77f;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger)::placeholder {
+  color: #9dadbf !important;
+  opacity: 1;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(input, select, textarea, button, a, [role="button"], .app-select-trigger):focus-visible {
+  outline: 2px solid #e4c77f !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(228, 199, 127, 0.22) !important;
+}
+
+/* Dense tables: clear header, subtle alternating rows, and legible numerals. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) table thead th {
+  color: #f0d99c !important;
+  background: linear-gradient(115deg, #102944, #193653) !important;
+  border-color: rgba(218, 189, 123, 0.34) !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) table tbody tr:nth-child(odd) {
+  background-color: #10243d !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) table tbody tr:nth-child(even) {
+  background-color: #142b46 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) table tbody tr:hover {
+  background-color: #1b3857 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) table :where(td, th) {
+  border-color: rgba(169, 190, 211, 0.2) !important;
+}
+
+/* Admin controls: gold for selected states and neutral dark chrome otherwise. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where([data-active="true"], [data-nav-active="true"], [aria-pressed="true"]) {
+  border-color: rgba(255, 235, 187, 0.72) !important;
+  background: linear-gradient(135deg, #edd897, #c8a85f) !important;
+  color: #11263f !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(button, [role="button"])[class*="bg-blue-"] {
+  border-color: rgba(231, 204, 141,  0.62) !important;
+  background: linear-gradient(135deg, #d9bd7d, #b79855) !important;
+  color: #10243b !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(button, [role="button"])[class*="bg-blue-"]:hover {
+  background: linear-gradient(135deg, #ecd79d, #d0b16c) !important;
+  color: #10243b !important;
+}
+
+/* CustomSelect portals are mounted directly under body, outside the Admin
+   shell. The body :has guard applies this only while an Admin shell is live. */
+body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-slate-200.rounded-2xl {
+  border-color: rgba(218, 189, 123, 0.4) !important;
+  background: #122943 !important;
+  color: #edf3f9 !important;
+  box-shadow: 0 14px 32px rgba(0, 7, 17, 0.48) !important;
+}
+
+body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-slate-200.rounded-2xl > div > button {
+  border-color: rgba(160, 184, 208, 0.13) !important;
+  background: #122943 !important;
+  color: #d5dfeb !important;
+}
+
+body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-slate-200.rounded-2xl > div > button:hover {
+  background: #1a3857 !important;
+  color: #f5f3ed !important;
+}
+
+body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-slate-200.rounded-2xl > div > button[class*="bg-blue-50"] {
+  background: linear-gradient(135deg, #edd897, #c8a85f) !important;
+  color: #11263f !important;
+}
+
+/* Dashboard text, trend graph and branch revenue bars use champagne gold. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] {
+  color: #f0f4f8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-filters] {
+  background: rgba(10, 27, 48, 0.72) !important;
+  border-color: var(--admin-line) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-metrics] p,
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-trend-card] p,
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-margin-card] p,
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-recent-card] p,
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-top-products] p {
+  color: #c3cfdd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] :where(h3, h4, [data-dashboard-metrics] h3) {
+  color: #f5f4ef !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-trend-card] svg path:last-child {
+  stroke: #f0d58b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-trend-card] svg stop {
+  stop-color: #e6c676 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-margin-card] svg circle:nth-child(2) {
+  stroke: #e3c578 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-branch-performance] :where(
+  .recharts-cartesian-grid line
+) {
+  stroke: rgba(194, 209, 224, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-branch-performance] :where(
+  .recharts-xAxis .recharts-cartesian-axis-tick-value,
+  .recharts-yAxis .recharts-cartesian-axis-tick-value
+) {
+  fill: #c3cfdd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-branch-performance] :where(
+  .recharts-bar-rectangle path,
+  .recharts-bar-rectangle .recharts-rectangle
+) {
+  fill: #d9bd7d !important;
+  stroke: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-branch-performance] .recharts-tooltip-wrapper :where(
+  .recharts-default-tooltip,
+  .recharts-tooltip-label,
+  .recharts-tooltip-item
+) {
+  border-color: rgba(218, 189, 123, 0.45) !important;
+  background-color: #10243d !important;
+  color: #f0f4f8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-top-products] {
+  color: #edf3f9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-top-products] h4 {
+  color: #f0d58b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-top-products] [class*="bg-blue-"] {
+  background-color: rgba(219, 190, 123, 0.14) !important;
+}
+
+/* Keep green and red operational states semantic, with enough contrast on navy. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where([class*="text-emerald-"], [class*="text-green-"]) {
+  color: #7fe0a0 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where([class*="text-red-"]) {
+  color: #ff9292 !important;
+}
+
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] :where(
+    [data-ui-screen="dashboard"],
+    [data-ui-screen="reports"],
+    [data-ui-screen="inventory"],
+    [data-ui-screen="branch-stocks"],
+    [data-ui-screen="shopping-list"],
+    [data-ui-screen="incentive"],
+    [data-ui-screen="opname"],
+    [data-ui-screen="employees"],
+    [data-ui-screen="settings"],
+    [data-ui-screen="shift"],
+    [data-ui-screen="stock_audit"],
+    [data-ui-screen="cashier-stock"],
+    [data-testid="page-branch-stock-audit"]
+  ) :where(button, [role="button"], .app-select-trigger) {
+    min-height: 44px;
+  }
+}
+
+/* Final Admin surface cleanup: buttons and capsules are surfaces too. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  button[class~="bg-white"],
+  button[class~="bg-slate-50"],
+  a[class~="bg-white"],
+  a[class~="bg-slate-50"],
+  [role="button"][class~="bg-white"],
+  [role="button"][class~="bg-slate-50"]
+) {
+  border-color: rgba(169, 190, 211, 0.28) !important;
+  background: linear-gradient(145deg, #17324f, #10243c) !important;
+  color: #e8eff6 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  button[class~="bg-white"]:hover,
+  button[class~="bg-slate-50"]:hover,
+  a[class~="bg-white"]:hover,
+  a[class~="bg-slate-50"]:hover,
+  [role="button"][class~="bg-white"]:hover,
+  [role="button"][class~="bg-slate-50"]:hover
+) {
+  border-color: rgba(218, 189, 123, 0.5) !important;
+  background: #203b59 !important;
+  color: #f4e5bc !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  button[class~="bg-white"]:disabled,
+  button[class~="bg-slate-50"]:disabled,
+  button[class~="bg-white"][aria-disabled="true"],
+  button[class~="bg-slate-50"][aria-disabled="true"],
+  a[class~="bg-white"][aria-disabled="true"],
+  a[class~="bg-slate-50"][aria-disabled="true"],
+  [role="button"][class~="bg-white"][aria-disabled="true"],
+  [role="button"][class~="bg-slate-50"][aria-disabled="true"]
+) {
+  border-color: rgba(151, 167, 184, 0.2) !important;
+  background: #17283b !important;
+  color: #9cabbc !important;
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+/* Resolve every literal white utility surface inside Admin screens, including
+   compact pills, nested table cells and controls not tagged as panels. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) [class~="bg-white"]:not(input):not(select):not(textarea) {
+  background-color: #142b46 !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar :where(
+  [class~="bg-white"],
+  [class~="bg-slate-50"],
+  [class~="bg-slate-100"]
+) {
+  border-color: rgba(169, 190, 211, 0.22) !important;
+  background-color: #122943 !important;
+  color: #e3ebf4 !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar :where(button, a, [role="button"]):hover {
+  background-color: #1b3856 !important;
+}
+
+/* Preserve the distinct meaning of status chips and alert blocks while
+   replacing pastel-on-light colors with readable tinted navy variants. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="bg-emerald-50"],
+  [class*="bg-emerald-100"],
+  [class*="bg-green-50"],
+  [class*="bg-green-100"],
+  [class*="bg-teal-50"],
+  [class*="bg-lime-50"]
+) {
+  border-color: rgba(83, 200, 127, 0.38) !important;
+  background-color: #123b31 !important;
+  color: #a5edbd !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="bg-red-50"],
+  [class*="bg-red-100"],
+  [class*="bg-rose-50"],
+  [class*="bg-rose-100"]
+) {
+  border-color: rgba(243, 111, 116, 0.4) !important;
+  background-color: #431e2a !important;
+  color: #ffb1b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="bg-amber-50"],
+  [class*="bg-amber-100"],
+  [class*="bg-yellow-50"],
+  [class*="bg-yellow-100"],
+  [class*="bg-orange-50"],
+  [class*="bg-orange-100"]
+) {
+  border-color: rgba(222, 177, 82, 0.42) !important;
+  background-color: #40341e !important;
+  color: #f4d58c !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="bg-indigo-50"],
+  [class*="bg-indigo-100"],
+  [class*="bg-violet-50"],
+  [class*="bg-violet-100"],
+  [class*="bg-purple-50"],
+  [class*="bg-purple-100"],
+  [class*="bg-fuchsia-50"],
+  [class*="bg-fuchsia-100"]
+) {
+  border-color: rgba(169, 151, 235, 0.38) !important;
+  background-color: #2b2947 !important;
+  color: #d4cbff !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="bg-blue-50"],
+  [class*="bg-blue-100"],
+  [class*="bg-cyan-50"],
+  [class*="bg-cyan-100"],
+  [class*="bg-sky-50"],
+  [class*="bg-sky-100"]
+) {
+  border-color: rgba(101, 172, 222, 0.34) !important;
+  background-color: #17334d !important;
+  color: #bfdef7 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="text-amber-"],
+  [class*="text-yellow-"],
+  [class*="text-orange-"]
+):not([class*="bg-"]) {
+  color: #f1d28a !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="text-blue-"],
+  [class*="text-sky-"],
+  [class*="text-cyan-"]
+):not([class*="bg-"]) {
+  color: #a9d7fb !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(
+  [class*="text-indigo-"],
+  [class*="text-violet-"],
+  [class*="text-purple-"],
+  [class*="text-fuchsia-"]
+):not([class*="bg-"]) {
+  color: #d0c5ff !important;
+}
+
+/* Admin text-entry targets are 44px minimum across breakpoints. */
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger) {
+  min-height: 44px !important;
+}
+
+body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-slate-200.rounded-2xl :where(
+  [class~="bg-white"],
+  [class~="bg-slate-50"],
+  [class~="bg-slate-100"]
+) {
+  background-color: #142b46 !important;
+  color: #d5dfeb !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where(button, a, [role="button"]):where(
+  [class~="bg-gray-50"],
+  [class~="bg-gray-100"],
+  [class~="bg-slate-100"]
+) {
+  border-color: rgba(169, 190, 211, 0.28) !important;
+  background: linear-gradient(145deg, #17324f, #10243c) !important;
+  color: #e8eff6 !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar :where(
+  [aria-current="page"],
+  [data-active="true"],
+  [data-nav-active="true"]
+) {
+  border-color: rgba(255, 235, 187, 0.72) !important;
+  background: linear-gradient(135deg, #edd897, #c8a85f) !important;
+  color: #11263f !important;
+}
+
+.app-shell[data-admin-surface="true"] .app-sidebar :where(
+  [aria-current="page"],
+  [data-active="true"],
+  [data-nav-active="true"]
+) svg {
+  color: #11263f !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen]:not([data-ui-screen="pos"]):not([data-ui-screen="pos-locked"])
+) :where([data-active="true"], [data-nav-active="true"], [aria-pressed="true"]) {
+  border-color: rgba(255, 235, 187, 0.78) !important;
+  background: linear-gradient(135deg, #edd897, #c8a85f) !important;
+  color: #11263f !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  button[class~="bg-gray-50"]:disabled,
+  button[class~="bg-gray-100"]:disabled,
+  button[class~="bg-slate-100"]:disabled,
+  button[class~="bg-gray-50"][aria-disabled="true"],
+  button[class~="bg-gray-100"][aria-disabled="true"],
+  button[class~="bg-slate-100"][aria-disabled="true"]
+) {
+  border-color: rgba(151, 167, 184, 0.2) !important;
+  background: #17283b !important;
+  color: #9cabbc !important;
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+/* Canonical Admin scope for future additions. This includes BranchStockAuditPage
+   through its stock_audit marker; POS and locked POS are explicitly excluded. */
+.app-shell[data-admin-surface="true"] [data-ui-screen]:not(
+  [data-ui-screen="pos"],
+  [data-ui-screen="pos-locked"]
+) {
+  color: #edf3f9;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen]:not(
+  [data-ui-screen="pos"],
+  [data-ui-screen="pos-locked"]
+) :where([class~="bg-white"], [class~="bg-slate-50"], [class~="bg-gray-50"]) {
+  background-color: #142b46 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen]:not(
+  [data-ui-screen="pos"],
+  [data-ui-screen="pos-locked"]
+) :where(button, a, [role="button"]):where(
+  [class~="bg-white"],
+  [class~="bg-slate-50"],
+  [class~="bg-slate-100"],
+  [class~="bg-gray-50"],
+  [class~="bg-gray-100"]
+) {
+  border-color: rgba(169, 190, 211, 0.28) !important;
+  background: linear-gradient(145deg, #17324f, #10243c) !important;
+  color: #e8eff6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen]:not(
+  [data-ui-screen="pos"],
+  [data-ui-screen="pos-locked"]
+) :where([data-active="true"], [data-nav-active="true"], [aria-pressed="true"]) {
+  border-color: rgba(255, 235, 187, 0.78) !important;
+  background: linear-gradient(135deg, #edd897, #c8a85f) !important;
+  color: #11263f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen]:not(
+  [data-ui-screen="pos"],
+  [data-ui-screen="pos-locked"]
+) :where(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .app-select-trigger
+) {
+  min-height: 44px !important;
+}
+
+/* Audit page uses Tailwind arbitrary hex tokens rather than palette utilities.
+   Retint only pale d/e/f fills; saturated and already-dark forest, gold, and
+   red fills are intentionally left intact. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#d"]:not([class*="bg-[#d6b96a]"]),
+  [class*="bg-[#e"],
+  [class*="bg-[#f"]
+) {
+  border-color: rgba(162, 187, 207, 0.24) !important;
+  background-color: #142b46 !important;
+  color: #e6edf5 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#e3f0e7]"],
+  [class*="bg-[#e3eeea]"],
+  [class*="bg-[#e5eeea]"],
+  [class*="bg-[#e6edda]"],
+  [class*="bg-[#e6f1e8]"],
+  [class*="bg-[#e7f0eb]"],
+  [class*="bg-[#e8f2e8]"],
+  [class*="bg-[#eaf2ec]"],
+  [class*="bg-[#dcece4]"]
+) {
+  border-color: rgba(91, 202, 132, 0.4) !important;
+  background-color: #123b31 !important;
+  color: #a5edbd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#f2e2d8]"],
+  [class*="bg-[#f7e7df]"],
+  [class*="bg-[#f8e8e4]"],
+  [class*="bg-[#f8e9e4]"],
+  [class*="bg-[#f9e4dc]"],
+  [class*="bg-[#f9efec]"],
+  [class*="bg-[#fff3ed]"],
+  [class*="bg-[#fff4ef]"],
+  [class*="bg-[#eee4df]"],
+  [class*="bg-[#ebd2c4]"]
+) {
+  border-color: rgba(241, 115, 119, 0.42) !important;
+  background-color: #431e2a !important;
+  color: #ffb1b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#fff8e5]"],
+  [class*="bg-[#faf3dc]"],
+  [class*="bg-[#f8f2dc]"],
+  [class*="bg-[#f6edcf]"],
+  [class*="bg-[#f4edd9]"],
+  [class*="bg-[#f3edd9]"],
+  [class*="bg-[#f3ebd2]"],
+  [class*="bg-[#f2edda]"],
+  [class*="bg-[#f1e7bf]"],
+  [class*="bg-[#e9e3c9]"]
+) {
+  border-color: rgba(222, 177, 82, 0.42) !important;
+  background-color: #40341e !important;
+  color: #f4d58c !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] [class*="text-[#"] {
+  color: #e2eaf2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="text-[#d6b96a]"],
+  [class*="text-[#e3c975]"],
+  [class*="text-[#6c5720]"],
+  [class*="text-[#6d5a28]"],
+  [class*="text-[#6f5c26]"],
+  [class*="text-[#735f2b]"],
+  [class*="text-[#745f23]"],
+  [class*="text-[#755d1d]"],
+  [class*="text-[#806722]"],
+  [class*="text-[#806b30]"],
+  [class*="text-[#816c2d]"],
+  [class*="text-[#826a2b]"],
+  [class*="text-[#8a712e]"],
+  [class*="text-[#8e7943]"],
+  [class*="text-[#9a7b34]"],
+  [class*="text-[#a17e2d]"]
+) {
+  color: #f1d28a !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="text-[#803e31]"],
+  [class*="text-[#805144]"],
+  [class*="text-[#87544a]"],
+  [class*="text-[#914a32]"],
+  [class*="text-[#9a4d3d]"],
+  [class*="text-[#9a5949]"],
+  [class*="text-[#a04d34]"],
+  [class*="text-[#a34f3d]"],
+  [class*="text-[#8d5d39]"]
+) {
+  color: #ffaaa0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="text-[#1b7166]"],
+  [class*="text-[#23665d]"],
+  [class*="text-[#23685f]"],
+  [class*="text-[#286044]"],
+  [class*="text-[#285d58]"],
+  [class*="text-[#29655c]"],
+  [class*="text-[#367167]"],
+  [class*="text-[#39734d]"],
+  [class*="text-[#397449]"],
+  [class*="text-[#39754a]"],
+  [class*="text-[#3e7650]"]
+) {
+  color: #a5edbd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#e3f0e7]"],
+  [class*="bg-[#e3eeea]"],
+  [class*="bg-[#e5eeea]"],
+  [class*="bg-[#e6edda]"],
+  [class*="bg-[#e6f1e8]"],
+  [class*="bg-[#e7f0eb]"],
+  [class*="bg-[#e8f2e8]"],
+  [class*="bg-[#eaf2ec]"],
+  [class*="bg-[#dcece4]"]
+) [class*="text-[#"] {
+  color: #a5edbd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#f2e2d8]"],
+  [class*="bg-[#f7e7df]"],
+  [class*="bg-[#f8e8e4]"],
+  [class*="bg-[#f8e9e4]"],
+  [class*="bg-[#f9e4dc]"],
+  [class*="bg-[#f9efec]"],
+  [class*="bg-[#fff3ed]"],
+  [class*="bg-[#fff4ef]"],
+  [class*="bg-[#eee4df]"],
+  [class*="bg-[#ebd2c4]"]
+) [class*="text-[#"] {
+  color: #ffb1b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#fff8e5]"],
+  [class*="bg-[#faf3dc]"],
+  [class*="bg-[#f8f2dc]"],
+  [class*="bg-[#f6edcf]"],
+  [class*="bg-[#f4edd9]"],
+  [class*="bg-[#f3edd9]"],
+  [class*="bg-[#f3ebd2]"],
+  [class*="bg-[#f2edda]"],
+  [class*="bg-[#f1e7bf]"],
+  [class*="bg-[#e9e3c9]"]
+) [class*="text-[#"] {
+  color: #f4d58c !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#e3f0e7]"],
+  [class*="bg-[#e3eeea]"],
+  [class*="bg-[#e5eeea]"],
+  [class*="bg-[#e6edda]"],
+  [class*="bg-[#e6f1e8]"],
+  [class*="bg-[#e7f0eb]"],
+  [class*="bg-[#e8f2e8]"],
+  [class*="bg-[#eaf2ec]"],
+  [class*="bg-[#dcece4]"]
+) {
+  color: #a5edbd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#f2e2d8]"],
+  [class*="bg-[#f7e7df]"],
+  [class*="bg-[#f8e8e4]"],
+  [class*="bg-[#f8e9e4]"],
+  [class*="bg-[#f9e4dc]"],
+  [class*="bg-[#f9efec]"],
+  [class*="bg-[#fff3ed]"],
+  [class*="bg-[#fff4ef]"],
+  [class*="bg-[#eee4df]"],
+  [class*="bg-[#ebd2c4]"]
+) {
+  color: #ffb1b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#fff8e5]"],
+  [class*="bg-[#faf3dc]"],
+  [class*="bg-[#f8f2dc]"],
+  [class*="bg-[#f6edcf]"],
+  [class*="bg-[#f4edd9]"],
+  [class*="bg-[#f3edd9]"],
+  [class*="bg-[#f3ebd2]"],
+  [class*="bg-[#f2edda]"],
+  [class*="bg-[#f1e7bf]"],
+  [class*="bg-[#e9e3c9]"]
+) {
+  color: #f4d58c !important;
+}
+
+/* The audit's custom red and gold action fills remain semantic and legible. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"] :where(
+  [class*="bg-[#735f2b]"],
+  [class*="bg-[#866d2c]"],
+  [class*="bg-[#87564b]"],
+  [class*="bg-[#73473e]"]
+) {
+  color: #fff1d0 !important;
+}

@@ -290,10 +290,7 @@ When the owner provides a visual reference for Admin, match its visible visual s
 **Why:** the owner said the first Admin pass did not look like the reference and explicitly asked to focus on Admin before touching the cashier page.
 **How to apply:** scope shared header/navigation and sidebar styling to Admin sessions, keep phone gutters and component gaps compact, preserve readable controls and semantic status colors, and leave POS layout/behavior separate.
 
-## Admin navy-and-champagne cards
-Admin uses the same layered navy gradient canvas as the cashier, but its bright white metric/chart cards and capsules should use tiered navy surfaces with restrained champagne-gold edges and warm light text. Dense tables and forms use warm ivory (`#F3EEE3`) in light mode and readable charcoal/navy surfaces in dark mode; preserve green/red status meaning. This is Admin-only and must not alter POS.
-**Why:** the owner said white cards looked out of place on the navy background and selected the tiered-navy direction.
-**How to apply:** scope changes to `.app-shell[data-admin-surface="true"]`; use navy for metric/chart cards and shared controls, ivory for dense data-entry/read surfaces, and retain contrast in both themes.
-The glossy glass treatment with cyan rim highlights and a gold trend line is approved only as a Dashboard Admin pilot; do not extend this stronger effect to other pages until the owner reviews it.
-**Why:** the owner asked to try the reference style on the Dashboard first.
-**How to apply:** scope glossy/rim changes to the Admin dashboard screen and its matching top toolbar, while preserving the standard Admin navy/ivory style elsewhere.
+## Admin navy-and-champagne system
+All Admin pages use layered navy surfaces for cards, tables, forms, controls, and capsules, with no pure-white backgrounds. Use high-contrast light text, gold dashboard charts, and preserve green/red status meaning. POS remains separate.
+**Why:** the owner approved extending the Dashboard's navy/gold direction to all Admin pages and explicitly limited the scope to Admin.
+**How to apply:** scope Admin styling to `.app-shell[data-admin-surface="true"]` and Admin-only portal menus; keep compact layout and 44px touch targets, preserve business behavior, and leave cashier/POS surfaces unchanged unless separately approved.
