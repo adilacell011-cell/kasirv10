@@ -294,3 +294,6 @@ When the owner provides a visual reference for Admin, match its visible visual s
 Admin uses the same layered navy gradient canvas as the cashier, but its bright white metric/chart cards and capsules should use tiered navy surfaces with restrained champagne-gold edges and warm light text. Dense tables and forms use warm ivory (`#F3EEE3`) in light mode and readable charcoal/navy surfaces in dark mode; preserve green/red status meaning. This is Admin-only and must not alter POS.
 **Why:** the owner said white cards looked out of place on the navy background and selected the tiered-navy direction.
 **How to apply:** scope changes to `.app-shell[data-admin-surface="true"]`; use navy for metric/chart cards and shared controls, ivory for dense data-entry/read surfaces, and retain contrast in both themes.
+The glossy glass treatment with cyan rim highlights and a gold trend line is approved only as a Dashboard Admin pilot; do not extend this stronger effect to other pages until the owner reviews it.
+**Why:** the owner asked to try the reference style on the Dashboard first.
+**How to apply:** scope glossy/rim changes to the Admin dashboard screen and its matching top toolbar, while preserving the standard Admin navy/ivory style elsewhere.
