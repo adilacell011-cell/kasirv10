@@ -5662,6 +5662,16 @@ body,
 
 /* POS premium navy palette. This block is intentionally scoped to the cashier
    screen; transaction logic, other Admin pages, and cashier-stock stay intact. */
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] [data-topbar-title] h2,
+.dark .app-shell header[data-topbar-screen="pos"] [data-topbar-title] h2 {
+  color: #142a46 !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] [data-topbar-title] + div,
+.dark .app-shell header[data-topbar-screen="pos"] [data-topbar-title] + div {
+  background: linear-gradient(180deg, transparent, #c3a36a, transparent) !important;
+}
+
 :root:not(.dark) .app-shell [data-ui-screen="pos"],
 .dark .app-shell [data-ui-screen="pos"] {
   color: #edf3fb;
