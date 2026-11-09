@@ -225,21 +225,21 @@ jobs:
       matrix:
         include:
           - name: api
-            expected_digest: sha256:c5a185d10f5d9330b01fc7dc5a24150ee87c76b2504d887387a004b1853d85f2
+            expected_digest: sha256:bc6070140da21154d418dc81d4a6d1d7fdf5d3626c563a92b9d42cf21b5d57c2
           - name: web
-            expected_digest: sha256:40a990158e92ecd1e6c8d1a5b85d4207ad4327258559f16c84f289efddb3957c
+            expected_digest: sha256:923a29f0fdedf8f08eb83f5c98defdf4c03507fd7ce10741d1669b68f68e3922
     steps:
       - name: Verify approved source and registry targets
         env:
           SOURCE_SHA: ${{ inputs.candidate_source_sha }}
         run: |
           set -euo pipefail
-          if [[ "$SOURCE_SHA" != "1f45011808afa79437629758d5fcb25332b900f0" ]]; then
+          if [[ "$SOURCE_SHA" != "0d8120ce094f5a34cce3466c36302c361e81573a" ]]; then
             echo "Refusing verification: source SHA does not match the approved candidate."
             exit 1
           fi
           echo "Source SHA: $SOURCE_SHA"
-          echo "Registry tag is pinned to publish run 42211464440, attempt 1."
+          echo "Registry tag is pinned to publish run 42600362613, attempt 1."
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
@@ -251,7 +251,7 @@ jobs:
       - name: Verify published digest and platform manifest
         env:
           IMAGE: ghcr.io/adilacell011-cell/kasirv10-${{ matrix.name }}
-          IMAGE_TAG: candidate-1f45011808afa79437629758d5fcb25332b900f0-run-42211464440-attempt-1
+          IMAGE_TAG: candidate-0d8120ce094f5a34cce3466c36302c361e81573a-run-42600362613-attempt-1
           EXPECTED_DIGEST: ${{ matrix.expected_digest }}
         run: |
           set -euo pipefail
