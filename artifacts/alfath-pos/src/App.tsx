@@ -1545,6 +1545,12 @@ export default function App() {
     return `${year}-${month}-${day}`;
   };
 
+  const formatCompactShiftDate = (dateInput: unknown) => {
+    const rawDate = String(dateInput ?? "");
+    const match = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[3]}/${match[2]}/${match[1].slice(-2)}` : rawDate || "N/A";
+  };
+
   const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
   const branchMap = useMemo(() => new Map(branches.map(b => [b.id, b])), [branches]);
 
@@ -4647,7 +4653,7 @@ export default function App() {
                                 return (
                                   <tr key={sh.id}>
                                     <td data-column="time" className="font-black text-slate-900">
-                                      <p className="border-b border-slate-200/70 pb-1 mb-1">{sh.shiftDate}</p>
+                                      <p className="border-b border-slate-200/70 pb-1 mb-1">{formatCompactShiftDate(sh.shiftDate)}</p>
                                       <p className="text-[9px] font-mono text-slate-400">
                                         {new Date(sh.closeTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                                       </p>

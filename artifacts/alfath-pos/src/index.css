@@ -4053,15 +4053,21 @@ body,
 
 .app-shell[data-admin-surface="true"] [data-report-date-start],
 .app-shell[data-admin-surface="true"] [data-report-date-end] {
-  gap: 2px !important;
+  gap: 1px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-date-start] > span,
+.app-shell[data-admin-surface="true"] [data-report-date-end] > span {
+  font-size: 8px !important;
+  letter-spacing: 0.035em !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-report-date-start] input,
 .app-shell[data-admin-surface="true"] [data-report-date-end] input {
-  min-height: 40px !important;
-  padding-inline: 8px !important;
-  border-radius: 10px !important;
-  font-size: 9px !important;
+  min-height: 38px !important;
+  padding-inline: 6px !important;
+  border-radius: 9px !important;
+  font-size: 8px !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-report-branch] .app-select-trigger {
@@ -4152,6 +4158,17 @@ body,
 
 .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="cashier-branch"] {
   background: #ffffff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="cashier-branch"] p:first-child {
+  font-size: 9px !important;
+  line-height: 1.2;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="cashier-branch"] p:nth-child(2) {
+  font-size: 8px !important;
+  line-height: 1.2;
+  letter-spacing: 0.02em !important;
 }
 
 .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="system"] {
