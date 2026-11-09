@@ -6426,3 +6426,234 @@ body,
 .dark .app-shell [data-ui-screen="incentive"] [data-bonus-panel="cashier-summary"] > div:last-child > div:last-child p:last-child {
   color: #fecdd3 !important;
 }
+
+/* Cashier shift management uses the same navy/champagne theme without touching
+   shift timing, totals, validation, or close/open actions. */
+:root:not(.dark) .app-shell [data-ui-screen="shift"],
+.dark .app-shell [data-ui-screen="shift"] {
+  color: #172d49;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(199, 167, 106, 0.14), transparent 38%),
+    linear-gradient(145deg, #0d1c34 0%, #142c49 54%, #203d5c 100%) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-card],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-card],
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-transactions],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-transactions] {
+  background: #fff !important;
+  border: 1px solid #d6c394 !important;
+  box-shadow: 0 12px 28px rgba(3, 12, 27, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-header],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-header],
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-transactions-header],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-transactions-header] {
+  color: #f8fafc !important;
+  background: linear-gradient(116deg, #102542 0%, #193552 66%, #274866 100%) !important;
+  border-bottom-color: rgba(221, 195, 146, 0.42) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-header] > div:first-child,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-header] > div:first-child {
+  background: rgba(222, 195, 139, 0.16) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-header] > svg,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-header] > svg {
+  color: #e3c98d !important;
+  filter: drop-shadow(0 2px 8px rgba(226, 198, 139, 0.22));
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-header] h2,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-header] h2 {
+  color: #fff !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-header] p,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-header] p {
+  color: #cbd7e5 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-body],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-body] {
+  color: #172d49 !important;
+  background: #fff !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-info-card],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-info-card] {
+  background: #f5f7fa !important;
+  border-color: #e1e6ed !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-info-card] p:first-child,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-info-card] p:first-child {
+  color: #68798c !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-info-card] > div,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-info-card] > div {
+  color: #172d49 !important;
+  background: #fff !important;
+  border-color: #dce3eb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-info-card] > div p,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-info-card] > div p {
+  color: #172d49 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-body] button[class*="bg-slate-50"],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-body] button[class*="bg-slate-50"] {
+  color: #203c59 !important;
+  background: linear-gradient(145deg, #f7f4eb, #edf2f7) !important;
+  border-color: #d9c89f !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-body] [class*="border-blue-600"][class*="bg-blue-50"],
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-control-body] [class*="border-indigo-600"][class*="bg-indigo-50"],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-body] [class*="border-blue-600"][class*="bg-blue-50"],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-control-body] [class*="border-indigo-600"][class*="bg-indigo-50"] {
+  color: #203a56 !important;
+  background: linear-gradient(145deg, #f1e5c8, #e3d0a7) !important;
+  border-color: #c4a66d !important;
+  box-shadow: 0 4px 12px rgba(189, 151, 82, 0.18) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close] {
+  color: #fff !important;
+  background: linear-gradient(120deg, #7c2d3e, #9b3447) !important;
+  border: 1px solid #d7a275 !important;
+  box-shadow: 0 6px 15px rgba(113, 31, 49, 0.22) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-open],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-open] {
+  color: #fff !important;
+  background: linear-gradient(115deg, #102744 0%, #1b3b5b 76%, #294967 100%) !important;
+  border: 1px solid #c4a66d !important;
+  box-shadow: 0 6px 16px rgba(15, 38, 66, 0.2) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-transactions-header] h3,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-transactions-header] h3 {
+  color: #fff !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-transactions-header] p,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-transactions-header] p {
+  color: #cbd7e5 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-transactions-total],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-transactions-total] {
+  color: #203a56 !important;
+  background: linear-gradient(145deg, #f1e5c8, #e3d0a7) !important;
+  border-color: #c4a66d !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-transactions-total] svg,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-transactions-total] svg {
+  color: #9b783b !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-sale-row],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-sale-row] {
+  background: #fff !important;
+  border-color: #e1e7ee !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-sale-row]:hover,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-sale-row]:hover {
+  background: #f6f8fb !important;
+  border-color: #d5c397 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-dialog],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-dialog] {
+  background: #fff !important;
+  border: 1px solid #d6c394 !important;
+  box-shadow: 0 20px 50px rgba(2, 9, 21, 0.36) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-header],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-header] {
+  background: linear-gradient(120deg, #102542, #1d3c5c 72%, #294b68) !important;
+  border-bottom: 1px solid rgba(221, 195, 146, 0.42);
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-header] > div:nth-child(2),
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-header] > div:nth-child(2) {
+  color: #203a56 !important;
+  background: linear-gradient(145deg, #f1e5c8, #d8bd81) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-header] h2,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-header] h2 {
+  color: #fff !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-header] p,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-header] p {
+  color: #e2d2ae !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-total],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-total] {
+  background: linear-gradient(145deg, #faf7ef, #f2ead8) !important;
+  border-color: #e1d4b8 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-total] p:first-child,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-total] p:first-child {
+  color: #66778b !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-close-total] p:last-child,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-close-total] p:last-child {
+  color: #102945 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-income-entry],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-income-entry] {
+  background: #f6f8fb !important;
+  border-color: #dfe6ed !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-income-entry] label,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-income-entry] label {
+  color: #42566e !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-income-input],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-income-input] {
+  color: #172d49 !important;
+  background: #fff !important;
+  border-color: #d5deea !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-income-input]:focus,
+.dark .app-shell [data-ui-screen="shift"] [data-shift-income-input]:focus {
+  border-color: #c4a66d !important;
+  --tw-ring-color: rgba(196, 166, 109, 0.42) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-confirm-close],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-confirm-close] {
+  color: #fff !important;
+  background: linear-gradient(115deg, #102744, #1b3b5b 76%, #294967) !important;
+  border: 1px solid #c4a66d !important;
+  box-shadow: 0 5px 14px rgba(15, 38, 66, 0.2) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="shift"] [data-shift-cancel-close],
+.dark .app-shell [data-ui-screen="shift"] [data-shift-cancel-close] {
+  color: #4b5e72 !important;
+  background: linear-gradient(145deg, #f8f6ef, #edf1f5) !important;
+  border: 1px solid #d9e0e8 !important;
+}

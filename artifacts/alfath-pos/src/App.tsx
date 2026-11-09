@@ -9123,8 +9123,8 @@ export default function App() {
             )}
             {activeMenu === "shift" && profile?.role === "CASHIER" && (
                 <div data-ui-screen="shift" className="ui-screen-shift flex-1 p-4 md:p-6 overflow-y-auto w-full flex flex-col xl:flex-row items-center xl:items-start justify-center gap-6 relative">
-                <div className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden relative shrink-0">
-                  <div className="p-4 md:p-8 border-b border-slate-200 bg-white text-slate-900 text-center relative overflow-hidden">
+                <div data-shift-control-card className="max-w-md w-full bg-white rounded-2xl md:rounded-3xl overflow-hidden relative shrink-0">
+                  <div data-shift-control-header className="p-4 md:p-8 border-b border-slate-200 bg-white text-slate-900 text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16"></div>
                     <Clock className="w-14 h-14 text-blue-600 mx-auto mb-4 relative z-10" />
                     <h2 className="text-xl md:text-lg md:text-2xl font-black uppercase tracking-tight relative z-10">
@@ -9135,7 +9135,7 @@ export default function App() {
                         "Belum Ada Cabang"}
                     </p>
                   </div>
-                  <div className="p-4 md:p-6 md:p-8 space-y-6">
+                  <div data-shift-control-body className="p-4 md:p-6 md:p-8 space-y-6">
                     {shiftOpen ? (
                       <div className="text-center">
                         <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-5 py-2.5 rounded-full font-black text-[11px] uppercase tracking-widest mb-6 animate-pulse">
@@ -9144,7 +9144,7 @@ export default function App() {
                         </div>
 
                         <div className="space-y-3 mb-6">
-                          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
+                          <div data-shift-info-card className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                               Penjaga pada shift ini:
                             </p>
@@ -9155,7 +9155,7 @@ export default function App() {
                               Untuk serah terima, tutup shift ini terlebih dahulu. Penjaga berikutnya memilih namanya saat membuka shift baru.
                             </p>
                           </div>
-                          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
+                          <div data-shift-info-card className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                               Mulai Shift:
                             </p>
@@ -9174,6 +9174,7 @@ export default function App() {
 
                         <div className="space-y-3">
                           <button
+                            data-shift-close
                             onClick={handleCloseShift}
                             className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-red-100 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
                           >
@@ -9251,6 +9252,7 @@ export default function App() {
                         </div>
 
                         <button
+                          data-shift-open
                           onClick={handleOpenShift}
                           disabled={!cashierName.trim() || !shiftType}
                           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 md:py-5 rounded-2xl uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale"
@@ -9264,8 +9266,8 @@ export default function App() {
 
                 {/* REAL-TIME CURRENT SHIFT TRANSACTIONS LIST */}
                 {shiftOpen && (
-                  <div className="flex-1 max-w-2xl w-full bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden relative flex flex-col min-h-[400px] animate-in fade-in slide-in-from-right-4 duration-500">
-                    <div className="p-5 md:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                  <div data-shift-transactions className="flex-1 max-w-2xl w-full bg-white rounded-2xl md:rounded-3xl shadow-2xl border border-slate-100 overflow-hidden relative flex flex-col min-h-[400px] animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div data-shift-transactions-header className="p-5 md:p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
                       <div className="text-left">
                         <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight leading-none mb-1">
                           Riwayat Transaksi Shift Ini
@@ -9274,7 +9276,7 @@ export default function App() {
                           Daftar penjualan terdaftar selama sesi shift aktif berjalan
                         </p>
                       </div>
-                      <div className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-3 py-1.5 rounded-xl font-bold font-mono text-xs flex items-center gap-1.5 justify-center self-start sm:self-auto">
+                      <div data-shift-transactions-total className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-3 py-1.5 rounded-xl font-bold font-mono text-xs flex items-center gap-1.5 justify-center self-start sm:self-auto">
                         <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
                         Rp {currentShiftTotalSales.toLocaleString("id-ID")}
                       </div>
@@ -9290,7 +9292,7 @@ export default function App() {
                       ) : (
                         <div className="space-y-3">
                           {currentShiftSales.map((sale) => (
-                            <div key={sale.id} className="p-4 rounded-xl border border-slate-100 hover:border-slate-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                            <div data-shift-sale-row key={sale.id} className="p-4 rounded-xl border border-slate-100 hover:border-slate-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">
@@ -9324,9 +9326,9 @@ export default function App() {
 
                 {/* SHIFT SUMMARY MODAL overlay inside view */}
                 {showShiftSummary !== null && (
-                  <div className="fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="max-w-md w-full bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
-                      <div className="p-5 md:p-6 bg-emerald-600 text-white text-center relative overflow-hidden shrink-0">
+                  <div data-shift-close-overlay className="fixed inset-0 z-[110] bg-slate-900/90 flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div data-shift-close-dialog className="max-w-md w-full bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
+                      <div data-shift-close-header className="p-5 md:p-6 bg-emerald-600 text-white text-center relative overflow-hidden shrink-0">
                         <div className="absolute inset-0 bg-emerald-500/10"></div>
                         <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 relative z-10">
                           <Banknote className="w-6 h-6 text-white" />
@@ -9339,7 +9341,7 @@ export default function App() {
                         </p>
                       </div>
                       <div className="p-5 md:p-8 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-                        <div className="space-y-1 text-center bg-slate-50 py-4 rounded-2xl border border-slate-100">
+                        <div data-shift-close-total className="space-y-1 text-center bg-slate-50 py-4 rounded-2xl border border-slate-100">
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
                             Total Pendapatan Sistem:
                           </p>
@@ -9373,7 +9375,7 @@ export default function App() {
                           <p className="text-[8px] text-blue-600 mt-2">Nilai akhir dihitung ulang oleh server saat shift ditutup.</p>
                         </div>
 
-                        <div className="space-y-3 text-left bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div data-shift-income-entry className="space-y-3 text-left bg-slate-50 p-4 rounded-2xl border border-slate-100">
                           <div>
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Masukkan total pendapatan menurut catatan kasir:</p>
                             <div className="relative">
@@ -9382,6 +9384,7 @@ export default function App() {
                                 type="number"
                                 min="0"
                                 step="1"
+                                data-shift-income-input
                                 value={reportedIncomeInput}
                                 onChange={(e) => setReportedIncomeInput(e.target.value)}
                                 placeholder="0"
@@ -9413,6 +9416,7 @@ export default function App() {
 
                         <div className="space-y-2 shrink-0">
                           <button
+                            data-shift-confirm-close
                             disabled={reportedIncomeInput === "" || isClosingShift}
                             onClick={() => finalizeCloseShift(reportedIncomeInput)}
                             className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black active:scale-95 flex items-center justify-center gap-3"
@@ -9428,6 +9432,7 @@ export default function App() {
                             )}
                           </button>
                           <button
+                            data-shift-cancel-close
                             onClick={() => {
                               setShowShiftSummary(null);
                               setReportedIncomeInput("");
