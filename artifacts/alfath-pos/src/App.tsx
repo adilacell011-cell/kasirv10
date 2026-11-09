@@ -4507,23 +4507,32 @@ export default function App() {
                               <Save className="w-3 md:w-4 h-3 md:h-4" /> Ekspor ke Excel (CSV)
                             </button>
                           </div>
-                          <div className="overflow-x-auto scrollbar-hide">
-                            <table className="w-full text-left border-collapse min-w-[700px]">
+                          <div data-report-revenue-scroll className="overflow-x-hidden">
+                            <table aria-label="Tabel laporan pendapatan per tanggal dan cabang" className="admin-excel-table admin-revenue-report-table w-full min-w-0 text-left border-collapse">
+                              <colgroup>
+                                <col data-column="date" />
+                                <col data-column="branch" />
+                                <col data-column="day-cashier" />
+                                <col data-column="day-income" />
+                                <col data-column="night-cashier" />
+                                <col data-column="night-income" />
+                                <col data-column="total" />
+                              </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200">
-                                  <th className="px-3 md:px-6 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-200">Tanggal</th>
-                                  <th className="px-3 md:px-6 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-200">Cabang</th>
-                                  <th className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-amber-600 uppercase tracking-widest border-r border-slate-200 bg-amber-50/20 text-center" colSpan={2}>Siff Siang (Pagi)</th>
-                                  <th className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-widest border-r border-slate-200 bg-indigo-50/20 text-center" colSpan={2}>Siff Malam</th>
-                                  <th className="px-3 md:px-6 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50/30 text-right">Total Pendapatan</th>
+                                  <th scope="col" data-column="date" className="px-3 md:px-6 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-200">Tanggal</th>
+                                  <th scope="col" data-column="branch" className="px-3 md:px-6 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-r border-slate-200">Cabang</th>
+                                  <th scope="colgroup" data-column="day-group" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-amber-600 uppercase tracking-widest border-r border-slate-200 bg-amber-50/20 text-center" colSpan={2}>Siff Siang (Pagi)</th>
+                                  <th scope="colgroup" data-column="night-group" className="px-2 md:px-4 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-widest border-r border-slate-200 bg-indigo-50/20 text-center" colSpan={2}>Siff Malam</th>
+                                  <th scope="col" data-column="total" className="px-3 md:px-6 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50/30 text-right">Total</th>
                                 </tr>
                                 <tr className="bg-slate-50 border-b border-slate-100 text-[7px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                   <th colSpan={2} className="border-r border-slate-200"></th>
-                                  <th className="px-2 py-2 border-r border-slate-100 bg-amber-50/5">Kasir</th>
-                                  <th className="px-2 py-2 border-r border-slate-200 bg-amber-50/5 text-right">Income</th>
-                                  <th className="px-2 py-2 border-r border-slate-100 bg-indigo-50/5">Kasir</th>
-                                  <th className="px-2 py-2 border-r border-slate-200 bg-indigo-50/5 text-right">Income</th>
-                                  <th className="bg-emerald-50/5 text-right">Harian</th>
+                                  <th scope="col" data-column="day-cashier" className="px-2 py-2 border-r border-slate-100 bg-amber-50/5">Kasir</th>
+                                  <th scope="col" data-column="day-income" className="px-2 py-2 border-r border-slate-200 bg-amber-50/5 text-right">Income</th>
+                                  <th scope="col" data-column="night-cashier" className="px-2 py-2 border-r border-slate-100 bg-indigo-50/5">Kasir</th>
+                                  <th scope="col" data-column="night-income" className="px-2 py-2 border-r border-slate-200 bg-indigo-50/5 text-right">Income</th>
+                                  <th scope="col" data-column="total" className="bg-emerald-50/5 text-right">Harian</th>
                                 </tr>
                               </thead>
                               <tbody className="text-[10px] md:text-[11px] font-bold text-slate-700 divide-y divide-slate-100">
@@ -4572,25 +4581,25 @@ export default function App() {
                                       const rowTotal = d.pagi.val + d.malam.val;
                                       return (
                                         <tr key={`${date}-${bId}`} className="hover:bg-slate-50 transition-colors group">
-                                          <td className="px-3 md:px-6 py-3 md:py-4 border-r border-slate-100 text-slate-500 font-mono text-[9px] md:text-[10px]">
-                                            {bIdx === 0 ? date : <span className="opacity-0">{date}</span>}
+                                          <td data-column="date" className="px-3 md:px-6 py-3 md:py-4 border-r border-slate-100 text-slate-500 font-mono text-[9px] md:text-[10px]">
+                                            {bIdx === 0 ? formatCompactShiftDate(date) : <span className="opacity-0">{formatCompactShiftDate(date)}</span>}
                                           </td>
-                                          <td className="px-3 md:px-6 py-3 md:py-4 border-r border-slate-100 uppercase tracking-tighter font-black text-slate-900 truncate max-w-[80px] md:max-w-none">
+                                          <td data-column="branch" className="px-3 md:px-6 py-3 md:py-4 border-r border-slate-100 uppercase tracking-tighter font-black text-slate-900 whitespace-normal break-words">
                                             {bName}
                                           </td>
-                                          <td className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-100 bg-amber-50/5 text-slate-600 truncate max-w-[60px] md:max-w-[80px]">
+                                          <td data-column="day-cashier" className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-100 bg-amber-50/5 text-slate-600 whitespace-normal break-words">
                                             {d.pagi.kasir || "-"}
                                           </td>
-                                          <td className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-200 bg-amber-50/10 text-amber-700 text-right font-mono">
+                                          <td data-column="day-income" className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-200 bg-amber-50/10 text-amber-700 text-right font-mono">
                                             {d.pagi.val > 0 ? `Rp ${d.pagi.val.toLocaleString("id-ID")}` : "-"}
                                           </td>
-                                          <td className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-100 bg-indigo-50/5 text-slate-600 truncate max-w-[60px] md:max-w-[80px]">
+                                          <td data-column="night-cashier" className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-100 bg-indigo-50/5 text-slate-600 whitespace-normal break-words">
                                             {d.malam.kasir || "-"}
                                           </td>
-                                          <td className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-200 bg-indigo-50/10 text-indigo-700 text-right font-mono">
+                                          <td data-column="night-income" className="px-2 md:px-4 py-3 md:py-4 border-r border-slate-200 bg-indigo-50/10 text-indigo-700 text-right font-mono">
                                             {d.malam.val > 0 ? `Rp ${d.malam.val.toLocaleString("id-ID")}` : "-"}
                                           </td>
-                                          <td className="px-3 md:px-6 py-3 md:py-4 bg-emerald-50/20 text-slate-900 font-black text-right text-xs md:text-sm font-mono whitespace-nowrap">
+                                          <td data-column="total" className="px-3 md:px-6 py-3 md:py-4 bg-emerald-50/20 text-slate-900 font-black text-right text-xs md:text-sm font-mono whitespace-normal">
                                             Rp {rowTotal.toLocaleString("id-ID")}
                                           </td>
                                         </tr>
