@@ -149,9 +149,11 @@ visual consistency.
 components, explicitly including the cashier page.
 **How to apply:** scope the color to page-level backgrounds, keep white cards and controls intact, and do not
 change the POS tablet's established two-column layout.
-For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing;
-prefer slate/navy-filled primary buttons over bright-blue fills, while retaining blue for restrained accents.
-**Why:** the owner asked for tighter Android reports, clearer component divisions, and calmer button colors.
+For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing.
+Excel-style tables use navy headers and total rows with white text, alternating white/light blue-gray body cells,
+and no raised shadow per cell; reserve dark fills for the header and summary row.
+Prefer slate/navy-filled primary buttons over bright-blue fills, while retaining blue for restrained accents.
+**Why:** the owner asked for tighter Android reports, clearer component divisions, calmer button colors, and approved this table palette.
 **How to apply:** keep the existing page structure and actions; adjust only spacing, borders, and visual color
 classes unless the owner separately approves behavior changes.
 For Stok Opname, use slate/navy for generic active controls and intake actions instead of green; retain red

@@ -3804,29 +3804,83 @@ body,
   text-align: right;
 }
 
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal th {
+  background: #20385f;
+  color: #ffffff;
+  border-color: #3b557a;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-branch-modal] {
+  --tw-shadow: 0 5px 16px rgba(34, 53, 83, 0.12) !important;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(odd) td[data-column="branch"] {
+  background: #ffffff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(even) td[data-column="branch"] {
+  background: #f8fafc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(odd) td[data-column="capital"] {
+  background: #f7fbff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(even) td[data-column="capital"] {
+  background: #eef5fc;
+}
+
 .app-shell[data-admin-surface="true"] .admin-excel-branch-modal td[data-column="capital"] {
   background: #f0f9ff;
 }
 
 .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td {
-  background: #e9eff8;
-  border-top: 2px solid #c6d3e3;
+  background: #20385f;
+  color: #ffffff;
+  border-top: 2px solid #3b557a;
   border-bottom: 0;
 }
 
 .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td[data-column="capital"] {
-  color: #20385f;
+  background: #20385f;
+  color: #ffffff;
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal td[data-column="capital"] {
   background: #1d2f3e;
 }
 
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal th {
+  background: #29436d;
+  border-color: #496487;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-branch-modal] {
+  --tw-shadow: 0 5px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
 .dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td {
-  background: #2a374b;
-  border-top-color: #4a5c75;
+  background: #29436d;
+  border-top-color: #496487;
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td[data-column="capital"] {
-  color: #e5edf8 !important;
+  background: #29436d;
+  color: #ffffff !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(odd) td[data-column="branch"] {
+  background: #202a39;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(even) td[data-column="branch"] {
+  background: #263244;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(odd) td[data-column="capital"] {
+  background: #1d2f3e;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(even) td[data-column="capital"] {
+  background: #243747;
 }
