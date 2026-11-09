@@ -5368,3 +5368,117 @@ body,
     padding-right: 8px !important;
   }
 }
+
+/* Compact, consistent Opname controls while retaining 44px touch targets. */
+[data-ui-screen="opname"] {
+  min-width: 0;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-header] {
+  gap: 6px !important;
+  padding: 8px 6px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-header] > div {
+  gap: 6px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-header] h2 {
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+}
+
+[data-ui-screen="opname"] [data-opname-header] p {
+  margin-bottom: 3px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-header] [data-opname-branch] .app-select-trigger,
+[data-ui-screen="opname"] [data-opname-sku-search] input {
+  min-height: 44px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-tabs] {
+  padding: 5px 6px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-tabs] > div {
+  width: max-content;
+  min-width: 100%;
+  gap: 3px !important;
+  padding: 4px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-tabs] button {
+  flex: 0 0 auto !important;
+  min-width: max-content !important;
+  min-height: 44px !important;
+  padding: 7px 9px !important;
+  font-size: 9px !important;
+  letter-spacing: 0.01em !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] {
+  padding: 8px 6px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] [data-opname-section-heading] {
+  gap: 8px !important;
+  margin-bottom: 9px !important;
+  padding: 9px !important;
+  border-radius: 14px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 10px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 6px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] input:not([type="checkbox"]):not([type="radio"]),
+[data-ui-screen="opname"] [data-opname-form] .app-select-trigger {
+  min-height: 44px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  font-size: 13px !important;
+}
+
+[data-ui-screen="opname"] [data-opname-form] [data-opname-product-search] input {
+  padding-left: 36px !important;
+  padding-right: 40px !important;
+  text-transform: none !important;
+}
+
+[data-ui-screen="opname"] [data-opname-product-result-list] {
+  max-height: 8rem !important;
+}
+
+[data-ui-screen="opname"] table th,
+[data-ui-screen="opname"] table td {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+@media (min-width: 768px) {
+  [data-ui-screen="opname"] {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-header] {
+    padding: 10px 10px !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-tabs] {
+    padding: 7px 8px !important;
+  }
+
+  [data-ui-screen="opname"] [data-opname-form] {
+    padding: 10px 8px !important;
+  }
+}
