@@ -5975,6 +5975,11 @@ body,
   transform: translateY(-1px);
 }
 
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card] > div.mt-auto,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-card] > div.mt-auto {
+  border-top-color: #243b5a !important;
+}
+
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card] [data-pos-product-add],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-product-card] [data-pos-product-add] {
   color: #f6e7c5 !important;
