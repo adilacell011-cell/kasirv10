@@ -6216,3 +6216,131 @@ body,
   color: #f8fafc !important;
   background: linear-gradient(135deg, #102744, #284866) !important;
 }
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-results],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-results] {
+  background: #fff !important;
+  border-color: #cdb783 !important;
+  box-shadow: 0 14px 32px rgba(3, 12, 27, 0.28), 0 2px 8px rgba(3, 12, 27, 0.16) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-table-header],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-table-header] {
+  background: linear-gradient(105deg, #102542, #203d5c) !important;
+  border-bottom-color: #cdb783 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-table-header] [data-pos-search-column],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-table-header] [data-pos-search-column] {
+  color: #f8fafc !important;
+  background: transparent !important;
+  border-color: rgba(219, 196, 153, 0.28) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] {
+  color: #172d49 !important;
+  background: #fff !important;
+  border-bottom-color: #dfe6ee !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) {
+  background: #f2f6fb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover {
+  background: #e8eff7 !important;
+  border-left-color: #c3a36a !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="number"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="number"] {
+  color: #68798c !important;
+  background: #e9eef4 !important;
+  border-color: #d4dde7 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) [data-pos-search-column="product"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) [data-pos-search-column="product"] {
+  background: #f2f6fb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"] > span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"] > span {
+  color: #1c3049 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"] {
+  border-color: #d4dde7 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="stock"].bg-emerald-50,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="stock"].bg-emerald-50 {
+  color: #08704d !important;
+  background: #e4f5ee !important;
+  border-color: #d4e8df !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="stock"].bg-rose-50,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="stock"].bg-rose-50 {
+  color: #b4233b !important;
+  background: #fff0f1 !important;
+  border-color: #f0d9dd !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] {
+  color: #183957 !important;
+  background: #eaf1f8 !important;
+  border-color: #d4dde7 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] > span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] > span {
+  color: #183957 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-deep-button],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-deep-button] {
+  color: #fff !important;
+  background: linear-gradient(110deg, #112744, #294967) !important;
+  border-top-color: #cdb783 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-deep-button] svg,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-deep-button] svg {
+  color: #e1c98e !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] {
+  background: linear-gradient(128deg, #142a46 0%, #1b3a59 72%, #274969 100%) !important;
+  border: 1px solid rgba(224, 196, 139, 0.58) !important;
+  box-shadow: 0 4px 12px rgba(2, 11, 25, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.13) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] svg,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] svg {
+  color: #e7cf98 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] [data-pos-bonus-label],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] [data-pos-bonus-label] {
+  color: #e7cf98 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] [data-pos-bonus-amount],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] [data-pos-bonus-amount] {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(4, 14, 27, 0.38);
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary]:hover,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary]:hover {
+  border-color: rgba(247, 226, 182, 0.85) !important;
+  box-shadow: 0 6px 16px rgba(2, 11, 25, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
