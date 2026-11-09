@@ -4616,6 +4616,8 @@ export default function App() {
 
                   </div>
  
+                  {reportSubTab !== "excel" && (
+                  <>
                   {/* RIWAYAT TUTUP SHIFT (DAILY REPORTS) */}
                     <div data-report-history-card className="xl:col-span-1 border border-slate-200 bg-white rounded-2xl overflow-hidden mt-4">
                       <div data-report-history-titlebar className="p-2.5 md:p-4 border-b border-slate-200 flex items-center justify-between gap-2">
@@ -4731,6 +4733,8 @@ export default function App() {
                         </table>
                       </div>
                     </div>
+                  </>
+                  )}
                   </div>
                 )}
 
