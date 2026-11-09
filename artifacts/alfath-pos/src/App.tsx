@@ -8923,8 +8923,8 @@ export default function App() {
 
                 <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-8">
                   {profile?.role === "ADMIN" ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="lg:col-span-2 space-y-6">
+                    <div data-bonus-layout="admin" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div data-bonus-column="branches" className="lg:col-span-2 space-y-6">
                         <div data-bonus-panel="branch-summary" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                           <div className="p-3 md:p-4 border-b border-slate-200 flex justify-between items-center">
                             <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight">Ringkasan Saldo Per Cabang</h3>
@@ -8978,8 +8978,8 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="space-y-6">
-                        <div className="bg-emerald-50 rounded-2xl p-6 border border-emerald-200 mb-6">
+                      <div data-bonus-column="summary" className="space-y-6">
+                        <div data-bonus-panel="unclaimed-total" className="bg-emerald-50 rounded-2xl p-6 border border-emerald-200 mb-6">
                           <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Total Komisi Seluruh Cabang</p>
                           <p className="text-2xl md:text-3xl font-black text-emerald-900 mt-1 break-words">
                             Rp {Object.values(branchSummaries).reduce((s, b) => s + (b.totalEarned || 0), 0).toLocaleString("id-ID")}
@@ -9028,8 +9028,8 @@ export default function App() {
                       </div>
                     </div>
                   ) : (
-                    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
-                      <div className="relative overflow-hidden bg-blue-600 rounded-2xl md:rounded-[32px] p-5 md:p-6 text-white shadow-lg md:shadow-xl shadow-blue-200">
+                    <div data-bonus-layout="cashier" className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+                      <div data-bonus-panel="cashier-summary" className="relative overflow-hidden bg-blue-600 rounded-2xl md:rounded-[32px] p-5 md:p-6 text-white shadow-lg md:shadow-xl shadow-blue-200">
                         <div className="absolute top-0 right-0 w-32 h-32 md:w-48 md:h-48 bg-white/10 rounded-full -mr-10 -mt-10 md:-mr-16 md:-mt-16"></div>
                         <Sparkles className="w-6 h-6 md:w-8 md:h-8 mb-3 md:mb-4 opacity-80" />
                         <h3 className="text-xs md:text-sm font-black uppercase tracking-widest opacity-80 mb-1">
