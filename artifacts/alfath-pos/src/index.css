@@ -5482,3 +5482,47 @@ body,
     padding: 10px 8px !important;
   }
 }
+
+/* Clear selected state for Opname tabs; the tab strip itself remains scrollable. */
+[data-ui-screen="opname"] [data-opname-tabs] > div {
+  background: #ffffff !important;
+  border: 1px solid #dce4ef;
+}
+
+[data-ui-screen="opname"] [data-opname-tabs] button:not([class*="bg-white"]) {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #536277 !important;
+}
+
+[data-ui-screen="opname"] [data-opname-tabs] button:not([class*="bg-white"]):hover {
+  background: #f1f5f9 !important;
+  color: #20385f !important;
+}
+
+[data-ui-screen="opname"] [data-opname-tabs] button[class*="bg-white"][class*="text-slate-800"] {
+  background: #20385f !important;
+  border-color: #20385f !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.dark [data-ui-screen="opname"] [data-opname-tabs] > div {
+  background: #202a39 !important;
+  border-color: #3a4658 !important;
+}
+
+.dark [data-ui-screen="opname"] [data-opname-tabs] button:not([class*="bg-white"]) {
+  color: #cbd5e1 !important;
+}
+
+.dark [data-ui-screen="opname"] [data-opname-tabs] button:not([class*="bg-white"]):hover {
+  background: #33435b !important;
+  color: #f8fafc !important;
+}
+
+.dark [data-ui-screen="opname"] [data-opname-tabs] button[class*="bg-white"][class*="text-slate-800"] {
+  background: #29436d !important;
+  border-color: #405c88 !important;
+  color: #ffffff !important;
+}
