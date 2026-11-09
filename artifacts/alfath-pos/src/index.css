@@ -5928,3 +5928,291 @@ body,
   border: 1px solid #dfd0ad;
   box-shadow: 0 2px 7px rgba(24, 39, 60, 0.08) !important;
 }
+
+/* Cashier follow-on surfaces: clearer shift numbers, history, transfer, and drawer. */
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-revenue-label],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-revenue-label] {
+  color: #40536a !important;
+  font-size: 7px !important;
+  letter-spacing: 0.055em;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-revenue-amount],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-revenue-amount] {
+  color: #102945 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-label],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-label] {
+  color: #d7e3f0 !important;
+  font-size: 7px !important;
+  letter-spacing: 0.055em;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-amount],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-amount] {
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 768px) {
+  :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-revenue-amount],
+  .dark .app-shell [data-ui-screen="pos"] [data-pos-revenue-amount],
+  :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-amount],
+  .dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-amount] {
+    font-size: 14px !important;
+  }
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-view],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-view],
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-stock-transfer],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-stock-transfer] {
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(199, 167, 106, 0.12), transparent 40%),
+    linear-gradient(145deg, #10223d 0%, #1c3553 100%) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-card],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-card],
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] {
+  background: #fff !important;
+  border-color: #d9c79f !important;
+  box-shadow: 0 6px 18px rgba(3, 13, 29, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-card] h4,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-card] h4 {
+  color: #172d49 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-card] h4 svg,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-card] h4 svg {
+  color: #b79556 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-card] > div:first-child > span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-card] > div:first-child > span {
+  color: #725b32 !important;
+  background: #f4ecd9 !important;
+  border: 1px solid #e6d7b6;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-card] > div.overflow-x-auto,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-card] > div.overflow-x-auto {
+  border-color: #d9c79f !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] thead tr,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] thead tr {
+  color: #f8fafc !important;
+  background: linear-gradient(105deg, #102542, #203d5c) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] thead th,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] thead th {
+  color: #f8fafc !important;
+  border-color: rgba(219, 196, 153, 0.28) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr {
+  border-color: #e4eaf0 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:first-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:first-child {
+  background: #fff !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:nth-child(even),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:nth-child(even) {
+  background: #f1f5f9 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:first-child td:nth-child(5),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:first-child td:nth-child(5) {
+  color: #173654 !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar],
+.dark .app-shell aside[data-cashier-sidebar] {
+  color: #edf3fb !important;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(195, 163, 106, 0.14), transparent 42%),
+    linear-gradient(160deg, #0b1931 0%, #122846 58%, #1b3452 100%) !important;
+  border-right-color: rgba(212, 184, 126, 0.32) !important;
+  box-shadow: 12px 0 32px rgba(3, 12, 27, 0.3) !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] > div:first-child,
+.dark .app-shell aside[data-cashier-sidebar] > div:first-child {
+  background: rgba(8, 21, 39, 0.36);
+  border-bottom-color: rgba(214, 188, 137, 0.24) !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] h1,
+.dark .app-shell aside[data-cashier-sidebar] h1 {
+  color: #f8fafc !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] > div:first-child p,
+.dark .app-shell aside[data-cashier-sidebar] > div:first-child p {
+  color: #c5d1df !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] nav > div p,
+.dark .app-shell aside[data-cashier-sidebar] nav > div p {
+  color: #aebed1 !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] nav > button:not(.bg-blue-600),
+.dark .app-shell aside[data-cashier-sidebar] nav > button:not(.bg-blue-600) {
+  color: #d6e0ec !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid rgba(215, 190, 143, 0.11);
+  box-shadow: none !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] nav > button:not(.bg-blue-600):hover,
+.dark .app-shell aside[data-cashier-sidebar] nav > button:not(.bg-blue-600):hover {
+  color: #fff !important;
+  background: rgba(203, 173, 113, 0.13) !important;
+  border-color: rgba(215, 190, 143, 0.3);
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] nav > button.bg-blue-600,
+.dark .app-shell aside[data-cashier-sidebar] nav > button.bg-blue-600 {
+  color: #172b44 !important;
+  background: linear-gradient(135deg, #e5d5b1, #c4a66d) !important;
+  border: 1px solid rgba(255, 239, 201, 0.74);
+  box-shadow: 0 4px 12px rgba(3, 12, 27, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] nav > button.bg-blue-600 svg,
+.dark .app-shell aside[data-cashier-sidebar] nav > button.bg-blue-600 svg {
+  color: #243d59 !important;
+  filter: none !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] > div:last-child,
+.dark .app-shell aside[data-cashier-sidebar] > div:last-child {
+  background: rgba(8, 21, 39, 0.3);
+  border-top-color: rgba(214, 188, 137, 0.24) !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] > div:last-child button,
+.dark .app-shell aside[data-cashier-sidebar] > div:last-child button {
+  color: #e1eaf4 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input {
+  color: #172d49 !important;
+  background: #f7f9fc !important;
+  border-color: #d9e1eb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input:focus,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input:focus {
+  border-color: #c3a36a !important;
+  --tw-ring-color: rgba(195, 163, 106, 0.45) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button.bg-blue-600,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button.bg-blue-600 {
+  color: #f8fafc !important;
+  background: linear-gradient(135deg, #102744, #284866) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .bg-blue-50,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .bg-blue-50 {
+  background: #f1f5f9 !important;
+  border-color: #d8c79f !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .text-blue-500,
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .text-blue-600,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .text-blue-500,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .text-blue-600 {
+  color: #294d70 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button[class*="bg-slate-50"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button[class*="bg-slate-50"] {
+  color: #3d5065 !important;
+  background: #f6f8fb !important;
+  border-color: #e0e6ed !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-submit],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-submit] {
+  color: #fff !important;
+  background: linear-gradient(115deg, #112744 0%, #1b3b5b 76%, #294967 100%) !important;
+  border: 1px solid #c4a66d;
+  box-shadow: 0 4px 12px rgba(15, 38, 66, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-submit]:disabled,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-submit]:disabled {
+  color: #f1f5f9 !important;
+  background: #78879a !important;
+  border-color: #aeb8c5 !important;
+  box-shadow: none !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-header],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-header] {
+  color: #f8fafc !important;
+  background: linear-gradient(112deg, #102542, #203d5c) !important;
+  border-bottom-color: rgba(219, 196, 153, 0.35) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-header] h4,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-header] h4 {
+  color: #f8fafc !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-header] > div:first-child svg,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-header] > div:first-child svg {
+  color: #d5bb83 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-summary],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-summary] {
+  background: linear-gradient(180deg, #fff 0%, #faf7ef 100%) !important;
+  border-top-color: #d8c69f !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-summary] > div:first-child span:first-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-summary] > div:first-child span:first-child {
+  color: #56677a !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-summary] > div:first-child span:last-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-summary] > div:first-child span:last-child {
+  color: #102945 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] div.bg-blue-100,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] div.bg-blue-100 {
+  color: #735b32 !important;
+  background: linear-gradient(145deg, #f4ecd9, #e5d5b1) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] div.bg-blue-600,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] div.bg-blue-600 {
+  color: #f8fafc !important;
+  background: linear-gradient(135deg, #102744, #284866) !important;
+}

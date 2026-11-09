@@ -3580,7 +3580,7 @@ export default function App() {
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
-        <aside className={`app-sidebar fixed inset-y-0 left-0 w-64 bg-[#e0e5ec] dark:bg-[#23262e] border-r border-white/50 dark:border-white/5 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside data-cashier-sidebar={profile?.role === "CASHIER" ? "true" : undefined} className={`app-sidebar fixed inset-y-0 left-0 w-64 bg-[#e0e5ec] dark:bg-[#23262e] border-r border-white/50 dark:border-white/5 flex flex-col shrink-0 z-[90] h-[100dvh] shadow-2xl transform transition-transform duration-300 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="h-16 flex items-center px-4 md:px-6 border-b border-white/60 dark:border-white/10 shrink-0">
             <img
               src={`${import.meta.env.BASE_URL}logo.png`}
@@ -7671,22 +7671,25 @@ export default function App() {
                       )}
                       {/* Omzet + Bonus dalam 1 baris horizontal */}
                       <div className="flex items-center gap-1.5">
-                        <div data-pos-shift-revenue className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-sm">
-                          <TrendingUp className="w-3 h-3 shrink-0" />
-                          <p className="text-[9px] font-black uppercase tracking-tight leading-none whitespace-nowrap">
-                            {shiftOpen ? `Sif ${shiftType || ""}` : "Hari Ini"}:{" "}
-                            Rp{" "}
-                            {sales
-                              .filter(
-                                (s) =>
-                                  s.branchId === profile.branchId &&
-                                  isRevenueEligibleSaleStatus(s.status) &&
-                                  (shiftOpen && shiftStartTime
-                                    ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
-                                    : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === getLogicalShiftDate()),
-                              )
-                              .reduce((acc, s) => acc + (s.total || 0), 0)
-                              .toLocaleString("id-ID")}
+                        <div data-pos-shift-revenue className="flex items-center gap-1.5 bg-emerald-600 text-white px-2.5 py-1.5 rounded-xl shadow-sm">
+                          <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                          <p className="flex flex-col items-start gap-0.5 leading-none">
+                            <span data-pos-revenue-label className="text-[7px] font-black uppercase tracking-wider whitespace-nowrap">
+                              Pendapatan {shiftOpen ? `Sif ${shiftType || ""}` : "Hari Ini"}
+                            </span>
+                            <strong data-pos-revenue-amount className="text-[12px] md:text-sm font-black tracking-tight tabular-nums whitespace-nowrap">
+                              Rp {sales
+                                .filter(
+                                  (s) =>
+                                    s.branchId === profile.branchId &&
+                                    isRevenueEligibleSaleStatus(s.status) &&
+                                    (shiftOpen && shiftStartTime
+                                      ? new Date(s.createdAt || s.timestamp || 0).getTime() >= new Date(shiftStartTime).getTime()
+                                      : (s.shiftDate || getLogicalShiftDate(new Date(s.createdAt || s.timestamp || 0))) === getLogicalShiftDate()),
+                                )
+                                .reduce((acc, s) => acc + (s.total || 0), 0)
+                                .toLocaleString("id-ID")}
+                            </strong>
                           </p>
                         </div>
                         <div
@@ -7695,13 +7698,15 @@ export default function App() {
                           onClick={() => setActiveMenu("incentive")}
                           title="Lihat Detail Bonus Cabang"
                         >
-                          <Sparkles className="w-3 h-3 shrink-0" />
-                          <p className="text-[9px] font-black uppercase tracking-tight leading-none whitespace-nowrap">
-                            Bonus: Rp{" "}
-                            {(profile?.role === "ADMIN"
-                              ? (branchSummaries[profile.branchId || ""]?.totalEarned || 0)
-                              : (commissionsSummary?.totalEarned || 0)
-                            ).toLocaleString("id-ID")}
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                          <p className="flex flex-col items-start gap-0.5 leading-none">
+                            <span data-pos-bonus-label className="text-[7px] font-black uppercase tracking-wider">Bonus</span>
+                            <strong data-pos-bonus-amount className="text-[12px] md:text-sm font-black tracking-tight tabular-nums whitespace-nowrap">
+                              Rp {(profile?.role === "ADMIN"
+                                ? (branchSummaries[profile.branchId || ""]?.totalEarned || 0)
+                                : (commissionsSummary?.totalEarned || 0)
+                              ).toLocaleString("id-ID")}
+                            </strong>
                           </p>
                         </div>
                       </div>
@@ -8070,7 +8075,7 @@ export default function App() {
                       <div data-pos-cart className="w-full md:w-[370px] lg:w-[410px] bg-white flex flex-col shrink-0 overflow-hidden relative z-30 border-l border-slate-200">
                         
                         {/* HEADER DAFTAR NOTA */}
-                        <div className="p-3 border-b border-slate-150 flex justify-between items-center bg-white shrink-0">
+                        <div data-pos-cart-header className="p-3 border-b border-slate-150 flex justify-between items-center bg-white shrink-0">
                           <div className="flex items-center gap-1.5">
                             <ShoppingCart className="w-4 h-4 text-slate-650" />
                             <h4 className="text-[10px] font-black text-slate-850 uppercase tracking-widest leading-none">
@@ -8202,7 +8207,7 @@ export default function App() {
                         </div>
 
                         {/* PANEL TOTAL & TOMBOL AKSI */}
-                        <div className="bg-white border-t border-slate-200 shrink-0">
+                        <div data-pos-cart-summary className="bg-white border-t border-slate-200 shrink-0">
 
                           {/* TOTAL TAGIHAN */}
                           <div className="px-4 pt-3 pb-2 flex items-center justify-between">
@@ -8374,8 +8379,8 @@ export default function App() {
                   )}
                   {/* --- TAMPILAN RIWAYAT (HISTORY) --- */}
                   {posSubView === "history" && (
-                    <div className="flex-1 overflow-y-auto bg-slate-50 p-2 space-y-2 text-left">
-                      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm w-full max-w-4xl mx-auto text-left">
+                    <div data-pos-history-view className="flex-1 overflow-y-auto bg-slate-50 p-2 space-y-2 text-left">
+                      <div data-pos-history-card className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm w-full max-w-4xl mx-auto text-left">
                         <div className="flex items-center justify-between mb-3 px-1 text-left">
                           <h4 className="text-[9px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5 text-left">
                             <Clock className="w-3 h-3 text-blue-600 text-left" />{" "}
@@ -8387,7 +8392,7 @@ export default function App() {
                         </div>
                         {/* Tabel Excel — riwayat transaksi kompak */}
                         <div className="overflow-x-auto rounded-xl border border-slate-200">
-                          <table className="w-full text-left border-collapse text-[8px]">
+                          <table data-pos-history-table className="w-full text-left border-collapse text-[8px]">
                             <thead>
                               <tr className="bg-blue-600 text-white">
                                 <th className="py-1.5 px-2 font-black uppercase tracking-widest text-center w-5">#</th>
@@ -8605,8 +8610,8 @@ export default function App() {
                   )}
 
                   {posSubView === "transfer" && (
-                    <div className="flex-1 overflow-y-auto bg-slate-50 p-2 space-y-2 text-left">
-                      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm w-full max-w-xl mx-auto text-left shadow-lg">
+                    <div data-pos-stock-transfer className="flex-1 overflow-y-auto bg-slate-50 p-2 space-y-2 text-left">
+                      <div data-pos-transfer-card className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm w-full max-w-xl mx-auto text-left shadow-lg">
                         <div className="flex items-center gap-2.5 mb-4 text-left">
                           <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-100 text-left shrink-0">
                             <ArrowRightLeft className="w-4 h-4 text-left" />
@@ -8889,6 +8894,7 @@ export default function App() {
                             disabled={
                               !selectedTransferProduct || isProcessingTransfer
                             }
+                            data-pos-transfer-submit
                             className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-30 disabled:grayscale transition-all flex items-center justify-center gap-2 mt-2 active:scale-95"
                           >
                             <div className="flex items-center justify-center gap-2">
