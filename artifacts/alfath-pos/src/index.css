@@ -6374,12 +6374,12 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even),
 .dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) {
-  background: #f2f6fb !important;
+  background: #f6f3ec !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover {
-  background: #f4ead1 !important;
+  background: linear-gradient(100deg, #f2e6c9, #f8f3e8) !important;
   border-left-color: #c3a36a !important;
 }
 
@@ -6398,19 +6398,29 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) [data-pos-search-column="product"],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) [data-pos-search-column="product"] {
-  background: #f2f6fb !important;
+  background: #f6f3ec !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] {
-  color: #4b3b20 !important;
-  background: linear-gradient(145deg, #f7f1e3, #eee4cd) !important;
+  color: #172d49 !important;
+  background: linear-gradient(145deg, #f4ecd9, #e9dcc0) !important;
   border-left: 1px solid #ded4bd !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] > span,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] > span {
   color: #263e59 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover [data-pos-search-column="product"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover [data-pos-search-column="product"] {
+  background: transparent !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"] > span > span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"] > span > span {
+  color: #9a793b !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary],
