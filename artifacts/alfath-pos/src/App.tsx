@@ -8925,48 +8925,55 @@ export default function App() {
                   {profile?.role === "ADMIN" ? (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                          <div className="p-3 md:p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                        <div data-bonus-panel="branch-summary" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                          <div className="p-3 md:p-4 border-b border-slate-200 flex justify-between items-center">
                             <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight">Ringkasan Saldo Per Cabang</h3>
                             <Store className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                           </div>
-                          <div className="divide-y divide-slate-200">
-                            {branches.map(b => {
-                              const summary = branchSummaries[b.id] || { totalEarned: 0 };
-                              const balance = summary.totalEarned || 0;
-                              
-                              return (
-                                <div key={b.id} className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50 transition-colors">
-                                  <div className="flex items-center gap-3 md:gap-4">
-                                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-700 shrink-0">
-                                      <Store className="w-5 h-5 md:w-6 md:h-6" />
-                                    </div>
-                                    <div>
-                                      <p className="font-black text-slate-800 uppercase tracking-tight">{b.name}</p>
-                                      <button 
-                                        onClick={() => syncCommissionsSummary(b.id)}
-                                        className="flex items-center gap-1 text-[10px] font-bold text-slate-600 uppercase tracking-wide mt-1 hover:text-slate-900"
-                                      >
-                                        <RefreshCw className="w-2.5 h-2.5" /> Sinkronkan Data
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3 md:gap-5">
-                                    <div className="text-right">
-                                      <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5 md:mb-1">Saldo Cabang</p>
-                                      <p className="text-lg md:text-xl font-black text-emerald-600 tracking-tighter">Rp {(balance || 0).toLocaleString("id-ID")}</p>
-                                    </div>
-                                    <button
-                                      disabled={balance <= 0 || isProcessingWithdraw}
-                                      onClick={() => handleWithdrawCommission(b.id)}
-                                      className={`px-4 py-2 md:px-6 md:py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest transition-colors shrink-0 ${balance > 0 ? "bg-slate-800 text-white hover:bg-slate-900" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
-                                    >
-                                      {isProcessingWithdraw ? "Proses..." : "Cairkan"}
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                          <div data-bonus-table-scroll>
+                            <table data-bonus-table="branch-summary" aria-label="Ringkasan saldo bonus per cabang">
+                              <thead>
+                                <tr>
+                                  <th scope="col" data-column="branch">Cabang</th>
+                                  <th scope="col" data-column="balance" className="text-right">Saldo (Rp)</th>
+                                  <th scope="col" data-column="action" className="text-center">Aksi</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {branches.map(b => {
+                                  const summary = branchSummaries[b.id] || { totalEarned: 0 };
+                                  const balance = summary.totalEarned || 0;
+
+                                  return (
+                                    <tr key={b.id} data-bonus-row="branch">
+                                      <td data-column="branch">
+                                        <p className="font-black text-slate-800 uppercase tracking-tight break-words">{b.name}</p>
+                                        <button
+                                          data-testid={`button-sync-bonus-${b.id}`}
+                                          onClick={() => syncCommissionsSummary(b.id)}
+                                          className="mt-1 inline-flex min-h-[36px] items-center gap-1 rounded-md px-1 text-[10px] font-bold text-slate-600 uppercase tracking-wide hover:bg-slate-100 hover:text-slate-900"
+                                        >
+                                          <RefreshCw className="w-3 h-3" /> Sinkronkan Data
+                                        </button>
+                                      </td>
+                                      <td data-column="balance" className="text-right font-black text-emerald-700 whitespace-nowrap">
+                                        Rp {(balance || 0).toLocaleString("id-ID")}
+                                      </td>
+                                      <td data-column="action" className="text-center">
+                                        <button
+                                          data-testid={`button-withdraw-bonus-${b.id}`}
+                                          disabled={balance <= 0 || isProcessingWithdraw}
+                                          onClick={() => handleWithdrawCommission(b.id)}
+                                          className={`min-h-[40px] rounded-lg px-2.5 font-black text-[9px] uppercase tracking-wide transition-colors ${balance > 0 ? "bg-slate-800 text-white hover:bg-slate-900" : "bg-slate-100 text-slate-300 cursor-not-allowed"}`}
+                                        >
+                                          {isProcessingWithdraw ? "Proses..." : "Cairkan"}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       </div>
@@ -8979,26 +8986,43 @@ export default function App() {
                           </p>
                           <p className="text-[9px] text-emerald-600 font-bold uppercase mt-2 italic">* Total saldo yang belum dicairkan</p>
                         </div>
-                        <div className="bg-white rounded-2xl md:rounded-[32px] p-4 md:p-6">
-                          <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight mb-4">Aktivitas Bonus Terbaru</h3>
-                          <div className="space-y-4">
-                            {commissions.slice(0, 10).map((c, idx) => (
-                              <div key={idx} className="flex justify-between items-start border-b border-slate-50 pb-4">
-                                <div className="min-w-0">
-                                  <p className="text-[10px] font-black text-slate-800 uppercase truncate">
-                                    {getProductName(c.product, c.productName)}
-                                  </p>
-                                  <p className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">
-                                    {getCommissionCashierName(c)} • {c.createdAt ? new Date(c.createdAt).toLocaleDateString("id-ID") : "-"}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className={`text-[10px] font-black ${c.status === "refunded" ? "text-rose-500 line-through" : c.status === "withdrawn" ? "text-blue-500" : "text-emerald-500"}`}>
-                                    {c.status === "refunded" ? "(Refund)" : c.status === "withdrawn" ? "(Cair)" : `+Rp ${(c.amount || 0).toLocaleString("id-ID")}`}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                        <div data-bonus-panel="recent-activity" className="bg-white rounded-2xl overflow-hidden border border-slate-200">
+                          <div className="p-3 md:p-4 border-b border-slate-200">
+                            <h3 className="font-black text-slate-800 text-[10px] md:text-sm uppercase tracking-tight">Aktivitas Bonus Terbaru</h3>
+                          </div>
+                          <div data-bonus-table-scroll>
+                            <table data-bonus-table="recent-activity" aria-label="Aktivitas bonus terbaru">
+                              <thead>
+                                <tr>
+                                  <th scope="col" data-column="time">Waktu</th>
+                                  <th scope="col" data-column="product">Produk</th>
+                                  <th scope="col" data-column="cashier">Kasir</th>
+                                  <th scope="col" data-column="status">Status</th>
+                                  <th scope="col" data-column="bonus" className="text-right">Bonus</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {commissions.slice(0, 10).map((c, idx) => (
+                                  <tr key={idx} data-bonus-row="activity">
+                                    <td data-column="time" className="whitespace-nowrap">
+                                      {c.createdAt ? new Date(c.createdAt).toLocaleDateString("id-ID") : "-"}
+                                    </td>
+                                    <td data-column="product" className="font-bold text-slate-800">
+                                      {getProductName(c.product, c.productName)}
+                                    </td>
+                                    <td data-column="cashier">{getCommissionCashierName(c)}</td>
+                                    <td data-column="status">
+                                      <span data-bonus-status={c.status}>{c.status}</span>
+                                    </td>
+                                    <td data-column="bonus" className="text-right font-black whitespace-nowrap">
+                                      <span data-bonus-status={c.status}>
+                                        {c.status === "refunded" ? "(Refund)" : c.status === "withdrawn" ? "(Cair)" : `+Rp ${(c.amount || 0).toLocaleString("id-ID")}`}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       </div>
@@ -9043,37 +9067,42 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-2xl md:rounded-[32px] overflow-hidden">
-                        <div className="p-4 md:p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                      <div data-bonus-panel="cashier-history" className="bg-white rounded-2xl overflow-hidden border border-slate-200">
+                        <div className="p-3 md:p-4 border-b border-slate-200">
                           <h3 className="font-black text-slate-800 text-[10px] md:text-xs uppercase tracking-widest">Riwayat Bonus Penjualan</h3>
                         </div>
-                        <div className="divide-y divide-slate-50">
-                          {getMyCommissions()
-                            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                            .slice(0, 50)
-                            .map((c, idx) => (
-                              <div key={idx} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.status === "refunded" ? "bg-rose-50 text-rose-500" : c.status === "withdrawn" ? "bg-blue-50 text-blue-500" : "bg-emerald-50 text-emerald-500"}`}>
-                                    {c.status === "refunded" ? <RotateCcw className="w-5 h-5" /> : <Tag className="w-5 h-5" />}
-                                  </div>
-                                  <div>
-                                    <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">
-                                      {getProductName(c.product, c.productName)}
-                                    </p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                        <div data-bonus-table-scroll>
+                          <table data-bonus-table="cashier-history" aria-label="Riwayat bonus penjualan">
+                            <thead>
+                              <tr>
+                                <th scope="col" data-column="time">Waktu</th>
+                                <th scope="col" data-column="product">Produk</th>
+                                <th scope="col" data-column="bonus" className="text-right">Bonus (Rp)</th>
+                                <th scope="col" data-column="status">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {getMyCommissions()
+                                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                .slice(0, 50)
+                                .map((c, idx) => (
+                                  <tr key={idx} data-bonus-row="cashier-history">
+                                    <td data-column="time" className="whitespace-nowrap">
                                       {new Date(c.createdAt).toLocaleTimeString("id-ID")} • {new Date(c.createdAt).toLocaleDateString("id-ID")}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className={`text-[12px] font-black ${c.status === "refunded" ? "text-rose-500 line-through" : c.status === "withdrawn" ? "text-blue-500" : "text-emerald-600"}`}>
-                                    {c.status === "refunded" ? "-" : "+" }Rp {c.amount.toLocaleString("id-ID")}
-                                  </p>
-                                  <p className="text-[8px] font-black text-slate-300 uppercase tracking-tighter mt-1">{c.status}</p>
-                                </div>
-                              </div>
-                            ))}
+                                    </td>
+                                    <td data-column="product" className="font-bold text-slate-800">
+                                      {getProductName(c.product, c.productName)}
+                                    </td>
+                                    <td data-column="bonus" className={`text-right font-black whitespace-nowrap ${c.status === "refunded" ? "text-rose-500 line-through" : c.status === "withdrawn" ? "text-blue-600" : "text-emerald-700"}`}>
+                                      {c.status === "refunded" ? "-" : "+"}Rp {c.amount.toLocaleString("id-ID")}
+                                    </td>
+                                    <td data-column="status">
+                                      <span data-bonus-status={c.status}>{c.status}</span>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>

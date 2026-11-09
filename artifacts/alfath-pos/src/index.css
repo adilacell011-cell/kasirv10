@@ -5003,3 +5003,191 @@ body,
 .dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="zero"] {
   color: #cbd5e1 !important;
 }
+
+/* Compact Excel-style bonus ledgers. Keep scrolling inside each table so the
+   bonus screen and its existing branch/cashier actions remain unchanged. */
+[data-ui-screen="incentive"] [data-bonus-panel] {
+  border-color: #dce4ef;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table-scroll] {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table] {
+  width: 100%;
+  border-collapse: collapse;
+  color: #26364d;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table] th {
+  padding: 8px 7px;
+  background: #20385f;
+  color: #fff;
+  border: 1px solid #344c70;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table] td {
+  padding: 7px;
+  border: 1px solid #d9e2ef;
+  vertical-align: middle;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table] tbody tr:nth-child(odd) td {
+  background: #fff;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table] tbody tr:nth-child(even) td {
+  background: #f1f5f9;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table] tbody tr:hover td {
+  background: #e8eff8;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] {
+  table-layout: fixed;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] th[data-column="branch"],
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] td[data-column="branch"] {
+  width: 42%;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] th[data-column="balance"],
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] td[data-column="balance"] {
+  width: 33%;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] th[data-column="action"],
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] td[data-column="action"] {
+  width: 25%;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] tbody td[data-column="balance"] {
+  color: #087b58;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="branch-summary"] tbody td[data-column="action"] button {
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="recent-activity"] {
+  min-width: 610px;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="cashier-history"] {
+  min-width: 520px;
+}
+
+[data-ui-screen="incentive"] [data-bonus-table="recent-activity"] td[data-column="product"],
+[data-ui-screen="incentive"] [data-bonus-table="cashier-history"] td[data-column="product"] {
+  overflow-wrap: anywhere;
+}
+
+[data-ui-screen="incentive"] [data-bonus-status] {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+[data-ui-screen="incentive"] [data-bonus-status="earned"] {
+  background: #e8f7f0;
+  color: #087b58;
+}
+
+[data-ui-screen="incentive"] [data-bonus-status="withdrawn"] {
+  background: #eaf1fb;
+  color: #2857a5;
+}
+
+[data-ui-screen="incentive"] [data-bonus-status="refunded"] {
+  background: #fff0f1;
+  color: #bd3347;
+}
+
+@media (max-width: 640px) {
+  [data-ui-screen="incentive"] [data-bonus-table] th {
+    padding: 7px 6px;
+    font-size: 8px;
+  }
+
+  [data-ui-screen="incentive"] [data-bonus-table] td {
+    padding: 6px;
+    font-size: 10px;
+  }
+
+  [data-ui-screen="incentive"] [data-bonus-table="branch-summary"] td[data-column="branch"] {
+    overflow-wrap: anywhere;
+  }
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-panel] {
+  border-color: #3a4658 !important;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-table] {
+  color: #dbe5f2;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-table] th {
+  background: #182944 !important;
+  border-color: #344762 !important;
+  color: #f8fafc !important;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-table] tbody tr:nth-child(odd) td {
+  background: #202a39 !important;
+  border-color: #3a4658 !important;
+  color: #dbe5f2;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-table] tbody tr:nth-child(even) td {
+  background: #263347 !important;
+  border-color: #3a4658 !important;
+  color: #dbe5f2;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-table] tbody tr:hover td {
+  background: #33435b !important;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-table] tbody td[data-column="balance"] {
+  color: #6ee7b7 !important;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-status="earned"] {
+  background: #153c35 !important;
+  color: #6ee7b7 !important;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-status="withdrawn"] {
+  background: #243c61 !important;
+  color: #bfdbfe !important;
+}
+
+.dark [data-ui-screen="incentive"] [data-bonus-status="refunded"] {
+  background: #512c38 !important;
+  color: #fecdd3 !important;
+}
