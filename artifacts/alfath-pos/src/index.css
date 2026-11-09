@@ -2610,3 +2610,33 @@ body,
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Keep dashboard controls aligned with the cards below; the screen already owns the side inset. */
+[data-ui-screen="dashboard"] [data-dashboard-filters] {
+  padding-inline: 0 !important;
+}
+
+/* A restrained lift separates dashboard cards from the light-blue page canvas. */
+[data-ui-screen="dashboard"] [data-dashboard-metrics] > *,
+[data-ui-screen="dashboard"] [data-dashboard-trend-card],
+[data-ui-screen="dashboard"] [data-dashboard-margin-card],
+[data-ui-screen="dashboard"] [data-dashboard-recent-card],
+[data-ui-screen="dashboard"] [data-dashboard-branch-performance],
+[data-ui-screen="dashboard"] [data-dashboard-top-products],
+[data-ui-screen="dashboard"] [data-dashboard-sales-table] {
+  --tw-shadow:
+    0 2px 5px rgba(15, 23, 42, 0.045),
+    0 8px 18px rgba(15, 23, 42, 0.065) !important;
+}
+
+.dark [data-ui-screen="dashboard"] [data-dashboard-metrics] > *,
+.dark [data-ui-screen="dashboard"] [data-dashboard-trend-card],
+.dark [data-ui-screen="dashboard"] [data-dashboard-margin-card],
+.dark [data-ui-screen="dashboard"] [data-dashboard-recent-card],
+.dark [data-ui-screen="dashboard"] [data-dashboard-branch-performance],
+.dark [data-ui-screen="dashboard"] [data-dashboard-top-products],
+.dark [data-ui-screen="dashboard"] [data-dashboard-sales-table] {
+  --tw-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.24),
+    0 8px 18px rgba(0, 0, 0, 0.2) !important;
+}
