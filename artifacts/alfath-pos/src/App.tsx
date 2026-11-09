@@ -8036,7 +8036,7 @@ export default function App() {
                                                 : (p.brand || p.category || "Umum")
                                             } />
                                             
-                                              <span className={`text-[8px] font-black px-2 py-1 rounded-md leading-none ${
+                                              <span data-pos-product-stock className={`text-[8px] font-black px-2 py-1 rounded-md leading-none ${
                                               isOutOfStock 
                                                 ? "bg-rose-50 text-rose-600" 
                                                 : stock < 5 
