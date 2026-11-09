@@ -891,6 +891,7 @@ export default function App() {
   // so the cashier sees a visible warning instead of silently working with stale data.
   const [readLoadFailed, setDataLoadFailed] = useState(false);
   const [salesReadFailed, setSalesReadFailed] = useState(false);
+  const [salesReadLoading, setSalesReadLoading] = useState(false);
   const usesOwnerSync = profile?.role === "ADMIN" && activeMenu === "dashboard" && dashboardTab !== "inventory";
   const dataLoadFailed = usesOwnerSync
     ? Boolean(ownerDashboard.error || ownerDashboard.detailsError || ownerDashboard.stockError)
@@ -2048,11 +2049,16 @@ export default function App() {
   liveSalesSyncKey.current = salesSyncKey;
 
   useEffect(() => {
-    const needsSales = fullSyncEnabled && (activeMenu === "reports" || activeMenu === "pos");
+    const needsActiveShiftSales =
+      activeMenu === "shift" && profile?.role === "CASHIER" && shiftOpen;
+    const needsSales = fullSyncEnabled && (
+      activeMenu === "reports" || activeMenu === "pos" || needsActiveShiftSales
+    );
     if (!needsSales || !syncToken) {
       setSales([]);
       setProductSalesQuantities({});
       setSalesReadFailed(false);
+      setSalesReadLoading(false);
       salesRefreshRef.current = () => {};
       return;
     }
@@ -2060,18 +2066,25 @@ export default function App() {
     let disposed = false;
     const controller = new AbortController();
     const epoch = readEpoch.current;
+    if (needsActiveShiftSales) {
+      setSales([]);
+      setSalesReadFailed(false);
+      setSalesReadLoading(true);
+    }
     const current = () => !disposed && !controller.signal.aborted &&
       liveSalesSyncKey.current === salesSyncKey &&
       readEpoch.current === epoch &&
       localStorage.getItem("token") === syncToken;
+    let hasSuccessfulRead = false;
     const loadSales = async () => {
       if (!current()) return;
+      if (!hasSuccessfulRead) setSalesReadLoading(true);
       try {
         const branchParams: Record<string, string> = effectiveReadBranch && effectiveReadBranch !== "N/A"
           ? { branchId: effectiveReadBranch }
           : {};
         const queries = makeSalesReadQueries({
-          view: activeMenu as "pos" | "reports",
+          view: activeMenu === "reports" ? "reports" : "pos",
           reportStartDate,
           reportEndDate,
           shiftOpen,
@@ -2086,6 +2099,8 @@ export default function App() {
         const uniqueSales = new Map<string, any>();
         saleLists.flat().forEach((sale: any) => uniqueSales.set(sale.id, sale));
         setSales([...uniqueSales.values()]);
+        hasSuccessfulRead = true;
+        setSalesReadLoading(false);
 
         if (activeMenu === "pos") {
           const counts = await api.getProductSalesQuantities(
@@ -2104,6 +2119,7 @@ export default function App() {
         setSalesReadFailed(false);
       } catch (error) {
         if (!current()) return;
+        setSalesReadLoading(false);
         if (isSessionError(error)) {
           expireReadSession();
           controller.abort();
@@ -3223,15 +3239,13 @@ export default function App() {
   };
 
   const currentShiftSales = useMemo(() => {
-    if (!shiftOpen || !shiftStartTime) return [];
+    if (!shiftOpen) return [];
     return sales.filter(
       (s) =>
         s.branchId === profile?.branchId &&
-        s.status !== "refunded" &&
-        new Date(s.createdAt || s.timestamp || 0).getTime() >=
-          new Date(shiftStartTime).getTime()
+        s.status !== "refunded"
     );
-  }, [sales, shiftOpen, shiftStartTime, profile?.branchId]);
+  }, [sales, shiftOpen, profile?.branchId]);
 
   const currentShiftTotalSales = useMemo(() => {
     return currentShiftSales
@@ -9279,14 +9293,41 @@ export default function App() {
                           Daftar penjualan terdaftar selama sesi shift aktif berjalan
                         </p>
                       </div>
-                      <div data-shift-transactions-total className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-3 py-1.5 rounded-xl font-bold font-mono text-xs flex items-center gap-1.5 justify-center self-start sm:self-auto">
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                        Rp {currentShiftTotalSales.toLocaleString("id-ID")}
+                      <div data-shift-transactions-total className={`px-3 py-1.5 rounded-xl border font-bold font-mono text-xs flex items-center gap-1.5 justify-center self-start sm:self-auto ${
+                        salesReadFailed
+                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                          : "bg-emerald-50 text-emerald-800 border-emerald-100"
+                      }`}>
+                        {salesReadLoading || salesReadFailed ? (
+                          <span>{salesReadFailed ? "Data belum sinkron" : "Memuat transaksi..."}</span>
+                        ) : (
+                          <>
+                            <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                            Rp {currentShiftTotalSales.toLocaleString("id-ID")}
+                          </>
+                        )}
                       </div>
                     </div>
 
                     <div className="p-5 md:p-6 overflow-y-auto max-h-[500px] flex-1">
-                      {currentShiftSales.length === 0 ? (
+                      {salesReadLoading ? (
+                        <div role="status" className="py-16 text-center text-slate-500 space-y-3">
+                          <Loader2 className="w-8 h-8 text-blue-500 mx-auto animate-spin" />
+                          <p className="text-[9px] font-black uppercase tracking-[0.15em]">Memuat transaksi shift dari server</p>
+                        </div>
+                      ) : salesReadFailed ? (
+                        <div role="alert" className="py-12 text-center text-rose-700 space-y-3">
+                          <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto" />
+                          <p className="text-[9px] font-black uppercase tracking-[0.15em]">Transaksi shift belum berhasil dimuat</p>
+                          <button
+                            type="button"
+                            onClick={() => salesRefreshRef.current()}
+                            className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[9px] font-black uppercase tracking-wider"
+                          >
+                            Coba Lagi
+                          </button>
+                        </div>
+                      ) : currentShiftSales.length === 0 ? (
                         <div className="py-20 text-center text-slate-400 space-y-3">
                           <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto animate-bounce" />
                           <p className="text-[9px] font-black uppercase tracking-[0.2em]">Belum Ada Transaksi</p>
