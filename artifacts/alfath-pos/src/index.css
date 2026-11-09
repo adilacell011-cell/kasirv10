@@ -6151,6 +6151,11 @@ body,
   box-shadow: 0 6px 18px rgba(3, 13, 29, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
 }
 
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] {
+  box-shadow: 0 12px 26px rgba(3, 13, 29, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-card] h4,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-history-card] h4 {
   color: #172d49 !important;
@@ -6360,6 +6365,7 @@ body,
   color: #172d49 !important;
   background: #fbf7ed !important;
   border-color: #d6bd83 !important;
+  font-size: 11px !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input:focus,
@@ -6399,6 +6405,47 @@ body,
   color: #172d49 !important;
   background: #fffdf8 !important;
   border-color: #d6bd83 !important;
+  font-size: 10px !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] :is(input:not(:focus), button[class*="bg-slate-50"], button[class*="bg-slate-100"], button[class*="bg-white"], .grid > button),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] :is(input:not(:focus), button[class*="bg-slate-50"], button[class*="bg-slate-100"], button[class*="bg-white"], .grid > button) {
+  --tw-shadow: 0 3px 7px rgba(16, 39, 68, 0.13), 0 1px 2px rgba(16, 39, 68, 0.08) !important;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .bg-blue-50,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .bg-blue-50 {
+  --tw-shadow: 0 4px 10px rgba(16, 39, 68, 0.12), 0 1px 3px rgba(16, 39, 68, 0.08) !important;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] label,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] label {
+  color: #334b66 !important;
+  font-size: 9px !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[7px]"],
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[7.5px]"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[7px]"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[7.5px]"] {
+  font-size: 8px !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[8px]"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[8px]"] {
+  font-size: 9px !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[9px]"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[9px]"] {
+  font-size: 10px !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[10px]"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] [class*="text-[10px]"] {
+  font-size: 11px !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-submit],
