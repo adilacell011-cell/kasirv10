@@ -4571,11 +4571,11 @@ body,
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form-body] {
-    padding: 8px !important;
+    padding: 6px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form].space-y-4 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 10px !important;
+    margin-top: 6px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-identity],
@@ -4583,49 +4583,65 @@ body,
   .app-shell[data-admin-surface="true"] [data-product-details],
   .app-shell[data-admin-surface="true"] [data-product-pricing],
   .app-shell[data-admin-surface="true"] [data-product-extra-fields] {
-    gap: 10px !important;
+    gap: 8px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-taxonomy].space-y-5 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 10px !important;
+    margin-top: 6px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-pricing] {
-    padding: 10px !important;
+    padding: 8px !important;
     border-radius: 14px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form] label {
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form] input:not([type="checkbox"]):not([type="radio"]),
   .app-shell[data-admin-surface="true"] [data-product-form] textarea {
     min-height: 44px !important;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
     border-radius: 12px !important;
+    border-color: #dbe4f0 !important;
+    background: #f8fafc !important;
+    color: #1e293b !important;
+    box-shadow: 0 2px 5px rgba(32, 56, 95, 0.1) !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-product-form] input:not([type="checkbox"]):not([type="radio"]):focus,
+  .app-shell[data-admin-surface="true"] [data-product-form] textarea:focus {
+    border-color: #315cc8 !important;
+    background: #ffffff !important;
+    box-shadow:
+      0 0 0 2px rgba(49, 92, 200, 0.15),
+      0 2px 5px rgba(32, 56, 95, 0.1) !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form] textarea {
-    min-height: 64px !important;
+    min-height: 60px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-name-preview],
   .app-shell[data-admin-surface="true"] [data-product-profit-preview] {
-    padding: 9px !important;
+    padding: 8px !important;
+    box-shadow: 0 2px 5px rgba(32, 56, 95, 0.08) !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-name-preview] {
-    margin-top: 6px !important;
+    margin-top: 4px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-profit-preview] {
-    margin-top: 6px !important;
+    margin-top: 4px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form-section-heading] {
-    gap: 8px !important;
+    gap: 6px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form-section-heading] > span {
@@ -4634,19 +4650,20 @@ body,
   }
 
   .app-shell[data-admin-surface="true"] [data-product-extra-fields] {
-    margin-top: 10px !important;
-    padding-top: 10px !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-visibility-summary] {
     display: flex;
     min-height: 44px;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid #e2e8f0;
+    gap: 6px;
+    padding: 6px 9px;
+    border: 1px solid #dbe4f0;
     border-radius: 12px;
-    background: #ffffff;
+    background: #f8fafc;
+    box-shadow: 0 2px 5px rgba(32, 56, 95, 0.1);
     list-style: none;
     cursor: pointer;
   }
@@ -4661,26 +4678,72 @@ body,
   }
 
   .app-shell[data-admin-surface="true"] [data-product-visibility-content] {
-    padding-top: 8px;
+    padding-top: 6px;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-visibility-content] label {
     min-height: 44px;
-    gap: 8px !important;
-    padding: 8px 10px !important;
+    gap: 6px !important;
+    padding: 6px 9px !important;
+    box-shadow: 0 2px 5px rgba(32, 56, 95, 0.08);
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form-actions] {
-    margin-top: 10px !important;
-    gap: 8px !important;
-    padding-top: 8px !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+    margin-top: 6px !important;
+    margin-left: -6px !important;
+    margin-right: -6px !important;
+    padding: 6px 8px calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-product-form-actions] > p {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 4px;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-product-form-actions] > p > span {
+    display: inline !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-product-form-actions] > div {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: minmax(5rem, 0.75fr) minmax(0, 1.25fr) !important;
+    gap: 6px !important;
   }
 
   .dark .app-shell[data-admin-surface="true"] [data-product-visibility-summary] {
     border-color: #3a414d;
     background: #2a2d35;
     color: #e5e7eb;
+  }
+
+  .dark .app-shell[data-admin-surface="true"] [data-product-form] input:not([type="checkbox"]):not([type="radio"]),
+  .dark .app-shell[data-admin-surface="true"] [data-product-form] textarea {
+    border-color: #475569 !important;
+    background: #252d3a !important;
+    color: #e5e7eb !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .dark .app-shell[data-admin-surface="true"] [data-product-form] input:not([type="checkbox"]):not([type="radio"]):focus,
+  .dark .app-shell[data-admin-surface="true"] [data-product-form] textarea:focus {
+    border-color: #7896df !important;
+    background: #2a3444 !important;
+    box-shadow:
+      0 0 0 2px rgba(120, 150, 223, 0.2),
+      0 2px 5px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .dark .app-shell[data-admin-surface="true"] [data-product-visibility-content] label {
+    border-color: #3a414d !important;
+    background: #252d3a !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
   }
 }
 
