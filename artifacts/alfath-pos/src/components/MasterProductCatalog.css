@@ -1107,3 +1107,228 @@
 .dark .mp-product-row:hover {
   background-color: #303540 !important;
 }
+
+/* Admin inventory catalogue: explicit overrides live after the legacy white
+   surface rules above. Scope is intentionally limited to the Admin screen so
+   Cashier/POS and the product editor keep their existing presentation. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] {
+  --inventory-canvas: #0b1b31;
+  --inventory-panel: #122943;
+  --inventory-raised: #172f4b;
+  --inventory-inset: #091a30;
+  --inventory-line: rgba(169, 190, 211, 0.2);
+  --inventory-gold: #dfc27f;
+  --inventory-text: #f0f4f8;
+  --inventory-muted: #b9c7d6;
+  background-color: var(--inventory-canvas) !important;
+  color: var(--inventory-text) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] {
+  border-color: var(--inventory-line) !important;
+  background: linear-gradient(112deg, #0c2038, #102943) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] input {
+  min-height: 44px;
+  border: 1px solid rgba(172, 192, 213, 0.28) !important;
+  border-radius: 13px !important;
+  background: var(--inventory-inset) !important;
+  color: var(--inventory-text) !important;
+  box-shadow: inset 0 1px 4px rgba(0, 7, 18, 0.25) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] input::placeholder {
+  color: #9eafc2 !important;
+  opacity: 1;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] > div > div > svg {
+  color: var(--inventory-gold) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] button {
+  min-height: 44px;
+  border: 1px solid rgba(231, 204, 141, 0.58) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(135deg, #dfc783, #b99a58) !important;
+  color: #10243b !important;
+  box-shadow: 0 5px 14px rgba(0, 8, 19, 0.25) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-toolbar] button:hover {
+  background: linear-gradient(135deg, #edd99e, #ceb16c) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] {
+  background: var(--inventory-canvas) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-columns {
+  border-color: var(--inventory-line) !important;
+  background: #102944 !important;
+  color: #e6cf91 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-list {
+  scrollbar-color: #425a73 #0b1b31;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-category,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-row {
+  border-color: var(--inventory-line) !important;
+  background-color: var(--inventory-panel) !important;
+  box-shadow: inset 0 1px 0 rgba(220, 236, 250, 0.045) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-category-toggle {
+  background: linear-gradient(105deg, #173450, #142d49) !important;
+  color: var(--inventory-text) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-category-toggle:hover,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle:hover,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-row:hover {
+  background-color: #1a3857 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-list {
+  border-color: var(--inventory-line) !important;
+  background: #0e223b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-toggle {
+  color: #e9eef4 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-provider-mark {
+  border-color: rgba(223, 194, 127, 0.42) !important;
+  background: rgba(223, 194, 127, 0.12) !important;
+  color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-list,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-row {
+  border-color: rgba(169, 190, 211, 0.17) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-item > strong,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-price,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-selling strong {
+  color: #f0f4f8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] :is(
+  .mp-category-label,
+  .mp-category-count,
+  .mp-provider-count,
+  .mp-chevron,
+  .mp-product-barcode,
+  .mp-product-meta small,
+  .mp-product-price > span,
+  .mp-product-cost strong,
+  .mp-product-selling del
+) {
+  color: var(--inventory-muted) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-category-index,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-selling strong {
+  color: var(--inventory-gold) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-tag,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-visibility-branches {
+  border-color: rgba(223, 194, 127, 0.3) !important;
+  background: rgba(223, 194, 127, 0.1) !important;
+  color: #efd899 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-visibility-all {
+  border-color: rgba(104, 190, 151, 0.3) !important;
+  background: rgba(53, 145, 105, 0.14) !important;
+  color: #a4e0c2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-actions button {
+  min-width: 38px;
+  min-height: 38px;
+  border-color: rgba(223, 194, 127, 0.14) !important;
+  color: #e6cf91 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-actions button:hover {
+  border-color: rgba(223, 194, 127, 0.38) !important;
+  background: rgba(223, 194, 127, 0.12) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-actions .mp-delete,
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-actions .mp-delete:hover {
+  color: #ef9a91 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-empty {
+  color: var(--inventory-muted) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-empty > span {
+  border: 1px solid var(--inventory-line);
+  background: var(--inventory-panel) !important;
+  color: var(--inventory-gold);
+  box-shadow: inset 0 1px 0 rgba(220, 236, 250, 0.06) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-empty strong {
+  color: var(--inventory-text) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-more {
+  border-color: var(--inventory-line) !important;
+  background: #10243d !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-more button {
+  min-height: 44px;
+  border-color: rgba(223, 194, 127, 0.4) !important;
+  background: #172f4b !important;
+  color: #efd899 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-catalog-more button:hover {
+  background: #1c3a59 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] table {
+  color: var(--inventory-text);
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] tbody tr {
+  border-color: var(--inventory-line) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] tbody tr > td {
+  color: #dfe8f1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] tbody tr > td :is(.text-blue-600, .text-blue-700) {
+  color: #e4c77f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] tbody tr > td button {
+  min-width: 40px;
+  min-height: 40px;
+  color: #e4c77f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] [data-inventory-search-results] tbody tr > td button:hover {
+  background: rgba(223, 194, 127, 0.12) !important;
+}
+
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] [data-ui-screen="inventory"] .mp-product-actions button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
