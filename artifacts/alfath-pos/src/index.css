@@ -8006,3 +8006,44 @@ body,
     inset 0 1px 0 rgba(211, 237, 255, 0.15),
     0 3px 9px rgba(1, 9, 21, 0.3) !important;
 }
+
+/* Mobile-only compact dashboard controls; leave other admin and POS surfaces alone. */
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] header[data-topbar-screen="dashboard"] {
+    height: 48px !important;
+    min-height: 48px !important;
+    margin: 4px 8px 2px;
+    padding-inline: 8px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] header[data-topbar-screen="dashboard"] button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-filters] {
+    padding: 4px 10px 3px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-filters] > div,
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-filters] > div > div {
+    gap: 5px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-periods],
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-view-tabs] {
+    min-height: 48px;
+    padding: 1px 3px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-period-option],
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-view-option] {
+    min-height: 44px;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-branch-filter] .app-select-trigger {
+    min-height: 44px;
+    padding-block: 7px;
+    padding-inline: 12px;
+  }
+}
