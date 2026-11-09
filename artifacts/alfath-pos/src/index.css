@@ -3180,32 +3180,48 @@ body,
   align-items: center;
   min-height: 44px;
   padding: 4px !important;
-  border: 1px solid #dce5f2 !important;
+  border: 1px solid rgba(196, 166, 109, 0.42) !important;
   border-radius: 18px !important;
-  background: #ffffff !important;
-  --tw-shadow: 0 3px 10px rgba(41, 60, 92, 0.13) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  --tw-shadow: 0 4px 12px rgba(4, 13, 28, 0.24) !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-period-option],
 .app-shell[data-admin-surface="true"] [data-dashboard-view-option] {
   min-height: 38px;
   border-radius: 14px !important;
+  color: #d4deea !important;
   transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-period-option][data-active="true"],
 .app-shell[data-admin-surface="true"] [data-dashboard-view-option][data-active="true"] {
-  background: linear-gradient(120deg, #102744, #1b3b5b) !important;
-  color: #f4e4b9 !important;
-  --tw-shadow: 0 3px 9px rgba(16, 39, 68, 0.24) !important;
+  background: linear-gradient(135deg, #e2cf9f, #c4a66d) !important;
+  color: #102744 !important;
+  --tw-shadow: 0 3px 9px rgba(2, 10, 22, 0.26) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-period-option]:not([data-active="true"]):hover,
+.app-shell[data-admin-surface="true"] [data-dashboard-view-option]:not([data-active="true"]):hover {
+  background: rgba(220, 199, 153, 0.12) !important;
+  color: #f1dba7 !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger {
   min-height: 44px;
   border-radius: 16px !important;
-  background: #ffffff !important;
-  border-color: #dce5f2 !important;
-  --tw-shadow: 0 3px 10px rgba(41, 60, 92, 0.11) !important;
+  border-color: rgba(196, 166, 109, 0.48) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #f4efe4 !important;
+  --tw-shadow: 0 4px 12px rgba(4, 13, 28, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger span {
+  color: #f4efe4 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger svg {
+  color: #d8bd80 !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-content] {
@@ -3227,10 +3243,11 @@ body,
   isolation: isolate;
   overflow: hidden;
   padding: 12px !important;
-  border: 1px solid #dce5f2 !important;
+  border: 1px solid rgba(196, 166, 109, 0.42) !important;
   border-radius: 19px !important;
-  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%) !important;
-  --tw-shadow: 0 3px 8px rgba(35, 54, 85, 0.12), 0 8px 18px rgba(35, 54, 85, 0.08) !important;
+  background: linear-gradient(145deg, #1b3b5b 0%, #102744 76%) !important;
+  color: #f5f1e8 !important;
+  --tw-shadow: 0 5px 13px rgba(3, 12, 27, 0.26), 0 12px 24px rgba(3, 12, 27, 0.14) !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > *::after {
@@ -3246,19 +3263,19 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(1)::after {
-  background: radial-gradient(ellipse, rgba(52, 102, 208, 0.20), rgba(52, 102, 208, 0) 72%);
+  background: radial-gradient(ellipse, rgba(220, 199, 153, 0.18), rgba(220, 199, 153, 0) 72%);
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(2)::after {
-  background: radial-gradient(ellipse, rgba(15, 173, 132, 0.18), rgba(15, 173, 132, 0) 72%);
+  background: radial-gradient(ellipse, rgba(220, 199, 153, 0.12), rgba(220, 199, 153, 0) 72%);
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(3)::after {
-  background: radial-gradient(ellipse, rgba(141, 83, 226, 0.18), rgba(141, 83, 226, 0) 72%);
+  background: radial-gradient(ellipse, rgba(220, 199, 153, 0.16), rgba(220, 199, 153, 0) 72%);
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(4)::after {
-  background: radial-gradient(ellipse, rgba(234, 155, 41, 0.20), rgba(234, 155, 41, 0) 72%);
+  background: radial-gradient(ellipse, rgba(220, 199, 153, 0.13), rgba(220, 199, 153, 0) 72%);
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * > div {
@@ -3267,15 +3284,22 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-trend-card],
-.app-shell[data-admin-surface="true"] [data-dashboard-margin-card],
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] {
+  border: 1px solid rgba(196, 166, 109, 0.42) !important;
+  border-radius: 20px !important;
+  background: linear-gradient(145deg, #1b3b5b 0%, #102744 82%) !important;
+  color: #f3efe5 !important;
+  --tw-shadow: 0 5px 14px rgba(3, 12, 27, 0.27), 0 12px 26px rgba(3, 12, 27, 0.16) !important;
+}
+
 .app-shell[data-admin-surface="true"] [data-dashboard-recent-card],
 .app-shell[data-admin-surface="true"] [data-dashboard-branch-performance],
 .app-shell[data-admin-surface="true"] [data-dashboard-top-products],
 .app-shell[data-admin-surface="true"] [data-dashboard-sales-table] {
-  border: 1px solid #dce5f2 !important;
+  border: 1px solid #d8d0c1 !important;
   border-radius: 20px !important;
-  background: #ffffff !important;
-  --tw-shadow: 0 3px 9px rgba(35, 54, 85, 0.10), 0 8px 18px rgba(35, 54, 85, 0.06) !important;
+  background: #f3eee3 !important;
+  --tw-shadow: 0 3px 9px rgba(35, 42, 52, 0.12), 0 8px 18px rgba(35, 42, 52, 0.08) !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-ui-screen="reports"] > div:first-child {
@@ -3367,20 +3391,27 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * {
-  border-color: #354155 !important;
-  background: linear-gradient(145deg, #263144 0%, #202a39 100%) !important;
-  --tw-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(145deg, #193653 0%, #0d2039 100%) !important;
+  color: #f3efe5 !important;
+  --tw-shadow: 0 5px 14px rgba(0, 0, 0, 0.34) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-trend-card],
-.dark .app-shell[data-admin-surface="true"] [data-dashboard-margin-card],
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-margin-card] {
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(145deg, #193653 0%, #0d2039 100%) !important;
+  color: #f3efe5 !important;
+  --tw-shadow: 0 5px 14px rgba(0, 0, 0, 0.36) !important;
+}
+
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-recent-card],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-branch-performance],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-top-products],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-sales-table],
 .dark .app-shell[data-admin-surface="true"] [data-report-filters] {
-  border-color: #354155 !important;
-  background: #202a39 !important;
+  border-color: #465064 !important;
+  background: #263244 !important;
   --tw-shadow: 0 4px 14px rgba(0, 0, 0, 0.28) !important;
 }
 
@@ -3388,8 +3419,8 @@ body,
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-view-tabs],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-branch-filter] .app-select-trigger,
 .dark .app-shell[data-admin-surface="true"] [data-report-subtabs] {
-  border-color: #354155 !important;
-  background-color: #293548 !important;
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] [data-inventory-toolbar] input {
@@ -3759,14 +3790,14 @@ body,
 
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-periods],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-view-tabs] {
-  border-color: #354155 !important;
-  background: #263244 !important;
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
 }
 
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-period-option][data-active="true"],
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-view-option][data-active="true"] {
-  background: linear-gradient(120deg, #102744, #1b3b5b) !important;
-  color: #f1dba7 !important;
+  background: linear-gradient(135deg, #e2cf9f, #c4a66d) !important;
+  color: #102744 !important;
 }
 
 @media (max-width: 767px) {
@@ -3997,8 +4028,8 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(1) > div:first-child {
-  background: linear-gradient(130deg, #102744, #294967) !important;
-  box-shadow: 0 4px 12px rgba(16, 39, 68, 0.16) !important;
+  background: linear-gradient(145deg, #e2cf9f, #c4a66d) !important;
+  box-shadow: 0 4px 12px rgba(16, 39, 68, 0.28) !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-metrics] > :nth-child(3) > div:first-child {
@@ -7552,7 +7583,7 @@ body,
   [data-testid="page-branch-stock-audit"]
 ) :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .app-select-trigger) {
   border-color: #d5dde7 !important;
-  background-color: #fff !important;
+  background-color: #f3eee3 !important;
   color: #20344d !important;
 }
 
@@ -7663,4 +7694,212 @@ body,
     radial-gradient(ellipse at 12% 0%, rgba(193, 157, 91, 0.15), transparent 42%),
     radial-gradient(ellipse at 100% 100%, rgba(62, 101, 148, 0.24), transparent 48%),
     linear-gradient(145deg, #09162d 0%, #122746 48%, #203a59 100%) !important;
+}
+
+/* Navy bertingkat: keep the approved Admin canvas, and give dashboard
+   analytics a quieter navy/gold hierarchy without tinting data-entry areas. */
+.app-shell[data-admin-surface="true"] .app-topbar button {
+  border: 1px solid rgba(196, 166, 109, 0.38);
+  border-radius: 12px;
+  background: rgba(18, 43, 72, 0.94) !important;
+  color: #e8d7ad;
+}
+
+.app-shell[data-admin-surface="true"] .app-topbar button:hover {
+  border-color: rgba(226, 207, 159, 0.72);
+  background: #1b3b5b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * > div:first-child {
+  border: 1px solid rgba(232, 215, 173, 0.62);
+  background: linear-gradient(145deg, #e2cf9f, #c4a66d) !important;
+  color: #102744 !important;
+  box-shadow: 0 4px 11px rgba(3, 12, 27, 0.28) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] > * > div:first-child svg {
+  color: #102744 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] p[class*="text-slate-400"] {
+  color: #d4c49f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] h3 {
+  color: #f8f4eb !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-metrics] p:not([class*="text-slate-400"]) {
+  color: #c6d0dc !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] h4,
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] h4 {
+  color: #f7f2e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] h4 svg,
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] h4 svg {
+  color: #d8bd80 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] p,
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] > p {
+  color: #bdc9d8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] svg stop {
+  stop-color: #d2b879;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] svg path:last-child {
+  stroke: #e0c98f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] svg circle:first-child {
+  stroke: rgba(221, 211, 187, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] svg circle:nth-child(2) {
+  stroke: #d8bd80 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] span.text-slate-900 {
+  color: #f8f4eb !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-margin-card] .bg-slate-50 {
+  border: 1px solid rgba(196, 166, 109, 0.24);
+  background: rgba(7, 21, 39, 0.38) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-filters] {
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-subtabs] {
+  border: 1px solid rgba(196, 166, 109, 0.28);
+  background: rgba(6, 20, 38, 0.5) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-view-option] {
+  color: #d4deea !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-view-option][data-active="true"] {
+  border: 1px solid rgba(226, 207, 159, 0.72);
+  background: linear-gradient(135deg, #e2cf9f, #c4a66d) !important;
+  color: #102744 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where([data-ui-panel], [data-product-form-card], [data-stock-table-card]) {
+  border-color: #d8d0c1 !important;
+  background-color: #f3eee3 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] .app-topbar button {
+  border-color: rgba(196, 166, 109, 0.4);
+  background: rgba(9, 24, 43, 0.92) !important;
+  color: #e8d7ad;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-report-filters] {
+  border-color: rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(135deg, #0d2039, #193653) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-report-subtabs] {
+  background: rgba(6, 20, 38, 0.72) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where([data-ui-panel], [data-product-form-card], [data-stock-table-card]) {
+  border-color: #465064 !important;
+  background-color: #263244 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-content] > [role="status"] span.text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] > div.h-\[200px\] {
+  color: #cbd5e1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-trend-card] > div.h-\[200px\] svg {
+  color: #d8bd80 !important;
+}
+
+.app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(
+  [data-ui-panel],
+  [data-bonus-panel]:not([data-bonus-panel="cashier-summary"]),
+  [data-stock-table-card],
+  [data-product-form-card],
+  .bg-white:is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[22px\], .rounded-\[32px\])
+):not(button):not(a):not(input):not(select):not(textarea):not(aside) {
+  border-color: #d8d0c1 !important;
+  background-color: #f3eee3 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(
+  [data-ui-panel],
+  [data-bonus-panel]:not([data-bonus-panel="cashier-summary"]),
+  [data-stock-table-card],
+  [data-product-form-card],
+  .bg-white:is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[22px\], .rounded-\[32px\])
+):not(button):not(a):not(input):not(select):not(textarea):not(aside) {
+  border-color: #465064 !important;
+  background-color: #263244 !important;
 }

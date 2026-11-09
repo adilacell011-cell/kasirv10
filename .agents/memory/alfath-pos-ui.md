@@ -138,17 +138,16 @@ The app font is already an iOS system stack (-apple-system, SF Pro) so "iOS-styl
 need no change. App uses a manual `.dark` class toggle (not OS-based), so `:root` light +
 `.dark` dark is correct and equal-specificity-safe (.dark declared after :root).
 
-## Current app-wide UI direction: compact light-blue canvas and white surfaces
-The owner's latest decision supersedes earlier warm greige/neumorphic mockup guidance: use `#F1F5F9` for
-light-mode page backgrounds across every screen, including POS, while keeping component surfaces white,
-flat, and clearly separated with fine neutral borders. Preserve Alfath blue actions and restrained semantic
-status colors. Keep product and operational views compact; do not make cards larger merely for decoration.
+## General UI default: compact light-blue canvas and white surfaces
+For general pages and POS, use `#F1F5F9` for light-mode page backgrounds with white, flat component surfaces
+and fine neutral borders. Admin has a separate, role-scoped navy visual system described below. Preserve
+semantic status colors and keep product/operational views compact; do not enlarge cards merely for decoration.
 Continue to respect reduced motion and touch targets, and do not change behavior or business logic to achieve
 visual consistency.
-**Why:** screenshots showed oversized components and the owner approved a light-blue page canvas with white
-components, explicitly including the cashier page.
-**How to apply:** scope the color to page-level backgrounds, keep white cards and controls intact, and do not
-change the POS tablet's established two-column layout.
+**Why:** screenshots showed oversized components, and the owner approved a light-blue canvas with white
+surfaces for the general UI and cashier page before choosing a distinct navy theme for Admin.
+**How to apply:** keep this as the default outside Admin, and do not change the POS tablet's established
+two-column layout.
 POS product tiles are a deliberate exception to white surfaces: use a soft champagne-gold fill (`#F4EBD7`)
 with a muted gold border (`#D6BD83`) and slightly warmer hover (`#EEE0BE`), while retaining navy text and
 semantic stock-status colors.
@@ -290,3 +289,8 @@ Use platform system fonts throughout the app: San Francisco on Apple devices and
 When the owner provides a visual reference for Admin, match its visible visual system clearly across Admin screens rather than making only subtle surface changes. Keep the POS untouched until the owner reviews and approves extending the style.
 **Why:** the owner said the first Admin pass did not look like the reference and explicitly asked to focus on Admin before touching the cashier page.
 **How to apply:** scope shared header/navigation and sidebar styling to Admin sessions, keep phone gutters and component gaps compact, preserve readable controls and semantic status colors, and leave POS layout/behavior separate.
+
+## Admin navy-and-champagne cards
+Admin uses the same layered navy gradient canvas as the cashier, but its bright white metric/chart cards and capsules should use tiered navy surfaces with restrained champagne-gold edges and warm light text. Dense tables and forms use warm ivory (`#F3EEE3`) in light mode and readable charcoal/navy surfaces in dark mode; preserve green/red status meaning. This is Admin-only and must not alter POS.
+**Why:** the owner said white cards looked out of place on the navy background and selected the tiered-navy direction.
+**How to apply:** scope changes to `.app-shell[data-admin-surface="true"]`; use navy for metric/chart cards and shared controls, ivory for dense data-entry/read surfaces, and retain contrast in both themes.
