@@ -268,4 +268,4 @@ Use platform system fonts throughout the app: San Francisco on Apple devices and
 ## Admin screenshot-style pilot stays separate from POS
 When the owner provides a visual reference for Admin, match its visible visual system clearly across Admin screens rather than making only subtle surface changes. Keep the POS untouched until the owner reviews and approves extending the style.
 **Why:** the owner said the first Admin pass did not look like the reference and explicitly asked to focus on Admin before touching the cashier page.
-**How to apply:** scope shared header/navigation styling to Admin sessions, keep Admin content and POS layout/behavior separate, and preserve readable compact controls and semantic status colors.
+**How to apply:** scope shared header/navigation and sidebar styling to Admin sessions, keep phone gutters and component gaps compact, preserve readable controls and semantic status colors, and leave POS layout/behavior separate.
