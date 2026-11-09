@@ -10602,3 +10602,142 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
     width: 13%;
   }
 }
+
+/* Keep the Dashboard stock-audit trail on the same readable navy/gold table theme. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] {
+  border: 1px solid rgba(218, 189, 123, 0.42) !important;
+  background: #102640 !important;
+  box-shadow: 0 8px 20px rgba(0, 7, 18, 0.28) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] [data-audit-titlebar] {
+  border-color: rgba(164, 190, 216, 0.22) !important;
+  background: linear-gradient(110deg, #173653, #102943) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] [data-audit-titlebar] h4 {
+  color: #f1e5c8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] [data-audit-titlebar] p {
+  color: #b8c7d6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] [data-audit-titlebar] > div:first-child {
+  border: 1px solid rgba(218, 189, 123, 0.36);
+  background: linear-gradient(145deg, #e6cf94, #bd9a55) !important;
+  color: #102640 !important;
+  box-shadow: 0 3px 8px rgba(0, 7, 18, 0.24);
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-scroll {
+  border-color: rgba(164, 190, 216, 0.2) !important;
+  background: #0b1d33 !important;
+  scrollbar-width: thin;
+  scrollbar-color: #927a4e #0b1d33;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  background: #0b1d33 !important;
+  color: #e9eff5 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table th {
+  border-color: rgba(218, 189, 123, 0.38) !important;
+  background: linear-gradient(110deg, #0b1d33, #173653) !important;
+  color: #f0d999 !important;
+  padding: 6px 6px !important;
+  font-size: 8px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td {
+  border-color: rgba(164, 190, 216, 0.2) !important;
+  color: #e9eff5 !important;
+  padding: 5px 6px !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody tr:nth-child(odd) td {
+  background: #102640 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody tr:nth-child(even) td {
+  background: #142e49 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td[data-column="time"] {
+  color: #c0cddd !important;
+  white-space: nowrap;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td[data-column="product"] {
+  color: #f1f4f7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td[data-column="product"] p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td[data-column="branch"] {
+  color: #dce7f0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td[data-column="branch"] span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table td[data-column="movement"] span {
+  border: 1px solid rgba(218, 189, 123, 0.2) !important;
+  padding: 3px 5px !important;
+  font-size: 8px !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table td[data-column="movement"] span[class~="bg-emerald-50"] {
+  border-color: rgba(106, 208, 150, 0.3) !important;
+  background: rgba(19, 108, 73, 0.38) !important;
+  color: #a5edbd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table td[data-column="movement"] span[class~="bg-red-50"] {
+  border-color: rgba(234, 139, 139, 0.3) !important;
+  background: rgba(128, 45, 59, 0.38) !important;
+  color: #ffc1c1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table td[data-column="movement"] span[class~="bg-blue-50"] {
+  border-color: rgba(120, 190, 229, 0.3) !important;
+  background: rgba(33, 89, 130, 0.42) !important;
+  color: #c5e5fa !important;
+}
+
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] {
+    height: 410px !important;
+    min-height: 0 !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table th {
+    padding: 5px 4px !important;
+    font-size: 7.5px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-stock-audit] .admin-excel-audit-table tbody td {
+    padding: 4px 4px !important;
+    font-size: 8px !important;
+  }
+}
