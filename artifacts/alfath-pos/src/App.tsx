@@ -9860,38 +9860,38 @@ export default function App() {
                   {dashboardTab === "inventory" && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       {/* MODAL PER CABANG COMPACT */}
-                      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col h-fit">
-                        <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white text-left">
+                      <div data-dashboard-branch-modal className="bg-white rounded-3xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col h-fit">
+                        <div className="p-3 md:p-4 border-b border-slate-100 flex items-center justify-between bg-white text-left">
                           <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
                             <Store className="w-3.5 h-3.5 text-blue-500" />
                             Modal per Cabang
                           </h4>
                         </div>
-                        <div className="overflow-auto">
-                          <table className="w-full text-left">
-                            <thead className="bg-slate-50">
+                        <div className="admin-excel-scroll overflow-auto">
+                          <table aria-label="Modal stok per cabang" className="admin-excel-table admin-excel-branch-modal w-full min-w-[360px]">
+                            <thead>
                               <tr>
-                                <th className="px-6 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Cabang</th>
-                                <th className="px-6 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Modal</th>
+                                <th scope="col" data-column="branch">Cabang</th>
+                                <th scope="col" data-column="capital" className="text-right">Modal (Rp)</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50 text-[11px]">
+                            <tbody>
                               {branchModalData.map((b) => (
-                                <tr key={b.id} className="hover:bg-slate-50 transition-colors">
-                                  <td className="px-6 py-3">
+                                <tr key={b.id}>
+                                  <td data-column="branch">
                                     <p className="font-extrabold text-slate-800">{b.name}</p>
                                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{b.totalItems} Pcs Stok</p>
                                   </td>
-                                  <td className="px-6 py-3 text-right font-black text-blue-600">
+                                  <td data-column="capital" className="text-right font-black text-blue-600 whitespace-nowrap">
                                     Rp {b.totalModal.toLocaleString("id-ID")}
                                   </td>
                                 </tr>
                               ))}
                             </tbody>
                             <tfoot>
-                              <tr className="bg-slate-100/50">
-                                <td className="px-6 py-4 font-black text-[9px] uppercase tracking-widest">Total Konsolidasi HPP</td>
-                                <td className="px-6 py-4 text-right font-black text-slate-900">
+                              <tr data-summary-row>
+                                <td data-column="branch" className="font-black text-[9px] uppercase tracking-widest">Total Konsolidasi HPP</td>
+                                <td data-column="capital" className="text-right font-black text-slate-900 whitespace-nowrap">
                                   Rp {branchModalData.reduce((s, x) => s + x.totalModal, 0).toLocaleString("id-ID")}
                                 </td>
                               </tr>

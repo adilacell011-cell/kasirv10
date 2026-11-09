@@ -3794,3 +3794,39 @@ body,
     padding: 7px 8px;
   }
 }
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal th[data-column="branch"] {
+  width: 62%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal th[data-column="capital"] {
+  width: 38%;
+  text-align: right;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal td[data-column="capital"] {
+  background: #f0f9ff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td {
+  background: #e9eff8;
+  border-top: 2px solid #c6d3e3;
+  border-bottom: 0;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td[data-column="capital"] {
+  color: #20385f;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal td[data-column="capital"] {
+  background: #1d2f3e;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td {
+  background: #2a374b;
+  border-top-color: #4a5c75;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tfoot td[data-column="capital"] {
+  color: #e5edf8 !important;
+}
