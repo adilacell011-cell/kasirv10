@@ -3441,13 +3441,14 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav {
-  left: 6px !important;
+  left: 2px !important;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
-  width: calc(100% - 12px) !important;
+  width: calc(100% - 4px) !important;
   min-height: 60px;
   border-radius: 18px;
   padding-top: 2px;
   padding-bottom: max(3px, env(safe-area-inset-bottom, 0px)) !important;
+  overflow-x: hidden !important;
   --tw-shadow: 0 5px 16px rgba(34, 53, 83, 0.17) !important;
 }
 
@@ -3456,15 +3457,16 @@ body,
   min-width: 0 !important;
   width: 100%;
   gap: 0;
-  padding-inline: 2px !important;
+  padding-inline: 0 !important;
   justify-content: space-between;
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav button {
-  flex: 1 1 44px;
-  min-width: 44px;
+  flex: 1 1 0;
+  width: auto !important;
+  min-width: 40px;
   min-height: 48px;
-  padding-inline: 1px;
+  padding-inline: 0;
 }
 
 .app-shell[data-admin-surface="true"] .app-bottom-nav button > div > div {
@@ -3490,12 +3492,12 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"] [data-dashboard-filters] {
-  padding: 6px 10px 4px !important;
+  padding: 4px 10px 2px !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div,
 .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div > div {
-  gap: 6px !important;
+  gap: 4px !important;
 }
 
 .app-shell[data-admin-surface="true"] [data-dashboard-periods],
@@ -3610,13 +3612,13 @@ body,
   }
 
   .app-shell[data-admin-surface="true"] .app-bottom-nav > div {
-    overflow-x: auto;
+    overflow-x: hidden;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
   }
 
   .app-shell[data-admin-surface="true"] .app-bottom-nav button {
-    flex: 1 0 44px;
+    flex: 1 1 0;
   }
 
   .app-shell[data-admin-surface="true"] [data-dashboard-content] {
@@ -3625,13 +3627,24 @@ body,
 
   .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div,
   .app-shell[data-admin-surface="true"] [data-dashboard-filters] > div > div:first-child {
-    gap: 6px !important;
+    gap: 4px !important;
   }
 }
 
-@media (max-width: 359px) {
+@media (max-width: 370px) {
+  .app-shell[data-admin-surface="true"] .app-bottom-nav {
+    overflow-x: auto !important;
+  }
+
+  .app-shell[data-admin-surface="true"] .app-bottom-nav > div {
+    width: max-content;
+    min-width: 100%;
+    overflow-x: auto;
+  }
+
   .app-shell[data-admin-surface="true"] .app-bottom-nav button {
     flex: 0 0 44px;
+    width: 44px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-dashboard-content] {
