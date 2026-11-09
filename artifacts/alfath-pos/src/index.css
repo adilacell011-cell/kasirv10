@@ -9255,3 +9255,37 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
     font-size: 8px;
   }
 }
+
+/* Keep native date controls legible on Android while retaining the browser picker. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"] {
+  min-height: 44px !important;
+  background-color: #102744 !important;
+  color: #fff3d7 !important;
+  -webkit-text-fill-color: #fff3d7 !important;
+  color-scheme: dark;
+  accent-color: #d6b66f;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-datetime-edit,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-datetime-edit,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-datetime-edit-text,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-datetime-edit-text,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-datetime-edit-month-field,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-datetime-edit-month-field,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-datetime-edit-day-field,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-datetime-edit-day-field,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-datetime-edit-year-field,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #fff3d7 !important;
+  -webkit-text-fill-color: #fff3d7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input[type="date"]::-webkit-calendar-picker-indicator,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  filter: invert(77%) sepia(28%) saturate(560%) hue-rotate(4deg) brightness(98%) contrast(88%);
+  cursor: pointer;
+}
