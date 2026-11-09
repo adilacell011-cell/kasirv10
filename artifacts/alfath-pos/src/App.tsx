@@ -4973,11 +4973,10 @@ export default function App() {
                               <p className="mt-0.5 text-[9px] font-medium text-slate-400">Susun kategori dan varian agar mudah ditemukan kasir.</p>
                             </div>
                           </div>
-                          <div data-product-identity className="grid grid-cols-1 gap-4">
-                            {/* Column 1: Identity */}
-                            <div data-product-taxonomy className="space-y-5">
+                          <div data-product-identity className="grid grid-cols-1">
+                            <div data-product-taxonomy className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <div data-product-field="category">
-                                <ProductCombobox 
+                                <ProductCombobox
                                   label="Kategori Produk"
                                   value={prodCategory}
                                   onChange={(val) => {
@@ -4990,54 +4989,48 @@ export default function App() {
                                   placeholder="Ketik atau pilih Kategori"
                                 />
                               </div>
-
-                                <div data-product-pair="brand-options" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div data-product-field="brand">
+                              <div data-product-field="brand">
+                                <ProductCombobox
+                                  label={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Merek (Brand)"}
+                                  value={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? prodProvider : prodBrand}
+                                  onChange={(val) => {
+                                    if (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) {
+                                      setProdProvider(val);
+                                      setProdBrand(val); // Keep brand in sync for legacy or generic checks
+                                    } else {
+                                      setProdBrand(val);
+                                    }
+                                    setProdSubCategory("");
+                                  }}
+                                  options={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? dynamicProviders : dynamicBrands}
+                                  placeholder={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Ketik Merek"}
+                                />
+                              </div>
+                              {(prodCategory === "Aksesoris" || prodCategory === "Handphone" || prodCategory === "Parfum") && (
+                                <div data-product-field="subcategory">
                                   <ProductCombobox
-                                    label={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Merek (Brand)"}
-                                    value={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? prodProvider : prodBrand}
-                                    onChange={(val) => {
-                                      if (prodCategory === "Voucher" || prodCategory?.includes("Perdana")) {
-                                        setProdProvider(val);
-                                        setProdBrand(val); // Keep brand in sync for legacy or generic checks
-                                      } else {
-                                        setProdBrand(val);
-                                      }
-                                      setProdSubCategory("");
-                                    }}
-                                    options={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? dynamicProviders : dynamicBrands}
-                                    placeholder={(prodCategory === "Voucher" || prodCategory?.includes("Perdana")) ? "Pilih Provider" : "Ketik Merek"}
+                                    label={prodCategory === "Parfum" ? "Jenis Parfum" : "Model / Sub-Kategori"}
+                                    value={prodSubCategory}
+                                    onChange={setProdSubCategory}
+                                    options={dynamicSubCategories}
+                                    placeholder={prodCategory === "Parfum" ? "Pilih jenis (EDP/EDT...)" : "Ketik Model..."}
                                   />
                                 </div>
-                                { (prodCategory === "Aksesoris" || prodCategory === "Handphone" || prodCategory === "Parfum") && (
-                                  <div>
-                                    <div className="relative">
-                                    <ProductCombobox 
-                                      label={prodCategory === "Parfum" ? "Jenis Parfum" : "Model / Sub-Kategori"}
-                                      value={prodSubCategory}
-                                      onChange={setProdSubCategory}
-                                      options={dynamicSubCategories}
-                                      placeholder={prodCategory === "Parfum" ? "Pilih jenis (EDP/EDT...)" : "Ketik Model..."}
-                                    />
-                                    </div>
-                                  </div>
-                                )}
-                                { prodCategory === "Parfum" && (
-                                  <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                                      Ukuran / Volume
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={prodSize}
-                                      onChange={(e) => setProdSize(e.target.value)}
-                                      placeholder="Cth: 30ml / 100ml"
-                                      className="w-full border border-slate-300 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold transition-all shadow-sm"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-
+                              )}
+                              {prodCategory === "Parfum" && (
+                                <div data-product-field="size">
+                                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                                    Ukuran / Volume
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={prodSize}
+                                    onChange={(e) => setProdSize(e.target.value)}
+                                    placeholder="Cth: 30ml / 100ml"
+                                    className="w-full border border-slate-300 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none font-bold transition-all shadow-sm"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -5330,11 +5323,7 @@ export default function App() {
                               )}
                             </div>
                           </div>
-                          <div data-product-form-actions className="sticky bottom-0 z-10 -mx-3 sm:-mx-4 md:-mx-6 mt-4 grid gap-2 border-t border-slate-200 bg-white/95 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] backdrop-blur sm:-mx-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-4 md:px-6">
-                            <p className="text-[9px] font-medium leading-4 text-slate-500">
-                              <strong className="font-black text-slate-500">* Wajib diisi</strong>
-                              <span className="block">Periksa nama dan harga sebelum lanjut.</span>
-                            </p>
+                          <div data-product-form-actions className="sticky bottom-0 z-10 -mx-3 sm:-mx-4 md:-mx-6 mt-4 grid grid-cols-1 gap-2 border-t border-slate-200 bg-white/95 px-3 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] backdrop-blur sm:-mx-4 sm:items-center sm:px-4 md:px-6">
                             <div className="grid grid-cols-[minmax(5.5rem,0.8fr)_minmax(0,1.5fr)] gap-2 sm:flex sm:justify-end">
                               <button
                                 type="button"

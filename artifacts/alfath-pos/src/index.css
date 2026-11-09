@@ -4565,7 +4565,7 @@ body,
   background: #40312c;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1100px) {
   .app-shell[data-admin-surface="true"] [data-product-form-header] {
     padding: 8px 10px !important;
   }
@@ -4579,15 +4579,11 @@ body,
   }
 
   .app-shell[data-admin-surface="true"] [data-product-identity],
-  .app-shell[data-admin-surface="true"] [data-product-pair],
+  .app-shell[data-admin-surface="true"] [data-product-taxonomy],
   .app-shell[data-admin-surface="true"] [data-product-details],
   .app-shell[data-admin-surface="true"] [data-product-pricing],
   .app-shell[data-admin-surface="true"] [data-product-extra-fields] {
     gap: 8px !important;
-  }
-
-  .app-shell[data-admin-surface="true"] [data-product-taxonomy].space-y-5 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 6px !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-pricing] {
@@ -4695,19 +4691,6 @@ body,
     margin-left: -6px !important;
     margin-right: -6px !important;
     padding: 6px 8px calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
-  }
-
-  .app-shell[data-admin-surface="true"] [data-product-form-actions] > p {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    column-gap: 4px;
-    font-size: 11px !important;
-    line-height: 1.25 !important;
-  }
-
-  .app-shell[data-admin-surface="true"] [data-product-form-actions] > p > span {
-    display: inline !important;
   }
 
   .app-shell[data-admin-surface="true"] [data-product-form-actions] > div {
