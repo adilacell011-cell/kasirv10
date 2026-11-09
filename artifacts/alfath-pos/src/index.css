@@ -4026,3 +4026,277 @@ body,
 .dark .app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] p {
   color: #aab8cd !important;
 }
+
+.app-shell[data-admin-surface="true"] [data-report-toolbar] {
+  margin-bottom: 8px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-filters] {
+  gap: 6px !important;
+  padding: 6px !important;
+  border-radius: 15px;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-subtabs] {
+  gap: 2px;
+  padding: 2px !important;
+  border-radius: 12px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-view-option] {
+  min-height: 40px;
+  padding: 7px 11px !important;
+  border-radius: 10px !important;
+  font-size: 9px !important;
+  letter-spacing: 0.035em !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-date-start],
+.app-shell[data-admin-surface="true"] [data-report-date-end] {
+  gap: 2px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-date-start] input,
+.app-shell[data-admin-surface="true"] [data-report-date-end] input {
+  min-height: 40px !important;
+  padding-inline: 8px !important;
+  border-radius: 10px !important;
+  font-size: 9px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-branch] .app-select-trigger {
+  min-height: 40px !important;
+  min-width: 138px;
+  max-width: 200px;
+  padding-inline: 10px !important;
+  border-radius: 10px !important;
+  font-size: 9px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-reset] {
+  height: 40px !important;
+  padding-inline: 11px !important;
+  border-radius: 10px !important;
+  font-size: 9px !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-history-card] {
+  border-color: #d6e0ec !important;
+  --tw-shadow: 0 3px 10px rgba(35, 54, 85, 0.08) !important;
+}
+
+.app-shell[data-admin-surface="true"] .report-excel-scroll {
+  width: 100%;
+  overflow-x: hidden !important;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th {
+  padding: 6px 4px;
+  background: #20385f;
+  color: #ffffff;
+  border-color: #3b557a;
+  font-size: 8px;
+  letter-spacing: 0.015em;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="time"] {
+  width: 12%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="cashier-branch"] {
+  width: 26%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="system"] {
+  width: 16%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="reported"] {
+  width: 19%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="difference"] {
+  width: 15%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="action"] {
+  width: 12%;
+  text-align: center;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="system"],
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="reported"],
+.app-shell[data-admin-surface="true"] .admin-report-history-table th[data-column="difference"] {
+  text-align: right;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td {
+  padding: 6px 4px;
+  font-size: 8px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="time"],
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="action"] {
+  background: #f8fafc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="cashier-branch"] {
+  background: #ffffff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="system"] {
+  background: #f1f5f9;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="reported"] {
+  background: #eff6ff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="difference"] {
+  background: #fff7ed;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="time"],
+.app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="action"] {
+  background: #eef2f7;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="cashier-branch"] {
+  background: #f8fafc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="system"] {
+  background: #e9eff8;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="reported"] {
+  background: #e8f1fc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="difference"] {
+  background: #fdf2e9;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="difference"] span {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 3px;
+  font-size: 8px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="action"] button {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border: 1px solid #f1d8dc;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-report-history-card] {
+  border-color: #354155 !important;
+  background: #202a39 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-report-history-titlebar] {
+  border-color: #354155 !important;
+  background: #202a39 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table th {
+  background: #29436d;
+  border-color: #496487;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="time"],
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="action"] {
+  background: #202a39;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="cashier-branch"] {
+  background: #263244;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="system"] {
+  background: #243244;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="reported"] {
+  background: #1f3048;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table td[data-column="difference"] {
+  background: #352b27;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="time"],
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="action"] {
+  background: #263244;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="cashier-branch"] {
+  background: #202a39;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="system"] {
+  background: #293548;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="reported"] {
+  background: #253a55;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-report-history-table tbody tr:nth-child(even) td[data-column="difference"] {
+  background: #40312c;
+}
+
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] [data-report-toolbar] {
+    margin-bottom: 6px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-filters] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 5px !important;
+    padding: 5px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-subtabs] {
+    grid-column: 1 / -1;
+    justify-self: start;
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-view-option] {
+    min-height: 40px;
+    padding-inline: 10px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-branch] {
+    grid-column: 1 / -1;
+    justify-self: start;
+    width: auto !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-branch] .app-select-trigger {
+    width: auto !important;
+    min-width: 138px !important;
+    max-width: min(200px, calc(100vw - 48px));
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-reset] {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}

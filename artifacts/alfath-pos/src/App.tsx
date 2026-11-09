@@ -4199,15 +4199,7 @@ export default function App() {
             {activeMenu === "reports" &&
               (profile?.role === "ADMIN" || profile?.role === "AUDIT") && (
                 <div data-ui-screen="reports" className="ui-screen-reports flex-1 p-3 md:p-6 overflow-y-auto w-full bg-slate-50 content-fade">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4 mb-5 md:mb-6 text-left">
-                    <div>
-                      <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
-                        Laporan Shift & Cabang
-                      </h2>
-                      <p className="text-slate-500 font-medium mt-1 uppercase text-[10px] tracking-widest">
-                        Analisis Perbandingan Pendapatan Siang vs Malam
-                      </p>
-                    </div>
+                  <div data-report-toolbar className="mb-3 md:mb-4 text-left">
                     <div data-report-filters className="flex flex-wrap gap-2 md:gap-3 items-end shadow-sm">
                       <div data-report-subtabs className="flex bg-slate-100 p-1 rounded-xl">
                         <button
@@ -4610,33 +4602,33 @@ export default function App() {
                   </div>
  
                   {/* RIWAYAT TUTUP SHIFT (DAILY REPORTS) */}
-                    <div className="xl:col-span-1 border border-slate-200 bg-white rounded-2xl overflow-hidden mt-5">
-                      <div className="p-3 md:p-5 border-b border-slate-200 flex items-center justify-between">
+                    <div data-report-history-card className="xl:col-span-1 border border-slate-200 bg-white rounded-2xl overflow-hidden mt-4">
+                      <div data-report-history-titlebar className="p-2.5 md:p-4 border-b border-slate-200 flex items-center justify-between gap-2">
                         <div className="text-left">
-                          <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-blue-500" /> Riwayat Tutup Shift (Laporan Kasir)
+                          <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-blue-500 shrink-0" /> Riwayat Tutup Shift
                           </h3>
-                          <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">Perbandingan pendapatan kasir dengan transaksi sukses</p>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase mt-1">Pendapatan kasir vs transaksi sukses</p>
                         </div>
-                        <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                        <div className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-wider shrink-0">
                           Audit Log
                         </div>
                       </div>
-                      <div className="overflow-auto max-h-[500px]">
-                        <table className="w-full text-left">
-                          <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 z-10">
+                      <div data-report-history-scroll className="report-excel-scroll max-h-[500px] overflow-y-auto overflow-x-hidden">
+                        <table aria-label="Riwayat tutup shift" className="admin-excel-table admin-report-history-table w-full min-w-0">
+                          <thead>
                             <tr>
-                              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Waktu Tutup</th>
-                              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Kasir & Cabang</th>
-                              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Total Sistem</th>
-                              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Pendapatan Dilaporkan</th>
-                              <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Selisih</th>
+                              <th scope="col" data-column="time">Waktu</th>
+                              <th scope="col" data-column="cashier-branch">Kasir & Cabang</th>
+                              <th scope="col" data-column="system" className="text-right">Sistem</th>
+                              <th scope="col" data-column="reported" className="text-right">Dilaporkan</th>
+                              <th scope="col" data-column="difference" className="text-right">Selisih</th>
                               {(profile?.role === "ADMIN" || profile?.role === "AUDIT") && (
-                                <th className="px-6 py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Aksi</th>
+                                <th scope="col" data-column="action" className="text-center">Aksi</th>
                               )}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody>
                             {shifts
                               .filter(sh => {
                                 const branchMatch = !adminSalesBranchFilter || sh.branchId === adminSalesBranchFilter;
@@ -4653,14 +4645,14 @@ export default function App() {
                                 const diff = sh.difference == null ? null : Number(sh.difference);
                                 
                                 return (
-                                  <tr key={sh.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4">
-                                      <p className="text-[10px] font-black text-slate-900 border-b border-slate-100 pb-1 mb-1">{sh.shiftDate}</p>
+                                  <tr key={sh.id}>
+                                    <td data-column="time" className="font-black text-slate-900">
+                                      <p className="border-b border-slate-200/70 pb-1 mb-1">{sh.shiftDate}</p>
                                       <p className="text-[9px] font-mono text-slate-400">
                                         {new Date(sh.closeTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                                       </p>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td data-column="cashier-branch">
                                       <p className="text-[10px] font-black text-slate-800 uppercase leading-tight">
                                         {sh.shiftType && sh.shiftType.includes(" - ") ? sh.shiftType.split(" - ")[1] : sh.cashier?.name || "Kasir"}
                                       </p>
@@ -4668,13 +4660,13 @@ export default function App() {
                                         {branches.find(b => b.id === sh.branchId)?.name || "Pusat"} | {sh.shiftType && sh.shiftType.includes(" - ") ? sh.shiftType.split(" - ")[0] : sh.shiftType}
                                       </p>
                                     </td>
-                                    <td className="px-6 py-4 text-right font-black text-slate-400 text-[10px]">
+                                    <td data-column="system" className="text-right font-black text-slate-500">
                                       Rp {expected.toLocaleString("id-ID")}
                                     </td>
-                                    <td className="px-6 py-4 text-right font-black text-slate-900 text-xs">
+                                    <td data-column="reported" className="text-right font-black text-slate-900">
                                       {reportedIncome === null ? "—" : `Rp ${reportedIncome.toLocaleString("id-ID")}`}
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td data-column="difference" className="text-right">
                                       <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${
                                         diff === null ? "text-slate-400" : diff === 0 ? "bg-emerald-50 text-emerald-600" : diff > 0 ? "bg-blue-50 text-blue-600" : "bg-rose-50 text-rose-600"
                                       }`}>
@@ -4682,7 +4674,7 @@ export default function App() {
                                       </span>
                                     </td>
                                     {(profile?.role === "ADMIN" || profile?.role === "AUDIT") && (
-                                      <td className="px-6 py-4 text-center">
+                                      <td data-column="action" className="text-center">
                                         <button
                                           onClick={async () => {
                                             if (await triggerConfirm("Hapus riwayat shift ini? Tindakan ini tidak dapat dibatalkan.")) {
@@ -4717,7 +4709,7 @@ export default function App() {
                               })}
                             {shifts.length === 0 && (
                               <tr>
-                                <td colSpan={5} className="px-6 py-20 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest opacity-30 italic">Belum ada laporan tutup shift</td>
+                                <td colSpan={(profile?.role === "ADMIN" || profile?.role === "AUDIT") ? 6 : 5} className="text-center text-slate-400 font-bold uppercase tracking-widest opacity-70 italic">Belum ada laporan tutup shift</td>
                               </tr>
                             )}
                           </tbody>
