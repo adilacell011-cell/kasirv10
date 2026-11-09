@@ -3731,7 +3731,10 @@ export default function App() {
               </button>
             )}
 
-            <div className="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-1 overflow-hidden">
+            <div
+              data-cashier-active-card={profile?.role === "CASHIER" ? "true" : undefined}
+              className="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-1 overflow-hidden"
+            >
               <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shrink-0">
                 {displayedCashierName.slice(0, 2).toUpperCase()}
               </div>
@@ -3740,7 +3743,7 @@ export default function App() {
                   <>
                     <div>
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
-                        Petugas bertugas
+                        Kasir Aktif
                       </p>
                       <p className="text-[11px] font-bold text-slate-900 truncate">
                         {activeCashierName || "Belum ada shift aktif"}

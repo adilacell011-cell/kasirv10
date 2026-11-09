@@ -6116,6 +6116,39 @@ body,
   color: #e1eaf4 !important;
 }
 
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] [data-cashier-active-card],
+.dark .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] {
+  color: #20334a !important;
+  background: linear-gradient(135deg, #fbf5e7 0%, #f1e4c5 52%, #e5d0a0 100%) !important;
+  border: 1px solid #c9ad70 !important;
+  box-shadow:
+    0 8px 18px rgba(4, 14, 28, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:first-child,
+.dark .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:first-child {
+  color: #f1dba7 !important;
+  background: linear-gradient(145deg, #1b3b5a, #0c1d34) !important;
+  border: 1px solid rgba(201, 173, 112, 0.88);
+  box-shadow: 0 3px 8px rgba(18, 38, 61, 0.2);
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:nth-child(2) > div:first-child p:first-child,
+.dark .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:nth-child(2) > div:first-child p:first-child {
+  color: #80652e !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:nth-child(2) > div:first-child p:last-child,
+.dark .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:nth-child(2) > div:first-child p:last-child {
+  color: #172d49 !important;
+}
+
+:root:not(.dark) .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:nth-child(2) > p,
+.dark .app-shell aside[data-cashier-sidebar] [data-cashier-active-card] > div:nth-child(2) > p {
+  color: #5e6876 !important;
+}
+
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input {
   color: #172d49 !important;
