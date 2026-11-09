@@ -5659,3 +5659,272 @@ body,
 .dark [data-ui-screen="inventory"] [data-inventory-search-table] tbody tr:hover td {
   background: #33435b !important;
 }
+
+/* POS premium navy palette. This block is intentionally scoped to the cashier
+   screen; transaction logic, other Admin pages, and cashier-stock stay intact. */
+:root:not(.dark) .app-shell [data-ui-screen="pos"],
+.dark .app-shell [data-ui-screen="pos"] {
+  color: #edf3fb;
+  background-color: #0b1931 !important;
+  background-image:
+    radial-gradient(ellipse at 12% 0%, rgba(193, 157, 91, 0.15), transparent 42%),
+    radial-gradient(ellipse at 100% 100%, rgba(62, 101, 148, 0.24), transparent 48%),
+    linear-gradient(145deg, #09162d 0%, #122746 48%, #203a59 100%) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-content-viewport],
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-billing],
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-catalog],
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-shelf],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-content-viewport],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-billing],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-catalog],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-shelf] {
+  background-color: transparent !important;
+  background-image: none;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-header],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-header] {
+  color: #f8fafc !important;
+  background: linear-gradient(118deg, #0b1931 0%, #142d4b 56%, #203a58 100%) !important;
+  border-bottom: 1px solid rgba(212, 184, 126, 0.34) !important;
+  box-shadow: inset 0 -1px 0 rgba(242, 222, 181, 0.12), 0 8px 18px rgba(3, 12, 27, 0.2) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-header] h3,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-header] h3 {
+  color: #c9d5e4 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-header] > div:first-child p,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-header] > div:first-child p {
+  color: #f8fafc !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-header] > div:first-child p:last-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-header] > div:first-child p:last-child {
+  color: #bdcad9 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-shift-revenue],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-shift-revenue] {
+  color: #1b2d43 !important;
+  background: linear-gradient(145deg, #e6d6b3 0%, #c3a36a 100%) !important;
+  border: 1px solid rgba(250, 235, 199, 0.72);
+  box-shadow: 0 3px 10px rgba(189, 151, 82, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.52) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-shift-revenue] p,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-shift-revenue] p {
+  color: #1b2d43 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] {
+  color: #fff !important;
+  background: linear-gradient(130deg, #294b70 0%, #193653 72%, #132a46 100%) !important;
+  border: 1px solid rgba(214, 188, 137, 0.42);
+  box-shadow: 0 3px 10px rgba(2, 11, 25, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] p,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] p {
+  color: #f8fafc !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-subnavigation],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-subnavigation] {
+  background: rgba(8, 22, 41, 0.58) !important;
+  border: 1px solid rgba(214, 188, 137, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-subnavigation] button[class*="bg-white"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-subnavigation] button[class*="bg-white"] {
+  color: #1a2c43 !important;
+  background: linear-gradient(145deg, #e6d6b3, #c3a36a) !important;
+  border-color: rgba(250, 235, 199, 0.7) !important;
+  box-shadow: 0 2px 8px rgba(189, 151, 82, 0.18) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-subnavigation] button:not([class*="bg-white"]),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-subnavigation] button:not([class*="bg-white"]) {
+  color: #c6d2e1 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-catalog-toolbar],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-catalog-toolbar] {
+  background: linear-gradient(112deg, #0c1b31 0%, #192f4c 100%) !important;
+  border-color: rgba(213, 187, 137, 0.2) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-icon],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-icon] {
+  color: #7189a5 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-scan-button],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-scan-button] {
+  color: #1b2d43 !important;
+  background: linear-gradient(145deg, #e6d6b3, #bb995c) !important;
+  border: 1px solid rgba(250, 235, 199, 0.72);
+  box-shadow: 0 3px 9px rgba(189, 151, 82, 0.2) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-best-sellers],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] {
+  color: #e4edf6 !important;
+  background: linear-gradient(112deg, #112440, #1c3452) !important;
+  border-color: rgba(213, 187, 137, 0.22) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] > svg,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] > svg {
+  color: #d6bb83 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] button,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-best-sellers] button {
+  color: #25384e !important;
+  background: #fff !important;
+  border-color: #e4d8c0 !important;
+  box-shadow: 0 2px 6px rgba(3, 13, 29, 0.16) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-category-nav],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-category-nav] {
+  background: linear-gradient(112deg, #112440, #1c3452) !important;
+  border-color: rgba(213, 187, 137, 0.22) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-category-nav] button.bg-blue-600,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-category-nav] button.bg-blue-600 {
+  color: #1a2c43 !important;
+  background: linear-gradient(145deg, #e6d6b3, #c3a36a) !important;
+  border: 1px solid rgba(250, 235, 199, 0.72) !important;
+  box-shadow: 0 2px 8px rgba(189, 151, 82, 0.18) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-category-nav] button:not(.bg-blue-600),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-category-nav] button:not(.bg-blue-600) {
+  color: #d3dfec !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  border: 1px solid rgba(215, 190, 143, 0.22) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-category-nav] button:not(.bg-blue-600) span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-category-nav] button:not(.bg-blue-600) span {
+  color: #d3dfec !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-brand-filter],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-brand-filter] {
+  background: rgba(12, 28, 49, 0.84) !important;
+  border-color: rgba(213, 187, 137, 0.18) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-brand-filter] button[class*="bg-white"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-brand-filter] button[class*="bg-white"] {
+  color: #1a2c43 !important;
+  background: linear-gradient(145deg, #e6d6b3, #c3a36a) !important;
+  border-color: rgba(250, 235, 199, 0.72) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-brand-filter] button:not([class*="bg-white"]),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-brand-filter] button:not([class*="bg-white"]) {
+  color: #d3dfec !important;
+  border-color: rgba(215, 190, 143, 0.24) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-shelf],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-shelf] {
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(199, 167, 106, 0.12), transparent 38%),
+    linear-gradient(148deg, #142844 0%, #1b3150 56%, #243b5a 100%) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-shelf] > div > div:first-child p,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-shelf] > div > div:first-child p {
+  color: #e1eaf4 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-card] {
+  color: #17243a !important;
+  background: #fff !important;
+  border-color: #e7ddca !important;
+  --tw-shadow: 0 4px 12px rgba(3, 13, 29, 0.19), 0 1px 3px rgba(3, 13, 29, 0.1) !important;
+  transition: transform 160ms ease, border-color 160ms ease, --tw-shadow 160ms ease !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card]:hover,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-card]:hover {
+  border-color: #c7a96f !important;
+  --tw-shadow: 0 8px 18px rgba(3, 13, 29, 0.24), 0 2px 5px rgba(3, 13, 29, 0.13) !important;
+  transform: translateY(-1px);
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card] [data-pos-product-add],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-product-card] [data-pos-product-add] {
+  color: #f6e7c5 !important;
+  background: linear-gradient(145deg, #173251, #294a69) !important;
+  border-color: rgba(198, 169, 112, 0.72) !important;
+  box-shadow: 0 2px 6px rgba(9, 24, 44, 0.18) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart] {
+  background: #fff !important;
+  border-left-color: rgba(202, 172, 112, 0.45) !important;
+  box-shadow: -8px 0 24px rgba(4, 13, 27, 0.12) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:first-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:first-child {
+  border-bottom-color: #e6ddcc !important;
+  box-shadow: inset 0 2px 0 rgba(202, 172, 112, 0.22);
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:last-child,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:last-child {
+  background: linear-gradient(180deg, #fff 0%, #fcfaf5 100%) !important;
+  border-top-color: #d8c69f !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] {
+  background: linear-gradient(110deg, #f5efdf, #edf2f5) !important;
+  border: 1px solid #e5d8bb;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-cart-incentive] span {
+  color: #725d37 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-checkout],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-checkout] {
+  color: #fff !important;
+  background: linear-gradient(115deg, #112744 0%, #1b3b5b 76%, #294967 100%) !important;
+  border: 1px solid #c4a66d;
+  --tw-shadow: 0 4px 12px rgba(15, 38, 66, 0.22), 0 1px 3px rgba(15, 38, 66, 0.12) !important;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-checkout]:disabled,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-checkout]:disabled {
+  color: #f1f5f9 !important;
+  background: #78879a !important;
+  border-color: #aeb8c5 !important;
+  --tw-shadow: 0 0 #0000 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-hold],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-hold] {
+  color: #665536 !important;
+  background: linear-gradient(145deg, #fbf8f0, #f1e8d5) !important;
+  border: 1px solid #dfd0ad;
+  box-shadow: 0 2px 7px rgba(24, 39, 60, 0.08) !important;
+}

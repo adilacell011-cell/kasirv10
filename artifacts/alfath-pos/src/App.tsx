@@ -7644,7 +7644,7 @@ export default function App() {
             {activeMenu === "pos" && profile?.role === "CASHIER" && shiftOpen && (
               <div data-ui-screen="pos" className="ui-screen-pos flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50">
                 {/* 1. HEADER POS (Sub-navigation & Omzet) */}
-                <div className="p-2 bg-white shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
+                <div data-pos-header className="p-2 bg-white shadow-[0_6px_16px_rgba(184,194,208,0.4)] dark:shadow-[0_6px_16px_rgba(0,0,0,0.4)] shrink-0 relative z-50">
                   <div className="flex items-center justify-between mb-2 px-1 text-left">
                     <div className="text-left">
                       <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5 text-left">
@@ -7671,7 +7671,7 @@ export default function App() {
                       )}
                       {/* Omzet + Bonus dalam 1 baris horizontal */}
                       <div className="flex items-center gap-1.5">
-                        <div className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-sm">
+                        <div data-pos-shift-revenue className="flex items-center gap-1 bg-emerald-600 text-white px-2 py-1.5 rounded-xl shadow-sm">
                           <TrendingUp className="w-3 h-3 shrink-0" />
                           <p className="text-[9px] font-black uppercase tracking-tight leading-none whitespace-nowrap">
                             {shiftOpen ? `Sif ${shiftType || ""}` : "Hari Ini"}:{" "}
@@ -7690,6 +7690,7 @@ export default function App() {
                           </p>
                         </div>
                         <div
+                          data-pos-bonus-summary
                           className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1.5 rounded-xl shadow-sm cursor-pointer hover:bg-blue-700 active:scale-95 transition-all"
                           onClick={() => setActiveMenu("incentive")}
                           title="Lihat Detail Bonus Cabang"
@@ -7932,7 +7933,7 @@ export default function App() {
 
                         {/* SUB-BAR FILTER MERK KHUSUS AKSESORIS */}
                         {posSelectedCategory === "Aksesoris" && (
-                          <div className="bg-slate-50/50 px-3 py-1.5 border-b border-slate-200/45 shrink-0 flex gap-1 overflow-x-auto no-scrollbar items-center">
+                          <div data-pos-brand-filter className="bg-slate-50/50 px-3 py-1.5 border-b border-slate-200/45 shrink-0 flex gap-1 overflow-x-auto no-scrollbar items-center">
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">Brand:</span>
                             {["Semua", "Robot", "Vivan", "Foomee", "Acome", "Ugreen", "Baseus", "Anker", "Lenyes", "Jete"].map((brand) => (
                               <button
@@ -8052,7 +8053,7 @@ export default function App() {
                                               Rp {price.toLocaleString("id-ID")}
                                             </p>
                                           </div>
-                                          <div className="w-7 h-7 bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white rounded-lg flex items-center justify-center transition-colors border border-blue-200 group-hover:border-blue-600">
+                                          <div data-pos-product-add className="w-7 h-7 bg-blue-50 group-hover:bg-blue-600 text-blue-700 group-hover:text-white rounded-lg flex items-center justify-center transition-colors border border-blue-200 group-hover:border-blue-600">
                                             <Plus className="w-4 h-4 group-hover:stroke-[3]" />
                                           </div>
                                         </div>
@@ -8213,7 +8214,7 @@ export default function App() {
 
                           {/* BONUS INSENTIF */}
                           {cart.some(i => (i.product.commissionAmount || 0) > 0) && (
-                            <div className="mx-4 mb-3 px-3 py-1.5 bg-blue-50 rounded-lg flex items-center justify-between">
+                                          <div data-pos-cart-incentive className="mx-4 mb-3 px-3 py-1.5 bg-blue-50 rounded-lg flex items-center justify-between">
                               <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Insentif Kamu</span>
                               <span className="text-[11px] font-black text-blue-700">
                                 +Rp {cart.reduce((a, i) => a + ((i.product.commissionAmount || 0) * i.qty), 0).toLocaleString("id-ID")}
@@ -8224,6 +8225,7 @@ export default function App() {
                           {/* TOMBOL AKSI */}
                           <div className="px-3 pb-3 flex flex-col gap-2">
                             <button
+                              data-pos-checkout
                               onClick={handleCheckout}
                               disabled={cart.length === 0 || isProcessingCheckout}
                               className="w-full bg-emerald-600 hover:bg-emerald-700 active:shadow-[inset_3px_3px_6px_rgba(0,0,0,0.25)] disabled:opacity-35 text-white font-black py-4 rounded-2xl text-[11px] shadow-[0_0_20px_2px_rgba(16,185,129,0.5),4px_4px_10px_#b8c2d0,-4px_-4px_10px_#ffffff] dark:shadow-[0_0_20px_2px_rgba(16,185,129,0.5),4px_4px_10px_#1c1e24,-4px_-4px_10px_#34373f] disabled:shadow-none flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
@@ -8237,6 +8239,7 @@ export default function App() {
                             </button>
 
                             <button
+                              data-pos-hold
                               onClick={holdCurrentCart}
                               disabled={cart.length === 0 || isProcessingCheckout}
                               className="w-full bg-slate-50 hover:bg-amber-50 active:shadow-[inset_3px_3px_6px_#b8c2d0,inset_-3px_-3px_6px_#ffffff] dark:active:shadow-[inset_3px_3px_6px_#1c1e24,inset_-3px_-3px_6px_#34373f] disabled:opacity-35 text-slate-500 hover:text-amber-700 font-black py-3 rounded-2xl text-[10px] shadow-[4px_4px_9px_#b8c2d0,-4px_-4px_9px_#ffffff] dark:shadow-[4px_4px_9px_#1c1e24,-4px_-4px_9px_#34373f] flex items-center justify-center gap-2 uppercase tracking-widest transition-all cursor-pointer"
