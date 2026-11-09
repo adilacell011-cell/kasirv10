@@ -4225,6 +4225,53 @@ body,
   overflow-x: hidden !important;
 }
 
+.app-shell[data-admin-surface="true"] [data-report-export-row] {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-export] {
+  display: flex !important;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px !important;
+  border: 1px solid #20385f !important;
+  border-radius: 12px !important;
+  background: #20385f !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-export]:hover {
+  border-color: #29436d !important;
+  background: #29436d !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-report-export] svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-report-export] {
+  border-color: #496487 !important;
+  background: #29436d !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-report-export]:hover {
+  border-color: #5b78a2 !important;
+  background: #365784 !important;
+}
+
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table {
   width: 100%;
   min-width: 0;
@@ -4441,6 +4488,15 @@ body,
 }
 
 @media (min-width: 768px) {
+  .app-shell[data-admin-surface="true"] [data-report-export-row] {
+    width: auto;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-report-export] {
+    width: auto;
+    min-width: 184px;
+  }
+
   .app-shell[data-admin-surface="true"] .admin-revenue-report-table thead th {
     padding: 8px 6px;
     font-size: 9px;

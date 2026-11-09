@@ -4453,7 +4453,10 @@ export default function App() {
                               </h3>
                               <p className="text-[8px] md:text-[9px] text-slate-400 font-bold uppercase mt-1">Rekap per Tanggal, Cabang, & Siff</p>
                             </div>
-                            <button 
+                            <div data-report-export-row className="w-full md:w-auto">
+                            <button
+                              type="button"
+                              data-report-export
                               onClick={() => {
                                 const csvRows = [];
                                 const headers = ["Tanggal", "Cabang", "Kasir Pagi", "Rp Pagi", "Kasir Malam", "Rp Malam", "Total Harian"];
@@ -4502,10 +4505,11 @@ export default function App() {
                                 a.click();
                                 document.body.removeChild(a);
                               }}
-                              className="bg-emerald-500 text-white px-4 py-2 md:px-5 md:py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 w-full md:w-auto"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#20385f] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-[#29436d] md:w-auto"
                             >
                               <Save className="w-3 md:w-4 h-3 md:h-4" /> Ekspor ke Excel (CSV)
                             </button>
+                            </div>
                           </div>
                           <div data-report-revenue-scroll className="overflow-x-hidden">
                             <table aria-label="Tabel laporan pendapatan per tanggal dan cabang" className="admin-excel-table admin-revenue-report-table w-full min-w-0 text-left border-collapse">
