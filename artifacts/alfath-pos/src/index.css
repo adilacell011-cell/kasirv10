@@ -3884,3 +3884,85 @@ body,
 .dark .app-shell[data-admin-surface="true"] .admin-excel-branch-modal tbody tr:nth-child(even) td[data-column="capital"] {
   background: #243747;
 }
+
+.app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] {
+  --tw-shadow: 0 5px 16px rgba(34, 53, 83, 0.12) !important;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table th {
+  background: #20385f;
+  color: #ffffff;
+  border-color: #3b557a;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table th[data-column="time"] {
+  width: 13%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table th[data-column="product"] {
+  width: 32%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table th[data-column="branch"] {
+  width: 25%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table th[data-column="movement"] {
+  width: 30%;
+  text-align: right;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="time"] {
+  background: #f8fafc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="product"] {
+  background: #ffffff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="branch"] {
+  background: #eff6ff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="movement"] {
+  background: #f8fafc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="time"],
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="product"],
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="movement"] {
+  background: #f1f5f9;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="branch"] {
+  background: #e7f0fb;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] {
+  --tw-shadow: 0 5px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table th {
+  background: #29436d;
+  border-color: #496487;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="time"],
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="product"],
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="movement"] {
+  background: #202a39;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table td[data-column="branch"] {
+  background: #1f3048;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="time"],
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="product"],
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="movement"] {
+  background: #263244;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="branch"] {
+  background: #263a55;
+}

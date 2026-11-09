@@ -9901,8 +9901,8 @@ export default function App() {
                       </div>
 
                       {/* MINIMAL AUDIT TRAIL */}
-                      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col h-[500px]">
-                        <div className="p-4 md:p-6 border-b border-slate-100 bg-white flex items-center gap-4 text-left">
+                      <div data-dashboard-stock-audit className="bg-white rounded-3xl border border-slate-200/60 shadow-xl overflow-hidden flex flex-col h-[500px]">
+                        <div className="p-3 md:p-4 border-b border-slate-100 bg-white flex items-center gap-3 text-left">
                           <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
                             <RefreshCw className="w-5 h-5 animate-spin-slow" />
                           </div>
@@ -9916,27 +9916,35 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="flex-1 overflow-auto">
-                          <table className="w-full border-collapse">
-                            <tbody className="divide-y divide-slate-100">
+                        <div className="admin-excel-scroll flex-1 overflow-auto">
+                          <table aria-label="Jejak audit stok" className="admin-excel-table admin-excel-audit-table w-full min-w-[560px] md:min-w-0">
+                            <thead>
+                              <tr>
+                                <th scope="col" data-column="time">Waktu</th>
+                                <th scope="col" data-column="product">Produk</th>
+                                <th scope="col" data-column="branch">Cabang</th>
+                                <th scope="col" data-column="movement" className="text-right">Perubahan Stok</th>
+                              </tr>
+                            </thead>
+                            <tbody>
                               {adjustments
                                 .slice()
                                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                                 .slice(0, 30)
                                 .map((log) => (
-                                  <tr key={log.id} className="hover:bg-slate-50 transition-colors text-[10px]">
-                                    <td className="px-4 py-3 font-mono font-bold text-slate-400 whitespace-nowrap">
+                                  <tr key={log.id} className="text-[10px]">
+                                    <td data-column="time" className="font-mono font-bold text-slate-500 whitespace-nowrap">
                                       {new Date(log.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                                     </td>
-                                    <td className="px-4 py-3">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-tighter truncate max-w-[120px]">
+                                    <td data-column="product">
+                                      <p title={products.find((p) => p.id === log.productId)?.name || "N/A"} className="font-extrabold text-slate-800 uppercase tracking-tighter break-words line-clamp-2">
                                         {products.find((p) => p.id === log.productId)?.name || "N/A"}
                                       </p>
-                                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {branches.find((b) => b.id === log.branchId)?.name || "N/A"}
-                                      </p>
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td data-column="branch" title={branches.find((b) => b.id === log.branchId)?.name || "N/A"} className="font-bold text-slate-700 break-words">
+                                      {branches.find((b) => b.id === log.branchId)?.name || "N/A"}
+                                    </td>
+                                    <td data-column="movement" className="text-right">
                                       <span className={`px-2 py-0.5 rounded font-black uppercase tracking-widest text-[8px] ${
                                         log.type?.includes("IN") ? "bg-emerald-50 text-emerald-600" : log.type?.includes("OUT") ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
                                       }`}>
