@@ -9916,8 +9916,8 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="admin-excel-scroll flex-1 overflow-auto">
-                          <table aria-label="Jejak audit stok" className="admin-excel-table admin-excel-audit-table w-full min-w-[560px] md:min-w-0">
+                        <div className="admin-excel-scroll admin-excel-audit-scroll flex-1 overflow-y-auto overflow-x-hidden">
+                          <table aria-label="Jejak audit stok" className="admin-excel-table admin-excel-audit-table w-full min-w-0">
                             <thead>
                               <tr>
                                 <th scope="col" data-column="time">Waktu</th>
@@ -9937,12 +9937,14 @@ export default function App() {
                                       {new Date(log.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                                     </td>
                                     <td data-column="product">
-                                      <p title={products.find((p) => p.id === log.productId)?.name || "N/A"} className="font-extrabold text-slate-800 uppercase tracking-tighter break-words line-clamp-2">
+                                      <p title={products.find((p) => p.id === log.productId)?.name || "N/A"} className="font-extrabold text-slate-800 uppercase tracking-tighter break-words">
                                         {products.find((p) => p.id === log.productId)?.name || "N/A"}
                                       </p>
                                     </td>
                                     <td data-column="branch" title={branches.find((b) => b.id === log.branchId)?.name || "N/A"} className="font-bold text-slate-700 break-words">
-                                      {branches.find((b) => b.id === log.branchId)?.name || "N/A"}
+                                      <span>
+                                        {branches.find((b) => b.id === log.branchId)?.name || "N/A"}
+                                      </span>
                                     </td>
                                     <td data-column="movement" className="text-right">
                                       <span className={`px-2 py-0.5 rounded font-black uppercase tracking-widest text-[8px] ${
