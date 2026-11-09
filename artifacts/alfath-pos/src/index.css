@@ -5937,15 +5937,16 @@ body,
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-product-card] {
   color: #17243a !important;
-  background: #fff !important;
-  border-color: #e7ddca !important;
+  background: #f4ebd7 !important;
+  border-color: #d6bd83 !important;
   --tw-shadow: 0 4px 12px rgba(3, 13, 29, 0.19), 0 1px 3px rgba(3, 13, 29, 0.1) !important;
   transition: transform 160ms ease, border-color 160ms ease, --tw-shadow 160ms ease !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-product-card]:hover,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-product-card]:hover {
-  border-color: #c7a96f !important;
+  background: #eee0be !important;
+  border-color: #b8944e !important;
   --tw-shadow: 0 8px 18px rgba(3, 13, 29, 0.24), 0 2px 5px rgba(3, 13, 29, 0.13) !important;
   transform: translateY(-1px);
 }

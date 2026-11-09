@@ -149,6 +149,13 @@ visual consistency.
 components, explicitly including the cashier page.
 **How to apply:** scope the color to page-level backgrounds, keep white cards and controls intact, and do not
 change the POS tablet's established two-column layout.
+POS product tiles are a deliberate exception to white surfaces: use a soft champagne-gold fill (`#F4EBD7`)
+with a muted gold border (`#D6BD83`) and slightly warmer hover (`#EEE0BE`), while retaining navy text and
+semantic stock-status colors.
+**Why:** the owner found pure-white product cards too bright and approved a restrained gold treatment against
+the cashier's navy background.
+**How to apply:** scope this treatment only to POS product tiles; preserve their size, layout, add controls,
+search, pricing, and stock behavior.
 For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing.
 Excel-style tables use navy headers and total rows with white text, alternating white/light blue-gray body cells,
 and no raised shadow per cell; reserve dark fills for the header and summary row.
