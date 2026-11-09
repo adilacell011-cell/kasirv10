@@ -10816,3 +10816,9 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
     min-width: 44px;
   }
 }
+
+/* The Admin drawer is inset by 8px when open, so move it beyond its shadow
+   when closed instead of leaving the inset edge visible at the viewport. */
+.app-shell[data-admin-surface="true"] .app-sidebar[class~="-translate-x-full"] {
+  translate: calc(-100% - 48px) 0 !important;
+}
