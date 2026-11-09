@@ -2616,6 +2616,14 @@ body,
   padding-inline: 0 !important;
 }
 
+/* Use Apple's native San Francisco font on Apple devices, with safe system fallbacks elsewhere. */
+[data-ui-screen="dashboard"] {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial,
+    sans-serif;
+  font-family: var(--font-sans) !important;
+}
+
 /* A restrained lift separates dashboard cards from the light-blue page canvas. */
 [data-ui-screen="dashboard"] [data-dashboard-metrics] > *,
 [data-ui-screen="dashboard"] [data-dashboard-trend-card],
