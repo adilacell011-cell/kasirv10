@@ -6349,6 +6349,70 @@ body,
   color: #e1c98e !important;
 }
 
+/* Luxe finishing for the cashier's searchable product table. */
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-results],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-results] {
+  border-color: #d3bb83 !important;
+  box-shadow:
+    0 16px 34px rgba(3, 12, 27, 0.3),
+    0 2px 8px rgba(3, 12, 27, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-table-header],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-table-header] {
+  background: linear-gradient(108deg, #0c1b32 0%, #17314e 58%, #254565 100%) !important;
+  border-bottom: 1px solid #d3bb83 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] {
+  background: #fffdf8 !important;
+  border-bottom-color: #e3dfd4 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) {
+  background: #f2f6fb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:hover {
+  background: #f4ead1 !important;
+  border-left-color: #c3a36a !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="number"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="number"] {
+  color: #80652e !important;
+  background: linear-gradient(180deg, #f7f0df, #eee3c8) !important;
+  border-color: #ded4bd !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="product"] {
+  background: #fffdf8 !important;
+  border-color: #dedbd2 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) [data-pos-search-column="product"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row]:nth-of-type(even) [data-pos-search-column="product"] {
+  background: #f2f6fb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] {
+  color: #4b3b20 !important;
+  background: linear-gradient(145deg, #f7f1e3, #eee4cd) !important;
+  border-left: 1px solid #ded4bd !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] > span,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-search-result-row] [data-pos-search-column="price"] > span {
+  color: #263e59 !important;
+}
+
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-bonus-summary] {
   background: linear-gradient(128deg, #142a46 0%, #1b3a59 72%, #274969 100%) !important;
