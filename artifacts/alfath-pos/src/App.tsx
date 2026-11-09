@@ -9761,18 +9761,15 @@ export default function App() {
                   {dashboardTab === "sales" && (
                     <div className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col min-h-[420px]">
                       {/* LIVE TRANSACTIONS COMPACT */}
-                      <div className="p-3 sm:p-4 md:p-6 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 text-left">
+                      <div className="p-2.5 sm:p-3 md:p-4 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 text-left">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                            <Activity className="w-5 h-5 animate-pulse" />
+                          <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                            <Activity className="w-4 h-4" />
                           </div>
-                          <div className="text-left">
-                            <h4 className="text-[11px] sm:text-xs font-black text-slate-900 uppercase tracking-widest leading-tight mb-1">
-                               10 Transaksi Terakhir (Live)
+                          <div className="text-left min-w-0">
+                            <h4 className="text-[11px] sm:text-xs font-black text-slate-900 uppercase tracking-widest leading-tight">
+                               10 Transaksi Terakhir
                             </h4>
-                            <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide leading-tight">
-                              Hanya Memuat Data Terbaru Untuk Efisiensi
-                            </p>
                           </div>
                         </div>
 
@@ -9802,9 +9799,19 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div data-dashboard-sales-table className="flex-1 overflow-x-auto md:overflow-auto md:max-h-[420px]">
-                        <table className="mobile-cards w-full min-w-[720px] border-collapse md:min-w-0">
-                          <tbody className="divide-y divide-slate-100">
+                      <div data-dashboard-sales-table className="admin-excel-scroll flex-1 overflow-x-auto md:overflow-auto md:max-h-[420px]">
+                        <table aria-label="10 transaksi terakhir" className="admin-excel-table w-full min-w-[720px] md:min-w-0">
+                          <thead>
+                            <tr>
+                              <th scope="col" data-column="product">Produk</th>
+                              <th scope="col" data-column="branch">Cabang</th>
+                              <th scope="col" data-column="cashier">Kasir</th>
+                              <th scope="col" data-column="time">Waktu</th>
+                              <th scope="col" data-column="total" className="text-right">Total (Rp)</th>
+                              <th scope="col" data-column="profit" className="text-right">Laba (Rp)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
                             {dashboardRecentSales
                               .slice(0, 10) // Force UI limit for dashboard consistency
                               .map((s) => {
@@ -9817,27 +9824,28 @@ export default function App() {
                                   return sum + (Number(pPrice || 0) * Number(it.qty || 0));
                                 }, 0);
                                 const profit = (s.total || 0) - capital;
+                                  const productSummary = s.items?.map((i: any) => `${i.product?.name || i.name || "Produk"} (x${i.qty})`).join(", ") || "Transaksi";
                                 
                                 return (
-                                <tr key={s.id} className="hover:bg-slate-50 transition-colors text-[11px]">
-                                  <td data-card-title className="px-3 py-3 font-bold text-slate-800 sm:px-4">
-                                    <div className="min-w-0 break-words leading-snug">
-                                      {s.items?.map((i: any) => `${i.product?.name || i.name || "Produk"} (x${i.qty})`).join(", ") || "Transaksi"}
+                                <tr key={s.id} className="text-[11px]">
+                                  <td data-column="product" title={productSummary} className="font-bold text-slate-800">
+                                    <div className="min-w-0 break-words leading-snug line-clamp-2">
+                                      {productSummary}
                                     </div>
                                   </td>
-                                  <td data-label="Cabang" className="px-3 py-3 font-bold text-slate-700 sm:px-4">
-                                    <span className="min-w-0 break-words text-right">{branches.find((b) => b.id === s.branchId)?.name || "Pusat"}</span>
+                                  <td data-column="branch" title={branches.find((b) => b.id === s.branchId)?.name || "Pusat"} className="font-bold text-slate-700">
+                                    <span className="min-w-0 break-words">{branches.find((b) => b.id === s.branchId)?.name || "Pusat"}</span>
                                   </td>
-                                  <td data-label="Kasir" className="px-3 py-3 font-semibold text-blue-700 sm:px-4">
-                                    <span className="min-w-0 break-words text-right">{getSaleCashierName(s)}</span>
+                                  <td data-column="cashier" title={getSaleCashierName(s)} className="font-semibold text-blue-700">
+                                    <span className="min-w-0 break-words">{getSaleCashierName(s)}</span>
                                   </td>
-                                  <td data-label="Waktu" className="px-3 py-3 font-mono font-semibold text-slate-600 sm:px-4">
+                                  <td data-column="time" className="font-mono font-semibold text-slate-600">
                                     {new Date(s.createdAt || s.timestamp || 0).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
                                   </td>
-                                  <td data-label="Total" className="px-3 py-3 text-right font-black text-slate-900 sm:px-4">
+                                  <td data-column="total" className="text-right font-black text-slate-900">
                                     {(s.total || 0).toLocaleString("id-ID")}
                                   </td>
-                                  <td data-label="Laba" className="px-3 py-3 text-right font-black text-emerald-700 sm:px-4">
+                                  <td data-column="profit" className="text-right font-black text-emerald-700">
                                     {profit.toLocaleString("id-ID")}
                                   </td>
                                 </tr>

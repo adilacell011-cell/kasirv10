@@ -3651,3 +3651,146 @@ body,
     padding-inline: 6px !important;
   }
 }
+
+.app-shell[data-admin-surface="true"] .admin-excel-scroll {
+  border: 1px solid #d4deeb;
+  border-radius: 12px;
+  background: #ffffff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th,
+.app-shell[data-admin-surface="true"] .admin-excel-table td {
+  padding: 8px 9px;
+  border-right: 1px solid #dbe3ee;
+  border-bottom: 1px solid #dbe3ee;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #e9eff8;
+  color: #243b5b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th[data-column="product"] {
+  width: 34%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th[data-column="branch"] {
+  width: 18%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th[data-column="cashier"] {
+  width: 15%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th[data-column="time"] {
+  width: 10%;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table th[data-column="total"],
+.app-shell[data-admin-surface="true"] .admin-excel-table th[data-column="profit"] {
+  width: 11.5%;
+  text-align: right;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td {
+  font-size: 10px;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="product"] {
+  background: #f8fafc;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="branch"] {
+  background: #eff6ff;
+  border-inline-color: #d3e3f7;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="cashier"] {
+  background: #f5f3ff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="time"] {
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="total"] {
+  background: #f0f9ff;
+  white-space: nowrap;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="profit"] {
+  background: #f0fdf4;
+  white-space: nowrap;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.app-shell[data-admin-surface="true"] .admin-excel-table tr th:last-child,
+.app-shell[data-admin-surface="true"] .admin-excel-table tr td:last-child {
+  border-right: 0;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-scroll {
+  border-color: #3b4b64;
+  background: #1f2937;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table th {
+  background: #2a374b;
+  color: #e5edf8;
+  border-color: #3b4b64;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td {
+  border-color: #344156;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="product"],
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="time"] {
+  background: #202a39;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="branch"] {
+  background: #1f3048;
+  border-inline-color: #344c6c;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="cashier"] {
+  background: #2a273b;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="total"] {
+  background: #1d2f3e;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-excel-table td[data-column="profit"] {
+  background: #1d332b;
+}
+
+@media (max-width: 767px) {
+  .app-shell[data-admin-surface="true"] .admin-excel-table th,
+  .app-shell[data-admin-surface="true"] .admin-excel-table td {
+    padding: 7px 8px;
+  }
+}
