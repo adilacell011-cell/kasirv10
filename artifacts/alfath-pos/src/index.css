@@ -5662,14 +5662,72 @@ body,
 
 /* POS premium navy palette. This block is intentionally scoped to the cashier
    screen; transaction logic, other Admin pages, and cashier-stock stay intact. */
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"],
+.dark .app-shell header[data-topbar-screen="pos"] {
+  color: #f8fafc !important;
+  background: linear-gradient(112deg, #0b1931 0%, #142d4b 58%, #203a58 100%) !important;
+  border-bottom: 1px solid rgba(212, 184, 126, 0.48);
+  box-shadow: 0 8px 18px rgba(3, 12, 27, 0.3), inset 0 -1px 0 rgba(242, 222, 181, 0.12) !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] > div:first-child > button:first-child,
+.dark .app-shell header[data-topbar-screen="pos"] > div:first-child > button:first-child {
+  color: #f1dba7 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(212, 184, 126, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] [data-topbar-branch-icon],
+.dark .app-shell header[data-topbar-screen="pos"] [data-topbar-branch-icon] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(212, 184, 126, 0.28);
+  box-shadow: none !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] [data-topbar-branch-icon] svg,
+.dark .app-shell header[data-topbar-screen="pos"] [data-topbar-branch-icon] svg {
+  color: #e3c98d !important;
+}
+
 :root:not(.dark) .app-shell header[data-topbar-screen="pos"] [data-topbar-title] h2,
 .dark .app-shell header[data-topbar-screen="pos"] [data-topbar-title] h2 {
-  color: #142a46 !important;
+  color: #f8fafc !important;
 }
 
 :root:not(.dark) .app-shell header[data-topbar-screen="pos"] [data-topbar-title] + div,
 .dark .app-shell header[data-topbar-screen="pos"] [data-topbar-title] + div {
   background: linear-gradient(180deg, transparent, #c3a36a, transparent) !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] > div:last-child > button[aria-label="Online"],
+.dark .app-shell header[data-topbar-screen="pos"] > div:last-child > button[aria-label="Online"] {
+  color: #e5edf6 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(212, 184, 126, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] > div:last-child > button[title^="Aktifkan Mode"],
+.dark .app-shell header[data-topbar-screen="pos"] > div:last-child > button[title^="Aktifkan Mode"] {
+  color: #e3c98d !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(212, 184, 126, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] > div:last-child > button[title^="Aktifkan Mode"] svg,
+.dark .app-shell header[data-topbar-screen="pos"] > div:last-child > button[title^="Aktifkan Mode"] svg {
+  color: #e3c98d !important;
+  filter: none !important;
+}
+
+:root:not(.dark) .app-shell header[data-topbar-screen="pos"] > div:last-child > button:last-child,
+.dark .app-shell header[data-topbar-screen="pos"] > div:last-child > button:last-child {
+  color: #fca5a5 !important;
+  background: rgba(190, 49, 66, 0.18) !important;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  box-shadow: none !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"],
