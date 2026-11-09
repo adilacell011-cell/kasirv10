@@ -7628,3 +7628,39 @@ body,
   background-color: #192638 !important;
   color: #e7edf6 !important;
 }
+
+/* Match the Admin canvas to the cashier's navy gradient without recoloring
+   the white cards, forms, and tables placed on top of it. */
+.app-shell[data-admin-surface="true"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="inventory"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="shopping-list"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="incentive"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="opname"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="employees"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="settings"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="shift"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"],
+.dark .app-shell[data-admin-surface="true"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="dashboard"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="reports"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="inventory"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="shopping-list"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="incentive"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="opname"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="employees"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="settings"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="shift"],
+.dark .app-shell[data-admin-surface="true"] [data-ui-screen="stock_audit"],
+.dark .app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] {
+  color: #edf3fb;
+  background-color: #0b1931 !important;
+  background-image:
+    radial-gradient(ellipse at 12% 0%, rgba(193, 157, 91, 0.15), transparent 42%),
+    radial-gradient(ellipse at 100% 100%, rgba(62, 101, 148, 0.24), transparent 48%),
+    linear-gradient(145deg, #09162d 0%, #122746 48%, #203a59 100%) !important;
+}
