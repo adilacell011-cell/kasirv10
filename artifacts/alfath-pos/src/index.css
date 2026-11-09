@@ -4000,3 +4000,29 @@ body,
 .dark .app-shell[data-admin-surface="true"] .admin-excel-audit-table tbody tr:nth-child(even) td[data-column="branch"] {
   background: #263a55;
 }
+
+.app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] {
+  background: #f1f5f9;
+  border-bottom-color: #d8e1ec;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] h4 {
+  color: #20385f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] p {
+  color: #64748b !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] {
+  background: #202a39;
+  border-bottom-color: #344156;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] h4 {
+  color: #e5edf8 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-dashboard-stock-audit] [data-audit-titlebar] p {
+  color: #aab8cd !important;
+}
