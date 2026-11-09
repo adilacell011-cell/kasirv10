@@ -111,16 +111,19 @@ export function Theme() {
     <main className="pos-premium flex min-h-[100dvh] flex-col overflow-hidden">
       <style>{`
         .pos-premium {
-          --premium-ink: #1d3447;
-          --premium-muted: #6f7f8b;
-          --premium-line: #dfe7ea;
-          --premium-blue: #315f86;
-          --premium-blue-deep: #244764;
-          --premium-blue-wash: #edf3f7;
+          --premium-ink: #e8eff8;
+          --premium-muted: #bdcad9;
+          --premium-line: rgba(211, 185, 132, .24);
+          --premium-blue: #c8aa70;
+          --premium-blue-deep: #a88a55;
+          --premium-blue-wash: rgba(255, 255, 255, .08);
           min-height: 100dvh;
           height: 100dvh;
           color: var(--premium-ink);
-          background: #f1f5f9;
+          background:
+            radial-gradient(520px 330px at 12% 0%, rgba(190, 155, 91, .14), transparent 68%),
+            radial-gradient(480px 340px at 100% 100%, rgba(69, 105, 148, .24), transparent 72%),
+            linear-gradient(145deg, #09162d 0%, #122746 48%, #203a59 100%);
           font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
           -webkit-font-smoothing: antialiased;
         }
@@ -132,6 +135,125 @@ export function Theme() {
         .premium-scroll { scrollbar-width: thin; scrollbar-color: #c8d7de transparent; }
         .premium-enter { animation: premium-enter .24s ease-out both; }
         @keyframes premium-enter { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .pos-premium .theme-shell-header,
+        .pos-premium .theme-shell-banner {
+          color: #f8fafc !important;
+          background: linear-gradient(118deg, #0b1931 0%, #142d4b 56%, #203a58 100%) !important;
+          border-color: rgba(210, 183, 126, .34) !important;
+        }
+        .pos-premium .theme-shell-header {
+          box-shadow: inset 0 -1px 0 rgba(232, 211, 169, .16);
+        }
+        .pos-premium .theme-brand-mark {
+          color: #f3dfb7 !important;
+          background: linear-gradient(145deg, rgba(207, 177, 117, .22), rgba(255, 255, 255, .08)) !important;
+          border: 1px solid rgba(218, 190, 139, .42);
+        }
+        .pos-premium .theme-shell-header .theme-metric {
+          color: #d7e2ee !important;
+          background: rgba(255, 255, 255, .075) !important;
+          border: 1px solid rgba(215, 190, 143, .24);
+        }
+        .pos-premium .theme-shell-header .theme-metric b {
+          color: #fff !important;
+        }
+        .pos-premium .theme-shell-header p:first-child,
+        .pos-premium .theme-shell-banner h1,
+        .pos-premium .theme-shell-banner .theme-cashier-badge p:last-child {
+          color: #fff !important;
+        }
+        .pos-premium .theme-shell-header p:nth-child(2),
+        .pos-premium .theme-shell-banner p {
+          color: #bdcad9 !important;
+        }
+        .pos-premium .theme-shell-banner .theme-cashier-badge {
+          background: rgba(255, 255, 255, .075) !important;
+          border-color: rgba(215, 190, 143, .3) !important;
+        }
+        .pos-premium .theme-search-surface,
+        .pos-premium .theme-strip-surface,
+        .pos-premium .premium-category-surface {
+          color: #e5edf6;
+          background: linear-gradient(112deg, rgba(12, 27, 49, .97), rgba(25, 47, 74, .97)) !important;
+          border-color: rgba(215, 190, 143, .24) !important;
+        }
+        .pos-premium .theme-search-surface {
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+        }
+        .pos-premium .theme-search-surface input {
+          border-color: rgba(202, 172, 112, .42) !important;
+          box-shadow: 0 2px 8px rgba(3, 12, 26, .16);
+        }
+        .pos-premium .theme-scan-button {
+          color: #172a43 !important;
+          background: linear-gradient(145deg, #e3d0a5, #bb9a60) !important;
+          border: 1px solid rgba(247, 231, 192, .72);
+          box-shadow: 0 3px 10px rgba(196, 160, 92, .2);
+        }
+        .pos-premium .theme-strip-surface > span:first-child {
+          color: #e2eaf3 !important;
+        }
+        .pos-premium .premium-category-surface > button[aria-pressed="false"] {
+          color: #d7e1ed !important;
+          background: rgba(255, 255, 255, .075) !important;
+          border: 1px solid rgba(215, 190, 143, .3) !important;
+        }
+        .pos-premium .premium-category-surface > button[aria-pressed="true"] {
+          color: #172a43 !important;
+          background: linear-gradient(145deg, #e6d5ad, #c4a56b) !important;
+          border: 1px solid rgba(250, 235, 198, .72);
+          box-shadow: 0 2px 8px rgba(194, 159, 91, .2);
+        }
+        .pos-premium .premium-category-surface > div > button {
+          color: #e5edf6 !important;
+          background: rgba(255, 255, 255, .075) !important;
+          border-color: rgba(215, 190, 143, .3) !important;
+        }
+        .pos-premium .premium-product-shelf {
+          background:
+            radial-gradient(ellipse at 18% 0%, rgba(199, 167, 106, .12), transparent 38%),
+            linear-gradient(148deg, #142844 0%, #1b3150 56%, #243b5a 100%) !important;
+        }
+        .pos-premium .premium-product-shelf h2,
+        .pos-premium .premium-product-shelf > div:first-child > span {
+          color: #e1eaf4 !important;
+        }
+        .pos-premium .premium-product-card {
+          border-color: #e7ddca !important;
+          box-shadow: 0 5px 14px rgba(3, 13, 29, .2), inset 0 1px 0 rgba(255, 255, 255, .85);
+        }
+        .pos-premium .premium-product-card:hover {
+          border-color: #c7a96f !important;
+          box-shadow: 0 7px 18px rgba(3, 13, 29, .24), 0 0 0 1px rgba(199, 169, 111, .18);
+        }
+        .pos-premium .premium-product-card .premium-brand-tag {
+          color: #6d5834 !important;
+          background: linear-gradient(135deg, #f4eddf, #eee3ce) !important;
+        }
+        .pos-premium .premium-product-card .premium-add-button {
+          color: #f6e7c5 !important;
+          background: linear-gradient(145deg, #173251, #294a69) !important;
+          border: 1px solid rgba(198, 169, 112, .68);
+          box-shadow: 0 2px 6px rgba(9, 24, 44, .18);
+        }
+        .pos-premium .premium-cart {
+          border-left-color: rgba(202, 172, 112, .42) !important;
+          box-shadow: -8px 0 24px rgba(4, 13, 27, .12);
+        }
+        .pos-premium .premium-cart-header {
+          border-bottom-color: #e6ddcc !important;
+          box-shadow: inset 0 2px 0 rgba(202, 172, 112, .24);
+        }
+        .pos-premium .premium-cart-summary {
+          background: linear-gradient(180deg, #fff 0%, #fcfaf5 100%) !important;
+          border-top-color: #d8c69f !important;
+        }
+        .pos-premium .premium-checkout-button {
+          color: #fff !important;
+          background: linear-gradient(115deg, #112744 0%, #1b3b5b 76%, #294967 100%) !important;
+          border: 1px solid #c4a66d;
+          box-shadow: 0 4px 12px rgba(15, 38, 66, .2), inset 0 1px 0 rgba(255, 255, 255, .16);
+        }
         @media (max-width: 560px) {
           .premium-layout { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
           .premium-catalog { min-height: 390px; }
@@ -140,9 +262,9 @@ export function Theme() {
         }
       `}</style>
 
-      <header className="flex h-[54px] shrink-0 items-center justify-between border-b border-[#dfe7ea] bg-white px-3.5">
+      <header className="theme-shell-header flex h-[54px] shrink-0 items-center justify-between border-b border-[#dfe7ea] bg-white px-3.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-[#edf3f7] text-[#315f86]">
+          <div className="theme-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] bg-[#edf3f7] text-[#315f86]">
             <Store className="h-[17px] w-[17px]" strokeWidth={2.2} />
           </div>
           <div className="min-w-0">
@@ -152,10 +274,10 @@ export function Theme() {
         </div>
         <div className="flex items-center gap-2.5">
           <div className="premium-top-metrics flex items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-lg bg-[#f3f6f7] px-2.5 py-1.5 text-[9px] font-bold text-[#556a82]">
+            <span className="theme-metric flex items-center gap-1.5 rounded-lg bg-[#f3f6f7] px-2.5 py-1.5 text-[9px] font-bold text-[#556a82]">
               <TrendingUp className="h-3.5 w-3.5 text-[#315f86]" /> Omzet <b className="text-[#1d3447]">Rp 45.000</b>
             </span>
-            <span className="flex items-center gap-1.5 rounded-lg bg-[#f3f6f7] px-2.5 py-1.5 text-[9px] font-bold text-[#556a82]">
+            <span className="theme-metric flex items-center gap-1.5 rounded-lg bg-[#f3f6f7] px-2.5 py-1.5 text-[9px] font-bold text-[#556a82]">
               <Sparkles className="h-3.5 w-3.5 text-[#315f86]" /> Insentif <b className="text-[#315f86]">Rp 2.500</b>
             </span>
           </div>
@@ -165,13 +287,13 @@ export function Theme() {
         </div>
       </header>
 
-      <section className="shrink-0 border-b border-[#dfe7ea] bg-white px-3.5 pb-2.5 pt-2.5">
+      <section className="theme-shell-banner shrink-0 border-b border-[#dfe7ea] bg-white px-3.5 pb-2.5 pt-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="text-[8px] font-bold uppercase tracking-[.18em] text-[#82939d]">Billing · Shift pagi</p>
             <h1 className="mt-0.5 truncate text-[17px] font-extrabold leading-tight tracking-[-.035em] text-[#1d3447]">Pulsa & voucher</h1>
           </div>
-          <div className="rounded-xl border border-[#e2e9ec] bg-[#fbfcfc] px-3 py-1.5 text-right">
+          <div className="theme-cashier-badge rounded-xl border border-[#e2e9ec] bg-[#fbfcfc] px-3 py-1.5 text-right">
             <p className="text-[8px] font-semibold uppercase tracking-[.12em] text-[#8595a1]">Kasir</p>
             <p className="text-[10px] font-bold text-[#3a5062]">Nadia P.</p>
           </div>
@@ -180,7 +302,7 @@ export function Theme() {
 
       <div className="premium-layout min-h-0 flex-1">
         <section className="premium-catalog flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-[#dfe7ea]">
-          <div className="shrink-0 bg-[#f1f5f9] px-3 py-2.5">
+          <div className="theme-search-surface shrink-0 bg-[#f1f5f9] px-3 py-2.5">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#80939e]" />
               <input
@@ -191,13 +313,13 @@ export function Theme() {
                 className="h-10 w-full rounded-xl border border-[#d8e2e9] bg-white pl-9 pr-[76px] text-[10px] font-semibold text-[#253c50] outline-none transition focus:border-[#88a8bd] focus:ring-2 focus:ring-[#315f86]/10 placeholder:text-[#8b9ca5]"
               />
               {query && <button aria-label="Hapus pencarian" onClick={() => setQuery("")} className="absolute right-[42px] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#80939e] hover:bg-[#f1f5f9]"><X className="h-4 w-4" /></button>}
-              <button aria-label="Pindai barcode" onClick={() => setDialog("scan")} className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-[#315f86] text-white transition hover:bg-[#244764]">
+              <button aria-label="Pindai barcode" onClick={() => setDialog("scan")} className="theme-scan-button absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-[#315f86] text-white transition hover:bg-[#244764]">
                 <Barcode className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          <div className="premium-surface flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#e4eaed] px-3 py-2">
+          <div className="theme-strip-surface premium-surface flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#e4eaed] px-3 py-2">
             <span className="mr-0.5 flex shrink-0 items-center gap-1.5 text-[8px] font-extrabold uppercase tracking-[.12em] text-[#607783]">
               <BadgeCheck className="h-3.5 w-3.5 text-[#315f86]" /> Terlaris
             </span>
@@ -209,9 +331,9 @@ export function Theme() {
             ))}
           </div>
 
-          <div className="premium-surface relative flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#e4eaed] px-3 py-2">
+          <div className="premium-category-surface premium-surface relative flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#e4eaed] px-3 py-2">
             {categories.map((item) => (
-              <button key={item} onClick={() => setCategory(item)} className={`min-h-8 shrink-0 rounded-lg px-3 text-[9px] font-bold transition ${category === item ? "bg-[#315f86] text-white" : "bg-[#f1f5f6] text-[#627985] hover:bg-[#e7eef1]"}`}>
+              <button key={item} aria-pressed={category === item} onClick={() => setCategory(item)} className={`min-h-8 shrink-0 rounded-lg px-3 text-[9px] font-bold transition ${category === item ? "bg-[#315f86] text-white" : "bg-[#f1f5f6] text-[#627985] hover:bg-[#e7eef1]"}`}>
                 {item}
                 {category === item && <span className="ml-1.5 text-[8px] opacity-75">{item === "Semua" ? products.length : products.filter((p) => p.category === item).length}</span>}
               </button>
@@ -228,7 +350,7 @@ export function Theme() {
             </div>
           </div>
 
-          <div className="premium-scroll min-h-0 flex-1 overflow-y-auto bg-[#f4f7f8] p-3">
+          <div className="premium-product-shelf premium-scroll min-h-0 flex-1 overflow-y-auto bg-[#f4f7f8] p-3">
             <div className="mb-2.5 flex items-center justify-between">
               <h2 className="text-[8px] font-extrabold uppercase tracking-[.16em] text-[#607783]">Katalog rak <span className="font-semibold normal-case tracking-normal text-[#95a4ad]">/ {category}</span></h2>
               <span className="text-[8px] font-semibold text-[#83949e]">{filteredProducts.length} produk</span>
@@ -236,17 +358,17 @@ export function Theme() {
             {filteredProducts.length ? (
               <div className="grid grid-cols-2 gap-2">
                 {filteredProducts.map((product) => (
-                  <button key={product.id} onClick={() => addProduct(product)} className="premium-enter group flex min-h-[120px] flex-col justify-between rounded-xl border border-[#dce5e9] bg-white p-2.5 text-left transition duration-150 hover:border-[#91adbb] hover:shadow-[0_5px_14px_rgba(32,67,111,.07)] active:scale-[.99]">
+                  <button key={product.id} onClick={() => addProduct(product)} className="premium-product-card premium-enter group flex min-h-[120px] flex-col justify-between rounded-xl border border-[#dce5e9] bg-white p-2.5 text-left transition duration-150 hover:border-[#91adbb] hover:shadow-[0_5px_14px_rgba(32,67,111,.07)] active:scale-[.99]">
                     <div className="w-full">
                       <div className="mb-2 flex items-center justify-between gap-1">
-                        <span className="truncate rounded-md bg-[#edf3f7] px-1.5 py-1 text-[7px] font-extrabold tracking-[.06em] text-[#3b6688]">{product.brand}</span>
+                        <span className="premium-brand-tag truncate rounded-md bg-[#edf3f7] px-1.5 py-1 text-[7px] font-extrabold tracking-[.06em] text-[#3b6688]">{product.brand}</span>
                         <span className={`shrink-0 rounded-md px-1.5 py-1 text-[7px] font-bold ${product.stock <= 5 ? "bg-[#fbf4e9] text-[#94703c]" : "bg-[#f0f6f3] text-[#507763]"}`}>Stok {product.stock}</span>
                       </div>
                       <h3 className="line-clamp-2 min-h-[2.5em] text-[10px] font-bold leading-[1.3] text-[#253c50]">{product.name}</h3>
                     </div>
                     <div className="mt-2 flex w-full items-end justify-between border-t border-[#edf1f5] pt-2">
                       <span className="text-[11px] font-extrabold tracking-[-.02em] tabular-nums text-[#20384c]">{money(product.price)}</span>
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#edf3f7] text-[#315f86] transition group-hover:bg-[#315f86] group-hover:text-white"><Plus className="h-4 w-4" /></span>
+                      <span className="premium-add-button flex h-7 w-7 items-center justify-center rounded-lg bg-[#edf3f7] text-[#315f86] transition group-hover:bg-[#315f86] group-hover:text-white"><Plus className="h-4 w-4" /></span>
                     </div>
                   </button>
                 ))}
@@ -262,7 +384,7 @@ export function Theme() {
         </section>
 
         <aside className="premium-cart flex min-h-0 flex-col overflow-hidden bg-white">
-          <div className="flex h-[48px] shrink-0 items-center justify-between border-b border-[#e3e9ec] px-3">
+          <div className="premium-cart-header flex h-[48px] shrink-0 items-center justify-between border-b border-[#e3e9ec] px-3">
             <h2 className="flex items-center gap-2 text-[10px] font-extrabold tracking-[.04em] text-[#253c50]">
               <ShoppingCart className="h-4 w-4 text-[#315f86]" /> Nota <span className="rounded-md bg-[#edf3f7] px-1.5 py-0.5 text-[8px] text-[#3b6688]">{itemCount}</span>
             </h2>
@@ -300,7 +422,7 @@ export function Theme() {
             )}
           </div>
 
-          <div className="shrink-0 border-t border-[#e1e8eb] bg-white px-3 pb-3 pt-2.5">
+          <div className="premium-cart-summary shrink-0 border-t border-[#e1e8eb] bg-white px-3 pb-3 pt-2.5">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[8px] font-semibold text-[#8292a5]">Insentif kamu</span>
               <span className="flex items-center gap-1 text-[9px] font-bold tabular-nums text-[#315f86]"><Sparkles className="h-3 w-3" /> +{money(incentiveTotal)}</span>
@@ -309,7 +431,7 @@ export function Theme() {
               <span className="text-[8px] font-bold uppercase tracking-[.12em] text-[#6f7f8b]">Total tagihan</span>
               <span className="text-[17px] font-extrabold leading-none tracking-[-.04em] tabular-nums text-[#20384c]">{money(total)}</span>
             </div>
-            <button onClick={() => setDialog("checkout")} disabled={!cart.length} className="flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-[#315f86] px-3 text-[9px] font-extrabold uppercase tracking-[.12em] text-white shadow-[0_4px_10px_rgba(36,88,168,.18)] transition hover:bg-[#244764] disabled:cursor-not-allowed disabled:bg-[#b6c3d3] disabled:shadow-none">
+            <button onClick={() => setDialog("checkout")} disabled={!cart.length} className="premium-checkout-button flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-[#315f86] px-3 text-[9px] font-extrabold uppercase tracking-[.12em] text-white shadow-[0_4px_10px_rgba(36,88,168,.18)] transition hover:bg-[#244764] disabled:cursor-not-allowed disabled:bg-[#b6c3d3] disabled:shadow-none">
               <CircleDollarSign className="h-4 w-4" /> Bayar & cetak nota
             </button>
             <button onClick={holdTransaction} disabled={!cart.length} className="mt-1.5 flex min-h-[36px] w-full items-center justify-center gap-2 rounded-xl border border-[#dfe7ea] bg-white text-[8px] font-bold uppercase tracking-[.11em] text-[#667b95] transition hover:border-[#ddd0b4] hover:bg-[#faf7f0] hover:text-[#8a7043] disabled:cursor-not-allowed disabled:opacity-45">
