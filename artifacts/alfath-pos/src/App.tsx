@@ -5667,7 +5667,7 @@ export default function App() {
             {/* --- 4. ADMIN: STOK PER CABANG --- */}
             {activeMenu === "branch_stocks" && profile?.role === "ADMIN" && (
               <div data-ui-screen="branch-stocks" className="ui-screen-branch-stocks flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+                <div data-stock-toolbar className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4">
                   <div>
                     <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
                       Laporan Stok per Cabang
@@ -5676,9 +5676,10 @@ export default function App() {
                       Stok detail setiap barang di tiap lokasi cabang.
                     </p>
                   </div>
-                  <div className="relative w-full md:w-80">
+                  <div data-stock-search-box className="relative w-full md:w-80">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
+                      data-stock-search
                       type="text"
                       placeholder="Cari Barang..."
                       className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none shadow-sm"
@@ -5687,12 +5688,12 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl overflow-hidden">
+                <div data-stock-table-card className="bg-white rounded-2xl overflow-hidden border border-slate-200">
                   <div className="overflow-x-auto" data-branch-stock-matrix>
-                    <table className="w-full min-w-[780px] text-left table-auto border-collapse">
+                    <table data-stock-table className="w-full min-w-0 text-left table-auto border-collapse">
                       <thead>
-                        <tr className="bg-slate-200 border-b border-slate-300">
-                          <th className="px-4 py-3 text-[10px] font-black text-slate-700 uppercase tracking-widest sticky left-0 bg-slate-200 z-10 w-80 border-r border-slate-300">
+                        <tr data-stock-header-row>
+                          <th data-column="product" className="px-2 py-2 text-[10px] font-black uppercase tracking-wide sticky left-0 z-20 border-r">
                             Master Data Produk
                           </th>
                           {branches
@@ -5701,15 +5702,16 @@ export default function App() {
                             .map((b) => (
                               <th
                                 key={b.id}
-                                className="px-2 py-3 text-[9px] font-black text-slate-600 uppercase tracking-widest text-center min-w-[100px] border-r border-slate-300"
+                                data-column="branch-qty"
+                                className="px-1 py-2 text-[9px] font-black uppercase tracking-wide text-center min-w-0 border-r"
                               >
                                 {b.name}
                               </th>
                             ))}
-                          <th className="px-4 py-3 text-[10px] font-black text-slate-700 uppercase tracking-widest text-right bg-slate-100 min-w-[100px]">
+                          <th data-column="total" className="px-1 py-2 text-[9px] font-black uppercase tracking-wide text-center">
                             Total Stok
                           </th>
-                          <th className="px-4 py-3 text-[10px] font-black text-red-600 uppercase tracking-widest text-center">
+                          <th data-column="action" className="px-1 py-2 text-[9px] font-black uppercase tracking-wide text-center">
                             Aksi
                           </th>
                         </tr>
@@ -5731,14 +5733,15 @@ export default function App() {
                             return (
                               <tr
                                 key={p.id}
+                                data-stock-row
                                 className="hover:bg-blue-50/30 transition-colors"
                               >
-                                <td className="px-4 py-3 bg-white sticky left-0 border-r border-slate-300 z-10">
+                                <td data-column="product" className="px-2 py-2 sticky left-0 border-r z-10">
                                   <div className="flex flex-col">
-                                    <p className="font-bold text-slate-900 text-[13px] leading-tight mb-1">
+                                    <p data-stock-product-name className="font-bold text-slate-900 text-[11px] leading-tight mb-1">
                                       {p.name}
                                     </p>
-                                    <div className="flex items-center gap-2">
+                                    <div data-stock-product-meta className="flex flex-wrap items-center gap-1">
                                       <span className="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                                         {p.barcode}
                                       </span>
@@ -5767,6 +5770,8 @@ export default function App() {
                                     return (
                                       <td
                                         key={b.id}
+                                        data-column="branch-qty"
+                                        data-stock-level={!isProductVisibleInBranch ? "hidden" : isLow ? "low" : qty === 0 ? "zero" : "normal"}
                                         className={`px-2 py-3 text-center text-sm font-black font-mono border-r border-slate-200 ${
                                           !isProductVisibleInBranch 
                                             ? "text-slate-300 bg-slate-50/30 font-normal italic" 
@@ -5787,11 +5792,12 @@ export default function App() {
                                       </td>
                                     );
                                   })}
-                                <td className="px-4 py-3 text-right text-[13px] font-black text-blue-700 font-mono bg-slate-50/50 border-r border-slate-300">
+                                <td data-column="total" className="px-1 py-2 text-center text-[11px] font-black text-blue-700 font-mono border-r">
                                   {rowTotal}
                                 </td>
-                                <td className="px-4 py-3 text-center">
+                                <td data-column="action" className="px-0 py-1 text-center">
                                   <button
+                                    data-stock-delete
                                     onClick={() =>
                                       handleDeleteProduct(p.id, p.name)
                                     }

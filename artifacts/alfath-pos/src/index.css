@@ -4770,3 +4770,236 @@ body,
     justify-self: end;
   }
 }
+
+.app-shell[data-admin-surface="true"] [data-stock-toolbar] {
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.app-shell[data-admin-surface="true"] [data-stock-search] {
+  min-height: 44px;
+  border-color: #d6dfec !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(32, 56, 95, 0.08) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-stock-table-card] {
+  border-color: #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] {
+  scrollbar-color: #aab9cd #edf2f8;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] table {
+  width: 100%;
+  min-width: 0 !important;
+  border-collapse: collapse;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th,
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td {
+  border: 1px solid #d3deec !important;
+  padding: 6px 4px !important;
+  vertical-align: middle;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] thead th {
+  background: #20385f !important;
+  color: #ffffff !important;
+  font-size: 9px !important;
+  line-height: 1.15 !important;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th[data-column="product"],
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="product"] {
+  width: 112px;
+  min-width: 112px;
+  max-width: 180px;
+  position: sticky;
+  left: 0;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th[data-column="product"] {
+  z-index: 5;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="product"] {
+  z-index: 2;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th[data-column="branch-qty"],
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="branch-qty"] {
+  width: 42px;
+  min-width: 42px;
+  max-width: 42px;
+  text-align: center;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th[data-column="total"],
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="total"] {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  text-align: center;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th[data-column="action"],
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="action"] {
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  padding: 0 !important;
+  text-align: center;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody tr:nth-child(odd) td {
+  background: #ffffff !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody tr:nth-child(even) td {
+  background: #f1f5f9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-column="total"] {
+  background: #e7effb !important;
+  color: #1e40af !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="low"] {
+  background: #fff1f2 !important;
+  color: #be123c !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="zero"] {
+  color: #64748b !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="zero"] span,
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="hidden"] span {
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="hidden"] {
+  color: #94a3b8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody tr:hover td:not([data-stock-level="low"]) {
+  background: #eaf1fb !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-stock-product-name] {
+  overflow-wrap: anywhere;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-stock-product-meta] {
+  min-width: 0;
+}
+
+.app-shell[data-admin-surface="true"] [data-stock-product-meta] > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="branch-qty"] {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-branch-stock-matrix] button[data-stock-delete] {
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  border-radius: 8px;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-stock-table-card] {
+  border-color: #3a414d;
+  background: #202a39;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-stock-search] {
+  border-color: #475569 !important;
+  background: #252d3a !important;
+  color: #e5e7eb !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th,
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] thead th {
+  border-color: #496487 !important;
+  background: #29436d !important;
+  color: #f8fafc !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody tr:nth-child(odd) td {
+  border-color: #3a4658 !important;
+  background: #202a39 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody tr:nth-child(even) td {
+  border-color: #3a4658 !important;
+  background: #263244 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-column="product"] {
+  color: #e5e7eb;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-column="total"] {
+  background: #29436d !important;
+  color: #dbeafe !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="low"] {
+  background: #4a2d38 !important;
+  color: #fecdd3 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody tr:hover td:not([data-stock-level="low"]) {
+  background: #33435b !important;
+}
+
+@media (max-width: 1100px) {
+  .app-shell[data-admin-surface="true"] [data-ui-screen="branch-stocks"] {
+    padding: 10px !important;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-stock-toolbar] {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-stock-search-box] {
+    max-width: 320px;
+  }
+
+  .app-shell[data-admin-surface="true"] [data-stock-search] {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] th[data-column="product"],
+  .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] td[data-column="product"] {
+    width: 180px;
+    min-width: 180px;
+  }
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-branch-stock-matrix] tbody td[data-stock-level="zero"] {
+  color: #cbd5e1 !important;
+}
