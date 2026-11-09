@@ -4529,9 +4529,9 @@ export default function App() {
                                 <tr className="bg-slate-50 border-b border-slate-100 text-[7px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">
                                   <th colSpan={2} className="border-r border-slate-200"></th>
                                   <th scope="col" data-column="day-cashier" className="px-2 py-2 border-r border-slate-100 bg-amber-50/5">Kasir</th>
-                                  <th scope="col" data-column="day-income" className="px-2 py-2 border-r border-slate-200 bg-amber-50/5 text-right">Income</th>
+                                  <th scope="col" data-column="day-income" className="px-2 py-2 border-r border-slate-200 bg-amber-50/5 text-right">Omzet</th>
                                   <th scope="col" data-column="night-cashier" className="px-2 py-2 border-r border-slate-100 bg-indigo-50/5">Kasir</th>
-                                  <th scope="col" data-column="night-income" className="px-2 py-2 border-r border-slate-200 bg-indigo-50/5 text-right">Income</th>
+                                  <th scope="col" data-column="night-income" className="px-2 py-2 border-r border-slate-200 bg-indigo-50/5 text-right">Omzet</th>
                                   <th scope="col" data-column="total" className="bg-emerald-50/5 text-right">Harian</th>
                                 </tr>
                               </thead>

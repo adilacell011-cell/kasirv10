@@ -4232,21 +4232,21 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="date"] {
-  width: 13%;
+  width: 15%;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="branch"] {
-  width: 16%;
+  width: 14%;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="day-cashier"],
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="night-cashier"] {
-  width: 15%;
+  width: 14%;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="day-income"],
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="night-income"] {
-  width: 13%;
+  width: 14%;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table col[data-column="total"] {
@@ -4278,6 +4278,15 @@ body,
   text-align: right;
 }
 
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table thead th[data-column="date"],
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table thead th[data-column="day-income"],
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table thead th[data-column="night-income"] {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  letter-spacing: 0;
+}
+
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table thead tr:nth-child(2) th {
   padding: 5px 3px;
   font-size: 8px;
@@ -4299,43 +4308,71 @@ body,
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="date"] {
-  background: #f1f5f9;
-  color: #475569;
+  background: #e2e8f0;
+  color: #334155;
   font-size: 9px;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="branch"] {
-  background: #ffffff;
+  background: #eff6ff;
   color: #1e293b;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="day-cashier"] {
-  background: #fffbeb;
-  color: #475569;
+  background: #fef3c7;
+  color: #713f12;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="day-income"] {
-  background: #fff7ed;
-  color: #9a3412;
+  background: #ffedd5;
+  color: #7c2d12;
   text-align: right;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="night-cashier"] {
-  background: #f8fafc;
-  color: #475569;
+  background: #e0e7ff;
+  color: #312e81;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="night-income"] {
-  background: #eef2ff;
-  color: #4338ca;
+  background: #c7d2fe;
+  color: #312e81;
   text-align: right;
 }
 
 .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="total"] {
-  background: #eaf2ff;
+  background: #dbeafe;
   color: #1e3a5f;
   font-weight: 900;
   text-align: right;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="date"] {
+  background: #dbe3ed;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="branch"] {
+  background: #e3efff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-cashier"] {
+  background: #fce9ad;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-income"] {
+  background: #ffdfbd;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="night-cashier"] {
+  background: #d6deff;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="night-income"] {
+  background: #bdcafa;
+}
+
+.app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="total"] {
+  background: #cfe2fb;
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table thead th {
@@ -4348,7 +4385,7 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="date"] {
-  background: #202a39;
+  background: #263244;
   color: #cbd5e1;
 }
 
@@ -4359,23 +4396,48 @@ body,
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="day-cashier"] {
-  background: #352f27;
+  background: #3c3426;
   color: #e2e8f0;
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="day-income"] {
-  background: #3b2d25;
+  background: #473325;
   color: #fdba74;
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="night-income"] {
-  background: #2b304b;
+  background: #30385a;
   color: #c7d2fe;
 }
 
 .dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table td[data-column="total"] {
   background: #23344b;
   color: #dbeafe;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="date"] {
+  background: #2e3b50;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="branch"],
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="night-cashier"] {
+  background: #2d3b51;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-cashier"] {
+  background: #473b2a;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-income"] {
+  background: #513a2b;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="night-income"] {
+  background: #394365;
+}
+
+.dark .app-shell[data-admin-surface="true"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="total"] {
+  background: #2a405b;
 }
 
 @media (min-width: 768px) {
