@@ -2766,3 +2766,168 @@ body,
     padding: 0.75rem !important;
   }
 }
+
+/* Admin soft-surface pilot.
+   Deliberately limited to page-body markers; POS, cashier-stock, the shared
+   shell, and its navigation are not included. */
+:where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) {
+  background-color: #f1f5f9 !important;
+  color: #17243a;
+}
+
+:where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(
+  .bg-white:is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[22px\], .rounded-\[32px\]),
+  [data-ui-panel],
+  [data-dashboard-metrics] > *,
+  [data-dashboard-trend-card],
+  [data-dashboard-margin-card],
+  [data-dashboard-recent-card],
+  [data-dashboard-branch-performance],
+  [data-dashboard-top-products],
+  [data-dashboard-sales-table],
+  [data-testid="panel-audit-progress"],
+  [data-testid="panel-audit-items"]
+):not(button):not(a):not(input):not(select):not(textarea):not(aside) {
+  border-color: #dce4ef !important;
+}
+
+:where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(
+  .bg-white.shadow-sm,
+  .bg-white.shadow-md,
+  .bg-white.shadow-lg,
+  .bg-white.shadow-xl,
+  .bg-white.shadow-2xl,
+  [data-dashboard-trend-card].shadow-sm,
+  [data-dashboard-margin-card].shadow-sm,
+  [data-dashboard-recent-card].shadow-sm,
+  [data-dashboard-branch-performance].shadow-sm,
+  [data-dashboard-top-products].shadow-sm
+):not(button):not(a):not(input):not(select):not(textarea):not(aside) {
+  --tw-shadow:
+    0 2px 5px rgba(31, 50, 78, 0.035),
+    0 8px 18px rgba(31, 50, 78, 0.045) !important;
+}
+
+.dark :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) {
+  background-color: #232b38 !important;
+  color: #e5edf8;
+}
+
+.dark :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(
+  .bg-white:is(.rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-\[22px\], .rounded-\[32px\]),
+  [data-ui-panel],
+  [data-dashboard-metrics] > *,
+  [data-dashboard-trend-card],
+  [data-dashboard-margin-card],
+  [data-dashboard-recent-card],
+  [data-dashboard-branch-performance],
+  [data-dashboard-top-products],
+  [data-dashboard-sales-table],
+  [data-testid="panel-audit-progress"],
+  [data-testid="panel-audit-items"]
+):not(button):not(a):not(input):not(select):not(textarea):not(aside) {
+  border-color: #3a4658 !important;
+}
+
+:where(.dark) :where(
+  [data-ui-screen="dashboard"],
+  [data-ui-screen="reports"],
+  [data-ui-screen="inventory"],
+  [data-ui-screen="branch-stocks"],
+  [data-ui-screen="shopping-list"],
+  [data-ui-screen="incentive"],
+  [data-ui-screen="opname"],
+  [data-ui-screen="employees"],
+  [data-ui-screen="settings"],
+  [data-ui-screen="shift"],
+  [data-ui-screen="stock_audit"],
+  [data-testid="page-branch-stock-audit"]
+) :where(
+  .bg-white.shadow-sm,
+  .bg-white.shadow-md,
+  .bg-white.shadow-lg,
+  .bg-white.shadow-xl,
+  .bg-white.shadow-2xl,
+  [data-dashboard-trend-card].shadow-sm,
+  [data-dashboard-margin-card].shadow-sm,
+  [data-dashboard-recent-card].shadow-sm,
+  [data-dashboard-branch-performance].shadow-sm,
+  [data-dashboard-top-products].shadow-sm
+):not(button):not(a):not(input):not(select):not(textarea):not(aside) {
+  --tw-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.16),
+    0 8px 18px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-testid="page-branch-stock-audit"] {
+  background-color: #f1f5f9 !important;
+}
+
+.dark [data-testid="page-branch-stock-audit"] {
+  background-color: #232b38 !important;
+}
