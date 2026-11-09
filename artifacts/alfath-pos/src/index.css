@@ -5995,6 +5995,23 @@ body,
   box-shadow: -8px 0 24px rgba(4, 13, 27, 0.12) !important;
 }
 
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div.flex-1.overflow-y-auto {
+  background: #fbf7ed !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div.flex-1.overflow-y-auto > div.divide-y {
+  background: #fbf7ed !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div.flex-1.overflow-y-auto > div.divide-y > div {
+  background: #fffdf8 !important;
+  border-color: #e4d7b8 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div.flex-1.overflow-y-auto > div.divide-y > div:hover {
+  background: #f7efd9 !important;
+}
+
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:first-child,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-cart] > div:first-child {
   border-bottom-color: #e2e8f0 !important;
