@@ -161,6 +161,13 @@ and cart mostly neutral white/slate with only small muted-gold accents.
 **Why:** the owner requested a coordinated search/best-seller look while reducing gold in the invoice area.
 **How to apply:** keep search text and product names navy, preserve status colors, and reserve gold on the invoice
 for a fine detail rather than broad fills.
+Operational top toolbars for shift management, cashier bonuses, and branch stock input use the same navy glass
+surface and restrained gold trim as the cashier toolbar. Branch stock product, category, and activity tables use
+navy headers, visible column rules, alternating white/slate rows, and keep green selection/status semantics.
+**Why:** the owner asked these pages to stop using a white top toolbar and to make every branch-stock table
+consistent with the app's Excel-style tables.
+**How to apply:** scope topbar styling to those three screens and table styling to the cashier-stock workspace;
+preserve the data, permissions, stock actions, and responsive column visibility.
 For dense report, bonus, and branch sections, use clearly visible `slate-200` separators and compact spacing.
 Excel-style tables use navy headers and total rows with white text, alternating white/light blue-gray body cells,
 and no raised shadow per cell; reserve dark fills for the header and summary row.
