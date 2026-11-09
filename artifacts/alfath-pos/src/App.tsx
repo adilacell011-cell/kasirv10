@@ -913,7 +913,7 @@ export default function App() {
   }, [products, productSalesQuantities, profile?.branchId]);
   const [showShiftSummary, setShowShiftSummary] = useState<number | null>(null);
   const [reportedIncomeInput, setReportedIncomeInput] = useState<string>("");
-  const [globalAlerts, setGlobalAlerts] = useState<{ id: string; message: string; type: "info" | "warning" | "success" }[]>([]);
+  const [globalAlerts, setGlobalAlerts] = useState<{ id: string; message: string; type: "info" | "warning" | "success" | "error" }[]>([]);
   const [confirmModal, setConfirmModal] = useState<{ message: string; resolve: (res: boolean) => void } | null>(null);
 
   // Android back-button intercept refs
@@ -940,7 +940,7 @@ export default function App() {
 
   useEffect(() => {
     const handleCustomAlert = (e: Event) => {
-      const customEvent = e as CustomEvent<{ message: string; type?: "info" | "warning" | "success" }>;
+      const customEvent = e as CustomEvent<{ message: string; type?: "info" | "warning" | "success" | "error" }>;
       const message = customEvent.detail?.message || String(customEvent.detail);
       const type = customEvent.detail?.type || "info";
       
@@ -961,7 +961,12 @@ export default function App() {
       const text = String(msg ?? "");
       const lower = text.toLowerCase();
       const successWords = ["berhasil", "selesai", "sukses", "ditambahkan", "dicatat", "tersimpan", "disimpan", "diperbarui", "dibersihkan", "ditransfer", "dicairkan", "dipatenkan", "ditutup & dipatenkan"];
-      const type: "info" | "warning" | "success" = successWords.some((w) => lower.includes(w)) ? "success" : "info";
+      const failureWords = ["gagal", "tidak cukup", "tidak mencukupi", "tidak valid", "belum dibuka", "tidak dapat", "tidak ditemukan", "tidak berhasil", "bermasalah", "ditolak", "tidak tersedia", "tidak ada shift"];
+      const type: "info" | "warning" | "success" | "error" = failureWords.some((w) => lower.includes(w))
+        ? "error"
+        : successWords.some((w) => lower.includes(w))
+          ? "success"
+          : "info";
       // Dispatches custom event
       window.dispatchEvent(
         new CustomEvent("app-custom-alert", {
@@ -10323,20 +10328,73 @@ export default function App() {
     )}
 
     {/* --- BRAND ALERT TOAST MULTIPLE POPUPS (NO WEB ADDRESS NO DOMAIN SHOWN) --- */}
-    <div data-notification-stack className="fixed top-4 right-4 z-[99999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    <div
+      data-notification-stack
+      data-notification-screen={activeMenu === "pos" ? "pos" : "default"}
+      className="fixed top-4 right-4 z-[99999] flex flex-col gap-3 max-w-sm w-full pointer-events-none"
+    >
       {globalAlerts.map((alert) => (
         <div
           key={alert.id}
           data-alert-toast
           data-alert-type={alert.type}
-          className={`pointer-events-auto bg-white/90 dark:bg-slate-900/90 text-slate-900 border border-slate-200/80 p-4 rounded-2xl shadow-2xl shadow-slate-900/10 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 relative border-l-4 ${alert.type === 'success' ? 'border-l-emerald-500' : 'border-l-amber-500'}`}
+          role={alert.type === "error" ? "alert" : "status"}
+          aria-live={alert.type === "error" ? "assertive" : "polite"}
+          aria-atomic="true"
+          className={`pointer-events-auto bg-white/90 dark:bg-slate-900/90 text-slate-900 border border-slate-200/80 p-4 rounded-2xl shadow-2xl shadow-slate-900/10 flex items-start gap-3 animate-in slide-in-from-top-4 duration-300 relative border-l-4 ${
+            alert.type === "success"
+              ? "border-l-emerald-500"
+              : alert.type === "error"
+                ? "border-l-rose-500"
+                : alert.type === "warning"
+                  ? "border-l-amber-500"
+                  : "border-l-blue-500"
+          }`}
         >
-          <div data-alert-icon className={`w-5 h-5 rounded-full ${alert.type === 'success' ? 'bg-emerald-500/15' : 'bg-amber-500/15'} flex items-center justify-center shrink-0 mt-0.5`}>
-            {alert.type === 'success' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+          <div
+            data-alert-icon
+            className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+              alert.type === "success"
+                ? "bg-emerald-500/15"
+                : alert.type === "error"
+                  ? "bg-rose-500/15"
+                  : alert.type === "warning"
+                    ? "bg-amber-500/15"
+                    : "bg-blue-500/15"
+            }`}
+          >
+            {alert.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            ) : alert.type === "error" ? (
+              <AlertTriangle className="w-4 h-4 text-rose-500" />
+            ) : alert.type === "warning" ? (
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+            ) : (
+              <Info className="w-4 h-4 text-blue-500" />
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p data-alert-title className={`text-[10px] font-black uppercase ${alert.type === 'success' ? 'text-emerald-500' : 'text-amber-500'} tracking-widest`}>{alert.type === 'success' ? 'Berhasil' : 'Informasi Sistem'}</p>
-            <p data-alert-message className="text-[11px] font-bold text-slate-700 mt-0.5 leading-relaxed break-words">{alert.message}</p>
+            <p
+              data-alert-title
+              className={`text-[11px] font-black uppercase tracking-wider ${
+                alert.type === "success"
+                  ? "text-emerald-500"
+                  : alert.type === "error"
+                    ? "text-rose-500"
+                    : alert.type === "warning"
+                      ? "text-amber-500"
+                      : "text-blue-500"
+              }`}
+            >
+              {alert.type === "success"
+                ? "Berhasil"
+                : alert.type === "error"
+                  ? "Gagal"
+                  : alert.type === "warning"
+                    ? "Perhatian"
+                    : "Informasi"}
+            </p>
+            <p data-alert-message className="text-sm font-bold text-slate-700 mt-1 leading-snug break-words">{alert.message}</p>
           </div>
           <button
             onClick={() => setGlobalAlerts((prev) => prev.filter((a) => a.id !== alert.id))}
