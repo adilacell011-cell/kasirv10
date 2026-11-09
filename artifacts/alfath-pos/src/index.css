@@ -6183,11 +6183,18 @@ body,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] thead th {
   color: #f8fafc !important;
   border-color: rgba(219, 196, 153, 0.28) !important;
+  border-right: 1px solid rgba(219, 196, 153, 0.42) !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr {
   border-color: #e4eaf0 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody td,
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody td {
+  border-color: #d4dde7 !important;
+  border-right: 1px solid #d4dde7 !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:first-child,
@@ -6197,7 +6204,17 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:nth-child(even),
 .dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:nth-child(even) {
-  background: #f1f5f9 !important;
+  background: #f2f6fb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody:nth-of-type(even),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody:nth-of-type(even) {
+  background: #f2f6fb !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody:nth-of-type(odd),
+.dark .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody:nth-of-type(odd) {
+  background: #fff !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-history-table] tbody tr:first-child td:nth-child(5),
@@ -6314,8 +6331,8 @@ body,
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input {
   color: #172d49 !important;
-  background: #f7f9fc !important;
-  border-color: #d9e1eb !important;
+  background: #fbf7ed !important;
+  border-color: #d6bd83 !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] input:focus,
@@ -6332,8 +6349,8 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .bg-blue-50,
 .dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .bg-blue-50 {
-  background: #f1f5f9 !important;
-  border-color: #d8c79f !important;
+  background: #f4ebd7 !important;
+  border-color: #d6bd83 !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] .text-blue-500,
@@ -6345,9 +6362,16 @@ body,
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button[class*="bg-slate-50"],
 .dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button[class*="bg-slate-50"] {
-  color: #3d5065 !important;
-  background: #f6f8fb !important;
-  border-color: #e0e6ed !important;
+  color: #172d49 !important;
+  background: #fbf7ed !important;
+  border-color: #d6bd83 !important;
+}
+
+:root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button[class*="bg-white"],
+.dark .app-shell [data-ui-screen="pos"] [data-pos-transfer-card] button[class*="bg-white"] {
+  color: #172d49 !important;
+  background: #fffdf8 !important;
+  border-color: #d6bd83 !important;
 }
 
 :root:not(.dark) .app-shell [data-ui-screen="pos"] [data-pos-transfer-submit],
