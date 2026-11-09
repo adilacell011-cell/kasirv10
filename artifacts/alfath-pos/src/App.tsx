@@ -4299,7 +4299,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="content-fade">
+                  <div data-report-content className="content-fade">
                     {reportSubTab === "summary" ? (
                       <div className="grid grid-cols-1 gap-4">
                       <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-2 flex items-center justify-between border-b border-slate-200 pb-2">
@@ -4354,7 +4354,7 @@ export default function App() {
                             }, { revenue: 0, profit: 0 });
                             
                             return (
-                              <div key={day.label} className={`relative overflow-hidden p-3 md:p-4 rounded-2xl group ${day.card}`}>
+                              <div data-report-day-card key={day.label} className={`relative overflow-hidden p-3 md:p-4 rounded-2xl group ${day.card}`}>
                                 <div className={`absolute top-0 right-0 w-20 h-20 rounded-bl-full transform translate-x-5 -translate-y-5 transition-transform group-hover:scale-110 ${day.blob}`}></div>
                                 <p className={`relative text-[9px] font-black ${day.labelColor} uppercase tracking-wider mb-1`}>{day.label}</p>
                                 <div className="relative flex flex-col items-start gap-1.5">
@@ -4398,6 +4398,7 @@ export default function App() {
 
                             return (
                               <div
+                                data-report-period-card={type.toLowerCase()}
                                 key={type}
                                 className={`p-3 md:p-5 rounded-2xl border transition-all ${type === "Pagi" ? "bg-amber-50 border-amber-200" : "bg-indigo-50 border-indigo-200"}`}
                               >
@@ -4442,19 +4443,19 @@ export default function App() {
 
                           return (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-                              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group">
+                              <div data-report-excel-total="day" className="bg-amber-50 border border-amber-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-amber-100/50 rounded-bl-full transform translate-x-4 -translate-y-4 transition-transform group-hover:scale-110"></div>
                                 <p className="text-[8px] md:text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] mb-1">Shift Siang (Pagi)</p>
                                 <p className="text-xl md:text-2xl font-black text-amber-900 font-mono leading-none">Rp {grandTotalPagi.toLocaleString("id-ID")}</p>
                                 <p className="text-[7px] md:text-[9px] text-amber-500 font-bold uppercase mt-2">Pemasukan Siff Pagi</p>
                               </div>
-                              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group">
+                              <div data-report-excel-total="night" className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-100/50 rounded-bl-full transform translate-x-4 -translate-y-4 transition-transform group-hover:scale-110"></div>
                                 <p className="text-[8px] md:text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Shift Malam</p>
                                 <p className="text-xl md:text-2xl font-black text-indigo-900 font-mono leading-none">Rp {grandTotalMalam.toLocaleString("id-ID")}</p>
                                 <p className="text-[7px] md:text-[9px] text-indigo-500 font-bold uppercase mt-2">Pemasukan Siff Malam</p>
                               </div>
-                              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group sm:col-span-2 md:col-span-1">
+                              <div data-report-excel-total="combined" className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 md:p-5 text-left relative overflow-hidden group sm:col-span-2 md:col-span-1">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/50 rounded-bl-full transform translate-x-4 -translate-y-4 transition-transform group-hover:scale-110"></div>
                                 <p className="text-[8px] md:text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Total Pendapatan</p>
                                 <p className="text-xl md:text-2xl font-black text-emerald-900 font-mono leading-none">Rp {(grandTotalPagi + grandTotalMalam).toLocaleString("id-ID")}</p>
@@ -4464,7 +4465,7 @@ export default function App() {
                           );
                         })()}
 
-                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden mt-4">
+                        <div data-report-excel-panel className="bg-white rounded-2xl border border-slate-200 overflow-hidden mt-4">
                           <div className="p-3 md:p-5 border-b border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-left">
                             <div>
                               <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">

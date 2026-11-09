@@ -8916,3 +8916,342 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
 ) {
   color: #fff1d0 !important;
 }
+
+/* Reports: navy-on-navy layered surfaces with warm, readable type.
+   Scoped to the Admin report screen so the cashier/POS palette is untouched. */
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] {
+  color: #f3f0e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-toolbar] {
+  color: #f3f0e7;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-filters] {
+  border: 1px solid rgba(211, 179, 113, 0.38) !important;
+  background:
+    linear-gradient(145deg, rgba(22, 48, 77, 0.98), rgba(11, 31, 55, 0.98)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(235, 222, 189, 0.08),
+    0 8px 20px rgba(1, 10, 23, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] > span,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] > span {
+  color: #d9c99f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-branch] .app-select-trigger {
+  border-color: rgba(150, 181, 205, 0.33) !important;
+  background: #102744 !important;
+  color: #f6f1e4 !important;
+  color-scheme: dark;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-start] input::-webkit-calendar-picker-indicator,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-date-end] input::-webkit-calendar-picker-indicator {
+  opacity: 0.82;
+  filter: invert(0.88) sepia(0.24) saturate(0.65);
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-branch] .app-select-trigger span,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-branch] .app-select-trigger svg {
+  color: #f3f0e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-reset] {
+  border: 1px solid rgba(164, 187, 207, 0.24) !important;
+  background: rgba(6, 22, 41, 0.68) !important;
+  color: #d7e1e9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-reset]:hover {
+  border-color: rgba(214, 183, 119, 0.58) !important;
+  background: #1b3b5b !important;
+  color: #fff4d8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-content] > :first-child > h3 {
+  color: #fff7e8 !important;
+  border-color: rgba(211, 179, 113, 0.34) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-content] > :first-child > h3 svg {
+  color: #7ed6ae !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-content] > :first-child > h3 > span {
+  color: #c7d4df !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-day-card],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-total] {
+  border: 1px solid rgba(109, 169, 202, 0.42) !important;
+  background:
+    radial-gradient(ellipse at 100% -30%, rgba(63, 139, 179, 0.2), transparent 58%),
+    linear-gradient(145deg, #173b5d 0%, #102c4a 56%, #0d2541 100%) !important;
+  color: #f4f0e7 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(232, 242, 244, 0.11),
+    inset 0 -1px 0 rgba(205, 174, 109, 0.2),
+    0 5px 14px rgba(1, 10, 24, 0.23) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-day-card] > div:first-child {
+  display: none;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-day-card] > p,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-total] > p {
+  color: #d7c796 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-day-card] > div p {
+  color: #fff8e8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-day-card] span {
+  border-color: rgba(109, 214, 169, 0.42) !important;
+  background: rgba(16, 92, 72, 0.52) !important;
+  color: #9be8c3 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card] {
+  border-color: rgba(205, 174, 109, 0.53) !important;
+  border-top-color: rgba(236, 208, 147, 0.78) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card="pagi"] > p:first-child {
+  color: #f0d38c !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card="malam"] > p:first-child {
+  color: #e9d7a6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card] > p:nth-child(2) {
+  color: #fff8e8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card] > div {
+  border-color: rgba(207, 221, 231, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card] > div span:first-child {
+  color: #c4d1dc !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-period-card] > div span:last-child {
+  color: #fff3d2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-total="day"] {
+  border-top-color: rgba(240, 211, 140, 0.78) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-total="night"] {
+  border-top-color: rgba(214, 200, 155, 0.7) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-total="combined"] {
+  border-top-color: rgba(112, 213, 169, 0.68) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-total] > p:nth-child(2) {
+  color: #fff8e8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-panel],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-history-card] {
+  border: 1px solid rgba(101, 166, 202, 0.44) !important;
+  background: linear-gradient(145deg, #123253, #0c2340) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(226, 240, 249, 0.1),
+    0 8px 22px rgba(1, 10, 24, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-panel] > div:first-child,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-history-titlebar] {
+  border-color: rgba(195, 172, 119, 0.3) !important;
+  background: linear-gradient(110deg, rgba(24, 54, 84, 0.98), rgba(15, 40, 67, 0.98)) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-panel] h3,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-history-titlebar] h3 {
+  color: #fff5df !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-panel] h3 > div,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-history-titlebar] > div:last-child {
+  border: 1px solid rgba(215, 185, 122, 0.42) !important;
+  background: rgba(197, 163, 99, 0.16) !important;
+  color: #f0d99f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-panel] h3 > div svg,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-history-titlebar] h3 svg {
+  color: #e3c77f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-excel-panel] p,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-history-titlebar] p {
+  color: #bfceda !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-export] {
+  border-color: rgba(232, 205, 148, 0.6) !important;
+  background: linear-gradient(135deg, #dfc58a, #c2a263) !important;
+  color: #102a46 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 228, 0.54),
+    0 3px 9px rgba(1, 10, 24, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] [data-report-export]:hover {
+  border-color: #f0dda9 !important;
+  background: linear-gradient(135deg, #efdba7, #d3b574) !important;
+  color: #0d2540 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table thead th {
+  border-color: rgba(132, 169, 193, 0.34) !important;
+  background: #0b213b !important;
+  color: #e8e3d7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table thead th[data-column="day-group"] {
+  background: #293b45 !important;
+  color: #efd48f !important;
+  border-bottom-color: rgba(221, 190, 128, 0.58) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table thead th[data-column="night-group"] {
+  background: #24384e !important;
+  color: #e0d4b4 !important;
+  border-bottom-color: rgba(207, 188, 143, 0.44) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table thead th[data-column="total"] {
+  background: #173a3a !important;
+  color: #a5e2c0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody td {
+  border-color: rgba(130, 158, 181, 0.2) !important;
+  background: #102b49 !important;
+  color: #e1e8e9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td {
+  background: #153451 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="date"] {
+  background: #0d2540 !important;
+  color: #c4d0d8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="branch"] {
+  background: #163653 !important;
+  color: #fff4dc !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="day-cashier"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-cashier"] {
+  background: rgba(166, 126, 57, 0.2) !important;
+  color: #f0e2bd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="day-income"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="day-income"] {
+  background: rgba(169, 119, 47, 0.27) !important;
+  color: #ffdc93 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="night-cashier"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="night-cashier"] {
+  background: rgba(84, 119, 151, 0.22) !important;
+  color: #e0e7ec !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="night-income"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="night-income"] {
+  background: rgba(78, 112, 154, 0.3) !important;
+  color: #d8e2f1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table td[data-column="total"],
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:nth-child(even) td[data-column="total"] {
+  background: rgba(32, 106, 84, 0.32) !important;
+  color: #b7ebcf !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody tr:hover td {
+  background-color: #1b4262 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table th {
+  background: #0b213b !important;
+  color: #e6dfcf !important;
+  border-color: rgba(132, 169, 193, 0.32) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td {
+  background: #102b49 !important;
+  color: #e5e9e7 !important;
+  border-color: rgba(130, 158, 181, 0.19) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table tbody tr:nth-child(even) td {
+  background: #153451 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="time"] p:first-child,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="cashier-branch"] p:first-child,
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="reported"] {
+  color: #fff4dc !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="cashier-branch"] p:nth-child(2),
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="time"] p:nth-child(2),
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="system"] {
+  color: #c4d0da !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="difference"] span[class*="bg-emerald-50"] {
+  border: 1px solid rgba(103, 213, 160, 0.3);
+  background: rgba(13, 92, 66, 0.48) !important;
+  color: #9ce8bf !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="difference"] span[class*="bg-blue-50"] {
+  border: 1px solid rgba(116, 183, 220, 0.3);
+  background: rgba(31, 80, 119, 0.55) !important;
+  color: #b6dcf2 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="difference"] span[class*="bg-rose-50"] {
+  border: 1px solid rgba(232, 123, 126, 0.34);
+  background: rgba(117, 40, 49, 0.55) !important;
+  color: #ffb2b1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="action"] button {
+  min-width: 44px;
+  min-height: 44px;
+  color: #ffaaa6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-report-history-table td[data-column="action"] button:hover {
+  background: rgba(130, 45, 51, 0.42) !important;
+}
+
+@media (max-width: 640px) {
+  .app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table thead th,
+  .app-shell[data-admin-surface="true"] [data-ui-screen="reports"] .admin-revenue-report-table tbody td {
+    font-size: 8px;
+  }
+}
