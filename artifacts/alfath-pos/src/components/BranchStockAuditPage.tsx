@@ -137,7 +137,7 @@ function AuditBranchPicker({
           role="listbox"
           aria-label="Daftar cabang audit"
           data-testid="menu-audit-branches"
-          className="audit-branch-picker-menu fixed overflow-hidden rounded-2xl border shadow-2xl"
+          className="audit-choice-picker-menu fixed overflow-hidden rounded-2xl border shadow-2xl"
           style={{
             left: position.left,
             width: position.width,
@@ -163,11 +163,157 @@ function AuditBranchPicker({
                   }}
                   className={`inline-flex min-h-11 w-full items-center justify-between gap-3 border-b px-3 py-2.5 text-left text-sm last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e2cf9f] ${
                     selected
-                      ? "audit-branch-picker-option-selected font-bold"
-                      : "audit-branch-picker-option font-medium"
+                      ? "audit-choice-picker-option-selected font-bold"
+                      : "audit-choice-picker-option font-medium"
                   }`}
                 >
                   <span className="truncate">{branch.name}</span>
+                  {selected && <Check className="h-4 w-4 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
+const AUDIT_STATUS_OPTIONS = [
+  { value: "", label: "Semua status" },
+  { value: "PENDING", label: "Belum dihitung" },
+  { value: "COUNTING", label: "Sedang dihitung" },
+  { value: "COUNTED", label: "Sudah dihitung" },
+  { value: "RECOUNT_REQUIRED", label: "Perlu hitung ulang" },
+  { value: "EXCLUDED", label: "Pengecualian" },
+] as const;
+
+function AuditStatusPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<BranchPickerPosition | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const selectedOption = AUDIT_STATUS_OPTIONS.find((option) => option.value === value) ?? AUDIT_STATUS_OPTIONS[0];
+
+  const placeMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const viewportWidth = window.innerWidth;
+    const width = Math.min(Math.max(rect.width, 200), viewportWidth - 16);
+    const left = Math.min(Math.max(8, rect.left), viewportWidth - width - 8);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openAbove = spaceBelow < 240 && rect.top > spaceBelow;
+    const availableHeight = openAbove ? rect.top : spaceBelow;
+
+    setPosition({
+      left,
+      width,
+      top: openAbove ? undefined : rect.bottom + 6,
+      bottom: openAbove ? window.innerHeight - rect.top + 6 : undefined,
+      maxHeight: Math.max(120, Math.min(280, availableHeight - 16)),
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    const closeOnViewportChange = () => setOpen(false);
+
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    window.addEventListener("resize", closeOnViewportChange);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+      window.removeEventListener("resize", closeOnViewportChange);
+    };
+  }, [open]);
+
+  const toggleMenu = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    placeMenu();
+    setOpen(true);
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        id="audit-status-filter"
+        type="button"
+        data-testid="select-audit-status"
+        aria-label="Filter status hitungan"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="audit-status-options"
+        onClick={toggleMenu}
+        className="audit-status-picker-trigger inline-flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-xl border px-3 text-left text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#e2cf9f]/60 lg:w-[190px]"
+      >
+        <span className="truncate">{selectedOption.label}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && position && createPortal(
+        <div
+          ref={menuRef}
+          id="audit-status-options"
+          role="listbox"
+          aria-label="Pilihan status hitungan"
+          data-testid="menu-audit-status"
+          className="audit-choice-picker-menu fixed overflow-hidden rounded-2xl border shadow-2xl"
+          style={{
+            left: position.left,
+            width: position.width,
+            top: position.top,
+            bottom: position.bottom,
+            maxHeight: position.maxHeight,
+            zIndex: 9500,
+          }}
+        >
+          <div className="max-h-full overflow-y-auto">
+            {AUDIT_STATUS_OPTIONS.map((option) => {
+              const selected = option.value === value;
+              const optionId = option.value ? option.value.toLowerCase() : "all";
+              return (
+                <button
+                  key={option.value || "all"}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  data-testid={`option-audit-status-${optionId}`}
+                  onClick={() => {
+                    if (option.value !== value) onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`inline-flex min-h-11 w-full items-center justify-between gap-3 border-b px-3 py-2.5 text-left text-sm last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e2cf9f] ${
+                    selected
+                      ? "audit-choice-picker-option-selected font-bold"
+                      : "audit-choice-picker-option font-medium"
+                  }`}
+                >
+                  <span className="truncate">{option.label}</span>
                   {selected && <Check className="h-4 w-4 shrink-0" />}
                 </button>
               );
@@ -1371,15 +1517,13 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                         className="h-11 w-full rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] pl-9 pr-3 text-xs text-[#244743] shadow-none outline-none placeholder:text-[#8b9a95] focus:border-[#63988b] focus:ring-2 focus:ring-[#6f9e91]/20"
                       />
                     </label>
-                    <label className="sr-only" htmlFor="audit-status-filter">Filter status</label>
-                    <select id="audit-status-filter" data-testid="select-audit-status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="h-11 w-full min-w-0 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] shadow-none outline-none focus:border-[#63988b] lg:h-10 lg:w-auto">
-                      <option value="">Semua status</option>
-                      <option value="PENDING">Belum dihitung</option>
-                      <option value="COUNTING">Sedang dihitung</option>
-                      <option value="COUNTED">Sudah dihitung</option>
-                      <option value="RECOUNT_REQUIRED">Perlu hitung ulang</option>
-                      <option value="EXCLUDED">Pengecualian</option>
-                    </select>
+                    <AuditStatusPicker
+                      value={statusFilter}
+                      onChange={(value) => {
+                        setStatusFilter(value);
+                        setPage(1);
+                      }}
+                    />
                     <button type="button" data-testid="button-focus-barcode" onClick={() => searchInputRef.current?.focus()} className="inline-flex h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-2 text-[11px] font-semibold text-[#42615c] hover:bg-[#e9f0eb] lg:h-10 lg:w-auto lg:gap-2 lg:px-3 lg:text-xs">
                       <Barcode className="h-4 w-4" /> Pindai / ketik
                     </button>
@@ -1777,7 +1921,7 @@ function AuditItemCard({ item, canWork, busy, onCount, onRevoke }: { item: Audit
   return (
     <article data-testid={`card-audit-item-${item.id}`} className="grid min-w-0 max-w-full gap-1.5 rounded-xl border border-[#dce5df] bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(26,64,66,.035)]">
       <div className="flex min-w-0 items-center gap-2">
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}>
+        <div data-audit-product-icon className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#d6b96a]/40 bg-[#0d223b] text-[#f1d28a]">
           <PackageSearch className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">

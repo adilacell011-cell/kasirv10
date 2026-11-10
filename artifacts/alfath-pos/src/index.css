@@ -11278,27 +11278,57 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
   background: linear-gradient(135deg, #193653, #234565) !important;
 }
 
-.audit-branch-picker-menu {
+.audit-choice-picker-menu {
   border-color: rgba(196, 166, 109, 0.66) !important;
   background: linear-gradient(145deg, #1b3b5b, #102744) !important;
   box-shadow: 0 14px 34px rgba(0, 5, 16, 0.56), 0 0 18px rgba(218, 189, 123, 0.14) !important;
 }
 
-.audit-branch-picker-menu button.audit-branch-picker-option {
+.audit-choice-picker-menu button.audit-choice-picker-option {
   border-color: rgba(196, 166, 109, 0.2) !important;
   background: transparent !important;
   color: #e7edf6 !important;
 }
 
-.audit-branch-picker-menu button.audit-branch-picker-option:hover {
+.audit-choice-picker-menu button.audit-choice-picker-option:hover {
   background: rgba(196, 166, 109, 0.14) !important;
   color: #f1dba7 !important;
 }
 
-.audit-branch-picker-menu button.audit-branch-picker-option-selected {
+.audit-choice-picker-menu button.audit-choice-picker-option-selected {
   border-color: rgba(231, 210, 158, 0.76) !important;
   background: linear-gradient(135deg, #e2cf9f, #c4a66d) !important;
   color: #102744 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="select-audit-status"].audit-status-picker-trigger {
+  min-height: 44px !important;
+  border-color: rgba(196, 166, 109, 0.55) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #f1dba7 !important;
+  --tw-shadow: 0 3px 8px rgba(2, 10, 22, 0.2) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="select-audit-status"].audit-status-picker-trigger > svg {
+  color: #e2cf9f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="select-audit-status"].audit-status-picker-trigger:hover {
+  border-color: rgba(231, 210, 158, 0.86) !important;
+  background: linear-gradient(135deg, #193653, #234565) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-audit-product-icon] {
+  border-color: rgba(196, 166, 109, 0.56) !important;
+  background: linear-gradient(145deg, #102744, #193653) !important;
+  color: #f1d28a !important;
+  box-shadow: inset 0 1px 0 rgba(231, 210, 158, 0.1), 0 0 9px rgba(218, 189, 123, 0.12);
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] > footer {
+  border-top-color: rgba(196, 166, 109, 0.32) !important;
+  background: linear-gradient(145deg, #102744, #0d2039) !important;
+  box-shadow: inset 0 1px 0 rgba(231, 210, 158, 0.04);
 }
 
 .app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="button-audit-prev-page"],
