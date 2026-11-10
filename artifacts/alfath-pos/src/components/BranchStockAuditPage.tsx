@@ -1409,47 +1409,47 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
       )}
 
       {editorItem && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCountEditor(); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="count-dialog-title" data-testid="dialog-count-item" className="max-h-[92dvh] w-full min-w-0 overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
-            <div className="flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-[#102d2b]/55 p-3 sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCountEditor(); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="count-dialog-title" data-testid="dialog-count-item" className="max-h-[82dvh] w-full min-w-0 max-w-[420px] overflow-y-auto rounded-2xl border border-[#d7e0dc] bg-[#f8f9f5] p-3 shadow-2xl sm:p-4">
+            <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[#9a7b34]">Lembar hitung fisik</p>
-                <h2 id="count-dialog-title" className="mt-1 text-lg font-extrabold leading-6 text-[#1b3b3d]">{editorItem.productName}</h2>
+                <p className="text-[11px] font-extrabold uppercase tracking-[.1em] text-[#9a7b34]">Lembar hitung fisik</p>
+                <h2 id="count-dialog-title" className="mt-0.5 break-words text-base font-extrabold leading-5 text-[#1b3b3d]">{editorItem.productName}</h2>
                 <p className="mt-1 break-all font-mono text-[11px] text-[#74847f]">{editorItem.barcode || editorItem.masterSN || "Identitas tidak tersedia"}</p>
               </div>
-              <button type="button" data-testid="button-close-count" aria-label="Tutup lembar hitung" onClick={closeCountEditor} className="rounded-lg p-2 text-[#66807a] hover:bg-[#e9efea]"><X className="h-4 w-4" /></button>
+              <button type="button" data-testid="button-close-count" aria-label="Tutup lembar hitung" onClick={closeCountEditor} className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-[#66807a] hover:bg-[#e9efea]"><X className="h-4 w-4" /></button>
             </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-[#e9eeea] p-3">
-                <p className="text-[11px] font-bold uppercase tracking-[.1em] text-[#788883]">Stok sistem saat mulai hitung</p>
-                <p data-testid="text-count-baseline" className="mt-1 font-mono text-2xl font-black text-[#274b47]">{baselineQty ?? "—"}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-[#e9eeea] p-2">
+                <p className="text-[11px] font-bold uppercase leading-4 tracking-[.06em] text-[#788883]">Stok sistem saat mulai hitung</p>
+                <p data-testid="text-count-baseline" className="mt-0.5 font-mono text-xl font-black text-[#274b47]">{baselineQty ?? "—"}</p>
               </div>
-              <div className="rounded-xl bg-[#e9eeea] p-3">
-                <p className="text-[11px] font-bold uppercase tracking-[.1em] text-[#788883]">Snapshot awal audit</p>
-                <p data-testid="text-count-expected" className="mt-1 font-mono text-2xl font-black text-[#274b47]">{editorItem.expectedQty}</p>
+              <div className="rounded-lg bg-[#e9eeea] p-2">
+                <p className="text-[11px] font-bold uppercase leading-4 tracking-[.06em] text-[#788883]">Snapshot awal audit</p>
+                <p data-testid="text-count-expected" className="mt-0.5 font-mono text-xl font-black text-[#274b47]">{editorItem.expectedQty}</p>
               </div>
             </div>
-            <form className="mt-5 space-y-4" onSubmit={(event) => void saveItemCount(event)}>
+            <form className="mt-3 space-y-3" onSubmit={(event) => void saveItemCount(event)}>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Jumlah fisik <span className="text-[#9a4d3d]">*</span></span>
-                <input data-testid="input-count-quantity" aria-label="Jumlah fisik yang ditemukan" type="number" min="0" step="1" required autoFocus value={countQty} onChange={(event) => setCountQty(event.target.value)} placeholder="Masukkan jumlah aktual" className="h-12 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-4 font-mono text-lg font-bold text-[#244743] shadow-none outline-none focus:border-[#63988b] focus:ring-2 focus:ring-[#6f9e91]/20" />
+                <span className="mb-1 block text-xs font-bold text-[#405e58]">Jumlah fisik <span className="text-[#9a4d3d]">*</span></span>
+                <input data-testid="input-count-quantity" aria-label="Jumlah fisik yang ditemukan" type="number" min="0" step="1" required autoFocus value={countQty} onChange={(event) => setCountQty(event.target.value)} placeholder="Masukkan jumlah aktual" className="h-11 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 font-mono text-base font-bold text-[#244743] shadow-none outline-none focus:border-[#63988b] focus:ring-2 focus:ring-[#6f9e91]/20" />
                 <span className="mt-1.5 block text-[11px] leading-4 text-[#84918d]">Barcode hanya mengidentifikasi produk. Hitungan disimpan setelah jumlah fisik dikonfirmasi.</span>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Temuan kondisi</span>
+                <span className="mb-1 block text-xs font-bold text-[#405e58]">Temuan kondisi</span>
                 <select data-testid="select-count-finding" value={finding} onChange={(event) => { setFinding(event.target.value as Finding); if (event.target.value === "NOT_FOUND") setCountQty("0"); }} className="h-11 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 text-sm text-[#31524d] shadow-none outline-none focus:border-[#63988b]">
                   {FINDINGS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
-                <span className="mt-1.5 block text-[11px] leading-4 text-[#84918d]">Kondisi hanya menjadi catatan audit, tidak menghapus stok atau mengubah master produk.</span>
+                <span className="mt-1 block text-[11px] leading-4 text-[#84918d]">Kondisi hanya menjadi catatan audit, tidak menghapus stok atau mengubah master produk.</span>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Catatan <span className="font-normal text-[#84918d]">· opsional</span></span>
-                <textarea data-testid="input-count-notes" rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Contoh: kemasan penyok di rak belakang" className="w-full resize-y rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 py-2.5 text-sm text-[#31524d] shadow-none outline-none placeholder:text-[#98a39f] focus:border-[#63988b]" />
+                <span className="mb-1 block text-xs font-bold text-[#405e58]">Catatan <span className="font-normal text-[#84918d]">· opsional</span></span>
+                <textarea data-testid="input-count-notes" rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Contoh: kemasan penyok di rak belakang" className="w-full resize-y rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 py-2 text-sm text-[#31524d] shadow-none outline-none placeholder:text-[#98a39f] focus:border-[#63988b]" />
               </label>
               {editorItem.status === "RECOUNT_REQUIRED" && <p className="rounded-lg border border-[#e6d7a8] bg-[#faf3dc] px-3 py-2 text-xs leading-5 text-[#745f23]">Pergerakan stok terdeteksi pada jendela hitung sebelumnya. Hitung fisik ulang dengan stok sistem terbaru sebelum disimpan.</p>}
-              <div className="flex flex-col-reverse gap-2 border-t border-[#e1e7e2] pt-4 sm:flex-row sm:justify-end">
-                <button type="button" data-testid="button-dismiss-count" onClick={closeCountEditor} className="h-11 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee]">Tutup tanpa menyimpan</button>
-                <button type="submit" data-testid="button-save-count" disabled={Boolean(actionBusy)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-5 text-sm font-bold text-white hover:bg-[#174944] disabled:opacity-60">
+              <div className="grid grid-cols-2 gap-2 border-t border-[#e1e7e2] pt-3">
+                <button type="button" data-testid="button-dismiss-count" onClick={closeCountEditor} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#d5dfd9] px-2 text-center text-xs font-bold leading-4 text-[#627671] hover:bg-[#edf2ee]">Tutup tanpa menyimpan</button>
+                <button type="submit" data-testid="button-save-count" disabled={Boolean(actionBusy)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-[#1b5651] px-2 text-center text-xs font-bold leading-4 text-white hover:bg-[#174944] disabled:opacity-60">
                   {actionBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Simpan hitungan
                 </button>
               </div>
