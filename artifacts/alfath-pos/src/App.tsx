@@ -1257,6 +1257,18 @@ export default function App() {
       return [];
     }
   });
+  const visibleShoppingBranchesForProduct = useCallback((product: any) => {
+    const visibleIds = product?.visibleBranchIds || "*";
+    return branches.filter((branch) => {
+      if (hiddenShoppingBranchIds.includes(branch.id)) return false;
+      return visibleIds === "*" ||
+        visibleIds.split(",").map((id: string) => id.trim()).includes(branch.id);
+    });
+  }, [branches, hiddenShoppingBranchIds]);
+  const shoppingPlanEligibleProducts = useMemo(
+    () => products.filter((product) => visibleShoppingBranchesForProduct(product).length > 0),
+    [products, visibleShoppingBranchesForProduct],
+  );
 
   const toggleBranchShoppingHidden = (branchId: string) => {
     setHiddenShoppingBranchIds((prev) => {
@@ -5886,7 +5898,7 @@ export default function App() {
                       onClick={() => {
                         setIsCreatingPlan(!isCreatingPlan);
                         if (!isCreatingPlan) {
-                          let itemsToDraft: any[] = products
+                          let itemsToDraft: any[] = shoppingPlanEligibleProducts
                             .filter((p) => {
                               if (shoppingListCategory === "Aksesoris")
                                 return p.category === "Aksesoris";
@@ -6171,9 +6183,23 @@ export default function App() {
                             <button
                               onClick={async () => {
                                 if (await triggerConfirm("Review rencana ini?")) {
+                                  const copiedItems = (plan.items || []).flatMap((item: any) => {
+                                    const product = products.find((p) => p.id === item.productId);
+                                    if (!product) return [];
+                                    const eligibleBranchIds = new Set(
+                                      visibleShoppingBranchesForProduct(product).map((branch) => branch.id),
+                                    );
+                                    if (eligibleBranchIds.size === 0) return [];
+                                    const branchQtys = Object.fromEntries(
+                                      Object.entries(
+                                        (item.branchQtys || {}) as Record<string, string>,
+                                      ).filter(([branchId]) => eligibleBranchIds.has(branchId)),
+                                    );
+                                    return [{ ...item, branchQtys }];
+                                  });
                                   setIsCreatingPlan(true);
                                   setPlanDraftTitle(plan.title + " (Copy)");
-                                  setPlanDraftItems(plan.items || []);
+                                  setPlanDraftItems(copiedItems);
                                 }
                               }}
                               className="px-4 py-3 bg-slate-50 text-slate-500 rounded-2xl hover:bg-slate-100 transition-all font-black text-[9px] uppercase tracking-widest"
@@ -6232,7 +6258,7 @@ export default function App() {
                               "Masukkan Barcode atau Nama Produk:",
                             );
                             if (prod) {
-                              const found = products.find(
+                              const found = shoppingPlanEligibleProducts.find(
                                 (p) =>
                                   p.barcode === prod ||
                                   p.name
@@ -6251,7 +6277,16 @@ export default function App() {
                                   { productId: found.id, branchQtys: {} },
                                 ]);
                               } else {
-                                alert("Produk tidak ditemukan!");
+                                const exists = products.some(
+                                  (p) =>
+                                    p.barcode === prod ||
+                                    p.name.toLowerCase().includes(prod.toLowerCase()),
+                                );
+                                alert(
+                                  exists
+                                    ? "Produk tidak tersedia di cabang yang aktif untuk daftar belanja."
+                                    : "Produk tidak ditemukan!",
+                                );
                               }
                             }
                           }}
