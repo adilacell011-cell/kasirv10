@@ -954,24 +954,24 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
   const filteredSummary = session?.summary;
 
   return (
-    <div data-testid="page-branch-stock-audit" data-ui-screen="stock_audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-3 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-5 md:pb-6 lg:px-8">
-      <div className="mx-auto w-full min-w-0 max-w-full space-y-4 sm:max-w-[1440px] sm:space-y-5">
-        <header className="relative w-full min-w-0 overflow-hidden rounded-[20px] bg-[#173b3d] px-4 py-4 text-[#f4f4e9] shadow-[0_12px_30px_rgba(23,59,61,.13)] sm:rounded-[22px] sm:px-7 sm:py-6">
+    <div data-testid="page-branch-stock-audit" data-ui-screen="stock_audit" className="h-full min-h-0 w-full min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#edf1f2] px-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] pt-2 text-[#18363b] sm:px-5 sm:pb-8 sm:pt-4 md:pb-6 lg:px-8">
+      <div className="mx-auto w-full min-w-0 max-w-full space-y-3 sm:max-w-[1440px] sm:space-y-4">
+        <header className="relative w-full min-w-0 overflow-hidden rounded-2xl bg-[#173b3d] px-3 py-3 text-[#f4f4e9] shadow-[0_8px_22px_rgba(23,59,61,.12)] sm:rounded-[20px] sm:px-5 sm:py-4">
           <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full border border-[#d6b96a]/20" />
           <div className="pointer-events-none absolute -right-1 top-[-5.5rem] h-56 w-56 rounded-full border border-[#d6b96a]/20" />
-          <div className="relative flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="relative flex min-w-0 flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-[.16em] text-[#d6b96a] sm:mb-3 sm:text-[10px] sm:tracking-[.22em]">
+              <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[.14em] text-[#d6b96a] sm:mb-2 sm:tracking-[.22em]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d6b96a]" />
                 Alfath Pulsa <span className="text-[#86a7a1]">/</span> Pengendalian stok
               </div>
-              <h1 className="break-words text-xl font-black tracking-[-.035em] sm:text-[32px] sm:tracking-[-.045em]">Audit stok cabang</h1>
-              <p className="mt-1.5 max-w-full break-words text-xs leading-5 text-[#c5d5d0] sm:max-w-xl sm:text-sm sm:leading-6">
+              <h1 className="break-words text-lg font-black tracking-[-.035em] sm:text-2xl sm:tracking-[-.045em]">Audit stok cabang</h1>
+              <p className="mt-1 max-w-full break-words text-[11px] leading-4 text-[#c5d5d0] sm:max-w-xl sm:text-xs sm:leading-5">
                 Hitung fisik tanpa menghentikan transaksi. Saat finalisasi, selisih terkonfirmasi diterapkan pada stok terkini.
               </p>
             </div>
-            <div className="flex w-full min-w-0 flex-col gap-2 md:w-[310px] md:shrink-0">
-              <label htmlFor="audit-branch" className="text-[10px] font-bold uppercase tracking-[.18em] text-[#a9c3bd]">
+            <div className="flex w-full min-w-0 flex-col gap-1.5 md:w-[270px] md:shrink-0">
+              <label htmlFor="audit-branch" className="text-[11px] font-bold uppercase tracking-[.14em] text-[#a9c3bd]">
                 Cabang yang diaudit <span className="text-[#e3c975]">· wajib</span>
               </label>
               <div className="relative">
@@ -998,7 +998,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                     setError("");
                     setNotice("");
                   }}
-                  className="w-full min-w-0 max-w-full appearance-none rounded-xl border border-white/15 bg-[#21494a] py-3 pl-10 pr-4 text-sm font-semibold text-[#f4f4e9] shadow-none outline-none transition focus:border-[#d6b96a] focus:ring-2 focus:ring-[#d6b96a]/30 disabled:cursor-not-allowed disabled:opacity-80"
+                  className="min-h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-white/15 bg-[#21494a] py-2.5 pl-10 pr-4 text-xs font-semibold text-[#f4f4e9] shadow-none outline-none transition focus:border-[#d6b96a] focus:ring-2 focus:ring-[#d6b96a]/30 disabled:cursor-not-allowed disabled:opacity-80"
                 >
                   <option value="">Pilih cabang…</option>
                   {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
@@ -1006,15 +1006,15 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               </div>
             </div>
           </div>
-          <div className="relative mt-4 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/10 pt-3 text-[10px] text-[#bdd0ca] sm:mt-5 sm:gap-x-5 sm:text-[11px]">
+          <div className="relative mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-white/10 pt-2.5 text-[11px] text-[#bdd0ca] sm:mt-4 sm:gap-x-4">
             <span className="inline-flex min-w-0 max-w-full items-center gap-2 break-words"><span className="h-2 w-2 shrink-0 rounded-full bg-[#d6b96a]" /> Stok operasional tetap aktif</span>
             <span className="hidden h-3 w-px bg-white/20 sm:block" />
             <span className="min-w-0 max-w-full break-words">Cabang punya sesi audit yang terpisah</span>
-            <span data-testid="status-audit-connection" aria-live="polite" className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] font-semibold ${connectionStatus === "online" ? "border-emerald-200/20 text-[#c8dfd1]" : connectionStatus === "offline" ? "border-amber-200/30 text-[#ffe1a5]" : "border-rose-200/30 text-[#ffc8b9]"}`}>
+            <span data-testid="status-audit-connection" aria-live="polite" className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold ${connectionStatus === "online" ? "border-emerald-200/20 text-[#c8dfd1]" : connectionStatus === "offline" ? "border-amber-200/30 text-[#ffe1a5]" : "border-rose-200/30 text-[#ffc8b9]"}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${connectionStatus === "online" ? "bg-emerald-300" : connectionStatus === "offline" ? "bg-amber-300" : "bg-rose-300"}`} />
               {connectionStatus === "online" ? "Terhubung" : connectionStatus === "offline" ? "Offline" : "Server belum tersinkron"}
             </span>
-            <span className="ml-auto rounded-full border border-white/15 px-2.5 py-1 font-mono text-[9px] tracking-[.16em] text-[#d6b96a]">{role}</span>
+            <span className="ml-auto rounded-full border border-white/15 px-2.5 py-1 font-mono text-[11px] tracking-[.12em] text-[#d6b96a]">{role}</span>
           </div>
         </header>
 
@@ -1098,16 +1098,16 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
             <p className="flex items-center gap-2 text-sm font-semibold text-[#286044]">
               <CheckCircle2 className="h-4 w-4 shrink-0" /> Hitungan barcode tersimpan. Anda dapat memindai produk berikutnya.
             </p>
-            <button type="button" data-testid="button-scan-next-product" onClick={openCameraScanner} disabled={!canWork} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-4 text-xs font-bold text-white hover:bg-[#174944] disabled:opacity-50">
+            <button type="button" data-testid="button-scan-next-product" onClick={openCameraScanner} disabled={!canWork} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-4 text-xs font-bold text-white hover:bg-[#174944] disabled:opacity-50">
               <ScanLine className="h-4 w-4" /> Scan produk berikutnya
             </button>
           </div>
         )}
 
         {!branchId ? (
-          <section data-testid="empty-audit-branch" className="flex min-h-[330px] flex-col items-center justify-center rounded-[22px] border border-dashed border-[#b8c8c4] bg-[#f5f7f5] px-6 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#dce9e4] text-[#285d58]"><MapPin className="h-6 w-6" /></div>
-            <h2 className="text-lg font-extrabold tracking-tight">Mulai dari memilih cabang</h2>
+          <section data-testid="empty-audit-branch" className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#b8c8c4] bg-[#f5f7f5] px-5 text-center sm:min-h-[260px]">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#dce9e4] text-[#285d58]"><MapPin className="h-5 w-5" /></div>
+            <h2 className="text-base font-extrabold tracking-tight">Mulai dari memilih cabang</h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-[#657d7a]">Sesi, daftar produk, dan progres hanya ditampilkan untuk cabang yang dipilih. Belum ada hitungan yang dimulai.</p>
             {branches.length === 0 && <p className="mt-4 text-xs font-semibold text-[#8d5d39]">Daftar cabang belum tersedia.</p>}
           </section>
@@ -1118,10 +1118,10 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
             <div className="h-72 animate-pulse rounded-[22px] bg-[#dce4e2]" />
           </section>
         ) : !session ? (
-          <section data-testid="empty-audit-session" className="flex min-h-[320px] flex-col items-center justify-center rounded-[22px] border border-[#d5dfdc] bg-[#f7f8f4] px-6 text-center shadow-[0_5px_20px_rgba(26,64,66,.035)]">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e9e3c9] text-[#755d1d]"><ClipboardCheck className="h-6 w-6" /></div>
-            <p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#8e7943]">Belum ada sesi aktif</p>
-            <h2 className="mt-2 text-xl font-black tracking-tight">Siap menghitung {selectedBranch?.name ?? "cabang ini"}?</h2>
+          <section data-testid="empty-audit-session" className="flex min-h-[230px] flex-col items-center justify-center rounded-2xl border border-[#d5dfdc] bg-[#f7f8f4] px-5 text-center shadow-[0_5px_20px_rgba(26,64,66,.035)] sm:min-h-[270px]">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e9e3c9] text-[#755d1d]"><ClipboardCheck className="h-5 w-5" /></div>
+            <p className="text-[11px] font-bold uppercase tracking-[.16em] text-[#8e7943]">Belum ada sesi aktif</p>
+            <h2 className="mt-2 text-lg font-black tracking-tight">Siap menghitung {selectedBranch?.name ?? "cabang ini"}?</h2>
             <p className="mt-2 max-w-lg text-sm leading-6 text-[#687b77]">Sesi baru memuat cakupan produk cabang dari server. Pergerakan stok tetap berjalan; item yang berubah saat dihitung akan ditandai untuk hitung ulang.</p>
             <button type="button" data-testid="button-start-audit" disabled={Boolean(actionBusy)} onClick={startSession} className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1b5651] px-5 text-sm font-bold text-white shadow-[0_5px_12px_rgba(27,86,81,.16)] hover:bg-[#174944] disabled:cursor-wait disabled:opacity-60">
               {actionBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Mulai sesi audit
@@ -1129,17 +1129,17 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
           </section>
         ) : (
           <>
-            <section className="rounded-[22px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-[0_5px_20px_rgba(26,64,66,.035)] sm:p-5" data-testid="panel-audit-progress">
-              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <section className="rounded-2xl border border-[#d7e0dc] bg-[#f8f9f5] p-3 shadow-[0_4px_15px_rgba(26,64,66,.035)] sm:p-4" data-testid="panel-audit-progress">
+              <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span data-testid="status-audit-session" className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.12em] ${session.status === "IN_PROGRESS" ? "bg-[#e6edda] text-[#455c2c]" : session.status === "COMPLETED" ? "bg-[#dcece4] text-[#286044]" : "bg-[#eee4df] text-[#805144]"}`}>
+                    <span data-testid="status-audit-session" className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[.1em] ${session.status === "IN_PROGRESS" ? "bg-[#e6edda] text-[#455c2c]" : session.status === "COMPLETED" ? "bg-[#dcece4] text-[#286044]" : "bg-[#eee4df] text-[#805144]"}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${session.status === "IN_PROGRESS" ? "bg-[#82933d]" : session.status === "COMPLETED" ? "bg-[#39845c]" : "bg-[#9a6b58]"}`} />
                       {session.status === "IN_PROGRESS" ? "Sedang berjalan" : session.status === "COMPLETED" ? "Selesai" : "Dibatalkan"}
                     </span>
                     <span className="text-xs text-[#758783]">Sesi #{session.id.slice(-8)}</span>
                   </div>
-                  <h2 className="mt-2 text-lg font-extrabold tracking-tight text-[#1b3b3d]">{session.branchName}</h2>
+                    <h2 className="mt-1 text-base font-extrabold tracking-tight text-[#1b3b3d]">{session.branchName}</h2>
                   <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#70817e]">
                     <span>Dimulai {formatDate(session.startedAt)}</span>
                     <span>oleh <strong className="font-bold text-[#405c58]">{session.startedByName}</strong></span>
@@ -1148,18 +1148,18 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                   </p>
                 </div>
               <div className="grid w-full min-w-0 grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap">
-                  <button type="button" data-testid="button-refresh-audit" disabled={loadingSession || Boolean(actionBusy)} onClick={reload} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#cfdbd6] bg-[#f5f7f3] px-2 text-[10px] font-bold text-[#42635e] hover:bg-[#ebf1ec] disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-xs">
+                  <button type="button" data-testid="button-refresh-audit" disabled={loadingSession || Boolean(actionBusy)} onClick={reload} className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#cfdbd6] bg-[#f5f7f3] px-2 text-[11px] font-bold text-[#42635e] hover:bg-[#ebf1ec] disabled:opacity-50 sm:h-9 sm:gap-2 sm:px-3 sm:text-xs">
                     <RefreshCw className={`h-3.5 w-3.5 ${loadingSession ? "animate-spin" : ""}`} /> Segarkan
                   </button>
                   {isActive && (
                     <>
-                      <button type="button" data-testid="button-report-exception" disabled={!canWork} onClick={() => { setExceptionOpen(true); setError(""); setExceptionSearch(""); setSelectedExceptionProduct(null); }} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#d8c895] bg-[#f8f2dc] px-2 text-[10px] font-bold text-[#6c5720] hover:bg-[#f1e7bf] disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-xs">
+                      <button type="button" data-testid="button-report-exception" disabled={!canWork} onClick={() => { setExceptionOpen(true); setError(""); setExceptionSearch(""); setSelectedExceptionProduct(null); }} className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#d8c895] bg-[#f8f2dc] px-2 text-[11px] font-bold text-[#6c5720] hover:bg-[#f1e7bf] disabled:opacity-50 sm:h-9 sm:gap-2 sm:px-3 sm:text-xs">
                         <Plus className="h-3.5 w-3.5" /> Catat pengecualian
                       </button>
-                      <button type="button" data-testid="button-cancel-audit" disabled={Boolean(actionBusy)} onClick={() => setConfirmAction("cancel")} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#e2ceca] bg-transparent px-2 text-[10px] font-bold text-[#87544a] hover:bg-[#f9efec] disabled:opacity-50 sm:gap-2 sm:px-3 sm:text-xs">
+                      <button type="button" data-testid="button-cancel-audit" disabled={Boolean(actionBusy)} onClick={() => setConfirmAction("cancel")} className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#e2ceca] bg-transparent px-2 text-[11px] font-bold text-[#87544a] hover:bg-[#f9efec] disabled:opacity-50 sm:h-9 sm:gap-2 sm:px-3 sm:text-xs">
                         <X className="h-3.5 w-3.5" /> Batalkan
                       </button>
-                      <button type="button" data-testid="button-finalize-audit" disabled={!canFinalize} onClick={() => setConfirmAction("finalize")} title={!canFinalize ? "Selesaikan semua item dan hitung ulang konflik terlebih dahulu" : undefined} className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#1b5651] px-2 text-[10px] font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:bg-[#9aadaa] sm:gap-2 sm:px-3.5 sm:text-xs">
+                      <button type="button" data-testid="button-finalize-audit" disabled={!canFinalize} onClick={() => setConfirmAction("finalize")} title={!canFinalize ? "Selesaikan semua item dan hitung ulang konflik terlebih dahulu" : undefined} className="inline-flex h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#1b5651] px-2 text-[11px] font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:bg-[#9aadaa] sm:h-9 sm:gap-2 sm:px-3.5 sm:text-xs">
                         <Check className="h-3.5 w-3.5" /> Finalisasi audit
                       </button>
                     </>
@@ -1167,7 +1167,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+              <div className="mt-3 grid grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2 xl:grid-cols-7">
                 <SummaryCell label="Cakupan produk" value={filteredSummary?.totalProducts ?? 0} accent="ink" testId="metric-audit-total" />
                 <SummaryCell label="Sudah dihitung" value={filteredSummary?.counted ?? 0} accent="green" testId="metric-audit-counted" />
                 <SummaryCell label="Belum dihitung" value={filteredSummary?.pending ?? 0} accent="sand" testId="metric-audit-pending" />
@@ -1176,9 +1176,9 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 <SummaryCell label="Selisih +" value={`+${filteredSummary?.positiveVariance ?? 0}`} accent="green" testId="metric-audit-positive" />
                 <SummaryCell label="Selisih −" value={`−${filteredSummary?.negativeVariance ?? 0}`} accent="rose" testId="metric-audit-negative" />
               </div>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-[.15em] text-[#6d817c]">{completion}% selesai</span>
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-[.1em] text-[#6d817c]">{completion}% selesai</span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#e2e9e4]" role="progressbar" aria-label="Progres audit" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completion} data-testid="progress-audit">
                     <div className="h-full rounded-full bg-[#1b7166] transition-[width] duration-500" style={{ width: `${completion}%` }} />
                   </div>
@@ -1188,7 +1188,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 </span>
               </div>
               {isActive && (
-                <p className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-[#687e79]">
+                <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-[#687e79]">
                   <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#a17e2d]" />
                   Stok bergerak tetap diizinkan. Pergerakan yang terdeteksi selama jendela hitung wajib dihitung ulang sebelum finalisasi.
                 </p>
@@ -1203,14 +1203,14 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
             )}
 
             <section className="overflow-hidden rounded-[22px] border border-[#d7e0dc] bg-[#f8f9f5] shadow-[0_5px_20px_rgba(26,64,66,.035)]" data-testid="panel-audit-items">
-              <div className="border-b border-[#e1e7e2] px-4 py-4 sm:px-5">
-                <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div className="border-b border-[#e1e7e2] px-3 py-3 sm:px-4">
+                <div className="flex min-w-0 flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
-                    <h3 className="text-base font-extrabold tracking-tight text-[#1b3b3d]">Daftar hitung</h3>
-                    <p className="mt-1 text-xs leading-5 text-[#74847f]">Pindai barcode untuk melihat stok sistem terbaru; tombol hitung mengambil baseline saat hitung dimulai.</p>
+                    <h3 className="text-sm font-extrabold tracking-tight text-[#1b3b3d]">Daftar hitung</h3>
+                    <p className="mt-0.5 text-xs leading-4 text-[#74847f]">Pindai barcode untuk melihat stok terbaru; baseline diambil saat hitung dimulai.</p>
                   </div>
-                  <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:justify-end">
-                    <label className="relative block min-w-0 sm:w-[280px]">
+                  <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:gap-2 lg:flex lg:flex-wrap lg:justify-end">
+                    <label className="relative col-span-2 block min-w-0 sm:col-span-1 sm:w-auto lg:w-[250px]">
                       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#78908a]" />
                       <input
                         ref={searchInputRef}
@@ -1220,11 +1220,11 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                         value={search}
                         onChange={(event) => { setSearch(event.target.value); setPage(1); }}
                         placeholder="Cari nama, SKU, barcode…"
-                        className="h-10 w-full rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] pl-9 pr-3 text-xs text-[#244743] shadow-none outline-none placeholder:text-[#8b9a95] focus:border-[#63988b] focus:ring-2 focus:ring-[#6f9e91]/20"
+                        className="h-11 w-full rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] pl-9 pr-3 text-xs text-[#244743] shadow-none outline-none placeholder:text-[#8b9a95] focus:border-[#63988b] focus:ring-2 focus:ring-[#6f9e91]/20"
                       />
                     </label>
                     <label className="sr-only" htmlFor="audit-status-filter">Filter status</label>
-                    <select id="audit-status-filter" data-testid="select-audit-status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="h-10 w-full min-w-0 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] shadow-none outline-none focus:border-[#63988b] lg:w-auto">
+                    <select id="audit-status-filter" data-testid="select-audit-status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} className="h-11 w-full min-w-0 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] shadow-none outline-none focus:border-[#63988b] lg:h-10 lg:w-auto">
                       <option value="">Semua status</option>
                       <option value="PENDING">Belum dihitung</option>
                       <option value="COUNTING">Sedang dihitung</option>
@@ -1232,7 +1232,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                       <option value="RECOUNT_REQUIRED">Perlu hitung ulang</option>
                       <option value="EXCLUDED">Pengecualian</option>
                     </select>
-                    <button type="button" data-testid="button-focus-barcode" onClick={() => searchInputRef.current?.focus()} className="inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-3 text-xs font-semibold text-[#42615c] hover:bg-[#e9f0eb] lg:w-auto">
+                    <button type="button" data-testid="button-focus-barcode" onClick={() => searchInputRef.current?.focus()} className="inline-flex h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#d8e1dc] bg-[#f2f5f1] px-2 text-[11px] font-semibold text-[#42615c] hover:bg-[#e9f0eb] lg:h-10 lg:w-auto lg:gap-2 lg:px-3 lg:text-xs">
                       <Barcode className="h-4 w-4" /> Pindai / ketik
                     </button>
                     <button
@@ -1240,7 +1240,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                       data-testid="button-open-camera-scanner"
                       disabled={!canWork}
                       onClick={openCameraScanner}
-                      className="inline-flex h-10 w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-[#1b5651] px-3 text-xs font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
+                      className="inline-flex h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl bg-[#1b5651] px-2 text-[11px] font-bold text-white hover:bg-[#174944] disabled:cursor-not-allowed disabled:opacity-45 lg:h-10 lg:w-auto lg:gap-2 lg:px-3 lg:text-xs"
                     >
                       <Camera className="h-4 w-4" /> Scan Kamera
                     </button>
@@ -1261,7 +1261,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 p-3 sm:hidden" data-testid="list-audit-item-cards">
+                  <div className="space-y-2 p-2 sm:hidden" data-testid="list-audit-item-cards">
                     {items.map((item) => (
                       <AuditItemCard
                         key={item.id}
@@ -1276,7 +1276,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                   <div className="hidden max-w-full overflow-x-auto sm:block">
                   <table className="w-full min-w-[900px] border-collapse text-left">
                     <thead className="bg-[#edf2ed]">
-                      <tr className="border-b border-[#dce4de] text-[9px] font-extrabold uppercase tracking-[.15em] text-[#71827d]">
+                      <tr className="border-b border-[#dce4de] text-[11px] font-extrabold uppercase tracking-[.1em] text-[#71827d]">
                         <th scope="col" className="px-5 py-3">Produk / identitas</th>
                         <th scope="col" className="px-3 py-3 text-center">Status</th>
                         <th scope="col" className="px-3 py-3 text-center">{session.status === "IN_PROGRESS" ? "Sistem saat ini" : "Sistem saat hitung"}</th>
@@ -1293,7 +1293,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                   </div>
                 </>
               )}
-              <footer className="flex min-w-0 flex-col gap-3 border-t border-[#e1e7e2] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <footer className="flex min-w-0 flex-col gap-2 border-t border-[#e1e7e2] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
                 <span data-testid="text-audit-pagination" className="text-[11px] text-[#768681]">
                   {totalItems ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, totalItems)} dari ${totalItems} produk` : "0 produk"}
                 </span>
@@ -1317,7 +1317,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
           <section role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title" className="max-h-[92dvh] w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto rounded-[22px] border border-[#d7e0dc] bg-[#f8f9f5] p-3 shadow-2xl sm:max-w-xl sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Audit stok cabang</p>
+                <p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[#9a7b34]">Audit stok cabang</p>
                 <h2 id="camera-dialog-title" className="mt-1 text-lg font-extrabold text-[#1b3b3d]">Scan barcode dengan kamera</h2>
                 <p className="mt-1 text-xs leading-5 text-[#74847f]">Kamera belakang diprioritaskan. Arahkan barcode ke area garis.</p>
               </div>
@@ -1358,7 +1358,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
 
             {cameraStatus === "found" && cameraResult && (
               <div data-testid="card-camera-product-result" className="mt-3 rounded-xl border border-[#cadbd1] bg-[#eaf2ec] p-4">
-                <p className="text-[9px] font-extrabold uppercase tracking-[.15em] text-[#668078]">Produk ditemukan</p>
+                <p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[#668078]">Produk ditemukan</p>
                 <h3 data-testid="text-camera-product-name" className="mt-1 break-words text-base font-extrabold text-[#244743]">{cameraResult.productName}</h3>
                 <p data-testid="text-camera-product-barcode" className="mt-1 break-all font-mono text-[11px] text-[#71827c]">{cameraCode}</p>
                 <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2.5">
@@ -1374,7 +1374,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                     <Check className="h-4 w-4" /> Masukkan jumlah fisik
                   </button>
                 )}
-                <button type="button" data-testid="button-camera-scan-again" onClick={retryCameraScan} className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#d4dfd8] px-4 text-xs font-bold text-[#49645e] hover:bg-white">
+                <button type="button" data-testid="button-camera-scan-again" onClick={retryCameraScan} className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#d4dfd8] px-4 text-xs font-bold text-[#49645e] hover:bg-white">
                   <ScanLine className="h-4 w-4" /> Scan barcode lain
                 </button>
               </div>
@@ -1384,9 +1384,9 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               <div role="alert" data-testid="alert-camera-product-not-found" className="mt-3 rounded-xl border border-[#e6c5b7] bg-[#fff3ed] p-4 text-sm text-[#803e31]">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <div><p className="font-bold">Produk tidak ditemukan</p><p className="mt-1 text-xs leading-5">{cameraMessage} Pastikan barcode milik produk yang tercakup dalam sesi audit ini.</p><p className="mt-2 break-all font-mono text-[10px]">Barcode: {cameraCode}</p></div>
+                  <div><p className="font-bold">Produk tidak ditemukan</p><p className="mt-1 text-xs leading-5">{cameraMessage} Pastikan barcode milik produk yang tercakup dalam sesi audit ini.</p><p className="mt-2 break-all font-mono text-[11px]">Barcode: {cameraCode}</p></div>
                 </div>
-                <button type="button" data-testid="button-camera-retry-not-found" onClick={retryCameraScan} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#87564b] px-4 text-xs font-bold text-white hover:bg-[#73473e]">
+                <button type="button" data-testid="button-camera-retry-not-found" onClick={retryCameraScan} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#87564b] px-4 text-xs font-bold text-white hover:bg-[#73473e]">
                   <ScanLine className="h-4 w-4" /> Scan ulang
                 </button>
               </div>
@@ -1398,7 +1398,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <p data-testid="text-camera-error-message" className="text-xs leading-5">{cameraMessage}</p>
                 </div>
-                <button type="button" data-testid="button-camera-retry" onClick={retryCameraScan} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#d4c0b8] bg-white px-4 text-xs font-bold text-[#6d4a40] hover:bg-[#fff9f5]">
+                <button type="button" data-testid="button-camera-retry" onClick={retryCameraScan} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#d4c0b8] bg-white px-4 text-xs font-bold text-[#6d4a40] hover:bg-[#fff9f5]">
                   <Camera className="h-4 w-4" /> Coba buka kamera lagi
                 </button>
               </div>
@@ -1413,7 +1413,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
           <section role="dialog" aria-modal="true" aria-labelledby="count-dialog-title" data-testid="dialog-count-item" className="max-h-[92dvh] w-full min-w-0 overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Lembar hitung fisik</p>
+                <p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[#9a7b34]">Lembar hitung fisik</p>
                 <h2 id="count-dialog-title" className="mt-1 text-lg font-extrabold leading-6 text-[#1b3b3d]">{editorItem.productName}</h2>
                 <p className="mt-1 break-all font-mono text-[11px] text-[#74847f]">{editorItem.barcode || editorItem.masterSN || "Identitas tidak tersedia"}</p>
               </div>
@@ -1421,11 +1421,11 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-[#e9eeea] p-3">
-                <p className="text-[9px] font-bold uppercase tracking-[.14em] text-[#788883]">Stok sistem saat mulai hitung</p>
+                <p className="text-[11px] font-bold uppercase tracking-[.1em] text-[#788883]">Stok sistem saat mulai hitung</p>
                 <p data-testid="text-count-baseline" className="mt-1 font-mono text-2xl font-black text-[#274b47]">{baselineQty ?? "—"}</p>
               </div>
               <div className="rounded-xl bg-[#e9eeea] p-3">
-                <p className="text-[9px] font-bold uppercase tracking-[.14em] text-[#788883]">Snapshot awal audit</p>
+                <p className="text-[11px] font-bold uppercase tracking-[.1em] text-[#788883]">Snapshot awal audit</p>
                 <p data-testid="text-count-expected" className="mt-1 font-mono text-2xl font-black text-[#274b47]">{editorItem.expectedQty}</p>
               </div>
             </div>
@@ -1433,14 +1433,14 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               <label className="block">
                 <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Jumlah fisik <span className="text-[#9a4d3d]">*</span></span>
                 <input data-testid="input-count-quantity" aria-label="Jumlah fisik yang ditemukan" type="number" min="0" step="1" required autoFocus value={countQty} onChange={(event) => setCountQty(event.target.value)} placeholder="Masukkan jumlah aktual" className="h-12 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-4 font-mono text-lg font-bold text-[#244743] shadow-none outline-none focus:border-[#63988b] focus:ring-2 focus:ring-[#6f9e91]/20" />
-                <span className="mt-1.5 block text-[10px] text-[#84918d]">Barcode hanya mengidentifikasi produk. Hitungan disimpan setelah jumlah fisik dikonfirmasi.</span>
+                <span className="mt-1.5 block text-[11px] leading-4 text-[#84918d]">Barcode hanya mengidentifikasi produk. Hitungan disimpan setelah jumlah fisik dikonfirmasi.</span>
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Temuan kondisi</span>
                 <select data-testid="select-count-finding" value={finding} onChange={(event) => { setFinding(event.target.value as Finding); if (event.target.value === "NOT_FOUND") setCountQty("0"); }} className="h-11 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 text-sm text-[#31524d] shadow-none outline-none focus:border-[#63988b]">
                   {FINDINGS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
-                <span className="mt-1.5 block text-[10px] text-[#84918d]">Kondisi hanya menjadi catatan audit, tidak menghapus stok atau mengubah master produk.</span>
+                <span className="mt-1.5 block text-[11px] leading-4 text-[#84918d]">Kondisi hanya menjadi catatan audit, tidak menghapus stok atau mengubah master produk.</span>
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Catatan <span className="font-normal text-[#84918d]">· opsional</span></span>
@@ -1462,7 +1462,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
         <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102d2b]/55 p-0 sm:items-center sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setExceptionOpen(false); }}>
           <section role="dialog" aria-modal="true" aria-labelledby="exception-dialog-title" data-testid="dialog-audit-exception" className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-lg sm:rounded-[22px] sm:p-6">
             <div className="flex items-start justify-between gap-4">
-              <div><p className="text-[9px] font-extrabold uppercase tracking-[.18em] text-[#9a7b34]">Temuan di luar daftar</p><h2 id="exception-dialog-title" className="mt-1 text-lg font-extrabold text-[#1b3b3d]">Catat pengecualian</h2></div>
+              <div><p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[#9a7b34]">Temuan di luar daftar</p><h2 id="exception-dialog-title" className="mt-1 text-lg font-extrabold text-[#1b3b3d]">Catat pengecualian</h2></div>
               <button type="button" data-testid="button-close-exception" aria-label="Tutup form pengecualian" onClick={() => setExceptionOpen(false)} className="rounded-lg p-2 text-[#66807a] hover:bg-[#e9efea]"><X className="h-4 w-4" /></button>
             </div>
             <p className="mt-2 rounded-xl bg-[#f2edda] px-3 py-2.5 text-xs leading-5 text-[#6d5a28]">Produk di luar cakupan hanya dicatat sebagai temuan. Catatan ini tidak menambah stok atau mengubah master produk.</p>
@@ -1484,22 +1484,22 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                   <div data-testid="selected-exception-product" className="flex items-start justify-between gap-3 rounded-xl border border-[#cadbd1] bg-[#eaf2ec] p-3">
                     <div className="min-w-0">
                       <p className="truncate text-xs font-bold text-[#31524d]">{selectedExceptionProduct.name}</p>
-                      <p className="mt-1 text-[10px] text-[#758781]">
+                      <p className="mt-1 text-[11px] text-[#758781]">
                         {selectedExceptionProduct.barcode || selectedExceptionProduct.masterSN || selectedExceptionProduct.id} · stok tercatat {selectedExceptionProduct.branchStockQty}
                       </p>
                     </div>
-                    <button type="button" data-testid="button-clear-exception-product" onClick={() => { setSelectedExceptionProduct(null); setExceptionSearch(""); }} className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-[#647b76] hover:bg-white">Ganti</button>
+                    <button type="button" data-testid="button-clear-exception-product" onClick={() => { setSelectedExceptionProduct(null); setExceptionSearch(""); }} className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-[#647b76] hover:bg-white">Ganti</button>
                   </div>
                 ) : exceptionSearch.trim().length >= 2 ? (
                   <div data-testid="list-exception-candidates" className="max-h-44 overflow-auto rounded-xl border border-[#d7e0dc] bg-white">
                     {loadingCandidates ? <p className="px-3 py-3 text-xs text-[#71817c]">Mencari produk…</p> : exceptionCandidates.length ? exceptionCandidates.map((candidate) => (
                       <button key={candidate.id} type="button" data-testid={`button-exception-product-${candidate.id}`} onClick={() => setSelectedExceptionProduct(candidate)} className="block w-full border-b border-[#edf1ed] px-3 py-2.5 text-left last:border-b-0 hover:bg-[#f0f5f1]">
                         <span className="block truncate text-xs font-bold text-[#31524d]">{candidate.name}</span>
-                        <span className="mt-1 block truncate text-[10px] text-[#798984]">{candidate.barcode || candidate.masterSN || candidate.id} · stok cabang {candidate.branchStockQty}</span>
+                        <span className="mt-1 block truncate text-[11px] text-[#798984]">{candidate.barcode || candidate.masterSN || candidate.id} · stok cabang {candidate.branchStockQty}</span>
                       </button>
                     )) : <p className="px-3 py-3 text-xs text-[#71817c]">Tidak ada produk katalog yang cocok.</p>}
                   </div>
-                ) : <p className="text-[10px] text-[#84918d]">Ketik minimal 2 karakter. Temuan ini hanya dicatat dan tidak mengubah stok.</p>}
+                ) : <p className="text-[11px] text-[#84918d]">Ketik minimal 2 karakter. Temuan ini hanya dicatat dan tidak mengubah stok.</p>}
               </div>
               <label className="block"><span className="mb-1.5 block text-xs font-bold text-[#405e58]">Jenis temuan</span><select data-testid="select-exception-finding" value={exceptionFinding} onChange={(event) => setExceptionFinding(event.target.value as Finding)} className="h-11 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 text-sm text-[#31524d] shadow-none outline-none focus:border-[#63988b]"><option value="UNLISTED_IN_BRANCH">Produk tidak terdaftar di cabang</option><option value="EXPIRED">Kedaluwarsa</option><option value="DAMAGED">Rusak</option><option value="NOT_SOLD_HERE">Tidak dijual di cabang ini</option></select></label>
               <label className="block"><span className="mb-1.5 block text-xs font-bold text-[#405e58]">Jumlah ditemukan <span className="font-normal text-[#84918d]">· opsional</span></span><input data-testid="input-exception-quantity" type="number" min="0" step="1" value={exceptionQty} onChange={(event) => setExceptionQty(event.target.value)} placeholder="Tidak mengubah stok" className="h-11 w-full rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 font-mono text-sm text-[#31524d] shadow-none outline-none focus:border-[#63988b]" /></label>
@@ -1533,8 +1533,8 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               <p className="mt-2 text-sm leading-6 text-[#697c77]">Sesi akan ditandai dibatalkan dan tetap tersimpan sebagai riwayat. Stok tidak akan diubah.</p>
             )}
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" data-testid="button-dismiss-audit-confirm" onClick={() => setConfirmAction(null)} className="h-10 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee]">Kembali</button>
-              <button type="button" data-testid="button-confirm-audit-action" disabled={(confirmAction === "finalize" && !canFinalize) || Boolean(actionBusy)} onClick={() => void performConfirmation()} className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 ${confirmAction === "finalize" ? "bg-[#1b5651] hover:bg-[#174944]" : "bg-[#87564b] hover:bg-[#73473e]"}`}>
+              <button type="button" data-testid="button-dismiss-audit-confirm" onClick={() => setConfirmAction(null)} className="h-11 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee]">Kembali</button>
+              <button type="button" data-testid="button-confirm-audit-action" disabled={(confirmAction === "finalize" && !canFinalize) || Boolean(actionBusy)} onClick={() => void performConfirmation()} className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 ${confirmAction === "finalize" ? "bg-[#1b5651] hover:bg-[#174944]" : "bg-[#87564b] hover:bg-[#73473e]"}`}>
                 {actionBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : confirmAction === "finalize" ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                 {confirmAction === "finalize" ? "Ya, finalisasi" : "Ya, batalkan sesi"}
               </button>
@@ -1544,19 +1544,25 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
       )}
 
       {visibilityRevokeItem && session && (
-        <div className="fixed inset-0 z-[75] flex items-end justify-center bg-[#102d2b]/60 p-0 sm:items-center sm:p-4">
-          <section role="alertdialog" aria-modal="true" aria-labelledby="revoke-visibility-title" data-testid="dialog-revoke-branch-visibility" className="w-full rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-md sm:rounded-[22px] sm:p-6">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f2edda] text-[#806722]"><ShieldAlert className="h-5 w-5" /></div>
-            <h2 id="revoke-visibility-title" className="mt-4 text-lg font-extrabold text-[#1b3b3d]">Cabut izin tampil di {session.branchName}?</h2>
-            <p className="mt-2 text-sm leading-6 text-[#697c77]">
+        createPortal(
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-[#102d2b]/65 px-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] pb-[calc(env(safe-area-inset-bottom,0px)+12px)]">
+          <section role="alertdialog" aria-modal="true" aria-labelledby="revoke-visibility-title" data-testid="dialog-revoke-branch-visibility" className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#d7e0dc] bg-[#f8f9f5] p-4 shadow-2xl sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f2edda] text-[#806722]"><ShieldAlert className="h-4 w-4" /></div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-extrabold uppercase tracking-[.12em] text-[#9a7b34]">Konfirmasi perubahan cabang</p>
+                <h2 id="revoke-visibility-title" className="mt-0.5 text-base font-extrabold leading-5 text-[#1b3b3d]">Cabut izin tampil di {session.branchName}?</h2>
+              </div>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-[#697c77]">
               Produk <strong className="text-[#31504b]">{visibilityRevokeItem.productName}</strong> akan keluar dari antrean hitung cabang ini dan tidak lagi masuk alert belanja cabang ini. Izin cabang lain dan rencana belanja lama tidak diubah.
             </p>
-            <div className="mt-3 rounded-xl border border-[#e2d5aa] bg-[#faf4df] px-3 py-2 text-xs leading-5 text-[#745f23]">
+            <div className="mt-2.5 rounded-xl border border-[#e2d5aa] bg-[#faf4df] px-3 py-2 text-[11px] leading-4.5 text-[#745f23]">
               Stok sistem yang terlihat sekarang: <strong>{visibilityRevokeItem.systemQty} pcs</strong>. Server akan memeriksa ulang; pencabutan hanya berhasil jika stok terbaru tepat 0 dan tidak ada hitungan fisik positif.
             </div>
-            <form className="mt-4 space-y-4" onSubmit={(event) => void revokeBranchVisibility(event)}>
+            <form className="mt-3 space-y-3" onSubmit={(event) => void revokeBranchVisibility(event)}>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Alasan pencabutan</span>
+                <span className="mb-1 block text-[11px] font-bold text-[#405e58]">Alasan pencabutan</span>
                 <textarea
                   data-testid="input-revoke-visibility-reason"
                   required
@@ -1565,19 +1571,21 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                   rows={2}
                   value={visibilityRevokeReason}
                   onChange={(event) => setVisibilityRevokeReason(event.target.value)}
-                  className="w-full resize-y rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 py-2.5 text-sm text-[#31524d] shadow-none outline-none placeholder:text-[#98a39f] focus:border-[#63988b]"
+                  className="w-full resize-y rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 py-2 text-xs text-[#31524d] shadow-none outline-none placeholder:text-[#98a39f] focus:border-[#63988b]"
                 />
               </label>
               {error && <p role="alert" className="rounded-lg border border-[#e8cbc3] bg-[#fbefea] px-3 py-2 text-xs leading-5 text-[#8b4d3f]">{error}</p>}
-              <div className="flex flex-col-reverse gap-2 border-t border-[#e1e7e2] pt-4 sm:flex-row sm:justify-end">
-                <button type="button" data-testid="button-dismiss-revoke-visibility" disabled={Boolean(actionBusy)} onClick={() => setVisibilityRevokeItem(null)} className="h-10 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee] disabled:opacity-50">Batal</button>
-                <button type="submit" data-testid="button-confirm-revoke-visibility" disabled={Boolean(actionBusy) || visibilityRevokeReason.trim().length < 3} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#87564b] px-4 text-sm font-bold text-white hover:bg-[#73473e] disabled:cursor-not-allowed disabled:opacity-50">
+              <div className="grid grid-cols-2 gap-2 border-t border-[#e1e7e2] pt-3">
+                <button type="button" data-testid="button-dismiss-revoke-visibility" disabled={Boolean(actionBusy)} onClick={() => setVisibilityRevokeItem(null)} className="h-11 rounded-xl border border-[#d5dfd9] px-3 text-xs font-bold text-[#627671] hover:bg-[#edf2ee] disabled:opacity-50">Batal</button>
+                <button type="submit" data-testid="button-confirm-revoke-visibility" disabled={Boolean(actionBusy) || visibilityRevokeReason.trim().length < 3} className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#87564b] px-2.5 text-xs font-bold text-white hover:bg-[#73473e] disabled:cursor-not-allowed disabled:opacity-50">
                   {actionBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />} Cabut izin cabang
                 </button>
               </div>
             </form>
           </section>
-        </div>
+        </div>,
+        document.body,
+        )
       )}
 
       {actionBusy && <span className="sr-only" role="status" data-testid="status-audit-action-busy">{actionBusy}</span>}
@@ -1594,9 +1602,9 @@ function SummaryCell({ label, value, accent, testId }: { label: string; value: n
     rose: "text-[#9a5949]",
   };
   return (
-    <div data-testid={testId} className="min-w-0 rounded-xl border border-[#e0e7e1] bg-[#f2f5f0] px-3 py-2.5">
-      <p className="truncate text-[9px] font-bold uppercase leading-4 tracking-[.11em] text-[#7a8984]">{label}</p>
-      <p className={`mt-1 font-mono text-xl font-black leading-none ${tones[accent]}`}>{value}</p>
+    <div data-testid={testId} className="min-w-0 rounded-lg border border-[#e0e7e1] bg-[#f2f5f0] px-2 py-2 sm:px-2.5">
+      <p className="min-h-6 break-words text-[11px] font-bold uppercase leading-3 tracking-[.03em] text-[#7a8984]">{label}</p>
+      <p className={`mt-1 font-mono text-base font-black leading-none sm:text-lg ${tones[accent]}`}>{value}</p>
     </div>
   );
 }
@@ -1619,40 +1627,40 @@ function AuditItemCard({ item, canWork, busy, onCount, onRevoke }: { item: Audit
           : "bg-[#edf0eb] text-[#71817a]";
 
   return (
-    <article data-testid={`card-audit-item-${item.id}`} className="min-w-0 max-w-full rounded-xl border border-[#dce5df] bg-white p-3 shadow-[0_2px_8px_rgba(26,64,66,.035)]">
-      <div className="flex min-w-0 items-start gap-2.5">
-        <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}>
+    <article data-testid={`card-audit-item-${item.id}`} className="min-w-0 max-w-full rounded-xl border border-[#dce5df] bg-white p-2.5 shadow-[0_2px_8px_rgba(26,64,66,.035)]">
+      <div className="flex min-w-0 items-start gap-2">
+        <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}>
           <PackageSearch className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p data-testid={`text-audit-product-${item.id}`} className="break-words text-sm font-bold leading-5 text-[#294743]">{item.productName}</p>
-          <p className="mt-1 break-all font-mono text-[10px] leading-4 text-[#85918d]">
+          <p data-testid={`text-audit-product-${item.id}`} className="break-words text-sm font-bold leading-4 text-[#294743]">{item.productName}</p>
+          <p className="mt-0.5 break-all font-mono text-[11px] leading-4 text-[#85918d]">
             {item.barcode ? `BC ${item.barcode}` : item.masterSN ? `SKU ${item.masterSN}` : `ID ${item.productId}`}
           </p>
-          {!item.inScope && <span className="mt-1 inline-flex rounded bg-[#f3ebd2] px-1.5 py-0.5 text-[9px] font-bold text-[#806b30]">Di luar cakupan</span>}
+          {!item.inScope && <span className="mt-1 inline-flex rounded bg-[#f3ebd2] px-1.5 py-0.5 text-[11px] font-bold text-[#806b30]">Di luar cakupan</span>}
           {item.finding && item.finding !== "NORMAL" && (
-            <p className="mt-1 break-words text-[10px] font-semibold leading-4 text-[#826a2b]">
+            <p className="mt-1 break-words text-[11px] font-semibold leading-4 text-[#826a2b]">
               {FINDING_LABEL[item.finding] ?? item.finding}{item.notes ? ` · ${item.notes}` : ""}
             </p>
           )}
         </div>
-        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[118px] shrink-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold leading-4 ${statusTone}`}>
+        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[118px] shrink-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold leading-4 ${statusTone}`}>
           {isConflict && <AlertCircle className="h-3 w-3 shrink-0" />}{STATUS_LABEL[item.status]}
         </span>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-1.5">
-        <div className="min-w-0 rounded-lg bg-[#f1f4f0] px-2 py-2">
-          <p className="break-words text-[9px] font-semibold leading-3 text-[#75847e]">Sistem</p>
-          <p data-testid={`text-audit-system-${item.id}`} className="mt-1 font-mono text-base font-bold text-[#425d57]">{item.systemQty}</p>
+      <div className="mt-2 grid grid-cols-3 gap-1">
+        <div className="min-w-0 rounded-md bg-[#f1f4f0] px-2 py-1.5">
+          <p className="break-words text-[11px] font-semibold leading-3 text-[#75847e]">Sistem</p>
+          <p data-testid={`text-audit-system-${item.id}`} className="mt-0.5 font-mono text-sm font-bold text-[#425d57]">{item.systemQty}</p>
         </div>
-        <div className="min-w-0 rounded-lg bg-[#f1f4f0] px-2 py-2">
-          <p className="break-words text-[9px] font-semibold leading-3 text-[#75847e]">Fisik</p>
-          <p data-testid={`text-audit-counted-${item.id}`} className={`mt-1 font-mono text-base font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</p>
+        <div className="min-w-0 rounded-md bg-[#f1f4f0] px-2 py-1.5">
+          <p className="break-words text-[11px] font-semibold leading-3 text-[#75847e]">Fisik</p>
+          <p data-testid={`text-audit-counted-${item.id}`} className={`mt-0.5 font-mono text-sm font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</p>
         </div>
-        <div className="min-w-0 rounded-lg bg-[#f1f4f0] px-2 py-2">
-          <p className="break-words text-[9px] font-semibold leading-3 text-[#75847e]">Selisih</p>
-          <p data-testid={`text-audit-variance-${item.id}`} className={`mt-1 inline-flex items-center gap-0.5 font-mono text-base font-bold ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "text-[#39754a]" : variance < 0 ? "text-[#a34f3d]" : "text-[#617770]"}`}>
+        <div className="min-w-0 rounded-md bg-[#f1f4f0] px-2 py-1.5">
+          <p className="break-words text-[11px] font-semibold leading-3 text-[#75847e]">Selisih</p>
+          <p data-testid={`text-audit-variance-${item.id}`} className={`mt-0.5 inline-flex items-center gap-0.5 font-mono text-sm font-bold ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "text-[#39754a]" : variance < 0 ? "text-[#a34f3d]" : "text-[#617770]"}`}>
             {variance == null ? "—" : variance > 0 ? <><ArrowUpRight className="h-3 w-3" />{variance}</> : variance < 0 ? <><ArrowDownRight className="h-3 w-3" />{Math.abs(variance)}</> : "0"}
           </p>
         </div>
@@ -1660,21 +1668,21 @@ function AuditItemCard({ item, canWork, busy, onCount, onRevoke }: { item: Audit
 
       <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
         {item.countedByName
-          ? <p className="min-w-0 break-words text-[10px] leading-4 text-[#526d66]">{item.countedByName} · {formatDate(item.countedAt)}</p>
-          : <p className="min-w-0 text-[10px] text-[#a0aaa6]">Belum ada hitungan</p>}
+          ? <p className="min-w-0 break-words text-[11px] leading-4 text-[#526d66]">{item.countedByName} · {formatDate(item.countedAt)}</p>
+          : <p className="min-w-0 text-[11px] text-[#a0aaa6]">Belum ada hitungan</p>}
         {item.inScope && item.status !== "EXCLUDED" && item.status !== "COUNTING" ? (
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2.5 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
               {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
               {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah" : "Hitung"}
             </button>
-            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} disabled={!canWork || busy} onClick={onRevoke} className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e1d5b1] px-2.5 text-[9px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
-              <MapPin className="h-3 w-3" /> Cabut izin cabang
+            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} aria-label="Cabut izin tampil di cabang" disabled={!canWork || busy} onClick={onRevoke} className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-[#e1d5b1] px-2 text-[11px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
+              <MapPin className="h-3 w-3" /> Cabut izin
             </button>
           </div>
         ) : item.status === "COUNTING" ? (
-          <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Dibuka</span>
-        ) : <span className="shrink-0 text-[10px] text-[#899792]">—</span>}
+          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Dibuka</span>
+        ) : <span className="shrink-0 text-[11px] text-[#899792]">—</span>}
       </div>
     </article>
   );
@@ -1689,50 +1697,50 @@ function AuditItemRow({ item, canWork, busy, onCount, onRevoke }: { item: AuditI
   const isConflict = item.status === "RECOUNT_REQUIRED";
   return (
     <tr data-testid={`row-audit-item-${item.id}`} className="transition-colors hover:bg-[#f3f6f2]">
-      <td className="px-5 py-3.5">
+      <td className="px-4 py-2.5">
         <div className="flex items-start gap-3">
-          <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}><PackageSearch className="h-4 w-4" /></div>
+          <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}><PackageSearch className="h-3.5 w-3.5" /></div>
           <div className="min-w-0">
             <p data-testid={`text-audit-product-${item.id}`} className="max-w-[300px] truncate text-xs font-bold text-[#294743]">{item.productName}</p>
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9px] text-[#85918d]">
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px] text-[#85918d]">
               {item.barcode && <span>BC {item.barcode}</span>}
               {item.masterSN && <span>SKU {item.masterSN}</span>}
               {!item.barcode && !item.masterSN && <span>ID {item.productId}</span>}
               {!item.inScope && <span className="rounded bg-[#f3ebd2] px-1.5 py-0.5 font-sans font-bold text-[#806b30]">Di luar cakupan</span>}
             </p>
-            {item.finding && item.finding !== "NORMAL" && <p className="mt-1 text-[10px] font-semibold text-[#826a2b]">{FINDING_LABEL[item.finding] ?? item.finding}{item.notes ? ` · ${item.notes}` : ""}</p>}
+            {item.finding && item.finding !== "NORMAL" && <p className="mt-1 text-[11px] font-semibold text-[#826a2b]">{FINDING_LABEL[item.finding] ?? item.finding}{item.notes ? ` · ${item.notes}` : ""}</p>}
           </div>
         </div>
       </td>
-      <td className="px-3 py-3 text-center">
-        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[130px] items-center justify-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold leading-4 ${isConflict ? "bg-[#f7e7df] text-[#a04d34]" : item.status === "COUNTED" ? "bg-[#e3f0e7] text-[#39734d]" : item.status === "COUNTING" ? "bg-[#e7edf0] text-[#496c78]" : item.status === "EXCLUDED" || !item.inScope ? "bg-[#f3edd9] text-[#816c2d]" : "bg-[#edf0eb] text-[#71817a]"}`}>
+      <td className="px-3 py-2.5 text-center">
+        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[130px] items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold leading-4 ${isConflict ? "bg-[#f7e7df] text-[#a04d34]" : item.status === "COUNTED" ? "bg-[#e3f0e7] text-[#39734d]" : item.status === "COUNTING" ? "bg-[#e7edf0] text-[#496c78]" : item.status === "EXCLUDED" || !item.inScope ? "bg-[#f3edd9] text-[#816c2d]" : "bg-[#edf0eb] text-[#71817a]"}`}>
           {isConflict && <AlertCircle className="h-3 w-3 shrink-0" />}{STATUS_LABEL[item.status]}
         </span>
       </td>
-      <td className="px-3 py-3 text-center"><span data-testid={`text-audit-system-${item.id}`} className="font-mono text-sm font-bold text-[#425d57]">{item.systemQty}</span></td>
-      <td className="px-3 py-3 text-center"><span data-testid={`text-audit-counted-${item.id}`} className={`font-mono text-sm font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</span></td>
-      <td className="px-3 py-3 text-center">
+      <td className="px-3 py-2.5 text-center"><span data-testid={`text-audit-system-${item.id}`} className="font-mono text-sm font-bold text-[#425d57]">{item.systemQty}</span></td>
+      <td className="px-3 py-2.5 text-center"><span data-testid={`text-audit-counted-${item.id}`} className={`font-mono text-sm font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</span></td>
+      <td className="px-3 py-2.5 text-center">
         <span data-testid={`text-audit-variance-${item.id}`} className={`inline-flex min-w-10 items-center justify-center gap-0.5 rounded-md px-1.5 py-1 font-mono text-xs font-bold ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "bg-[#e8f2e8] text-[#39754a]" : variance < 0 ? "bg-[#f8e9e4] text-[#a34f3d]" : "bg-[#edf1ed] text-[#617770]"}`}>
           {variance == null ? "—" : variance > 0 ? <><ArrowUpRight className="h-3 w-3" />{variance}</> : variance < 0 ? <><ArrowDownRight className="h-3 w-3" />{Math.abs(variance)}</> : "0"}
         </span>
       </td>
-      <td className="px-4 py-3">
-        {item.countedByName ? <><p className="text-[10px] font-semibold text-[#526d66]">{item.countedByName}</p><p data-testid={`text-audit-counted-at-${item.id}`} className="mt-1 flex items-center gap-1 text-[9px] text-[#8a9893]"><Clock3 className="h-3 w-3" />{formatDate(item.countedAt)}</p></> : <span className="text-[10px] text-[#a0aaa6]">Belum ada hitungan</span>}
+      <td className="px-4 py-2.5">
+        {item.countedByName ? <><p className="text-[11px] font-semibold text-[#526d66]">{item.countedByName}</p><p data-testid={`text-audit-counted-at-${item.id}`} className="mt-1 flex items-center gap-1 text-[11px] text-[#8a9893]"><Clock3 className="h-3 w-3" />{formatDate(item.countedAt)}</p></> : <span className="text-[11px] text-[#a0aaa6]">Belum ada hitungan</span>}
       </td>
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-2.5 text-right">
         {item.inScope && item.status !== "EXCLUDED" && item.status !== "COUNTING" ? (
-          <div className="flex flex-col items-end gap-1.5">
-            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
               {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
               {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah hitungan" : "Hitung"}
             </button>
-            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} disabled={!canWork || busy} onClick={onRevoke} className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#e1d5b1] px-2 text-[9px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
-              <MapPin className="h-3 w-3" /> Cabut izin
+            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} aria-label="Cabut izin tampil di cabang" disabled={!canWork || busy} onClick={onRevoke} className="inline-flex h-9 items-center gap-1 rounded-lg border border-[#e1d5b1] px-2 text-[11px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
+              <MapPin className="h-3 w-3" /> Cabut
             </button>
           </div>
         ) : item.status === "COUNTING" ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Sedang dibuka</span>
-        ) : <span className="text-[10px] text-[#899792]">—</span>}
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Sedang dibuka</span>
+        ) : <span className="text-[11px] text-[#899792]">—</span>}
       </td>
     </tr>
   );

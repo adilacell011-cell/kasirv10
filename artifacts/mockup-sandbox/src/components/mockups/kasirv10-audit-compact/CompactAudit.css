@@ -1,0 +1,431 @@
+.compact-audit {
+  --audit-ink: #173b3d;
+  --audit-sage: #e7eee8;
+  --audit-paper: #f2f5f0;
+  --audit-gold: #d6b96a;
+  min-height: 100dvh;
+  color: var(--audit-ink);
+  background: #e5ebe6;
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+}
+
+.compact-audit .audit-demo-bar {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 5px 14px;
+  border-bottom: 1px solid #d2ddd5;
+  background: #f3f6f1;
+}
+
+.compact-audit .audit-demo-brand {
+  min-width: 0;
+  color: #637a70;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.compact-audit .audit-demo-open {
+  display: inline-flex;
+  min-height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #c9d7cc;
+  border-radius: 9px;
+  background: #e7eee8;
+  padding: 0 11px;
+  color: #315c50;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 130ms ease, background-color 150ms ease;
+}
+
+.compact-audit .audit-demo-open:hover { background: #dce9df; }
+.compact-audit .audit-demo-open:active { transform: scale(.98); }
+
+/* A denser layout around the extracted fixture; business UI and behavior remain untouched. */
+.compact-audit .kasirv10-fixture {
+  min-height: calc(100dvh - 42px);
+  background: #e5ebe6;
+  color: #173b3d;
+}
+
+.compact-audit .app-topbar {
+  height: 54px;
+  padding-inline: 12px;
+  box-shadow: 0 2px 8px rgba(25, 54, 47, .08);
+}
+
+.compact-audit .app-topbar button { min-height: 36px; }
+.compact-audit .app-workspace {
+  padding: 10px 9px calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+.compact-audit .app-workspace > div { max-width: 1120px; }
+
+.compact-audit [data-testid="page-branch-stock-audit"] {
+  padding: 0 0 8px;
+  overflow: visible;
+  background: transparent !important;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div {
+  gap: 9px;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header {
+  border-radius: 15px;
+  padding: 12px 14px 10px;
+  box-shadow: 0 5px 14px rgba(23, 59, 61, .11) !important;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex {
+  gap: 10px;
+  align-items: center;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex > div:first-child {
+  flex: 1 1 auto;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex > div:first-child > div:first-child {
+  margin-bottom: 3px;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header h1 {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header p {
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex > div:last-child {
+  width: min(42%, 220px);
+  gap: 5px;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header label {
+  font-size: 9px;
+  line-height: 1.25;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header select {
+  min-height: 40px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 12px;
+}
+.compact-audit [data-testid="page-branch-stock-audit"] > div > header > div:last-child {
+  margin-top: 8px;
+  padding-top: 7px;
+  gap: 5px 12px;
+}
+
+.compact-audit [data-testid="panel-audit-progress"] {
+  border-radius: 15px;
+  padding: 11px 12px;
+  box-shadow: 0 3px 10px rgba(26, 64, 66, .035);
+}
+.compact-audit [data-testid="panel-audit-progress"] > div:first-child {
+  align-items: center;
+  gap: 9px;
+}
+.compact-audit [data-testid="panel-audit-progress"] h2 {
+  margin-top: 4px;
+  font-size: 15px;
+}
+.compact-audit [data-testid="panel-audit-progress"] > div:first-child > div:last-child {
+  gap: 5px;
+}
+.compact-audit [data-testid="panel-audit-progress"] button {
+  min-height: 38px;
+}
+.compact-audit [data-testid="panel-audit-progress"] > div:nth-child(2) {
+  margin-top: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.compact-audit [data-testid^="metric-audit-"] {
+  border-radius: 9px;
+  padding: 7px 8px;
+}
+.compact-audit [data-testid^="metric-audit-"] > p:first-child {
+  font-size: 8px;
+  line-height: 1.25;
+}
+.compact-audit [data-testid^="metric-audit-"] > p:last-child {
+  margin-top: 3px;
+  font-size: 17px;
+}
+.compact-audit [data-testid="panel-audit-progress"] > div:nth-child(3) {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 8px;
+  gap: 7px;
+}
+.compact-audit [data-testid="panel-audit-progress"] > p:last-child {
+  margin-top: 7px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.compact-audit [data-testid="panel-audit-items"] {
+  border-radius: 15px;
+  box-shadow: 0 3px 10px rgba(26, 64, 66, .035);
+}
+.compact-audit [data-testid="panel-audit-items"] > div:first-child {
+  padding: 10px 11px;
+}
+.compact-audit [data-testid="panel-audit-items"] h3 {
+  font-size: 14px;
+}
+.compact-audit [data-testid="panel-audit-items"] > div:first-child p {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.compact-audit [data-testid="panel-audit-items"] > div:first-child > div {
+  gap: 7px;
+}
+.compact-audit [data-testid="panel-audit-items"] [data-testid="input-audit-search"],
+.compact-audit [data-testid="panel-audit-items"] [data-testid="select-audit-status"],
+.compact-audit [data-testid="panel-audit-items"] [data-testid="button-focus-barcode"],
+.compact-audit [data-testid="panel-audit-items"] [data-testid="button-open-camera-scanner"] {
+  min-height: 42px;
+}
+.compact-audit [data-testid="list-audit-item-cards"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 8px;
+}
+.compact-audit [data-testid^="card-audit-item-"] {
+  border-radius: 12px !important;
+  padding: 9px !important;
+  box-shadow: 0 2px 6px rgba(26, 64, 66, .055) !important;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:first-child {
+  gap: 7px;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:first-child > div:first-child {
+  width: 27px;
+  height: 27px;
+}
+.compact-audit [data-testid^="card-audit-item-"] [data-testid^="text-audit-product-"] {
+  font-size: 12px;
+  line-height: 1.3;
+}
+.compact-audit [data-testid^="card-audit-item-"] [data-testid^="status-audit-item-"] {
+  max-width: 105px;
+  font-size: 8px;
+  line-height: 1.25;
+  padding: 4px 6px;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:nth-child(2) {
+  margin-top: 8px;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:nth-child(2) > div {
+  padding: 6px 7px;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:nth-child(2) p:last-child {
+  margin-top: 2px;
+  font-size: 14px;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:last-child {
+  margin-top: 7px;
+}
+.compact-audit [data-testid^="card-audit-item-"] > div:last-child button {
+  min-height: 36px;
+}
+.compact-audit [data-testid="panel-audit-items"] footer {
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.compact-audit .app-bottom-nav {
+  background: rgba(247, 249, 245, .97);
+  box-shadow: 0 -3px 12px rgba(25, 54, 47, .08);
+}
+.compact-audit .app-bottom-nav > div { height: 58px; }
+.compact-audit .app-bottom-nav button { min-height: 50px; }
+.compact-audit .app-bottom-nav button > span:first-child {
+  height: 30px;
+  width: 36px;
+}
+
+.compact-audit .audit-sample-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(21, 40, 37, .48);
+  backdrop-filter: blur(3px);
+}
+.compact-audit .audit-sample-dialog {
+  width: min(100%, 390px);
+  max-height: min(84dvh, 560px);
+  overflow-y: auto;
+  border: 1px solid #d4dfd5;
+  border-radius: 18px;
+  background: #f7f8f3;
+  padding: 18px;
+  box-shadow: 0 22px 70px rgba(18, 44, 39, .27);
+  animation: audit-dialog-in 170ms ease-out both;
+}
+.compact-audit .audit-sample-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.compact-audit .audit-sample-kicker {
+  color: #92783c;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.compact-audit .audit-sample-dialog h2 {
+  margin-top: 5px;
+  color: #203f3a;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -.03em;
+  line-height: 1.2;
+}
+.compact-audit .audit-sample-close {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #d9e2dc;
+  border-radius: 10px;
+  background: #edf2ed;
+  color: #58716a;
+  cursor: pointer;
+}
+.compact-audit .audit-sample-copy {
+  margin-top: 13px;
+  color: #627670;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.compact-audit .audit-sample-branch {
+  margin-top: 14px;
+  border: 1px solid #d7e2d9;
+  border-radius: 12px;
+  background: #edf2ed;
+  padding: 11px 12px;
+}
+.compact-audit .audit-sample-branch small {
+  display: block;
+  color: #75867e;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.compact-audit .audit-sample-branch strong {
+  display: block;
+  margin-top: 4px;
+  color: #24463f;
+  font-size: 14px;
+}
+.compact-audit .audit-sample-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 11px;
+  border-radius: 10px;
+  background: #f4eedc;
+  padding: 10px;
+  color: #776634;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.compact-audit .audit-sample-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  margin-top: 17px;
+}
+.compact-audit .audit-sample-actions button {
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.compact-audit .audit-sample-cancel {
+  border: 1px solid #d5dfd8;
+  background: transparent;
+  color: #526b63;
+}
+.compact-audit .audit-sample-confirm {
+  border: 1px solid #8d5145;
+  background: #8d5145;
+  color: #fffaf5;
+}
+.compact-audit .audit-sample-footnote {
+  margin-top: 11px;
+  color: #87948d;
+  font-size: 9px;
+  text-align: center;
+}
+
+@keyframes audit-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 480px) {
+  .compact-audit .audit-demo-bar { min-height: 40px; padding-inline: 10px; }
+  .compact-audit .audit-demo-brand { font-size: 9px; }
+  .compact-audit .audit-demo-open { min-height: 34px; padding-inline: 9px; font-size: 10px; }
+  .compact-audit .app-workspace { padding-inline: 8px; }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex {
+    flex-direction: row;
+    align-items: center;
+  }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex > div:last-child {
+    width: 40%;
+    flex: 0 0 40%;
+  }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header > div.relative.flex > div:first-child { min-width: 0; }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header label {
+    white-space: nowrap;
+    font-size: 7px;
+    letter-spacing: .08em;
+  }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header select {
+    padding-left: 32px;
+    padding-right: 22px;
+    font-size: 11px;
+  }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header h1 { font-size: 18px; }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header p { font-size: 9px; }
+  .compact-audit [data-testid="list-audit-item-cards"] { grid-template-columns: 1fr; }
+  .compact-audit [data-testid^="card-audit-item-"] { padding: 9px 10px !important; }
+  .compact-audit .audit-sample-backdrop { align-items: center; padding: 14px; }
+  .compact-audit .audit-sample-dialog { padding: 16px; }
+}
+
+@media (min-width: 768px) {
+  .compact-audit .app-workspace { padding: 14px 20px 28px; }
+  .compact-audit [data-testid="page-branch-stock-audit"] > div > header h1 { font-size: 25px; }
+  .compact-audit [data-testid="list-audit-item-cards"] { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compact-audit *, .compact-audit *::before, .compact-audit *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

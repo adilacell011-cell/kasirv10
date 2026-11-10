@@ -11,6 +11,7 @@ export const modules: ModuleMap = {
   "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
   "./components/mockups/kasir-android-dashboard/Compact.tsx": () => import("../components/mockups/kasir-android-dashboard/Compact.tsx"),
   "./components/mockups/kasir-android-dashboard/Current.tsx": () => import("../components/mockups/kasir-android-dashboard/Current.tsx"),
+  "./components/mockups/kasirv10-audit-compact/CompactAudit.tsx": () => import("../components/mockups/kasirv10-audit-compact/CompactAudit.tsx"),
   "./components/mockups/kasirv10-fixtures/BonusIncentive.tsx": () => import("../components/mockups/kasirv10-fixtures/BonusIncentive.tsx"),
   "./components/mockups/kasirv10-fixtures/BranchSettings.tsx": () => import("../components/mockups/kasirv10-fixtures/BranchSettings.tsx"),
   "./components/mockups/kasirv10-fixtures/BranchStockAudit.tsx": () => import("../components/mockups/kasirv10-fixtures/BranchStockAudit.tsx"),
