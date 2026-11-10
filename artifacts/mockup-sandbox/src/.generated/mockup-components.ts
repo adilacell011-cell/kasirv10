@@ -9,6 +9,7 @@ export const modules: ModuleMap = {
   "./components/mockups/alfath-redesign/MidnightLuxe.tsx": () => import("../components/mockups/alfath-redesign/MidnightLuxe.tsx"),
   "./components/mockups/alfath-redesign/PeachSorbet.tsx": () => import("../components/mockups/alfath-redesign/PeachSorbet.tsx"),
   "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
+  "./components/mockups/audit-product-cards/CompactRows.tsx": () => import("../components/mockups/audit-product-cards/CompactRows.tsx"),
   "./components/mockups/kasir-android-dashboard/Compact.tsx": () => import("../components/mockups/kasir-android-dashboard/Compact.tsx"),
   "./components/mockups/kasir-android-dashboard/Current.tsx": () => import("../components/mockups/kasir-android-dashboard/Current.tsx"),
   "./components/mockups/kasirv10-audit-compact/CompactAudit.tsx": () => import("../components/mockups/kasirv10-audit-compact/CompactAudit.tsx"),

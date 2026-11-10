@@ -1261,7 +1261,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                 </div>
               ) : (
                 <>
-                  <div className="space-y-2 p-2 sm:hidden" data-testid="list-audit-item-cards">
+                  <div className="space-y-2 p-2 lg:hidden" data-testid="list-audit-item-cards">
                     {items.map((item) => (
                       <AuditItemCard
                         key={item.id}
@@ -1273,7 +1273,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                       />
                     ))}
                   </div>
-                  <div className="hidden max-w-full overflow-x-auto sm:block">
+                  <div className="hidden max-w-full overflow-x-auto lg:block">
                   <table className="w-full min-w-[900px] border-collapse text-left">
                     <thead className="bg-[#edf2ed]">
                       <tr className="border-b border-[#dce4de] text-[11px] font-extrabold uppercase tracking-[.1em] text-[#71827d]">
@@ -1627,63 +1627,60 @@ function AuditItemCard({ item, canWork, busy, onCount, onRevoke }: { item: Audit
           : "bg-[#edf0eb] text-[#71817a]";
 
   return (
-    <article data-testid={`card-audit-item-${item.id}`} className="min-w-0 max-w-full rounded-xl border border-[#dce5df] bg-white p-2.5 shadow-[0_2px_8px_rgba(26,64,66,.035)]">
-      <div className="flex min-w-0 items-start gap-2">
-        <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}>
+    <article data-testid={`card-audit-item-${item.id}`} className="grid min-w-0 max-w-full gap-1.5 rounded-xl border border-[#dce5df] bg-white px-2 py-1.5 shadow-[0_2px_8px_rgba(26,64,66,.035)]">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.inScope ? "bg-[#e5eeea] text-[#367167]" : "bg-[#f4edd9] text-[#8a712e]"}`}>
           <PackageSearch className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p data-testid={`text-audit-product-${item.id}`} className="break-words text-sm font-bold leading-4 text-[#294743]">{item.productName}</p>
-          <p className="mt-0.5 break-all font-mono text-[11px] leading-4 text-[#85918d]">
+          <p data-testid={`text-audit-product-${item.id}`} title={item.productName} className="truncate text-xs font-bold leading-4 text-[#294743]">{item.productName}</p>
+          <p data-audit-item-identifier title={item.barcode ? `BC ${item.barcode}` : item.masterSN ? `SKU ${item.masterSN}` : `ID ${item.productId}`} className="truncate font-mono text-[10px] leading-3 text-[#85918d]">
             {item.barcode ? `BC ${item.barcode}` : item.masterSN ? `SKU ${item.masterSN}` : `ID ${item.productId}`}
           </p>
-          {!item.inScope && <span className="mt-1 inline-flex rounded bg-[#f3ebd2] px-1.5 py-0.5 text-[11px] font-bold text-[#806b30]">Di luar cakupan</span>}
           {item.finding && item.finding !== "NORMAL" && (
-            <p className="mt-1 break-words text-[11px] font-semibold leading-4 text-[#826a2b]">
+            <p className="mt-0.5 truncate text-[10px] font-semibold leading-3 text-[#826a2b]">
               {FINDING_LABEL[item.finding] ?? item.finding}{item.notes ? ` · ${item.notes}` : ""}
             </p>
           )}
         </div>
-        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[118px] shrink-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold leading-4 ${statusTone}`}>
+        <span data-testid={`status-audit-item-${item.id}`} className={`inline-flex max-w-[118px] shrink-0 items-center justify-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold leading-3 ${statusTone}`}>
           {isConflict && <AlertCircle className="h-3 w-3 shrink-0" />}{STATUS_LABEL[item.status]}
         </span>
       </div>
 
-      <div className="mt-2 grid grid-cols-3 gap-1">
-        <div className="min-w-0 rounded-md bg-[#f1f4f0] px-2 py-1.5">
-          <p className="break-words text-[11px] font-semibold leading-3 text-[#75847e]">Sistem</p>
-          <p data-testid={`text-audit-system-${item.id}`} className="mt-0.5 font-mono text-sm font-bold text-[#425d57]">{item.systemQty}</p>
-        </div>
-        <div className="min-w-0 rounded-md bg-[#f1f4f0] px-2 py-1.5">
-          <p className="break-words text-[11px] font-semibold leading-3 text-[#75847e]">Fisik</p>
-          <p data-testid={`text-audit-counted-${item.id}`} className={`mt-0.5 font-mono text-sm font-bold ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</p>
-        </div>
-        <div className="min-w-0 rounded-md bg-[#f1f4f0] px-2 py-1.5">
-          <p className="break-words text-[11px] font-semibold leading-3 text-[#75847e]">Selisih</p>
-          <p data-testid={`text-audit-variance-${item.id}`} className={`mt-0.5 inline-flex items-center gap-0.5 font-mono text-sm font-bold ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "text-[#39754a]" : variance < 0 ? "text-[#a34f3d]" : "text-[#617770]"}`}>
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5">
+        <div data-audit-item-metrics className="grid min-w-0 grid-cols-3 gap-1">
+          <div className="min-w-0 rounded-md bg-[#f1f4f0] px-1.5 py-1">
+            <p className="truncate text-[9px] font-semibold leading-3 text-[#75847e]">Sistem</p>
+            <p data-testid={`text-audit-system-${item.id}`} className="font-mono text-xs font-bold leading-4 text-[#425d57]">{item.systemQty}</p>
+          </div>
+          <div className="min-w-0 rounded-md bg-[#f1f4f0] px-1.5 py-1">
+            <p className="truncate text-[9px] font-semibold leading-3 text-[#75847e]">Fisik</p>
+            <p data-testid={`text-audit-counted-${item.id}`} className={`font-mono text-xs font-bold leading-4 ${item.countedQty == null ? "text-[#abb5b1]" : "text-[#244743]"}`}>{item.countedQty ?? "—"}</p>
+          </div>
+          <div className="min-w-0 rounded-md bg-[#f1f4f0] px-1.5 py-1">
+            <p className="truncate text-[9px] font-semibold leading-3 text-[#75847e]">Selisih</p>
+            <p data-testid={`text-audit-variance-${item.id}`} className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold leading-4 ${variance == null ? "text-[#a2ada8]" : variance > 0 ? "text-[#39754a]" : variance < 0 ? "text-[#a34f3d]" : "text-[#617770]"}`}>
             {variance == null ? "—" : variance > 0 ? <><ArrowUpRight className="h-3 w-3" />{variance}</> : variance < 0 ? <><ArrowDownRight className="h-3 w-3" />{Math.abs(variance)}</> : "0"}
-          </p>
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
-        {item.countedByName
-          ? <p className="min-w-0 break-words text-[11px] leading-4 text-[#526d66]">{item.countedByName} · {formatDate(item.countedAt)}</p>
-          : <p className="min-w-0 text-[11px] text-[#a0aaa6]">Belum ada hitungan</p>}
         {item.inScope && item.status !== "EXCLUDED" && item.status !== "COUNTING" ? (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2.5 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
+          <div className="flex shrink-0 items-center gap-1">
+            <button type="button" data-testid={`button-count-item-${item.id}`} aria-label={isConflict ? "Hitung ulang produk" : item.status === "COUNTED" ? "Ubah hitungan produk" : "Hitung produk"} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
               {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-              {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah" : "Hitung"}
+               {isConflict ? "Ulang" : item.status === "COUNTED" ? "Ubah" : "Hitung"}
             </button>
-            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} aria-label="Cabut izin tampil di cabang" disabled={!canWork || busy} onClick={onRevoke} className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-[#e1d5b1] px-2 text-[11px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
-              <MapPin className="h-3 w-3" /> Cabut izin
+            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} aria-label="Cabut izin tampil di cabang" disabled={!canWork || busy} onClick={onRevoke} className="inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-[#e1d5b1] px-2 text-[10px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
+              <MapPin className="h-3 w-3" /> Cabut
             </button>
           </div>
         ) : item.status === "COUNTING" ? (
-          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Dibuka</span>
-        ) : <span className="shrink-0 text-[11px] text-[#899792]">—</span>}
+          <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Dibuka</span>
+        ) : <span className="shrink-0 text-[10px] text-[#899792]">—</span>}
       </div>
+      {item.countedByName && <p className="truncate pl-10 text-[9px] leading-3 text-[#526d66]">{item.countedByName} · {formatDate(item.countedAt)}</p>}
     </article>
   );
 }

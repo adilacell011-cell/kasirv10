@@ -305,3 +305,7 @@ All Admin pages use layered navy surfaces for cards, tables, forms, controls, an
 For the Audit page specifically, distinguish the navy layers clearly and use restrained gold accents/glow on its cards and capsules; keep green/red status colors semantically distinct.
 **Why:** the owner said Audit surfaces looked too similar and requested clearer contrast with gold highlights.
 **How to apply:** keep this refinement scoped to Audit; do not spread the glow to POS or unrelated pages.
+
+Audit product rows should stay compact and horizontal on phones and tablets, with product identity/status above a single strip of system/physical/variance values and actions; retain the detailed table for desktop.
+**Why:** the owner asked for short, wide product cards so large audit lists use less screen space.
+**How to apply:** preserve readable product identity, distinct status, and 44px action targets while reducing card height; do not change audit behavior.
