@@ -10822,3 +10822,228 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
 .app-shell[data-admin-surface="true"] .app-sidebar[class~="-translate-x-full"] {
   translate: calc(-100% - 48px) 0 !important;
 }
+
+/* Audit page: separate navy layers, improve text hierarchy, and add restrained champagne glow. */
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] {
+  color: #edf3f9 !important;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(218, 189, 123, 0.12), transparent 30%),
+    radial-gradient(ellipse at 92% 12%, rgba(69, 133, 182, 0.2), transparent 36%),
+    linear-gradient(145deg, #071629 0%, #0c2039 48%, #142d49 100%) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] > div > header {
+  border-color: rgba(226, 198, 131, 0.64) !important;
+  background:
+    radial-gradient(ellipse at 88% 0%, rgba(218, 189, 123, 0.16), transparent 38%),
+    linear-gradient(125deg, #1b3b5b 0%, #122b47 58%, #0e223b 100%) !important;
+  --tw-shadow:
+    inset 0 1px 0 rgba(247, 231, 194, 0.12),
+    0 9px 24px rgba(0, 8, 20, 0.42),
+    0 0 18px rgba(218, 189, 123, 0.13) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] > div > header h1 {
+  color: #fff8e7 !important;
+  text-shadow: 0 0 12px rgba(218, 189, 123, 0.16);
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] > div > header p {
+  color: #d4deea !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-progress"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="empty-audit-"] {
+  border-color: rgba(226, 198, 131, 0.5) !important;
+  background: linear-gradient(145deg, #183653 0%, #122b47 58%, #102640 100%) !important;
+  color: #edf3f9 !important;
+  --tw-shadow:
+    inset 0 1px 0 rgba(233, 222, 197, 0.1),
+    0 8px 22px rgba(0, 7, 18, 0.38),
+    0 0 16px rgba(218, 189, 123, 0.1) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-progress"] :is(h2, h3),
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] h3 {
+  color: #f5e9ca !important;
+  text-shadow: 0 0 10px rgba(218, 189, 123, 0.12);
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] > div:first-child {
+  border-color: rgba(226, 198, 131, 0.34) !important;
+  background: linear-gradient(110deg, rgba(29, 61, 91, 0.96), rgba(16, 40, 65, 0.98)) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-progress"] [data-testid^="metric-audit-"]:not([data-testid="metric-audit-net"]) {
+  border-color: rgba(218, 189, 123, 0.32) !important;
+  background: linear-gradient(145deg, #1b3b5b, #112943) !important;
+  --tw-shadow: 0 3px 10px rgba(0, 7, 18, 0.3), 0 0 10px rgba(218, 189, 123, 0.08) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="metric-audit-"]:not([data-testid="metric-audit-net"]) p:first-child {
+  color: #c4d1df !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="metric-audit-net"] {
+  border: 1px solid rgba(218, 189, 123, 0.38) !important;
+  filter: drop-shadow(0 0 5px rgba(218, 189, 123, 0.15));
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="progress-audit"] {
+  border: 1px solid rgba(218, 189, 123, 0.24);
+  background: #091a30 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="progress-audit"] > div {
+  background: linear-gradient(90deg, #b9954c, #f0d999) !important;
+  filter: drop-shadow(0 0 5px rgba(240, 217, 153, 0.38));
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] #audit-branch,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] :is(input, select, textarea) {
+  border-color: rgba(177, 198, 218, 0.52) !important;
+  background: linear-gradient(145deg, #0b1c32, #102640) !important;
+  color: #f3f6fa !important;
+  -webkit-text-fill-color: #f3f6fa !important;
+  caret-color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(#audit-branch, [data-testid="panel-audit-items"] input, [data-testid="panel-audit-items"] select, [data-testid="panel-audit-items"] textarea):focus-visible {
+  border-color: #e3c77f !important;
+  outline: 2px solid rgba(227, 199, 127, 0.38);
+  outline-offset: 1px;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] :is(input, textarea)::placeholder {
+  color: #b9c8d8 !important;
+  -webkit-text-fill-color: #b9c8d8 !important;
+  opacity: 1 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article {
+  border-color: rgba(218, 189, 123, 0.4) !important;
+  background: linear-gradient(145deg, #1a3957 0%, #122b46 65%, #10243d 100%) !important;
+  color: #edf3f9 !important;
+  --tw-shadow:
+    inset 0 1px 0 rgba(239, 226, 194, 0.09),
+    0 5px 14px rgba(0, 7, 18, 0.36),
+    0 0 12px rgba(218, 189, 123, 0.13) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article > div:nth-child(2) > div {
+  border: 1px solid rgba(167, 190, 214, 0.2);
+  background: linear-gradient(145deg, #0d223b, #142f4b) !important;
+  box-shadow: inset 0 1px 0 rgba(231, 240, 249, 0.04), 0 0 8px rgba(218, 189, 123, 0.07);
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article > div:nth-child(2) > div:nth-child(-n + 2) p:last-child {
+  color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article > div:first-child > div p:first-child {
+  color: #f2f5f8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article > div:first-child > div p:nth-child(2),
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article > div:last-child > p {
+  color: #bfccda !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] tbody tr:nth-child(odd) > td {
+  border-color: rgba(218, 189, 123, 0.17) !important;
+  background: #102943 !important;
+  color: #edf3f9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] tbody tr:nth-child(even) > td {
+  border-color: rgba(218, 189, 123, 0.2) !important;
+  background: #173450 !important;
+  color: #edf3f9 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] tbody tr:hover > td {
+  background: #204360 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="status-audit-session"],
+  [data-testid="status-audit-connection"],
+  [data-testid^="status-audit-item-"]
+) {
+  filter: drop-shadow(0 0 5px rgba(218, 189, 123, 0.15));
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] button {
+  filter: drop-shadow(0 2px 3px rgba(0, 7, 18, 0.24));
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  #audit-branch,
+  [data-testid="input-audit-search"],
+  [data-testid="select-audit-status"],
+  [data-testid^="empty-audit-"]
+) {
+  filter: drop-shadow(0 0 6px rgba(218, 189, 123, 0.13));
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] {
+  border-color: rgba(226, 198, 131, 0.62) !important;
+  background: linear-gradient(145deg, #1a3957 0%, #122b46 65%, #0d223b 100%) !important;
+  color: #edf3f9 !important;
+  --tw-shadow:
+    inset 0 1px 0 rgba(239, 226, 194, 0.12),
+    0 14px 32px rgba(0, 5, 16, 0.56),
+    0 0 22px rgba(218, 189, 123, 0.18) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] :is(h2, label > span:first-child) {
+  color: #f2e4bf !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] label > span:last-child {
+  color: #c1cedb !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] > div.grid.grid-cols-2 > div {
+  border: 1px solid rgba(218, 189, 123, 0.28);
+  background: linear-gradient(145deg, #0d223b, #17334f) !important;
+  box-shadow: inset 0 1px 0 rgba(239, 226, 194, 0.06), 0 0 10px rgba(218, 189, 123, 0.08);
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] :is([data-testid="text-count-baseline"], [data-testid="text-count-expected"]) {
+  color: #f0d999 !important;
+  text-shadow: 0 0 10px rgba(218, 189, 123, 0.2);
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] :is(input, select, textarea) {
+  border-color: rgba(177, 198, 218, 0.48) !important;
+  background: linear-gradient(145deg, #091a30, #102640) !important;
+  color: #f3f6fa !important;
+  -webkit-text-fill-color: #f3f6fa !important;
+  caret-color: #f0d999 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] :is(input, select, textarea):focus-visible {
+  border-color: #e3c77f !important;
+  outline: 2px solid rgba(227, 199, 127, 0.38);
+  outline-offset: 1px;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="dialog-count-item"] [data-testid="button-save-count"] {
+  filter: drop-shadow(0 0 7px rgba(218, 189, 123, 0.24));
+}
+
+@media (hover: hover) {
+  .app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] button:hover {
+    filter: drop-shadow(0 0 7px rgba(218, 189, 123, 0.22));
+  }
+
+  .app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article:hover {
+    border-color: rgba(240, 217, 153, 0.66) !important;
+    --tw-shadow:
+      inset 0 1px 0 rgba(239, 226, 194, 0.13),
+      0 7px 18px rgba(0, 7, 18, 0.4),
+      0 0 17px rgba(218, 189, 123, 0.2) !important;
+  }
+}

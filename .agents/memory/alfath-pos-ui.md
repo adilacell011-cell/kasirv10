@@ -301,3 +301,7 @@ When the owner provides a visual reference for Admin, match its visible visual s
 All Admin pages use layered navy surfaces for cards, tables, forms, controls, and capsules, with no pure-white backgrounds. Use high-contrast light text, gold dashboard charts, and preserve green/red status meaning. POS remains separate.
 **Why:** the owner approved extending the Dashboard's navy/gold direction to all Admin pages and explicitly limited the scope to Admin.
 **How to apply:** scope Admin styling to `.app-shell[data-admin-surface="true"]` and Admin-only portal menus; keep compact layout and 44px touch targets, preserve business behavior, and leave cashier/POS surfaces unchanged unless separately approved.
+
+For the Audit page specifically, distinguish the navy layers clearly and use restrained gold accents/glow on its cards and capsules; keep green/red status colors semantically distinct.
+**Why:** the owner said Audit surfaces looked too similar and requested clearer contrast with gold highlights.
+**How to apply:** keep this refinement scoped to Audit; do not spread the glow to POS or unrelated pages.
