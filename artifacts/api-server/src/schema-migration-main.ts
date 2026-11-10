@@ -9,7 +9,7 @@ import {
   readDatabaseSnapshot,
 } from "./database-readiness";
 import { validateDatabaseTarget } from "./database-target";
-import { approveStagingSchemaMigration } from "./schema-migration";
+import { approveSchemaMigrationCheck, approveStagingSchemaMigration } from "./schema-migration";
 
 const BASELINE_MIGRATION = "20261106110000_baseline_existing_15_table_schema";
 const AUDIT_MIGRATION = "20261106120000_add_branch_stock_audit_tables";
@@ -83,8 +83,14 @@ function safePrismaDiagnostic(error: unknown): string {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  const checkOnly = args.includes("--check");
   const target = validateDatabaseTarget(process.env);
-  approveStagingSchemaMigration(process.argv.slice(2), target, process.env);
+  if (checkOnly) {
+    approveSchemaMigrationCheck(args, target, process.env);
+  } else {
+    approveStagingSchemaMigration(args, target, process.env);
+  }
 
   const require = createRequire(import.meta.url);
   const prismaCli = require.resolve("prisma/build/index.js");
@@ -173,7 +179,9 @@ async function main() {
       if (targetState[0].hasAuditTable || targetState[0].hasAuditItemTable) {
         throw new Error("Audit Stok tables exist on a 14-table baseline; refusing to infer schema history.");
       }
-      console.log("Verified exact legacy 14-table schema; applying its explicit additive upgrade path.");
+      console.log(checkOnly
+        ? "Verified exact legacy 14-table schema; additive upgrade path is available."
+        : "Verified exact legacy 14-table schema; applying its explicit additive upgrade path.");
     } else if (isLegacy15) {
       assertExactModelTablesAndColumns(snapshot, LEGACY_MODELS);
       assertCompatibleSchema(snapshot, target, LEGACY_MODELS, LEGACY_INDEXES);
@@ -195,6 +203,18 @@ async function main() {
       if (!baseline || !additive) {
         throw new Error("Audit Stok tables exist without completed approved schema migration records.");
       }
+    }
+
+    if (checkOnly) {
+      const schemaVersion = isLegacy14
+        ? "supported legacy 14-table schema"
+        : isLegacy15
+          ? "supported legacy 15-table schema"
+          : "current 17-table schema";
+      console.log(
+        `Read-only schema preflight passed for ${target.database}: ${schemaVersion}. No changes performed.`,
+      );
+      return;
     }
 
     if (!verifiedLegacyBaseline) {
@@ -257,9 +277,9 @@ async function main() {
     assertCompatibleSchema(migratedSnapshot, target, ALL_MODELS, [...LEGACY_INDEXES, ...AUDIT_INDEXES]);
     console.log("Schema migration and read-only compatibility check completed.");
   } catch (error) {
-    console.error(
-      "Prisma schema migration failed. No retry was attempted; verify the approved staging/QA target and migration state.",
-    );
+    console.error(checkOnly
+      ? "Read-only schema preflight failed. No changes were performed."
+      : "Prisma schema migration failed. No retry was attempted; verify the exact approved target and migration state.");
     const diagnostic = safePrismaDiagnostic(error);
     if (diagnostic) console.error(diagnostic);
     process.exitCode = 1;
@@ -275,7 +295,7 @@ function printSafeOutput(output: string): void {
 
 void main().catch(() => {
   console.error(
-    "Prisma schema migration refused. Verify the explicit database target and target-specific approval.",
+    "Schema check or migration refused. Verify the explicit database target and target-specific approval.",
   );
   process.exitCode = 1;
 });

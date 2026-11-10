@@ -8,7 +8,10 @@ import {
   type SchemaSnapshot,
 } from "./database-readiness";
 import type { DatabaseTarget } from "./database-target";
-import { approveStagingSchemaMigration } from "./schema-migration";
+import {
+  approveSchemaMigrationCheck,
+  approveStagingSchemaMigration,
+} from "./schema-migration";
 
 const qaTarget: DatabaseTarget = {
   environment: "test",
@@ -23,6 +26,20 @@ const qaEnv = {
 const qaApproval = [
   "--execute",
   "--approve=schema-migrate:test:127.0.0.1:5432/kasirv10_migration_qa/public",
+];
+const migrasiTarget: DatabaseTarget = {
+  environment: "production",
+  host: "kasirv10-staging-db",
+  port: "5432",
+  database: "kasirv10_migrasi",
+  schema: "public",
+};
+const migrasiEnv = {
+  STAGING_SCHEMA_INIT_TARGET: "production:kasirv10-staging-db:5432/kasirv10_migrasi/public",
+};
+const migrasiCheckApproval = [
+  "--check",
+  "--approve=schema-check:production:kasirv10-staging-db:5432/kasirv10_migrasi/public",
 ];
 
 test("legacy migration requires explicit execution and exact staging/QA target approval", () => {
@@ -46,6 +63,40 @@ test("legacy migration requires explicit execution and exact staging/QA target a
   ));
 });
 
+test("kasirv10_migrasi is allowed only as the exact VPS target", () => {
+  assert.doesNotThrow(() => approveStagingSchemaMigration([
+    "--execute",
+    "--approve=schema-migrate:production:kasirv10-staging-db:5432/kasirv10_migrasi/public",
+  ], migrasiTarget, migrasiEnv));
+  assert.doesNotThrow(() => approveSchemaMigrationCheck(migrasiCheckApproval, migrasiTarget, migrasiEnv));
+  assert.throws(() => approveSchemaMigrationCheck([
+    ...migrasiCheckApproval,
+    "--execute",
+  ], migrasiTarget, migrasiEnv));
+  assert.throws(() => approveSchemaMigrationCheck(migrasiCheckApproval, {
+    ...migrasiTarget,
+    host: "another-postgres",
+  }, {
+    STAGING_SCHEMA_INIT_TARGET: "production:another-postgres:5432/kasirv10_migrasi/public",
+  }));
+  assert.throws(() => approveSchemaMigrationCheck(migrasiCheckApproval, {
+    ...migrasiTarget,
+    database: "kasirv10_staging",
+  }, {
+    STAGING_SCHEMA_INIT_TARGET: "production:kasirv10-staging-db:5432/kasirv10_staging/public",
+  }));
+  assert.throws(() => approveSchemaMigrationCheck(migrasiCheckApproval, migrasiTarget, {}));
+});
+
+test("read-only schema preflight exits before every Prisma migration command", () => {
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  const checkBranch = main.indexOf("if (checkOnly) {", main.indexOf("const isLegacy14"));
+  const firstMigrationCommand = main.indexOf('prismaCli, "migrate", "resolve"');
+  assert.ok(checkBranch >= 0);
+  assert.ok(firstMigrationCommand > checkBranch);
+  assert.match(main.slice(checkBranch, firstMigrationCommand), /No changes performed[\s\S]*?return;/);
+});
+
 test("legacy migration SQL is additive and gated to a staging/QA schema", () => {
   const sql = fs.readFileSync(
     new URL("../prisma/migrations/20261106120000_add_branch_stock_audit_tables/migration.sql", import.meta.url),
@@ -53,6 +104,7 @@ test("legacy migration SQL is additive and gated to a staging/QA schema", () => 
   );
   const entrypoint = fs.readFileSync(new URL("../docker-entrypoint.sh", import.meta.url), "utf8");
   assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
   assert.match(sql, /BranchStockAudit/);
   assert.match(sql, /BranchStockAuditItem/);
   assert.match(sql, /ON DELETE CASCADE ON UPDATE CASCADE/);
@@ -92,6 +144,16 @@ test("staging Compose pins schema-init and API to the same immutable candidate i
   assert.match(compose, /condition: service_completed_successfully/);
   assert.match(compose, /KASIRV10_STAGING_WEB_PORT:-18081/);
   assert.match(compose, /127\.0\.0\.1:18082:8080/);
+});
+
+test("migrasi app Compose uses the existing database server and does not initialize schema", () => {
+  const compose = fs.readFileSync(new URL("../../../compose.migrasi.yaml", import.meta.url), "utf8");
+  assert.match(compose, /kasirv10-staging-db:5432\/kasirv10_migrasi/);
+  assert.match(compose, /DB_EXPECTED_HOST: kasirv10-staging-db/);
+  assert.match(compose, /DB_EXPECTED_NAME: kasirv10_migrasi/);
+  assert.match(compose, /name: kasirv10-staging-net/);
+  assert.match(compose, /external: true/);
+  assert.doesNotMatch(compose, /^\s{2}(db|schema-init):\s*$/m);
 });
 
 test("legacy baseline validates the full 15-model structure before it can be marked applied", () => {
@@ -247,6 +309,7 @@ test("legacy 14-to-15 migration is guarded and strictly additive", () => {
   assert.match(sql, /ix\.indnkeyatts = 2/);
   assert.match(sql, /indexed_column\.attname/);
   assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
   assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });

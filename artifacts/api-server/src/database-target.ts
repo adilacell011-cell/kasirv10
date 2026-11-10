@@ -27,14 +27,22 @@ export function assertStagingSchemaInitTarget(
   const allowed = env.STAGING_SCHEMA_INIT_TARGET?.trim();
   const actual = `${target.environment}:${target.host}:${target.port}/${target.database}/${target.schema}`;
   const isStagingDatabase = /(?:^|[_-])(?:staging|stage|qa|test)(?:[_-]|$)/i.test(target.database);
+  const isMigrasiCopyTarget =
+    target.environment === "production" &&
+    target.host === "kasirv10-staging-db" &&
+    target.port === "5432" &&
+    target.database === "kasirv10_migrasi";
   const isApprovedEndpoint = target.environment === "production"
-    ? target.host === "db" && target.port === "5432" && target.database === "kasirv10_staging"
+    ? (target.host === "db" && target.port === "5432" && target.database === "kasirv10_staging")
+      || isMigrasiCopyTarget
     : target.environment === "test" &&
       ["127.0.0.1", "localhost", "::1"].includes(target.host) && isStagingDatabase;
   if (!isApprovedEndpoint ||
-      target.schema !== "public" || !isStagingDatabase || !allowed || allowed !== actual) {
+      target.schema !== "public" ||
+      (!isStagingDatabase && !isMigrasiCopyTarget) ||
+      !allowed || allowed !== actual) {
     throw new Error(
-      "Schema initialization blocked: require an exact staging/QA target, public schema, and matching STAGING_SCHEMA_INIT_TARGET.",
+      "Schema migration blocked: require an exact staging/QA or approved kasirv10_migrasi target, public schema, and matching STAGING_SCHEMA_INIT_TARGET.",
     );
   }
 }

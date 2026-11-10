@@ -14,7 +14,8 @@ DECLARE
   ];
   required_legacy_tables text[];
 BEGIN
-  IF current_database() !~* '(^|[_-])(staging|stage|qa|test)([_-]|$)' THEN
+  IF current_database() !~* '(^|[_-])(staging|stage|qa|test)([_-]|$)'
+     AND current_database() <> 'kasirv10_migrasi' THEN
     RAISE EXCEPTION 'Refusing legacy 14-table upgrade outside a staging/QA/test database.';
   END IF;
 

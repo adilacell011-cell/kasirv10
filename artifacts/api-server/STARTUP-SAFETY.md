@@ -51,47 +51,59 @@ Pada target Compose yang diizinkan (`db:5432/kasirv10` atau
 6. Setelah layanan init sukses, API entrypoint menjalankan pemeriksaan baca-saja
    `dist/database-check-cli.mjs` sebelum membuka port. API tidak menjalankan DDL.
 
-## Upgrade manual schema lama 15 → 17 model
+## Upgrade manual schema lama 14/15 → 17 model
 
 Proyek sebelumnya memakai `prisma db push` dan belum memiliki riwayat Prisma
-Migrate. Migrasi pertama ini hanya untuk target staging/QA yang memiliki 15 tabel
-lama dan belum memiliki `BranchStockAudit` maupun `BranchStockAuditItem`.
+Migrate. Jalur yang diizinkan mengenali baseline lama 14 tabel, baseline 15
+tabel yang sudah memiliki idempotensi, dan skema saat ini 17 model. Untuk
+baseline lama, migrasi 14→15 membuat mekanisme idempotensi Sale; migrasi 15→17
+menambahkan tabel Audit Stok.
 
-- Migrasi: `prisma/migrations/20261106120000_add_branch_stock_audit_tables/migration.sql`.
+- Migrasi: `prisma/migrations/20261106105000_upgrade_legacy14_sale_idempotency/migration.sql`
+  dan `prisma/migrations/20261106120000_add_branch_stock_audit_tables/migration.sql`.
 - Migrasi berjalan manual melalui `db:migrate-staging`; tidak dipanggil dari
   entrypoint API atau Compose startup.
 - Perintah memvalidasi `DATABASE_URL`, `DB_EXPECTED_*`, `STAGING_SCHEMA_INIT_TARGET`,
   flag `--execute`, dan persetujuan yang tepat untuk target.
-- Sebelum baseline dicatat, checker hanya-baca membandingkan struktur seluruh
-  15 model lama: kolom, tipe, nullability, primary/unique key, dan aksi foreign
-  key. SQL juga memeriksa nama database staging/QA dan ketidakberadaan dua tabel
-  baru sebelum DDL. Tabel atau data lama tidak diubah. Kegagalan DDL membatalkan
-  transaksi.
+- Sebelum baseline dicatat, checker hanya-baca mencocokkan versi yang tepat:
+  tabel, kolom, tipe, nullability, primary/unique key, foreign key, dan riwayat
+  migrasi. SQL menolak skema parsial atau baseline yang tidak dikenal.
+- SQL migrasi mengizinkan nama database staging/QA/test serta pengecualian
+  `kasirv10_migrasi`; aplikasi tetap membatasi pengecualian itu ke host
+  `kasirv10-staging-db`, port 5432, schema `public`, allowlist persis, dan
+  persetujuan target persis.
+- Migrasi bersifat tambah-saja dan transaksional. Tabel/data lama tidak dihapus;
+  kegagalan DDL membatalkan transaksi.
 - Setelah migrasi, jalankan `db:check` dari image kandidat sebelum API dibuka.
   Pemeriksaan tetap wajib dan tidak dinonaktifkan.
 
-Jalankan sebagai perintah maintenance satu kali dari direktori stack Dockge.
-Gunakan image API kandidat yang sama untuk schema-init dan API:
+### Pemeriksaan hanya-baca sebelum migrasi
 
-    docker compose run --rm --no-deps --entrypoint node api \
+`schema-migration-main.mjs --check` menjalankan preflight yang sama tanpa
+`migrate resolve`, `migrate deploy`, atau DDL. Untuk target salinan STB,
+gunakan image kandidat terbaru melalui `compose.migrasi.yaml`:
+
+    docker compose -f compose.migrasi.yaml run --rm --no-deps \
+      -e STAGING_SCHEMA_INIT_TARGET=production:kasirv10-staging-db:5432/kasirv10_migrasi/public \
+      --entrypoint node api \
       --enable-source-maps \
       /app/artifacts/api-server/dist/schema-migration-main.mjs \
-      --execute \
-      --approve=schema-migrate:production:db:5432/kasirv10_staging/public
+      --check \
+      --approve=schema-check:production:kasirv10-staging-db:5432/kasirv10_migrasi/public
 
-Image `schema-init` dan `api` harus menggunakan SHA API yang sama. Referensi image
-keduanya di `compose.staging.yaml` memakai `KASIRV10_IMAGE_SHA` yang sama. Jika
-database kosong, tetap gunakan jalur `db:init-schema` yang sudah ada; jangan
-jalankan migrasi legacy ini. Jika database sudah memiliki salah satu tabel audit,
-migrasi berhenti dan perlu inspeksi manual, bukan reset atau retry paksa.
-Perintah di atas tidak dijalankan otomatis; buat backup yang tervalidasi dan
-pastikan `docker compose config` menunjukkan target staging yang diharapkan dulu.
+Perintah ini hanya cocok dijalankan setelah `compose.migrasi.yaml` memakai image
+kandidat yang sudah memuat mode `--check`. Hasil preflight yang lulus tidak
+menjalankan migrasi. Untuk migrasi sesungguhnya tetap diperlukan backup database
+yang tervalidasi, persetujuan pemilik secara terpisah, `--execute`, dan
+`--approve=schema-migrate:<target-yang-persis>`.
 
-Compose menetapkan database internal sendiri (`db`) dan mengunci nama target
-yang didukung; host jarak jauh, nama database lain, schema lain, atau allowlist
-yang tidak cocok ditolak. PostgreSQL harus sehat sebelum layanan init mulai.
-Schema init tidak membuat akun, cabang, transaksi, atau data contoh. Bootstrap
-Owner tetap manual menggunakan prosedur di bawah.
+Aturan `schema-init` Compose berlaku untuk database internal (`db`) dengan
+target yang diizinkan; host jarak jauh, nama database lain, schema lain, atau
+allowlist yang tidak cocok ditolak. Pengecualian `compose.migrasi.yaml` hanya
+menjalankan API/web dan pemeriksaan/migrasi manual pada database yang sudah ada;
+file itu tidak membuat layanan PostgreSQL atau schema-init. Schema init tidak
+membuat akun, cabang, transaksi, atau data contoh. Bootstrap Owner tetap manual
+menggunakan prosedur di bawah.
 
 Perintah manual `db:init-schema` tetap meminta `--execute`,
 `--acknowledge-empty-schema`, dan persetujuan target yang persis. Alias `db:push`
