@@ -1,0 +1,146 @@
+# Isolated Kasir V10 database-copy environment.
+# Restore a verified STB backup into this fresh database before starting the app.
+# This file intentionally has no automatic schema initializer or seed operation.
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kasirv10-migrasi-db
+    restart: unless-stopped
+    mem_limit: 576m
+    environment:
+      POSTGRES_USER: kasirv10_migrasi
+      POSTGRES_PASSWORD: "${KASIRV10_MIGRASI_DB_PASSWORD:?Set KASIRV10_MIGRASI_DB_PASSWORD in .env}"
+      POSTGRES_DB: kasirv10_migrasi
+    volumes:
+      - kasirv10_migrasi_data:/var/lib/postgresql/data
+    networks:
+      - kasirv10_migrasi_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kasirv10_migrasi -d kasirv10_migrasi"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Run only once against the newly initialized, empty database.
+  # Supported input: pg_dump custom/tar archive (.dump/.backup/.tar),
+  # plain SQL (.sql), or gzip-compressed plain SQL (.sql.gz).
+  restore:
+    image: postgres:16-alpine
+    profiles: ["manual-restore"]
+    container_name: kasirv10-migrasi-restore
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: kasirv10_migrasi
+      PGPASSWORD: "${KASIRV10_MIGRASI_DB_PASSWORD:?Set KASIRV10_MIGRASI_DB_PASSWORD in .env}"
+      PGDATABASE: kasirv10_migrasi
+      STB_BACKUP_FILE: "${KASIRV10_MIGRASI_BACKUP_FILE:?Set KASIRV10_MIGRASI_BACKUP_FILE in .env}"
+    volumes:
+      - "${KASIRV10_MIGRASI_BACKUP_DIR:-./restore}:/restore:ro"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        case "$$STB_BACKUP_FILE" in
+          ""|*/*|*..*) echo "Set STB_BACKUP_FILE to a filename inside the mounted restore directory."; exit 2 ;;
+        esac
+        backup="/restore/$$STB_BACKUP_FILE"
+        test -f "$$backup" || { echo "Backup file not found in the mounted restore directory."; exit 2; }
+        case "$$STB_BACKUP_FILE" in
+          *.dump|*.backup|*.tar)
+            pg_restore --host "$$PGHOST" --port "$$PGPORT" --username "$$PGUSER" \
+              --dbname "$$PGDATABASE" --no-owner --no-privileges --exit-on-error "$$backup"
+            ;;
+          *.sql)
+            psql --host "$$PGHOST" --port "$$PGPORT" --username "$$PGUSER" \
+              --dbname "$$PGDATABASE" --set ON_ERROR_STOP=1 --file "$$backup"
+            ;;
+          *.sql.gz)
+            gzip -dc "$$backup" | psql --host "$$PGHOST" --port "$$PGPORT" \
+              --username "$$PGUSER" --dbname "$$PGDATABASE" --set ON_ERROR_STOP=1
+            ;;
+          *)
+            echo "Unsupported backup extension; use .dump, .backup, .tar, .sql, or .sql.gz."
+            exit 2
+            ;;
+        esac
+        echo "Backup restore finished. Check the database schema before starting the app."
+
+  api:
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-a8a88a8d507a7be72db9dd3b8430cd7d08f3f08e-run-42721259672-attempt-1"
+    pull_policy: always
+    profiles: ["application"]
+    container_name: kasirv10-migrasi-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      DB_RUNTIME_ENV: production
+      # Use a URL-safe password for KASIRV10_MIGRASI_DB_PASSWORD.
+      DATABASE_URL: "postgresql://kasirv10_migrasi:${KASIRV10_MIGRASI_DB_PASSWORD:?Set KASIRV10_MIGRASI_DB_PASSWORD in .env}@db:5432/kasirv10_migrasi?schema=public"
+      DB_EXPECTED_HOST: db
+      DB_EXPECTED_NAME: kasirv10_migrasi
+      DB_EXPECTED_PORT: "5432"
+      DB_EXPECTED_SCHEMA: public
+      JWT_SECRET: "${KASIRV10_MIGRASI_JWT_SECRET:?Set KASIRV10_MIGRASI_JWT_SECRET in .env}"
+    networks:
+      - kasirv10_migrasi_net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/api/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    image: "ghcr.io/adilacell011-cell/kasirv10-web:candidate-a8a88a8d507a7be72db9dd3b8430cd7d08f3f08e-run-42721259672-attempt-1"
+    pull_policy: always
+    profiles: ["application"]
+    container_name: kasirv10-migrasi-web
+    restart: unless-stopped
+    mem_limit: 96m
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${KASIRV10_MIGRASI_WEB_PORT:-18083}:80"
+    networks:
+      - kasirv10_migrasi_net
+
+  adminer:
+    image: adminer:latest
+    profiles: ["tools"]
+    container_name: kasirv10-migrasi-adminer
+    restart: unless-stopped
+    mem_limit: 192m
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "127.0.0.1:${KASIRV10_MIGRASI_ADMINER_PORT:-18084}:8080"
+    networks:
+      - kasirv10_migrasi_net
+
+volumes:
+  kasirv10_migrasi_data:
+    name: kasirv10-migrasi-db-data
+
+networks:
+  kasirv10_migrasi_net:
+    name: kasirv10-migrasi-net
+    driver: bridge
