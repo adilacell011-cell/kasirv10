@@ -27,6 +27,11 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
   **Why:** restoring the stale dump could roll back account and transaction state.
   **How to apply:** connect the new app over the existing Docker network using the exact `kasirv10_migrasi` database target; do not add another PostgreSQL service or run restore/schema initialization automatically.
 
+- **Use one immutable candidate for the `kasirv10_migrasi` preflight and later approved migration; do not create missing tables manually.**
+  The Owner agreed to the managed migration path instead of hand-written table creation.
+  **Why:** the upgrade includes columns, indexes, relations, and migration history as well as new tables; partial manual SQL can leave the app schema inconsistent, while one candidate avoids rebuilding between the check and migration.
+  **How to apply:** run its exact-target `--check` first; only after the result is reviewed, a verified backup exists, and the Owner gives separate approval, run the explicit migration with that same image. Never migrate during app startup.
+
 - **API image is single-stage and keeps the WHOLE monorepo + node_modules intact.**
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
   **How to apply:** keep `COPY . .` + `pnpm install` in the same image you run from; don't "optimize" into a copy-only runtime stage without testing Prisma resolution.
