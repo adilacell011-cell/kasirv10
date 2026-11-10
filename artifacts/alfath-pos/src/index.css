@@ -11257,3 +11257,79 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
     filter: drop-shadow(0 0 8px rgba(218, 189, 123, 0.34));
   }
 }
+
+/* Branch picker follows the Admin Dashboard's gold-on-navy control style. */
+.app-shell[data-admin-surface="true"] [data-testid="select-audit-branch"].audit-branch-picker-trigger {
+  min-height: 44px !important;
+  padding-left: 2.5rem !important;
+  border-color: rgba(196, 166, 109, 0.58) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #f3f0e7 !important;
+  -webkit-text-fill-color: #f3f0e7 !important;
+  --tw-shadow: 0 4px 12px rgba(4, 13, 28, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="select-audit-branch"].audit-branch-picker-trigger > svg {
+  color: #e2cf9f !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="select-audit-branch"].audit-branch-picker-trigger:hover:not(:disabled) {
+  border-color: rgba(231, 210, 158, 0.84) !important;
+  background: linear-gradient(135deg, #193653, #234565) !important;
+}
+
+.audit-branch-picker-menu {
+  border-color: rgba(196, 166, 109, 0.66) !important;
+  background: linear-gradient(145deg, #1b3b5b, #102744) !important;
+  box-shadow: 0 14px 34px rgba(0, 5, 16, 0.56), 0 0 18px rgba(218, 189, 123, 0.14) !important;
+}
+
+.audit-branch-picker-menu button.audit-branch-picker-option {
+  border-color: rgba(196, 166, 109, 0.2) !important;
+  background: transparent !important;
+  color: #e7edf6 !important;
+}
+
+.audit-branch-picker-menu button.audit-branch-picker-option:hover {
+  background: rgba(196, 166, 109, 0.14) !important;
+  color: #f1dba7 !important;
+}
+
+.audit-branch-picker-menu button.audit-branch-picker-option-selected {
+  border-color: rgba(231, 210, 158, 0.76) !important;
+  background: linear-gradient(135deg, #e2cf9f, #c4a66d) !important;
+  color: #102744 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="button-audit-prev-page"],
+.app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="button-audit-next-page"] {
+  min-height: 40px !important;
+  border: 1px solid rgba(196, 166, 109, 0.55) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #f1dba7 !important;
+  --tw-shadow: 0 3px 8px rgba(2, 10, 22, 0.22) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="button-audit-prev-page"]:disabled,
+.app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="button-audit-next-page"]:disabled {
+  border-color: rgba(157, 174, 195, 0.28) !important;
+  background: linear-gradient(135deg, #14283f, #172e49) !important;
+  color: #91a1b5 !important;
+  filter: none !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="text-audit-pagination"],
+.app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer [data-testid="text-audit-page"] {
+  color: #c3cfdd !important;
+}
+
+@media (hover: hover) {
+  .app-shell[data-admin-surface="true"] [data-testid="panel-audit-items"] footer :is(
+    [data-testid="button-audit-prev-page"],
+    [data-testid="button-audit-next-page"]
+  ):not(:disabled):hover {
+    border-color: rgba(231, 210, 158, 0.88) !important;
+    background: linear-gradient(135deg, #193653, #234565) !important;
+    color: #fff1d0 !important;
+  }
+}

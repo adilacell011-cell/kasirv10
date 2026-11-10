@@ -9,6 +9,7 @@ import {
   Camera,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -25,6 +26,159 @@ import {
 } from "lucide-react";
 
 export type AuditBranch = { id: string; name: string };
+
+type BranchPickerPosition = {
+  left: number;
+  width: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+};
+
+function AuditBranchPicker({
+  branches,
+  value,
+  disabled,
+  onChange,
+}: {
+  branches: AuditBranch[];
+  value: string;
+  disabled: boolean;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<BranchPickerPosition | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const selectedBranch = branches.find((branch) => branch.id === value);
+  const options = [{ id: "", name: "Pilih cabang…" }, ...branches];
+
+  const placeMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const viewportWidth = window.innerWidth;
+    const width = Math.min(Math.max(rect.width, 200), viewportWidth - 16);
+    const left = Math.min(Math.max(8, rect.left), viewportWidth - width - 8);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openAbove = spaceBelow < 240 && rect.top > spaceBelow;
+    const availableHeight = openAbove ? rect.top : spaceBelow;
+
+    setPosition({
+      left,
+      width,
+      top: openAbove ? undefined : rect.bottom + 6,
+      bottom: openAbove ? window.innerHeight - rect.top + 6 : undefined,
+      maxHeight: Math.max(120, Math.min(280, availableHeight - 16)),
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    const closeOnViewportChange = () => setOpen(false);
+
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    window.addEventListener("resize", closeOnViewportChange);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+      window.removeEventListener("resize", closeOnViewportChange);
+    };
+  }, [open]);
+
+  const toggleMenu = () => {
+    if (disabled) return;
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    placeMenu();
+    setOpen(true);
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        id="audit-branch"
+        type="button"
+        data-testid="select-audit-branch"
+        aria-label={selectedBranch ? `Cabang diaudit: ${selectedBranch.name}` : "Pilih cabang yang diaudit"}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="audit-branch-options"
+        disabled={disabled}
+        onClick={toggleMenu}
+        className="audit-branch-picker-trigger inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#e2cf9f]/60 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className={selectedBranch ? "truncate" : "truncate text-[#c3cfdd]"}>
+          {selectedBranch?.name ?? "Pilih cabang…"}
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && position && createPortal(
+        <div
+          ref={menuRef}
+          id="audit-branch-options"
+          role="listbox"
+          aria-label="Daftar cabang audit"
+          data-testid="menu-audit-branches"
+          className="audit-branch-picker-menu fixed overflow-hidden rounded-2xl border shadow-2xl"
+          style={{
+            left: position.left,
+            width: position.width,
+            top: position.top,
+            bottom: position.bottom,
+            maxHeight: position.maxHeight,
+            zIndex: 9500,
+          }}
+        >
+          <div className="max-h-full overflow-y-auto">
+            {options.map((branch) => {
+              const selected = branch.id === value;
+              return (
+                <button
+                  key={branch.id || "empty"}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  data-testid={branch.id ? `option-audit-branch-${branch.id}` : "option-audit-branch-empty"}
+                  onClick={() => {
+                    if (branch.id !== value) onChange(branch.id);
+                    setOpen(false);
+                  }}
+                  className={`inline-flex min-h-11 w-full items-center justify-between gap-3 border-b px-3 py-2.5 text-left text-sm last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e2cf9f] ${
+                    selected
+                      ? "audit-branch-picker-option-selected font-bold"
+                      : "audit-branch-picker-option font-medium"
+                  }`}
+                >
+                  <span className="truncate">{branch.name}</span>
+                  {selected && <Check className="h-4 w-4 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
 
 export type AuditSession = {
   id: string;
@@ -971,18 +1125,16 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               </p>
             </div>
             <div className="flex w-full min-w-0 flex-col gap-1.5 md:w-[270px] md:shrink-0">
-              <label htmlFor="audit-branch" className="text-[11px] font-bold uppercase tracking-[.14em] text-[#a9c3bd]">
+              <label id="audit-branch-label" className="text-[11px] font-bold uppercase tracking-[.14em] text-[#a9c3bd]">
                 Cabang yang diaudit <span className="text-[#e3c975]">· wajib</span>
               </label>
               <div className="relative">
                 <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#d6b96a]" />
-                <select
-                  id="audit-branch"
-                  data-testid="select-audit-branch"
-                  disabled={Boolean(actionBusy || loadingSession || isActive || editorItem || exceptionOpen || confirmAction || cameraOpen)}
+                <AuditBranchPicker
+                  branches={branches}
                   value={branchId}
-                  onChange={(event) => {
-                    const nextBranchId = event.target.value;
+                  disabled={Boolean(actionBusy || loadingSession || isActive || editorItem || exceptionOpen || confirmAction || cameraOpen)}
+                  onChange={(nextBranchId) => {
                     setBranchId(nextBranchId);
                     writeBranchIdToUrl(nextBranchId);
                     saveAuditBranchId(userId, nextBranchId);
@@ -998,11 +1150,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                     setError("");
                     setNotice("");
                   }}
-                  className="min-h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-white/15 bg-[#21494a] py-2.5 pl-10 pr-4 text-xs font-semibold text-[#f4f4e9] shadow-none outline-none transition focus:border-[#d6b96a] focus:ring-2 focus:ring-[#d6b96a]/30 disabled:cursor-not-allowed disabled:opacity-80"
-                >
-                  <option value="">Pilih cabang…</option>
-                  {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-                </select>
+                />
               </div>
             </div>
           </div>
