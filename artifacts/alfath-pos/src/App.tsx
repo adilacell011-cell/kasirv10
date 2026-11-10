@@ -20,6 +20,7 @@ import {
   Search,
   Plus,
   Minus,
+  Ban,
   Trash2,
   ShieldCheck,
   Store,
@@ -651,6 +652,12 @@ export default function App() {
   const [transferTargetsLoading, setTransferTargetsLoading] = useState(false);
   const [transferTargetsError, setTransferTargetsError] = useState<string | null>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [inactiveProducts, setInactiveProducts] = useState<any[]>([]);
+  const [inactiveProductsLoading, setInactiveProductsLoading] = useState(false);
+  const [inactiveProductsError, setInactiveProductsError] = useState("");
+  const [inactiveProductsRefresh, setInactiveProductsRefresh] = useState(0);
+  const [productLifecycleTab, setProductLifecycleTab] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  const [zeroStockOnly, setZeroStockOnly] = useState(false);
   const [hasMoreProducts, setHasMoreProducts] = useState(false);
   const [isSearchingProducts, setIsSearchingProducts] = useState(false);
   const loadMoreProducts = async () => {};
@@ -1800,6 +1807,39 @@ export default function App() {
   const fullSyncEnabled = Boolean(profile && profile.role !== "PENDING" && !authLoading && !usesOwnerSync);
   const syncKey = `${readScope}:${fullSyncEnabled}`;
   const syncToken = localStorage.getItem("token");
+  useEffect(() => {
+    if (!syncToken || profile?.role !== "ADMIN") {
+      setInactiveProducts([]);
+      setInactiveProductsLoading(false);
+      setInactiveProductsError("");
+      return;
+    }
+    if (activeMenu !== "branch_stocks" || productLifecycleTab !== "INACTIVE") return;
+
+    const controller = new AbortController();
+    setInactiveProductsLoading(true);
+    setInactiveProductsError("");
+    api.getInactiveProducts(controller.signal)
+      .then((data: any[]) => {
+        if (!controller.signal.aborted) setInactiveProducts(data);
+      })
+      .catch((error: any) => {
+        if (error?.name !== "AbortError") {
+          setInactiveProductsError(error?.message || "Gagal memuat produk nonaktif.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setInactiveProductsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [
+    activeMenu,
+    productLifecycleTab,
+    profile?.role,
+    syncToken,
+    inactiveProductsRefresh,
+  ]);
   const shiftReadScope = JSON.stringify([
     syncToken, fullSyncEnabled, activeMenu, effectiveReadBranch,
     reportStartDate, reportEndDate, profile?.id, profile?.role, profile?.branchId,
@@ -1890,10 +1930,14 @@ export default function App() {
     // Single consolidated socket connection per session.
     // All real-time events trigger a full loadData() refresh from the DB.
     const socket = io({ auth: { token: syncToken }, autoConnect: false });
+    const refreshProductData = () => {
+      refresh.schedule();
+      setInactiveProductsRefresh((version) => version + 1);
+    };
     socket.on("saleProcessed", refresh.schedule);
     socket.on("saleUpdated", refresh.schedule);
-    socket.on("productUpdated", refresh.schedule);
-    socket.on("productDeleted", refresh.schedule);
+    socket.on("productUpdated", refreshProductData);
+    socket.on("productDeleted", refreshProductData);
     socket.on("stockUpdated", refresh.schedule);
     socket.on("commissionsUpdated", refresh.schedule);
     // On reconnect, always do a full refresh so stale data from a network gap is corrected.
@@ -2616,6 +2660,80 @@ export default function App() {
       (s) => s.branchId === branchId && s.productId === productId,
     );
     return s ? s.qty : 0;
+  };
+
+  const getProductBranchStock = (branchId: string, product: any) => {
+    if (productLifecycleTab === "INACTIVE") {
+      return Number(product.stocks?.[branchId] ?? 0);
+    }
+    return getBranchStock(branchId, product.id);
+  };
+
+  const filteredStockProducts = (
+    productLifecycleTab === "ACTIVE" ? products : inactiveProducts
+  ).filter((product) => {
+    const query = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !query ||
+      `${product.name || ""} ${product.barcode || ""}`.toLowerCase().includes(query);
+    const matchesZeroStock =
+      productLifecycleTab !== "ACTIVE" ||
+      !zeroStockOnly ||
+      branches.every((branch) => getProductBranchStock(branch.id, product) === 0);
+    return matchesSearch && matchesZeroStock;
+  });
+
+  const handleDeactivateProduct = async (product: any) => {
+    const stockByBranch = branches.map((branch) => ({
+      name: branch.name,
+      qty: getProductBranchStock(branch.id, product),
+    }));
+    const remaining = stockByBranch.filter((branch) => branch.qty !== 0);
+    if (remaining.length > 0) {
+      alert(
+        `Stok harus 0 di semua cabang sebelum produk dinonaktifkan: ${remaining
+          .map((branch) => `${branch.name} (${branch.qty} pcs)`)
+          .join(", ")}`,
+      );
+      return;
+    }
+    if (
+      !(await triggerConfirm(
+        `Nonaktifkan "${product.name}"? Produk akan hilang dari kasir, sementara riwayat, barcode, stok, dan pengaturan cabang tetap disimpan.`,
+      ))
+    ) return;
+
+    try {
+      await api.deactivateProduct(product.id);
+      const [active, inactive] = await Promise.all([
+        api.getProducts(),
+        api.getInactiveProducts(),
+      ]);
+      setProducts(active);
+      setInactiveProducts(inactive);
+    } catch (error: any) {
+      alert(error?.message || "Gagal menonaktifkan produk.");
+    }
+  };
+
+  const handleReactivateProduct = async (product: any) => {
+    if (
+      !(await triggerConfirm(
+        `Aktifkan kembali "${product.name}"? Produk akan tersedia lagi di cabang yang sebelumnya dipilih.`,
+      ))
+    ) return;
+
+    try {
+      await api.reactivateProduct(product.id);
+      const [active, inactive] = await Promise.all([
+        api.getProducts(),
+        api.getInactiveProducts(),
+      ]);
+      setProducts(active);
+      setInactiveProducts(inactive);
+    } catch (error: any) {
+      alert(error?.message || "Gagal mengaktifkan kembali produk.");
+    }
   };
 
   const addToCart = (product: any) => {
@@ -5739,12 +5857,65 @@ export default function App() {
                     <input
                       data-stock-search
                       type="text"
-                      placeholder="Cari Barang..."
+                      value={searchTerm}
+                      placeholder={productLifecycleTab === "ACTIVE" ? "Cari barang aktif..." : "Cari produk nonaktif..."}
                       className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none shadow-sm"
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                 </div>
+
+                <div className="flex flex-wrap items-center gap-2 mb-3" data-product-lifecycle-controls>
+                  <button
+                    type="button"
+                    onClick={() => setProductLifecycleTab("ACTIVE")}
+                    className={`rounded-xl border px-4 py-2 text-xs font-black transition-colors ${
+                      productLifecycleTab === "ACTIVE"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200"
+                    }`}
+                  >
+                    Produk Aktif ({products.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductLifecycleTab("INACTIVE")}
+                    className={`rounded-xl border px-4 py-2 text-xs font-black transition-colors ${
+                      productLifecycleTab === "INACTIVE"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200"
+                    }`}
+                  >
+                    Produk Nonaktif ({inactiveProducts.length})
+                  </button>
+                  {productLifecycleTab === "ACTIVE" && (
+                    <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={zeroStockOnly}
+                        onChange={(event) => setZeroStockOnly(event.target.checked)}
+                        className="accent-blue-600"
+                      />
+                      Stok 0 di semua cabang
+                    </label>
+                  )}
+                  <span className="text-[11px] text-slate-500">
+                    Stok terlihat mencakup semua cabang, termasuk produk yang tidak dijual di cabang tersebut.
+                  </span>
+                </div>
+
+                {productLifecycleTab === "INACTIVE" && inactiveProductsError && (
+                  <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+                    <span>{inactiveProductsError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setInactiveProductsRefresh((version) => version + 1)}
+                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5"
+                    >
+                      Coba lagi
+                    </button>
+                  </div>
+                )}
 
                 <div data-stock-table-card className="bg-white rounded-2xl overflow-hidden border border-slate-200">
                   <div className="overflow-x-auto" data-branch-stock-matrix>
@@ -5775,19 +5946,27 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-300">
-                        {products
-                          .filter(
-                            (p) =>
-                              !searchTerm ||
-                              p.name
-                                .toLowerCase()
-                                .includes(searchTerm.toLowerCase()) ||
-                              p.barcode
-                                ?.toLowerCase()
-                                .includes(searchTerm.toLowerCase()),
-                          )
-                          .map((p) => {
+                        {productLifecycleTab === "INACTIVE" && inactiveProductsLoading ? (
+                          <tr>
+                            <td colSpan={branches.length + 3} className="px-4 py-8 text-center text-sm text-slate-500">
+                              Memuat produk nonaktif...
+                            </td>
+                          </tr>
+                        ) : filteredStockProducts.length === 0 ? (
+                          <tr>
+                            <td colSpan={branches.length + 3} className="px-4 py-8 text-center text-sm text-slate-500">
+                              {productLifecycleTab === "INACTIVE"
+                                ? "Belum ada produk nonaktif yang cocok."
+                                : zeroStockOnly
+                                  ? "Tidak ada produk aktif dengan stok 0 di semua cabang."
+                                  : "Tidak ada produk yang cocok dengan pencarian."}
+                            </td>
+                          </tr>
+                        ) : filteredStockProducts.map((p) => {
                             let rowTotal = 0;
+                            const allBranchesZero = branches.every(
+                              (branch) => getProductBranchStock(branch.id, p) === 0,
+                            );
                             return (
                               <tr
                                 key={p.id}
@@ -5822,7 +6001,7 @@ export default function App() {
                                   .map((b) => {
                                     const visibleIds = p.visibleBranchIds || "*";
                                     const isProductVisibleInBranch = visibleIds === "*" || visibleIds.split(",").map((id: string) => id.trim()).includes(b.id);
-                                    const qty = isProductVisibleInBranch ? getBranchStock(b.id, p.id) : 0;
+                                    const qty = getProductBranchStock(b.id, p);
                                     rowTotal += qty;
                                     const isLow = isProductVisibleInBranch && p.minStock > 0 && qty <= p.minStock;
                                     return (
@@ -5830,22 +6009,24 @@ export default function App() {
                                         key={b.id}
                                         data-column="branch-qty"
                                         data-stock-level={!isProductVisibleInBranch ? "hidden" : isLow ? "low" : qty === 0 ? "zero" : "normal"}
+                                        title={!isProductVisibleInBranch ? `Tidak dijual di ${b.name}; stok tercatat ${qty} pcs` : `Stok ${b.name}: ${qty} pcs`}
                                         className={`px-2 py-3 text-center text-sm font-black font-mono border-r border-slate-200 ${
-                                          !isProductVisibleInBranch 
-                                            ? "text-slate-300 bg-slate-50/30 font-normal italic" 
+                                          !isProductVisibleInBranch
+                                            ? "text-amber-700 bg-amber-50/50 font-semibold"
                                             : isLow 
-                                              ? "text-red-600 bg-red-50/50" 
+                                              ? "text-red-600 bg-red-50/50"
                                               : "text-slate-600"
                                         }`}
                                       >
-                                        {!isProductVisibleInBranch ? (
-                                          <span className="text-[10px] opacity-40">—</span>
-                                        ) : qty === 0 ? (
+                                        {qty === 0 ? (
                                           <span className="opacity-20 text-[10px]">
                                             0
                                           </span>
                                         ) : (
                                           qty
+                                        )}
+                                        {!isProductVisibleInBranch && (
+                                          <span className="block text-[7px] font-black font-sans">Tidak dijual</span>
                                         )}
                                       </td>
                                     );
@@ -5854,16 +6035,34 @@ export default function App() {
                                   {rowTotal}
                                 </td>
                                 <td data-column="action" className="px-0 py-1 text-center">
-                                  <button
-                                    data-stock-delete
-                                    onClick={() =>
-                                      handleDeleteProduct(p.id, p.name)
-                                    }
-                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                    title="Hapus Master Produk"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                                  {productLifecycleTab === "ACTIVE" ? (
+                                    <button
+                                      type="button"
+                                      data-product-deactivate
+                                      disabled={!allBranchesZero}
+                                      onClick={() => handleDeactivateProduct(p)}
+                                      className={`inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[9px] font-black transition-colors ${
+                                        allBranchesZero
+                                          ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                          : "cursor-not-allowed bg-slate-100 text-slate-400"
+                                      }`}
+                                      title={allBranchesZero ? "Nonaktifkan produk" : "Stok harus 0 di semua cabang"}
+                                    >
+                                      <Ban className="h-3 w-3" />
+                                      Nonaktifkan
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      data-product-reactivate
+                                      onClick={() => handleReactivateProduct(p)}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-2 py-1.5 text-[9px] font-black text-emerald-800 transition-colors hover:bg-emerald-200"
+                                      title="Aktifkan kembali"
+                                    >
+                                      <RotateCcw className="h-3 w-3" />
+                                      Aktifkan
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
                             );

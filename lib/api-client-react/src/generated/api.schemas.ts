@@ -24,6 +24,42 @@ export interface BranchTransferTarget {
   name: string;
 }
 
+export interface ProductBranchStock {
+  branchId: string;
+  branchName: string;
+  qty: number;
+}
+
+export type InactiveProductStatus = typeof InactiveProductStatus[keyof typeof InactiveProductStatus];
+
+
+export const InactiveProductStatus = {
+  INACTIVE: 'INACTIVE',
+} as const;
+
+export interface InactiveProduct {
+  id: string;
+  name: string;
+  /** @nullable */
+  barcode?: string | null;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  visibleBranchIds: string;
+  status: InactiveProductStatus;
+  stocks: ProductBranchStock[];
+}
+
+export interface ProductLifecycleMutation {
+  success: boolean;
+}
+
+export interface ProductDeactivationBlocked {
+  error: string;
+  stocks: ProductBranchStock[];
+}
+
 export interface StockAuditStartInput {
   /** @minLength 1 */
   branchId: string;

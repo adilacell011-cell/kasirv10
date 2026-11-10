@@ -24,6 +24,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /products/inactive:
+    get:
+      operationId: getInactiveProducts
+      summary: List inactive products with stock at every branch
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Inactive products for Admin stock management.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InactiveProduct"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+  /products/{id}/deactivate:
+    post:
+      operationId: deactivateProduct
+      summary: Deactivate a product only when stock is zero across all branches
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product deactivated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductLifecycleMutation"
+        "404":
+          description: Product not found.
+        "409":
+          description: Product is not active or has remaining stock in one or more branches.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDeactivationBlocked"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+  /products/{id}/reactivate:
+    post:
+      operationId: reactivateProduct
+      summary: Reactivate an inactive product without changing stock or visibility
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product reactivated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductLifecycleMutation"
+        "404":
+          description: Product not found.
+        "409":
+          description: Product is not inactive.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
   /branches/transfer-targets:
     get:
       operationId: getBranchTransferTargets
@@ -430,6 +507,55 @@ components:
           type: string
         name:
           type: string
+    ProductBranchStock:
+      type: object
+      required: [branchId, branchName, qty]
+      properties:
+        branchId:
+          type: string
+        branchName:
+          type: string
+        qty:
+          type: integer
+    InactiveProduct:
+      type: object
+      required: [id, name, visibleBranchIds, status, stocks]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        barcode:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        visibleBranchIds:
+          type: string
+        status:
+          type: string
+          enum: [INACTIVE]
+        stocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductBranchStock"
+    ProductLifecycleMutation:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+    ProductDeactivationBlocked:
+      type: object
+      required: [error, stocks]
+      properties:
+        error:
+          type: string
+        stocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductBranchStock"
     StockAuditStartInput:
       type: object
       required: [branchId]

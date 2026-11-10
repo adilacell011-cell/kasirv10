@@ -15,6 +15,7 @@ import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict, validateR
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { registerStockAuditRoutes } from "./stock-audit";
+import { lockProductStatus, ProductLifecycleConflict, registerProductLifecycleRoutes } from "./product-lifecycle";
 import { applyOpname, OpnameConflict } from "./opname";
 import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment";
 import { validateDatabaseTarget } from "./database-target";
@@ -348,6 +349,9 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 // Protected API Routes
 app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, res) => {
   const { id, purchasePrice, ...data } = req.body;
+  if ((data as any).status !== undefined && (data as any).status !== "ACTIVE") {
+    return void res.status(400).json({ error: "Gunakan aksi arsip atau produk nonaktif untuk mengubah status." });
+  }
   if (purchasePrice !== undefined) {
     (data as any).buyingPrice = purchasePrice;
   }
@@ -367,8 +371,15 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
     (data as any).expiredAt = null;
   }
   try {
-    const product = id 
-      ? await prisma.product.update({ where: { id }, data })
+    const product = id
+      ? await prisma.$transaction(async (tx) => {
+          const current = await lockProductStatus(tx, id);
+          if (!current) throw new ProductLifecycleConflict("Produk tidak ditemukan.");
+          if (current.status !== "ACTIVE") {
+            throw new ProductLifecycleConflict("Produk nonaktif hanya dapat diubah melalui aksi aktifkan kembali.");
+          }
+          return tx.product.update({ where: { id }, data });
+        })
       : await prisma.product.create({ data: data as any });
     
     // Broadcast product change
@@ -378,6 +389,9 @@ app.post("/api/products", authenticateToken, requireRole("ADMIN"), async (req, r
     
     res.json(product);
   } catch (error) {
+    if (error instanceof ProductLifecycleConflict) {
+      return void res.status(409).json({ error: error.message });
+    }
     console.error("Save Product Error:", error);
     res.status(500).json({ error: "Failed to save product" });
   }
@@ -671,6 +685,16 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
         sn: string | null;
       }> = [];
       const productNames: Record<string, string> = {};
+
+      // Serialize product state with deactivation. Lock in a stable order so
+      // concurrent carts containing the same products cannot deadlock.
+      for (const productId of [...new Set(normItems.map((item) => item.productId))].sort()) {
+        const lockedProduct = await lockProductStatus(tx, productId);
+        if (!lockedProduct) throw new SaleRejected(`Produk dengan ID ${productId} tidak ditemukan.`);
+        if (lockedProduct.status !== "ACTIVE") {
+          throw new SaleRejected("Produk ini sudah nonaktif dan tidak dapat dijual.");
+        }
+      }
 
       // 1. Derive all prices, costs and commissions from the stored catalog.
       for (const item of normItems) {
@@ -1323,6 +1347,12 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
         }
       }
 
+      const lockedProduct = await lockProductStatus(tx, productId);
+      if (!lockedProduct) throw new ProductLifecycleConflict("Produk tidak ditemukan.");
+      if (lockedProduct.status !== "ACTIVE") {
+        throw new ProductLifecycleConflict("Produk nonaktif. Aktifkan kembali sebelum mengubah stok.");
+      }
+
       if (hasNewQty) {
         return applyOpname(tx, {
           productId, branchId, oldQty: safeOldQty,
@@ -1357,6 +1387,10 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
     }
     if (error instanceof InsufficientAdjustmentStock) {
       res.status(400).json({ error: error.message, code: "INSUFFICIENT_STOCK" });
+      return;
+    }
+    if (error instanceof ProductLifecycleConflict) {
+      res.status(409).json({ error: error.message });
       return;
     }
     console.error("Stock Adjust Error:", error);
@@ -1396,6 +1430,12 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
         if (!activeShift) {
           throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup. Buka shift sebelum transfer stok.");
         }
+      }
+
+      const lockedProduct = await lockProductStatus(tx, productId);
+      if (!lockedProduct) throw new ProductLifecycleConflict("Produk tidak ditemukan.");
+      if (lockedProduct.status !== "ACTIVE") {
+        throw new ProductLifecycleConflict("Produk nonaktif. Aktifkan kembali sebelum transfer stok.");
       }
 
       // 1. Kurangi dari asal — guard atomik agar stok asal tidak bisa minus walau
@@ -1449,6 +1489,9 @@ app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT"
   } catch (error: any) {
     if (error instanceof ShiftConflict) {
       return void res.status(error.status).json({ error: error.message });
+    }
+    if (error instanceof ProductLifecycleConflict) {
+      return void res.status(409).json({ error: error.message });
     }
     console.error("Stock Transfer Error:", error);
     res.status(400).json({ error: error.message || "Failed to transfer stock" });
@@ -1761,6 +1804,13 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
 registerBranchReadRoutes(app, prisma, authenticateToken, getLogicalShiftDate);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
 registerStockAuditRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
+registerProductLifecycleRoutes(
+  app,
+  prisma,
+  authenticateToken,
+  requireRole,
+  (product) => io.emit("productUpdated", productUpdatedPayload(product)),
+);
 
 async function startServer() {
   // Last-resort error middleware: any synchronous throw or forwarded error from a

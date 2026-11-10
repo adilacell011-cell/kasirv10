@@ -18,6 +18,50 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary List inactive products with stock at every branch
+ */
+export const GetInactiveProductsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "barcode": zod.string().nullish(),
+  "category": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "visibleBranchIds": zod.string(),
+  "status": zod.enum(['INACTIVE']),
+  "stocks": zod.array(zod.object({
+  "branchId": zod.string(),
+  "branchName": zod.string(),
+  "qty": zod.number().int()
+}))
+})
+export const GetInactiveProductsResponse = zod.array(GetInactiveProductsResponseItem)
+
+
+/**
+ * @summary Deactivate a product only when stock is zero across all branches
+ */
+export const DeactivateProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeactivateProductResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Reactivate an inactive product without changing stock or visibility
+ */
+export const ReactivateProductParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ReactivateProductResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List minimal branch destinations for a cashier stock transfer
  */
 export const GetBranchTransferTargetsResponseItem = zod.object({

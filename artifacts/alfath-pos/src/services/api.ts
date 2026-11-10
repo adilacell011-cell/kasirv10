@@ -174,6 +174,48 @@ export const api = {
     return readJson("/products", signal);
   },
 
+  async getInactiveProducts(signal?: AbortSignal) {
+    const products = await readJson("/products/inactive", signal);
+    return (products || []).map((product: any) => ({
+      ...product,
+      stocks: Object.fromEntries(
+        (product.stocks || []).map((stock: any) => [stock.branchId, stock.qty]),
+      ),
+      stockBranches: product.stocks || [],
+    }));
+  },
+
+  async deactivateProduct(id: string) {
+    const res = await fetch(`${BASE_URL}/products/${encodeURIComponent(id)}/deactivate`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      const remaining = Array.isArray(payload.stocks)
+        ? payload.stocks
+            .map((stock: any) => `${stock.branchName}: ${stock.qty} pcs`)
+            .join(", ")
+        : "";
+      throw new Error(
+        [payload.error || `Gagal menonaktifkan produk (${res.status}).`, remaining].filter(Boolean).join(" "),
+      );
+    }
+    return res.json();
+  },
+
+  async reactivateProduct(id: string) {
+    const res = await fetch(`${BASE_URL}/products/${encodeURIComponent(id)}/reactivate`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload.error || `Gagal mengaktifkan kembali produk (${res.status}).`);
+    }
+    return res.json();
+  },
+
   async createProduct(data: any) {
     const res = await fetch(`${BASE_URL}/products`, {
       method: "POST",

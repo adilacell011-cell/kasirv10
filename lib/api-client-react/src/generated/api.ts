@@ -33,6 +33,9 @@ import type {
   GetStockAuditCurrentParams,
   GetStockAuditItemsParams,
   HealthStatus,
+  InactiveProduct,
+  ProductDeactivationBlocked,
+  ProductLifecycleMutation,
   SearchStockAuditCandidatesParams,
   StockAuditCandidatePage,
   StockAuditCountInput,
@@ -175,6 +178,255 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetInactiveProductsUrl = () => {
+
+
+
+
+  return `/api/products/inactive`
+}
+
+/**
+ * @summary List inactive products with stock at every branch
+ */
+export const getInactiveProducts = async ( options?: Parameters<typeof customFetch>[1]): Promise<InactiveProduct[]> => {
+
+  return customFetch<InactiveProduct[]>(getGetInactiveProductsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInactiveProductsQueryKey = () => {
+    return [
+    `/api/products/inactive`
+    ] as const;
+    }
+
+
+export const getGetInactiveProductsQueryOptions = <TData = Awaited<ReturnType<typeof getInactiveProducts>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInactiveProducts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInactiveProductsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInactiveProducts>>> = ({ signal }) => getInactiveProducts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInactiveProducts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetInactiveProductsQueryResult = NonNullable<Awaited<ReturnType<typeof getInactiveProducts>>>
+export type GetInactiveProductsQueryError = ErrorType<void>
+
+
+export function useGetInactiveProducts<TData = Awaited<ReturnType<typeof getInactiveProducts>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInactiveProducts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getInactiveProducts>>,
+          TError,
+          Awaited<ReturnType<typeof getInactiveProducts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetInactiveProducts<TData = Awaited<ReturnType<typeof getInactiveProducts>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInactiveProducts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getInactiveProducts>>,
+          TError,
+          Awaited<ReturnType<typeof getInactiveProducts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetInactiveProducts<TData = Awaited<ReturnType<typeof getInactiveProducts>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInactiveProducts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List inactive products with stock at every branch
+ */
+
+export function useGetInactiveProducts<TData = Awaited<ReturnType<typeof getInactiveProducts>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInactiveProducts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetInactiveProductsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeactivateProductUrl = (id: string,) => {
+
+
+
+
+  return `/api/products/${id}/deactivate`
+}
+
+/**
+ * @summary Deactivate a product only when stock is zero across all branches
+ */
+export const deactivateProduct = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ProductLifecycleMutation> => {
+
+  return customFetch<ProductLifecycleMutation>(getDeactivateProductUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeactivateProductMutationKey = () => ['deactivateProduct'] as const;
+
+export const getDeactivateProductMutationOptions = <TError = ErrorType<void | ProductDeactivationBlocked>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deactivateProduct>>, TError,DeactivateProductMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deactivateProduct>>, TError,DeactivateProductMutationVariables, TContext> => {
+
+const mutationKey = getDeactivateProductMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deactivateProduct>>, DeactivateProductMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deactivateProduct(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeactivateProductMutationResult = NonNullable<Awaited<ReturnType<typeof deactivateProduct>>>
+
+    export type DeactivateProductMutationError = ErrorType<void | ProductDeactivationBlocked>
+    export type DeactivateProductMutationVariables = {id: string}
+
+    /**
+ * @summary Deactivate a product only when stock is zero across all branches
+ */
+export const useDeactivateProduct = <TError = ErrorType<void | ProductDeactivationBlocked>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deactivateProduct>>, TError,DeactivateProductMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deactivateProduct>>,
+        TError,
+        DeactivateProductMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeactivateProductMutationOptions(options), queryClient);
+    }
+
+export const getReactivateProductUrl = (id: string,) => {
+
+
+
+
+  return `/api/products/${id}/reactivate`
+}
+
+/**
+ * @summary Reactivate an inactive product without changing stock or visibility
+ */
+export const reactivateProduct = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ProductLifecycleMutation> => {
+
+  return customFetch<ProductLifecycleMutation>(getReactivateProductUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getReactivateProductMutationKey = () => ['reactivateProduct'] as const;
+
+export const getReactivateProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactivateProduct>>, TError,ReactivateProductMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactivateProduct>>, TError,ReactivateProductMutationVariables, TContext> => {
+
+const mutationKey = getReactivateProductMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactivateProduct>>, ReactivateProductMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  reactivateProduct(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactivateProductMutationResult = NonNullable<Awaited<ReturnType<typeof reactivateProduct>>>
+
+    export type ReactivateProductMutationError = ErrorType<void>
+    export type ReactivateProductMutationVariables = {id: string}
+
+    /**
+ * @summary Reactivate an inactive product without changing stock or visibility
+ */
+export const useReactivateProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactivateProduct>>, TError,ReactivateProductMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reactivateProduct>>,
+        TError,
+        ReactivateProductMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReactivateProductMutationOptions(options), queryClient);
+    }
 
 export const getGetBranchTransferTargetsUrl = () => {
 

@@ -27,3 +27,4 @@
 - [GitHub Actions via Replit proxy](github-actions-proxy.md) — if `gh workflow run` fails parsing the proxy version, authenticated `gh api` dispatch may still work; verify ref and SHA.
 - [Prisma migration baseline for legacy schemas](prisma-legacy-migration-baseline.md) — legacy `db push` databases need an explicit applied baseline before additive `migrate deploy`; keep the upgrade manual and target-guarded.
 - [Product deactivation policy](product-deactivation-policy.md) — global deactivation is reversible, allowed only when stock is zero across every branch; branch-only removal uses visibility settings.
+- [Orval Zod codegen runtime](orval-zod-runtime.md) — Orval 8.x Zod generation needs `Map.groupBy`; Node 20.20 lacks it, so use a compatible runtime or temporary polyfill.
