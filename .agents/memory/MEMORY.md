@@ -26,3 +26,4 @@
 - [Staging Owner bootstrap](staging-owner-bootstrap.md) — keep the legacy two-account seed intact; use a separate guarded operation for a branchless first Owner.
 - [GitHub Actions via Replit proxy](github-actions-proxy.md) — if `gh workflow run` fails parsing the proxy version, authenticated `gh api` dispatch may still work; verify ref and SHA.
 - [Prisma migration baseline for legacy schemas](prisma-legacy-migration-baseline.md) — legacy `db push` databases need an explicit applied baseline before additive `migrate deploy`; keep the upgrade manual and target-guarded.
+- [Product deactivation policy](product-deactivation-policy.md) — global deactivation is reversible, allowed only when stock is zero across every branch; branch-only removal uses visibility settings.
