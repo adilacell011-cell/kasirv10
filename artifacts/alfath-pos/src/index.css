@@ -11051,3 +11051,209 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
       0 0 17px rgba(218, 189, 123, 0.2) !important;
   }
 }
+
+/* Match the Audit workspace to the Admin Dashboard's navy-and-champagne cards
+   and controls. Keep this scoped to Audit; status colors remain semantic. */
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] {
+  background: #e9eff8 !important;
+  color: #1b2b45 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] > div > header,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-progress"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="empty-audit-session"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="empty-audit-branch"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="status-audit-closed"] {
+  border-color: rgba(196, 166, 109, 0.48) !important;
+  background: linear-gradient(145deg, #1b3b5b 0%, #102744 84%) !important;
+  color: #f3f0e7 !important;
+  --tw-shadow: 0 5px 14px rgba(3, 12, 27, 0.27), 0 0 12px rgba(196, 166, 109, 0.1) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] > div:first-child,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] > footer {
+  border-color: rgba(196, 166, 109, 0.24) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid^="metric-audit-"],
+  [data-testid="progress-audit"]
+) {
+  border-color: rgba(196, 166, 109, 0.34) !important;
+  background: linear-gradient(145deg, #102744, #173653) !important;
+  color: #f3f0e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="metric-audit-"] p:first-child {
+  color: #c3cfdd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="metric-audit-"] p:last-child {
+  color: #f1dba7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="metric-audit-counted"],
+  [data-testid="metric-audit-positive"]
+) p:last-child {
+  color: #8fe2a8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="metric-audit-recount"],
+  [data-testid="metric-audit-negative"]
+) p:last-child {
+  color: #ffaaa0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-progress"] > div:first-child h2,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] h3,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="empty-audit-session"] h2 {
+  color: #f3f0e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-progress"] p,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] p,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="status-audit-closed"] {
+  color: #c3cfdd !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article [data-audit-item-metrics] p:last-child {
+  color: #f3f0e7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article [data-audit-item-metrics] [data-testid^="text-audit-variance-"][class*="text-[#39754a]"],
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article [data-audit-item-metrics] [data-testid^="text-audit-variance-"][class*="text-[#39754a]"] {
+  color: #8fe2a8 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="list-audit-item-cards"] article [data-audit-item-metrics] [data-testid^="text-audit-variance-"][class*="text-[#a34f3d]"] {
+  color: #ffaaa0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] thead {
+  background: linear-gradient(135deg, #102744, #1b3b5b) !important;
+  color: #f1dba7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] thead tr,
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid="panel-audit-items"] thead th {
+  border-color: rgba(196, 166, 109, 0.32) !important;
+  color: #f1dba7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] button {
+  border-radius: 12px;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, filter 150ms ease;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="button-start-audit"],
+  [data-testid="button-start-new-audit"],
+  [data-testid="button-finalize-audit"],
+  [data-testid="button-open-camera-scanner"],
+  [data-testid="button-scan-next-product"],
+  [data-testid="button-save-count"],
+  [data-testid="button-save-exception"],
+  [data-testid="button-confirm-audit-action"],
+  [data-testid="button-confirm-revoke-visibility"],
+  [data-testid="button-camera-start-count"],
+  [data-testid^="button-count-item-"]
+) {
+  border: 1px solid rgba(231, 210, 158, 0.8) !important;
+  background: linear-gradient(135deg, #e2cf9f, #c4a66d) !important;
+  color: #102744 !important;
+  --tw-shadow: 0 3px 9px rgba(2, 10, 22, 0.25) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="button-refresh-audit"],
+  [data-testid="button-report-exception"],
+  [data-testid="button-focus-barcode"],
+  [data-testid="button-audit-prev-page"],
+  [data-testid="button-audit-next-page"],
+  [data-testid="button-dismiss-count"],
+  [data-testid="button-dismiss-exception"],
+  [data-testid="button-dismiss-revoke-visibility"],
+  [data-testid="button-dismiss-audit-confirm"],
+  [data-testid="button-close-count"],
+  [data-testid="button-close-camera-scanner"],
+  [data-testid="button-clear-audit-filter"]
+) {
+  border: 1px solid rgba(196, 166, 109, 0.5) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #e5d3a6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="button-resume-count-draft"],
+  [data-testid="button-recount-stale-draft"],
+  [data-testid="button-camera-scan-again"],
+  [data-testid^="button-exception-product-"]
+) {
+  border: 1px solid rgba(196, 166, 109, 0.42) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #e5d3a6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="button-revoke-visibility-"] {
+  border-color: rgba(196, 166, 109, 0.58) !important;
+  background: linear-gradient(135deg, #102744, #193653) !important;
+  color: #f1dba7 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid="button-cancel-audit"],
+  [data-testid="button-camera-retry"],
+  [data-testid="button-camera-retry-not-found"],
+  [data-testid="button-confirm-revoke-visibility"],
+  [data-testid="button-confirm-audit-action"][class*="bg-[#87564b]"]
+) {
+  border: 1px solid rgba(241, 115, 119, 0.42) !important;
+  background: linear-gradient(135deg, #48232d, #351d2b) !important;
+  color: #ffb1b0 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+  [data-testid^="button-count-item-"],
+  [data-testid="button-finalize-audit"],
+  [data-testid="button-open-camera-scanner"],
+  [data-testid="button-save-count"]
+):disabled {
+  filter: grayscale(0.55) brightness(0.82) !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="dialog-"] {
+  border-color: rgba(196, 166, 109, 0.5) !important;
+  background: linear-gradient(145deg, #1b3b5b 0%, #102744 84%) !important;
+  color: #edf3f9 !important;
+}
+
+.dark .app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] {
+  background: #111b29 !important;
+  color: #e7edf6 !important;
+}
+
+.app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] [data-testid^="button-count-item-"][class*="bg-[#f2e2d8]"] {
+  border-color: rgba(241, 115, 119, 0.5) !important;
+  background: linear-gradient(135deg, #48232d, #351d2b) !important;
+  color: #ffb1b0 !important;
+}
+
+@media (hover: hover) {
+  .app-shell[data-admin-surface="true"] [data-testid="page-branch-stock-audit"] :is(
+    [data-testid="button-start-audit"],
+    [data-testid="button-start-new-audit"],
+    [data-testid="button-finalize-audit"],
+    [data-testid="button-open-camera-scanner"],
+    [data-testid="button-scan-next-product"],
+    [data-testid="button-save-count"],
+    [data-testid="button-save-exception"],
+    [data-testid="button-confirm-audit-action"],
+    [data-testid^="button-count-item-"]
+  ):not(:disabled):hover {
+    background: linear-gradient(135deg, #eedcae, #d2b779) !important;
+    filter: drop-shadow(0 0 8px rgba(218, 189, 123, 0.34));
+  }
+}
