@@ -4,7 +4,7 @@
 
 services:
   api:
-    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-a8a88a8d507a7be72db9dd3b8430cd7d08f3f08e-run-42721259672-attempt-1"
+    image: "ghcr.io/adilacell011-cell/kasirv10-api:candidate-1e720bb8eacedd267213b5424730c79e79c44c37-run-42751323108-attempt-1"
     pull_policy: always
     container_name: kasirv10-migrasi-api
     restart: unless-stopped
@@ -34,7 +34,7 @@ services:
       start_period: 30s
 
   web:
-    image: "ghcr.io/adilacell011-cell/kasirv10-web:candidate-a8a88a8d507a7be72db9dd3b8430cd7d08f3f08e-run-42721259672-attempt-1"
+    image: "ghcr.io/adilacell011-cell/kasirv10-web:candidate-1e720bb8eacedd267213b5424730c79e79c44c37-run-42751323108-attempt-1"
     pull_policy: always
     container_name: kasirv10-migrasi-web
     restart: unless-stopped
