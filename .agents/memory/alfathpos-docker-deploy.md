@@ -23,9 +23,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 - **The previously shared STB SQL dump is an outdated test copy, not a production source.**
   The Owner says the current VPS uses an older STB copy and the account names/passwords have since changed.
-  The Owner now wants a separate `kasirv10_migrasi` app/database populated from the latest STB backup while keeping the existing staging installation unchanged.
+  The Owner has prepared `kasirv10_migrasi` on the existing staging PostgreSQL server with the latest STB backup; the new app must connect to that database while leaving the staging database unchanged.
   **Why:** restoring the stale dump could roll back account and transaction state.
-  **How to apply:** use a fresh, verified dump from the live STB; restore manually into an isolated empty database before starting the new app, and never merge it into the current staging database.
+  **How to apply:** connect the new app over the existing Docker network using the exact `kasirv10_migrasi` database target; do not add another PostgreSQL service or run restore/schema initialization automatically.
 
 - **API image is single-stage and keeps the WHOLE monorepo + node_modules intact.**
   **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
