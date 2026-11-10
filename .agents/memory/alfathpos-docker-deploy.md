@@ -15,17 +15,10 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
 
 ## Non-obvious decisions
 
-- **VPS staging is a separate Kasir V10 installation, not an update to the STB.**
-  The VPS is Ubuntu/AMD64 with about 1.9 GiB RAM and also runs ZETAS; the same application images must continue to support ARM64. Keep staging containers, network, database, volumes, and backup path isolated from ZETAS; never point staging at the STB database.
-  The Owner clarified that the VPS Kasir installation is still for testing and is not yet used by cashiers; the Owner is now discussing a safe production migration, but no cutover has been authorized.
-  **Why:** keep the test installation separate from STB data and other VPS services; the production data move is a later, intentional step.
-  **How to apply:** use immutable candidate SHA tags in the existing isolated staging stack; preserve its database volume during image updates and never point it at the STB database. Do not pin the application to one CPU architecture or reuse another stack's network/data. The Owner selected `compose.staging.yaml` for the Dockge VPS stack; keep the generic `compose.dockge.yaml` separate from staging.
-
-- **The previously shared STB SQL dump is an outdated test copy, not a production source.**
-  The Owner says the current VPS uses an older STB copy and the account names/passwords have since changed.
-  The Owner has prepared `kasirv10_migrasi` on the existing staging PostgreSQL server with the latest STB backup; the new app must connect to that database while leaving the staging database unchanged.
-  **Why:** restoring the stale dump could roll back account and transaction state.
-  **How to apply:** connect the new app over the existing Docker network using the exact `kasirv10_migrasi` database target; do not add another PostgreSQL service or run restore/schema initialization automatically.
+- **The VPS app now uses the restored `kasirv10_migrasi` database; the old staging API/Web are stopped.**
+  The Owner tested Admin and cashier flows and confirmed the data matches the latest STB backup. Both databases remain on the existing `kasirv10-staging-db` PostgreSQL volume.
+  **Why:** the database container's historical “staging” name does not mean the app should keep using the staging database; stopping that container would also take the migrated database offline.
+  **How to apply:** keep the existing PostgreSQL service and volume, point the active API explicitly at `kasirv10_migrasi`, and leave the old staging API/Web stopped. Do not delete the shared volume or rerun schema initialization at app startup.
 
 - **Use one immutable candidate for the `kasirv10_migrasi` preflight and later approved migration; do not create missing tables manually.**
   The Owner agreed to the managed migration path instead of hand-written table creation.
