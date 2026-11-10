@@ -1,5 +1,6 @@
 import type { Express, RequestHandler } from "express";
 import type { PrismaClient } from "@prisma/client";
+import { isProductVisibleInBranch } from "./product-lifecycle";
 
 type Requester = {
   role?: string;
@@ -38,11 +39,8 @@ export function registerBranchReadRoutes(
       const visibleProducts = cashierBranchId === undefined
         ? products
         : products.filter((product) => {
-          const visibleIds = product.visibleBranchIds || "*";
-          return Boolean(cashierBranchId) && (
-            visibleIds === "*" ||
-            visibleIds.split(",").map((id) => id.trim()).includes(cashierBranchId)
-          );
+          return Boolean(cashierBranchId) &&
+            isProductVisibleInBranch(product.visibleBranchIds, cashierBranchId);
         });
       const formattedProducts = visibleProducts.map((product: any) => {
         const base: any = {

@@ -43,3 +43,5 @@ export * from './stockAuditSession';
 export * from './stockAuditSessionStatus';
 export * from './stockAuditStartInput';
 export * from './stockAuditSummary';
+export * from './stockAuditVisibilityRevocationInput';
+export * from './stockAuditVisibilityRevocationResult';

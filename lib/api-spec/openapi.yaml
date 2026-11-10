@@ -468,6 +468,35 @@ paths:
           description: Audit session not found.
         "409":
           description: Audit is already closed.
+  /stock-audits/revoke-product-visibility:
+    post:
+      operationId: revokeStockAuditProductVisibility
+      summary: Remove a product from one branch during an active stock audit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockAuditVisibilityRevocationInput"
+      responses:
+        "200":
+          description: Branch visibility revoked and audit item excluded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAuditVisibilityRevocationResult"
+        "400":
+          description: Invalid reason or request.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Owner or Audit access required.
+        "404":
+          description: Audit session or product not found.
+        "409":
+          description: Audit closed, product is not visible in the branch, stock is not zero, or the item cannot be safely excluded.
 components:
   securitySchemes:
     bearerAuth:
@@ -580,6 +609,26 @@ components:
         auditId:
           type: string
           minLength: 1
+    StockAuditVisibilityRevocationInput:
+      type: object
+      required: [auditId, productId, reason]
+      properties:
+        auditId:
+          type: string
+          minLength: 1
+        productId:
+          type: string
+          minLength: 1
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 200
+    StockAuditVisibilityRevocationResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
     StockAuditCountInput:
       type: object
       required: [auditId, itemId, countedQty, finding, countToken]

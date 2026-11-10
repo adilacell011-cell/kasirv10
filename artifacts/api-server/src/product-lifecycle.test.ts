@@ -4,6 +4,7 @@ import type { Application, RequestHandler } from "express";
 import type { PrismaClient } from "@prisma/client";
 import {
   findNonZeroBranchStocks,
+  isProductVisibleInBranch,
   registerProductLifecycleRoutes,
 } from "./product-lifecycle";
 
@@ -31,6 +32,12 @@ test("negative stock also blocks deactivation instead of being treated as zero",
     ]),
     [{ branchId: "negative", qty: -1 }],
   );
+});
+
+test("an explicit no-branches visibility value hides products from every branch", () => {
+  assert.equal(isProductVisibleInBranch("__NONE__", "branch-a"), false);
+  assert.equal(isProductVisibleInBranch("branch-a, branch-b", "branch-b"), true);
+  assert.equal(isProductVisibleInBranch("*", "new-branch"), true);
 });
 
 function createRouteHarness({

@@ -15,7 +15,12 @@ import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict, validateR
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { registerStockAuditRoutes } from "./stock-audit";
-import { lockProductStatus, ProductLifecycleConflict, registerProductLifecycleRoutes } from "./product-lifecycle";
+import {
+  isProductVisibleInBranch,
+  lockProductStatus,
+  ProductLifecycleConflict,
+  registerProductLifecycleRoutes,
+} from "./product-lifecycle";
 import { applyOpname, OpnameConflict } from "./opname";
 import { applyStockDelta, InsufficientAdjustmentStock } from "./stock-adjustment";
 import { validateDatabaseTarget } from "./database-target";
@@ -704,6 +709,9 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
         });
 
         if (!product) throw new SaleRejected(`Produk dengan ID ${item.productId} tidak ditemukan.`);
+        if (!isProductVisibleInBranch(product.visibleBranchIds, actualBranchId)) {
+          throw new SaleRejected("Produk ini sudah tidak ditampilkan untuk dijual di cabang tersebut.");
+        }
         
         productNames[item.productId] = product.name;
 

@@ -77,6 +77,22 @@ export interface StockAuditEndInput {
   auditId: string;
 }
 
+export interface StockAuditVisibilityRevocationInput {
+  /** @minLength 1 */
+  auditId: string;
+  /** @minLength 1 */
+  productId: string;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  reason: string;
+}
+
+export interface StockAuditVisibilityRevocationResult {
+  success: boolean;
+}
+
 export type StockAuditCountInputFinding = typeof StockAuditCountInputFinding[keyof typeof StockAuditCountInputFinding];
 
 

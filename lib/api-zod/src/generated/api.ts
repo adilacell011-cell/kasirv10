@@ -374,3 +374,24 @@ export const CancelStockAuditResponse = zod.object({
 })
 
 
+/**
+ * @summary Remove a product from one branch during an active stock audit
+ */
+
+
+export const revokeStockAuditProductVisibilityBodyReasonMin = 3;
+export const revokeStockAuditProductVisibilityBodyReasonMax = 200;
+
+
+
+export const RevokeStockAuditProductVisibilityBody = zod.object({
+  "auditId": zod.string().min(1),
+  "productId": zod.string().min(1),
+  "reason": zod.string().min(revokeStockAuditProductVisibilityBodyReasonMin).max(revokeStockAuditProductVisibilityBodyReasonMax)
+})
+
+export const RevokeStockAuditProductVisibilityResponse = zod.object({
+  "success": zod.boolean()
+})
+
+

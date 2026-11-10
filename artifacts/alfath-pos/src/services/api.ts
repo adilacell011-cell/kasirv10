@@ -502,6 +502,12 @@ export const api = {
     return writeJson("/stock-audits/exceptions", "POST", { auditId, ...data });
   },
 
+  async revokeStockAuditProductVisibility(
+    data: { auditId: string; productId: string; reason: string },
+  ) {
+    return writeJson("/stock-audits/revoke-product-visibility", "POST", data);
+  },
+
   async finalizeStockAudit(auditId: string) {
     return writeJson("/stock-audits/finalize", "POST", { auditId });
   },

@@ -105,6 +105,7 @@ export type AuditPageApi = {
     auditId: string,
     input: { productId: string; finding: string; notes?: string; countedQty?: number },
   ): Promise<void>;
+  revokeBranchVisibility(auditId: string, productId: string, reason: string): Promise<void>;
   finalize(auditId: string): Promise<void>;
   cancel(auditId: string): Promise<void>;
 };
@@ -309,6 +310,8 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
   const [exceptionFinding, setExceptionFinding] = useState<Finding>("UNLISTED_IN_BRANCH");
   const [exceptionQty, setExceptionQty] = useState("");
   const [exceptionNotes, setExceptionNotes] = useState("");
+  const [visibilityRevokeItem, setVisibilityRevokeItem] = useState<AuditItem | null>(null);
+  const [visibilityRevokeReason, setVisibilityRevokeReason] = useState("Tidak dijual di cabang ini");
   const [confirmAction, setConfirmAction] = useState<"finalize" | "cancel" | null>(null);
   const [refreshIndex, setRefreshIndex] = useState(0);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -911,6 +914,23 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
     });
   };
 
+  const revokeBranchVisibility = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!session || !visibilityRevokeItem) return;
+    const reason = visibilityRevokeReason.trim();
+    if (reason.length < 3) {
+      setError("Alasan pencabutan minimal 3 karakter.");
+      return;
+    }
+    await runAction("Izin cabang dicabut; produk dikeluarkan dari cakupan hitung.", async () => {
+      await api.revokeBranchVisibility(session.id, visibilityRevokeItem.productId, reason);
+      removeCountDraft(userId, session.id);
+      setRecoveredDraft(null);
+      setVisibilityRevokeItem(null);
+      setVisibilityRevokeReason("Tidak dijual di cabang ini");
+    });
+  };
+
   const performConfirmation = async () => {
     if (!session || !confirmAction) return;
     const action = confirmAction;
@@ -1249,6 +1269,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                         canWork={canWork}
                         busy={Boolean(actionBusy)}
                         onCount={() => void openCount(item)}
+                        onRevoke={() => { setVisibilityRevokeItem(item); setVisibilityRevokeReason("Tidak dijual di cabang ini"); setError(""); }}
                       />
                     ))}
                   </div>
@@ -1266,7 +1287,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#e6ebe7]">
-                      {items.map((item) => <AuditItemRow key={item.id} item={item} canWork={canWork} busy={Boolean(actionBusy)} onCount={() => void openCount(item)} />)}
+                      {items.map((item) => <AuditItemRow key={item.id} item={item} canWork={canWork} busy={Boolean(actionBusy)} onCount={() => void openCount(item)} onRevoke={() => { setVisibilityRevokeItem(item); setVisibilityRevokeReason("Tidak dijual di cabang ini"); setError(""); }} />)}
                     </tbody>
                   </table>
                   </div>
@@ -1522,6 +1543,43 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
         </div>
       )}
 
+      {visibilityRevokeItem && session && (
+        <div className="fixed inset-0 z-[75] flex items-end justify-center bg-[#102d2b]/60 p-0 sm:items-center sm:p-4">
+          <section role="alertdialog" aria-modal="true" aria-labelledby="revoke-visibility-title" data-testid="dialog-revoke-branch-visibility" className="w-full rounded-t-[24px] border border-[#d7e0dc] bg-[#f8f9f5] p-5 shadow-2xl sm:max-w-md sm:rounded-[22px] sm:p-6">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f2edda] text-[#806722]"><ShieldAlert className="h-5 w-5" /></div>
+            <h2 id="revoke-visibility-title" className="mt-4 text-lg font-extrabold text-[#1b3b3d]">Cabut izin tampil di {session.branchName}?</h2>
+            <p className="mt-2 text-sm leading-6 text-[#697c77]">
+              Produk <strong className="text-[#31504b]">{visibilityRevokeItem.productName}</strong> akan keluar dari antrean hitung cabang ini dan tidak lagi masuk alert belanja cabang ini. Izin cabang lain dan rencana belanja lama tidak diubah.
+            </p>
+            <div className="mt-3 rounded-xl border border-[#e2d5aa] bg-[#faf4df] px-3 py-2 text-xs leading-5 text-[#745f23]">
+              Stok sistem yang terlihat sekarang: <strong>{visibilityRevokeItem.systemQty} pcs</strong>. Server akan memeriksa ulang; pencabutan hanya berhasil jika stok terbaru tepat 0 dan tidak ada hitungan fisik positif.
+            </div>
+            <form className="mt-4 space-y-4" onSubmit={(event) => void revokeBranchVisibility(event)}>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold text-[#405e58]">Alasan pencabutan</span>
+                <textarea
+                  data-testid="input-revoke-visibility-reason"
+                  required
+                  minLength={3}
+                  maxLength={200}
+                  rows={2}
+                  value={visibilityRevokeReason}
+                  onChange={(event) => setVisibilityRevokeReason(event.target.value)}
+                  className="w-full resize-y rounded-xl border border-[#d2ddd6] bg-[#f0f4f0] px-3 py-2.5 text-sm text-[#31524d] shadow-none outline-none placeholder:text-[#98a39f] focus:border-[#63988b]"
+                />
+              </label>
+              {error && <p role="alert" className="rounded-lg border border-[#e8cbc3] bg-[#fbefea] px-3 py-2 text-xs leading-5 text-[#8b4d3f]">{error}</p>}
+              <div className="flex flex-col-reverse gap-2 border-t border-[#e1e7e2] pt-4 sm:flex-row sm:justify-end">
+                <button type="button" data-testid="button-dismiss-revoke-visibility" disabled={Boolean(actionBusy)} onClick={() => setVisibilityRevokeItem(null)} className="h-10 rounded-xl border border-[#d5dfd9] px-4 text-sm font-bold text-[#627671] hover:bg-[#edf2ee] disabled:opacity-50">Batal</button>
+                <button type="submit" data-testid="button-confirm-revoke-visibility" disabled={Boolean(actionBusy) || visibilityRevokeReason.trim().length < 3} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#87564b] px-4 text-sm font-bold text-white hover:bg-[#73473e] disabled:cursor-not-allowed disabled:opacity-50">
+                  {actionBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />} Cabut izin cabang
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
       {actionBusy && <span className="sr-only" role="status" data-testid="status-audit-action-busy">{actionBusy}</span>}
     </div>
   );
@@ -1543,7 +1601,7 @@ function SummaryCell({ label, value, accent, testId }: { label: string; value: n
   );
 }
 
-function AuditItemCard({ item, canWork, busy, onCount }: { item: AuditItem; canWork: boolean; busy: boolean; onCount: () => void }) {
+function AuditItemCard({ item, canWork, busy, onCount, onRevoke }: { item: AuditItem; canWork: boolean; busy: boolean; onCount: () => void; onRevoke: () => void }) {
   const variance = item.variance ?? (
     item.status === "COUNTED" && item.countedQty != null && item.baselineQty != null
       ? item.countedQty - item.baselineQty
@@ -1605,10 +1663,15 @@ function AuditItemCard({ item, canWork, busy, onCount }: { item: AuditItem; canW
           ? <p className="min-w-0 break-words text-[10px] leading-4 text-[#526d66]">{item.countedByName} · {formatDate(item.countedAt)}</p>
           : <p className="min-w-0 text-[10px] text-[#a0aaa6]">Belum ada hitungan</p>}
         {item.inScope && item.status !== "EXCLUDED" && item.status !== "COUNTING" ? (
-          <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
-            {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-            {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah" : "Hitung"}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
+              {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+              {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah" : "Hitung"}
+            </button>
+            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} disabled={!canWork || busy} onClick={onRevoke} className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-[#e1d5b1] px-2.5 text-[9px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
+              <MapPin className="h-3 w-3" /> Cabut izin cabang
+            </button>
+          </div>
         ) : item.status === "COUNTING" ? (
           <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Dibuka</span>
         ) : <span className="shrink-0 text-[10px] text-[#899792]">—</span>}
@@ -1617,7 +1680,7 @@ function AuditItemCard({ item, canWork, busy, onCount }: { item: AuditItem; canW
   );
 }
 
-function AuditItemRow({ item, canWork, busy, onCount }: { item: AuditItem; canWork: boolean; busy: boolean; onCount: () => void }) {
+function AuditItemRow({ item, canWork, busy, onCount, onRevoke }: { item: AuditItem; canWork: boolean; busy: boolean; onCount: () => void; onRevoke: () => void }) {
   const variance = item.variance ?? (
     item.status === "COUNTED" && item.countedQty != null && item.baselineQty != null
       ? item.countedQty - item.baselineQty
@@ -1658,10 +1721,15 @@ function AuditItemRow({ item, canWork, busy, onCount }: { item: AuditItem; canWo
       </td>
       <td className="px-4 py-3 text-right">
         {item.inScope && item.status !== "EXCLUDED" && item.status !== "COUNTING" ? (
-          <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
-            {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-            {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah hitungan" : "Hitung"}
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button type="button" data-testid={`button-count-item-${item.id}`} disabled={!canWork || busy} onClick={onCount} className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-40 ${isConflict ? "bg-[#f2e2d8] text-[#914a32] hover:bg-[#ebd2c4]" : "bg-[#e3eeea] text-[#29655c] hover:bg-[#d5e7df]"}`}>
+              {isConflict ? <RefreshCw className="h-3 w-3" /> : item.status === "COUNTED" ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+              {isConflict ? "Hitung ulang" : item.status === "COUNTED" ? "Ubah hitungan" : "Hitung"}
+            </button>
+            <button type="button" data-testid={`button-revoke-visibility-${item.id}`} disabled={!canWork || busy} onClick={onRevoke} className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#e1d5b1] px-2 text-[9px] font-bold text-[#7b6627] hover:bg-[#faf4df] disabled:cursor-not-allowed disabled:opacity-40">
+              <MapPin className="h-3 w-3" /> Cabut izin
+            </button>
+          </div>
         ) : item.status === "COUNTING" ? (
           <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#647b76]"><LoaderCircle className="h-3 w-3 animate-spin" />Sedang dibuka</span>
         ) : <span className="text-[10px] text-[#899792]">—</span>}

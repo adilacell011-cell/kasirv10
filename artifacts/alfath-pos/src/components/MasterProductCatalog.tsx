@@ -1,3 +1,8 @@
+import {
+  countVisibleBranches as countProductVisibleBranches,
+  excludedBranchIds,
+  NO_VISIBLE_BRANCHES,
+} from "../lib/product-visibility";
 import { useMemo, useState } from "react";
 import {
   Barcode,
@@ -55,7 +60,8 @@ function formatRupiah(value: number | null | undefined) {
 }
 
 function countVisibleBranches(value?: string | null) {
-  return value?.split(",").length || 0;
+  if (value === NO_VISIBLE_BRANCHES) return 0;
+  return countProductVisibleBranches(value) ?? 0;
 }
 
 export function MasterProductCatalog({
@@ -264,6 +270,14 @@ export function MasterProductCatalog({
                                         <span className="mp-visibility-all">
                                           <CheckCircle2 size={13} />
                                           Semua
+                                        </span>
+                                      ) : product.visibleBranchIds?.startsWith("!") ? (
+                                        <span
+                                          className="mp-visibility-branches"
+                                          title={product.visibleBranchIds || ""}
+                                        >
+                                          <MapPin size={13} />
+                                          Semua kecuali {excludedBranchIds(product.visibleBranchIds).length}
                                         </span>
                                       ) : (
                                         <span

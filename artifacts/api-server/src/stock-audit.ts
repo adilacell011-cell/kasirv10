@@ -12,6 +12,8 @@ import {
   GetStockAuditItemsResponse,
   ReportStockAuditExceptionBody,
   ReportStockAuditExceptionResponse,
+  RevokeStockAuditProductVisibilityBody,
+  RevokeStockAuditProductVisibilityResponse,
   SaveStockAuditCountBody,
   SaveStockAuditCountResponse,
   SearchStockAuditCandidatesQueryParams,
@@ -28,6 +30,7 @@ type AuthenticatedRequest = Request & { user?: AuthUser };
 type StockAuditStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 type StockAuditItemStatus = "PENDING" | "COUNTING" | "COUNTED" | "RECOUNT_REQUIRED" | "EXCLUDED";
 type Finding = "NORMAL" | "NOT_FOUND" | "EXPIRED" | "DAMAGED" | "NOT_SOLD_HERE" | "UNLISTED_IN_BRANCH";
+export const NO_VISIBLE_BRANCHES = "__NONE__";
 
 function actorFrom(req: Request) {
   const user = (req as AuthenticatedRequest).user;
@@ -137,8 +140,27 @@ async function lockProductStock(
 }
 
 function productIsVisible(visibleBranchIds: string, branchId: string) {
-  return visibleBranchIds === "*" ||
-    visibleBranchIds.split(",").map((id) => id.trim()).includes(branchId);
+  if (visibleBranchIds === "*") return true;
+  if (visibleBranchIds === NO_VISIBLE_BRANCHES) return false;
+  if (visibleBranchIds.startsWith("!")) {
+    return !visibleBranchIds.slice(1).split(",").map((id) => id.trim()).includes(branchId);
+  }
+  return visibleBranchIds.split(",").map((id) => id.trim()).includes(branchId);
+}
+
+export function removeBranchFromVisibility(
+  visibleBranchIds: string,
+  branchId: string,
+) {
+  if (visibleBranchIds.startsWith("!")) {
+    const excludedIds = new Set(visibleBranchIds.slice(1).split(",").map((id) => id.trim()).filter(Boolean));
+    excludedIds.add(branchId);
+    return `!${[...excludedIds].join(",")}`;
+  }
+  if (visibleBranchIds === "*") return `!${branchId}`;
+  const currentIds = visibleBranchIds.split(",").map((id) => id.trim()).filter(Boolean);
+  const remainingIds = [...new Set(currentIds)].filter((id) => id !== branchId);
+  return remainingIds.length ? remainingIds.join(",") : NO_VISIBLE_BRANCHES;
 }
 
 function itemDto(item: {
@@ -520,6 +542,110 @@ export function registerStockAuditRoutes(
     } catch (error) {
       logger.error({ err: error }, "Failed to save branch stock count");
       return void errorResponse(res, 500, "Gagal menyimpan hitungan stok.");
+    }
+  });
+
+  app.post("/api/stock-audits/revoke-product-visibility", ...auditAccess, async (req, res): Promise<void> => {
+    const actor = actorFrom(req);
+    if (!actor) return void errorResponse(res, 401, "Sesi pengguna tidak valid.");
+    const parsedBody = RevokeStockAuditProductVisibilityBody.safeParse(req.body);
+    if (!parsedBody.success) return void errorResponse(res, 400, parsedBody.error.message);
+    const { auditId, productId } = parsedBody.data;
+    const reason = parsedBody.data.reason.trim();
+    if (reason.length < 3) return void errorResponse(res, 400, "Alasan pencabutan minimal 3 karakter.");
+    const actorName = await getActorName(prisma, actor.id);
+    if (!actorName) return void errorResponse(res, 401, "Akun pengguna tidak lagi tersedia.");
+
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const audit = await lockAudit(tx, auditId);
+        if (!audit) return { status: 404 as const, error: "Sesi audit tidak ditemukan." };
+        if (audit.status !== "IN_PROGRESS") {
+          return { status: 409 as const, error: "Izin cabang hanya dapat dicabut saat audit masih berjalan." };
+        }
+
+        const productRows = await tx.$queryRaw<Array<{
+          id: string;
+          status: string;
+          visibleBranchIds: string;
+        }>>(Prisma.sql`
+          SELECT "id", "status", "visibleBranchIds"
+          FROM "Product"
+          WHERE "id" = ${productId}
+          FOR UPDATE
+        `);
+        const product = productRows[0];
+        if (!product) return { status: 404 as const, error: "Produk tidak ditemukan." };
+        if (product.status !== "ACTIVE") {
+          return { status: 409 as const, error: "Produk tidak aktif; izin cabang tidak diubah." };
+        }
+        const visibleBranchIds = product.visibleBranchIds || "*";
+        if (!productIsVisible(visibleBranchIds, audit.branchId)) {
+          return { status: 409 as const, error: "Produk sudah tidak ditampilkan di cabang audit ini." };
+        }
+
+        const stocks = await tx.$queryRaw<Array<{ qty: number }>>(Prisma.sql`
+          SELECT "qty"
+          FROM "ProductStock"
+          WHERE "productId" = ${productId} AND "branchId" = ${audit.branchId}
+          FOR UPDATE
+        `);
+        const branchStockQty = stocks[0]?.qty ?? 0;
+        if (branchStockQty !== 0) {
+          return {
+            status: 409 as const,
+            error: `Izin tidak dicabut. Stok cabang saat ini ${branchStockQty} pcs; stok harus tepat 0.`,
+          };
+        }
+
+        const item = await tx.branchStockAuditItem.findUnique({
+          where: { auditId_productId: { auditId, productId } },
+          select: {
+            id: true,
+            status: true,
+            inScope: true,
+            countedQty: true,
+            notes: true,
+          },
+        });
+        if (!item || !item.inScope || item.status === "EXCLUDED") {
+          return { status: 409 as const, error: "Produk tidak lagi berada dalam cakupan hitung audit ini." };
+        }
+        if (item.status === "COUNTING") {
+          return { status: 409 as const, error: "Produk sedang dihitung petugas lain. Selesaikan atau tutup hitungan itu dahulu." };
+        }
+        if (item.countedQty !== null && item.countedQty !== 0) {
+          return { status: 409 as const, error: "Hitungan fisik produk masih bukan 0. Selesaikan rekonsiliasi sebelum mencabut izin." };
+        }
+
+        const nextVisibleBranchIds = removeBranchFromVisibility(
+          visibleBranchIds,
+          audit.branchId,
+        );
+        const auditNote = `Izin tampil dicabut oleh ${actorName}. Alasan: ${reason}`;
+
+        await tx.product.update({
+          where: { id: productId },
+          data: { visibleBranchIds: nextVisibleBranchIds },
+        });
+        await tx.branchStockAuditItem.update({
+          where: { id: item.id },
+          data: {
+            inScope: false,
+            status: "EXCLUDED",
+            finding: "NOT_SOLD_HERE",
+            notes: [item.notes?.trim(), auditNote].filter(Boolean).join("\n"),
+          },
+        });
+        return { status: 200 as const, branchId: audit.branchId };
+      });
+
+      if (result.status !== 200) return void errorResponse(res, result.status, result.error);
+      emitBranch(result.branchId, "productUpdated", { id: productId });
+      return void res.json(RevokeStockAuditProductVisibilityResponse.parse({ success: true }));
+    } catch (error) {
+      logger.error({ err: error }, "Failed to revoke product visibility during branch audit");
+      return void errorResponse(res, 500, "Gagal mencabut izin tampil produk di cabang.");
     }
   });
 

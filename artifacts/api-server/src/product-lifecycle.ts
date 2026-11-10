@@ -11,6 +11,19 @@ import { logger } from "./lib/logger";
 
 export type LockedProductStatus = { id: string; status: string };
 
+export function isProductVisibleInBranch(
+  visibleBranchIds: string | null | undefined,
+  branchId: string,
+) {
+  const visibility = visibleBranchIds || "*";
+  if (visibility === "*") return true;
+  if (visibility === "__NONE__") return false;
+  if (visibility.startsWith("!")) {
+    return !visibility.slice(1).split(",").map((id) => id.trim()).includes(branchId);
+  }
+  return visibility.split(",").map((id) => id.trim()).includes(branchId);
+}
+
 export async function lockProductStatus(
   tx: Prisma.TransactionClient,
   productId: string,
