@@ -198,9 +198,12 @@ function AuditStatusPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<BranchPickerPosition | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedOption = AUDIT_STATUS_OPTIONS.find((option) => option.value === value) ?? AUDIT_STATUS_OPTIONS[0];
+  const selectedIndex = AUDIT_STATUS_OPTIONS.indexOf(selectedOption);
 
   const placeMenu = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -223,7 +226,14 @@ function AuditStatusPicker({
 
   useEffect(() => {
     if (!open) return;
+    optionRefs.current[activeIndex]?.focus();
+
     const closeOnOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const closeOnFocusOutside = (event: FocusEvent) => {
       const target = event.target as Node;
       if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
       setOpen(false);
@@ -238,22 +248,25 @@ function AuditStatusPicker({
     const closeOnViewportChange = () => setOpen(false);
 
     document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("focusin", closeOnFocusOutside);
     document.addEventListener("keydown", closeOnEscape);
     window.addEventListener("scroll", closeOnViewportChange, true);
     window.addEventListener("resize", closeOnViewportChange);
     return () => {
       document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("focusin", closeOnFocusOutside);
       document.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("scroll", closeOnViewportChange, true);
       window.removeEventListener("resize", closeOnViewportChange);
     };
-  }, [open]);
+  }, [open, activeIndex]);
 
   const toggleMenu = () => {
     if (open) {
       setOpen(false);
       return;
     }
+    setActiveIndex(selectedIndex);
     placeMenu();
     setOpen(true);
   };
@@ -270,6 +283,13 @@ function AuditStatusPicker({
         aria-expanded={open}
         aria-controls="audit-status-options"
         onClick={toggleMenu}
+        onKeyDown={(event) => {
+          if (open || (event.key !== "ArrowDown" && event.key !== "ArrowUp")) return;
+          event.preventDefault();
+          setActiveIndex(selectedIndex);
+          placeMenu();
+          setOpen(true);
+        }}
         className="audit-status-picker-trigger inline-flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-xl border px-3 text-left text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#e2cf9f]/60 lg:w-[190px]"
       >
         <span className="truncate">{selectedOption.label}</span>
@@ -293,19 +313,37 @@ function AuditStatusPicker({
           }}
         >
           <div className="max-h-full overflow-y-auto">
-            {AUDIT_STATUS_OPTIONS.map((option) => {
+            {AUDIT_STATUS_OPTIONS.map((option, index) => {
               const selected = option.value === value;
               const optionId = option.value ? option.value.toLowerCase() : "all";
               return (
                 <button
                   key={option.value || "all"}
+                  ref={(element) => { optionRefs.current[index] = element; }}
                   type="button"
                   role="option"
                   aria-selected={selected}
+                  tabIndex={activeIndex === index ? 0 : -1}
                   data-testid={`option-audit-status-${optionId}`}
+                  onFocus={() => setActiveIndex(index)}
+                  onKeyDown={(event) => {
+                    let nextIndex: number | null = null;
+                    if (event.key === "ArrowDown") nextIndex = (index + 1) % AUDIT_STATUS_OPTIONS.length;
+                    else if (event.key === "ArrowUp") nextIndex = (index - 1 + AUDIT_STATUS_OPTIONS.length) % AUDIT_STATUS_OPTIONS.length;
+                    else if (event.key === "Home") nextIndex = 0;
+                    else if (event.key === "End") nextIndex = AUDIT_STATUS_OPTIONS.length - 1;
+                    else if (event.key === "Tab") setOpen(false);
+
+                    if (nextIndex !== null) {
+                      event.preventDefault();
+                      setActiveIndex(nextIndex);
+                      optionRefs.current[nextIndex]?.focus();
+                    }
+                  }}
                   onClick={() => {
                     if (option.value !== value) onChange(option.value);
                     setOpen(false);
+                    triggerRef.current?.focus();
                   }}
                   className={`inline-flex min-h-11 w-full items-center justify-between gap-3 border-b px-3 py-2.5 text-left text-sm last:border-b-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#e2cf9f] ${
                     selected
