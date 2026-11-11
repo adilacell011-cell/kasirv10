@@ -472,6 +472,283 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal((await globallyLockedCashierStockInput.json() as { code: string }).code, "CASHIER_STOCK_INPUT_LOCKED");
   await setGlobalStockInput(originalGlobalStockInput);
 
+  await prisma.productStock.upsert({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+    create: { productId, branchId: branchAId, qty: 5 },
+    update: { qty: 5 },
+  });
+  await prisma.productStock.upsert({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+    create: { productId, branchId: branchBId, qty: 0 },
+    update: { qty: 0 },
+  });
+  const cashierBShiftResponse = await fetch(`${apiUrl}/api/shifts`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      initialCash: 0,
+      shiftDate: new Date().toISOString().slice(0, 10),
+      shiftType: "Pagi",
+    }),
+  });
+  assert.equal(cashierBShiftResponse.status, 200);
+  const cashierBShift = await cashierBShiftResponse.json() as { id: string };
+
+  const transferRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 3, note: "Stok cabang B menipis." }),
+  });
+  assert.equal(transferRequestResponse.status, 201);
+  const transferRequest = await transferRequestResponse.json() as {
+    id: string; status: string; requestedQty: number; sourceBranchId: string; targetBranchId: string;
+  };
+  assert.equal(transferRequest.status, "REQUESTED");
+  assert.equal(transferRequest.requestedQty, 3);
+  assert.equal(transferRequest.sourceBranchId, branchAId);
+  assert.equal(transferRequest.targetBranchId, branchBId);
+  assert.deepEqual(
+    await prisma.productStock.findMany({ where: { productId }, orderBy: { branchId: "asc" }, select: { branchId: true, qty: true } }),
+    [{ branchId: branchAId, qty: 5 }, { branchId: branchBId, qty: 0 }].sort((a, b) => a.branchId.localeCompare(b.branchId)),
+    "A request must not change either branch's stock.",
+  );
+
+  const sourceTransferList = await fetch(`${apiUrl}/api/stock-transfers`, {
+    headers: { authorization: `Bearer ${cashierPayload.token}` },
+  });
+  assert.equal(sourceTransferList.status, 200);
+  assert.ok((await sourceTransferList.json() as { items: Array<{ id: string }> }).items.some((item) => item.id === transferRequest.id));
+  const hiddenTransferList = await fetch(`${apiUrl}/api/stock-transfers`, {
+    headers: { authorization: `Bearer ${cashierBPayload.token}` },
+  });
+  assert.equal(hiddenTransferList.status, 200);
+  assert.ok((await hiddenTransferList.json() as { items: Array<{ id: string }> }).items.some((item) => item.id === transferRequest.id));
+
+  const acceptTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/respond`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ action: "ACCEPT", qty: 2, note: "Dapat dikirim dua pcs." }),
+  });
+  assert.equal(acceptTransferResponse.status, 200);
+  assert.equal((await acceptTransferResponse.json() as { status: string; approvedQty: number }).status, "ACCEPTED");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 5, "Accepting a request must not reserve or decrement stock.");
+
+  const wrongReceiverResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ receivedQty: 2 }),
+  });
+  assert.equal(wrongReceiverResponse.status, 403, "Only the destination cashier can confirm receipt.");
+
+  const dispatchTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/dispatch`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.equal(dispatchTransferResponse.status, 200);
+  assert.equal((await dispatchTransferResponse.json() as { status: string; dispatchedQty: number }).status, "IN_TRANSIT");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 3);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 0, "Dispatch reduces the source but does not add stock to the destination.");
+  const duplicateDispatchResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/dispatch`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.equal(duplicateDispatchResponse.status, 409);
+
+  const missingDiscrepancyResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ receivedQty: 1 }),
+  });
+  assert.equal(missingDiscrepancyResponse.status, 400, "A partial receipt must include a discrepancy note.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 0);
+
+  const receiveTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ receivedQty: 1, discrepancyNote: "Satu pcs tidak ada di paket." }),
+  });
+  assert.equal(receiveTransferResponse.status, 200);
+  const receivedTransfer = await receiveTransferResponse.json() as {
+    status: string; receivedQty: number; discrepancyNote: string;
+  };
+  assert.equal(receivedTransfer.status, "RECEIVED");
+  assert.equal(receivedTransfer.receivedQty, 1);
+  assert.equal(receivedTransfer.discrepancyNote, "Satu pcs tidak ada di paket.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 1);
+  const duplicateReceiveResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ receivedQty: 1 }),
+  });
+  assert.equal(duplicateReceiveResponse.status, 409);
+
+  const directTransferResponse = await fetch(`${apiUrl}/api/stocks/transfer`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ productId, qty: 1, sourceBranchId: branchAId, targetBranchId: branchBId }),
+  });
+  assert.equal(directTransferResponse.status, 201);
+  const directTransfer = await directTransferResponse.json() as { id: string; status: string };
+  assert.equal(directTransfer.status, "IN_TRANSIT");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 2);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 1, "Direct send must also wait for destination receipt.");
+
+  const directReceiveResponse = await fetch(`${apiUrl}/api/stock-transfers/${directTransfer.id}/receive`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ receivedQty: 1 }),
+  });
+  assert.equal(directReceiveResponse.status, 200);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 2);
+
+  const rejectedRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 4 }),
+  });
+  assert.equal(rejectedRequestResponse.status, 201);
+  const rejectedRequest = await rejectedRequestResponse.json() as { id: string };
+  const rejectTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${rejectedRequest.id}/respond`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ action: "REJECT", note: "Stok cabang sumber belum cukup." }),
+  });
+  assert.equal(rejectTransferResponse.status, 200);
+  assert.equal((await rejectTransferResponse.json() as { status: string }).status, "REJECTED");
+
+  const cancelRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 2 }),
+  });
+  assert.equal(cancelRequestResponse.status, 201);
+  const cancelRequest = await cancelRequestResponse.json() as { id: string };
+  const overRequestApproval = await fetch(`${apiUrl}/api/stock-transfers/${cancelRequest.id}/respond`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ action: "ACCEPT", qty: 3 }),
+  });
+  assert.equal(overRequestApproval.status, 400);
+  const acceptForCancellation = await fetch(`${apiUrl}/api/stock-transfers/${cancelRequest.id}/respond`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ action: "ACCEPT", qty: 1 }),
+  });
+  assert.equal(acceptForCancellation.status, 200);
+  const cancelAcceptedTransfer = await fetch(`${apiUrl}/api/stock-transfers/${cancelRequest.id}/cancel`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ note: "Cabang sudah menerima stok dari sumber lain." }),
+  });
+  assert.equal(cancelAcceptedTransfer.status, 200);
+  assert.equal((await cancelAcceptedTransfer.json() as { status: string }).status, "CANCELLED");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 2);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 2, "Rejecting or cancelling before dispatch must not change stock.");
+
+  const hiddenProduct = await prisma.product.create({
+    data: {
+      name: "Hidden Transfer Product",
+      buyingPrice: 10000,
+      sellingPrice: 15000,
+      visibleBranchIds: branchAId,
+    },
+  });
+  await prisma.productStock.create({
+    data: { productId: hiddenProduct.id, branchId: branchAId, qty: 2 },
+  });
+  const hiddenProductTransferResponse = await fetch(`${apiUrl}/api/stocks/transfer`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ productId: hiddenProduct.id, qty: 1, targetBranchId: branchBId }),
+  });
+  assert.equal(hiddenProductTransferResponse.status, 409);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: hiddenProduct.id, branchId: branchAId } },
+  })).qty, 2, "A product hidden from the destination must not be transferred there.");
+
+  const closeCashierBShift = await fetch(`${apiUrl}/api/shifts/${cashierBShift.id}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ status: "closed", reportedIncome: 0 }),
+  });
+  assert.equal(closeCashierBShift.status, 200);
+  // This temporary shift exists only to exercise the transfer flow; remove it
+  // so the later user-deletion test remains about an account without history.
+  await prisma.shift.delete({ where: { id: cashierBShift.id } });
+
   const assertRosterEditKeepsSession = async (body: Record<string, string>) => {
     const beforeEdit = await prisma.user.findUniqueOrThrow({
       where: { id: cashierA.id },

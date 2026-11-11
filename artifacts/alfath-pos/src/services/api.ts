@@ -251,16 +251,51 @@ export const api = {
   },
 
   async transferStock(data: any) {
-    const res = await fetch(`${BASE_URL}/stocks/transfer`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to transfer stock");
-    }
-    return res.json();
+    return writeJson("/stocks/transfer", "POST", data);
+  },
+
+  async getStockTransfers(
+    params: { branchId?: string; status?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ) {
+    const query = new URLSearchParams();
+    if (params.branchId) query.set("branchId", params.branchId);
+    if (params.status) query.set("status", params.status);
+    if (params.limit) query.set("limit", String(params.limit));
+    const suffix = query.size ? `?${query.toString()}` : "";
+    return readJson(`/stock-transfers${suffix}`, signal);
+  },
+
+  async requestStockTransfer(data: {
+    productId: string;
+    sourceBranchId: string;
+    targetBranchId?: string;
+    qty: number;
+    note?: string;
+  }) {
+    return writeJson("/stock-transfers/requests", "POST", data);
+  },
+
+  async respondStockTransfer(
+    id: string,
+    data: { action: "ACCEPT" | "REJECT"; qty?: number; note?: string },
+  ) {
+    return writeJson(`/stock-transfers/${encodeURIComponent(id)}/respond`, "PATCH", data);
+  },
+
+  async dispatchStockTransfer(id: string) {
+    return writeJson(`/stock-transfers/${encodeURIComponent(id)}/dispatch`, "POST", {});
+  },
+
+  async receiveStockTransfer(
+    id: string,
+    data: { receivedQty: number; discrepancyNote?: string },
+  ) {
+    return writeJson(`/stock-transfers/${encodeURIComponent(id)}/receive`, "POST", data);
+  },
+
+  async cancelStockTransfer(id: string, note?: string) {
+    return writeJson(`/stock-transfers/${encodeURIComponent(id)}/cancel`, "PATCH", { note });
   },
 
   async getBranches(signal?: AbortSignal) {

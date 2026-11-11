@@ -19,6 +19,7 @@ import {
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { registerStockAuditRoutes } from "./stock-audit";
+import { registerStockTransferRoutes } from "./stock-transfers";
 import {
   isProductVisibleInBranch,
   lockProductStatus,
@@ -1474,105 +1475,7 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
   }
 });
 
-app.post("/api/stocks/transfer", authenticateToken, requireRole("ADMIN", "AUDIT", "CASHIER"), async (req, res) => {
-  const { productId, qty, targetBranchId, sourceBranchId } = req.body;
-  const requester = (req as any).user;
-  // Cashiers may only transfer stock OUT of their own branch; ADMIN/AUDIT may transfer between any branches.
-  if (requester.role === "CASHIER" && sourceBranchId !== requester.branchId) {
-    return void res.status(403).json({ error: "Kasir hanya dapat transfer stok dari cabangnya sendiri." });
-  }
-  if (!productId || !sourceBranchId || !targetBranchId) {
-    return void res.status(400).json({ error: "Produk atau cabang asal/tujuan tidak lengkap." });
-  }
-  if (sourceBranchId === targetBranchId) {
-    return void res.status(400).json({ error: "Cabang asal dan tujuan tidak boleh sama." });
-  }
-  const safeQty = toPositiveInt(qty);
-  if (safeQty === null) {
-    return void res.status(400).json({ error: "Jumlah transfer harus bilangan bulat positif." });
-  }
-  try {
-    const result = await prisma.$transaction(async (tx) => {
-      if (requester.role === "CASHIER") {
-        await lockBranch(tx, requester.branchId);
-        const activeShift = await tx.shift.findFirst({
-          where: {
-            branchId: requester.branchId,
-            cashierId: requester.userId,
-            status: "open",
-          },
-          select: { id: true },
-        });
-        if (!activeShift) {
-          throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup. Buka shift sebelum transfer stok.");
-        }
-      }
-
-      const lockedProduct = await lockProductStatus(tx, productId);
-      if (!lockedProduct) throw new ProductLifecycleConflict("Produk tidak ditemukan.");
-      if (lockedProduct.status !== "ACTIVE") {
-        throw new ProductLifecycleConflict("Produk nonaktif. Aktifkan kembali sebelum transfer stok.");
-      }
-
-      // 1. Kurangi dari asal — guard atomik agar stok asal tidak bisa minus walau
-      // ada transfer/penjualan bersamaan. UPDATE hanya jalan bila stok masih cukup.
-      const decremented = await tx.productStock.updateMany({
-        where: { productId, branchId: sourceBranchId, qty: { gte: safeQty } },
-        data: { qty: { decrement: safeQty } }
-      });
-      if (decremented.count === 0) {
-        throw new Error("Stok cabang asal tidak mencukupi");
-      }
-      const sourceStock = await tx.productStock.findUnique({
-        where: { productId_branchId: { productId, branchId: sourceBranchId } }
-      });
-
-      // 2. Tambah ke tujuan
-      const targetStock = await tx.productStock.upsert({
-        where: { productId_branchId: { productId, branchId: targetBranchId } },
-        update: { qty: { increment: safeQty } },
-        create: { productId, branchId: targetBranchId, qty: safeQty }
-      });
-
-      // 3. Catat log asal
-      await tx.adjustment.create({
-        data: {
-          productId,
-          branchId: sourceBranchId,
-          qty: safeQty,
-          type: "TRANSFER_OUT",
-          reason: `Transfer ke Cabang ID: ${targetBranchId}`,
-        }
-      });
-
-      // 4. Catat log tujuan
-      await tx.adjustment.create({
-        data: {
-          productId,
-          branchId: targetBranchId,
-          qty: safeQty,
-          type: "TRANSFER_IN",
-          reason: `Transfer dari Cabang ID: ${sourceBranchId}`,
-        }
-      });
-
-      return { sourceStock, targetStock };
-    });
-
-    emitBranch(sourceBranchId, "stockUpdated", { productId, branchId: sourceBranchId, qty: result.sourceStock?.qty ?? 0 });
-    emitBranch(targetBranchId, "stockUpdated", { productId, branchId: targetBranchId, qty: result.targetStock.qty });
-    res.json({ success: true });
-  } catch (error: any) {
-    if (error instanceof ShiftConflict) {
-      return void res.status(error.status).json({ error: error.message });
-    }
-    if (error instanceof ProductLifecycleConflict) {
-      return void res.status(409).json({ error: error.message });
-    }
-    console.error("Stock Transfer Error:", error);
-    res.status(400).json({ error: error.message || "Failed to transfer stock" });
-  }
-});
+registerStockTransferRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
 
 app.patch("/api/users/:id", authenticateToken, async (req, res) => {
   // Security: only admins may modify users (role/branch/status/password). Without this

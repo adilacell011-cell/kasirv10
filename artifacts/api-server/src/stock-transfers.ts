@@ -1,0 +1,630 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
+import type { Application, RequestHandler } from "express";
+import { logger } from "./lib/logger";
+import { lockBranch, ShiftConflict } from "./shift-safety";
+import { isProductVisibleInBranch, lockProductStatus, ProductLifecycleConflict } from "./product-lifecycle";
+
+type TransferActor = {
+  userId: string;
+  role: "ADMIN" | "AUDIT" | "CASHIER" | string;
+  branchId: string | null;
+};
+
+type EmitBranch = (branchId: string | null | undefined, event: string, payload: any) => void;
+
+const transferInclude = {
+  product: { select: { id: true, name: true, barcode: true, brand: true, category: true } },
+  sourceBranch: { select: { id: true, name: true } },
+  targetBranch: { select: { id: true, name: true } },
+  requestedBy: { select: { id: true, name: true, username: true } },
+  acceptedBy: { select: { id: true, name: true, username: true } },
+  dispatchedBy: { select: { id: true, name: true, username: true } },
+  receivedBy: { select: { id: true, name: true, username: true } },
+  closedBy: { select: { id: true, name: true, username: true } },
+} satisfies Prisma.StockTransferInclude;
+
+class TransferHttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
+const positiveInt = (value: unknown): number | null => {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
+};
+
+const nonnegativeInt = (value: unknown): number | null => {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= 0 ? number : null;
+};
+
+function parseNote(value: unknown, label: string): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string") throw new TransferHttpError(400, `${label} harus berupa teks.`);
+  const note = value.trim();
+  if (note.length > 500) throw new TransferHttpError(400, `${label} maksimal 500 karakter.`);
+  return note || null;
+}
+
+function getActor(req: any): TransferActor {
+  return req.user as TransferActor;
+}
+
+function requireCashierBranch(actor: TransferActor): string {
+  if (!actor.branchId) throw new TransferHttpError(403, "Akun kasir belum terhubung ke cabang.");
+  return actor.branchId;
+}
+
+function cashierBranchOrRespond(
+  req: any,
+  res: any,
+  actor: TransferActor,
+  message: string,
+): string | null {
+  try {
+    return requireCashierBranch(actor);
+  } catch (error) {
+    respondError(req, res, error, message);
+    return null;
+  }
+}
+
+async function requireOpenShift(
+  tx: Prisma.TransactionClient,
+  actor: TransferActor,
+  branchId: string,
+): Promise<void> {
+  if (actor.role !== "CASHIER") return;
+  const shift = await tx.shift.findFirst({
+    where: { branchId, cashierId: actor.userId, status: "open" },
+    select: { id: true },
+  });
+  if (!shift) throw new ShiftConflict("Shift kasir belum dibuka atau sudah ditutup.");
+}
+
+async function assertBranchPair(
+  tx: Prisma.TransactionClient,
+  sourceBranchId: string,
+  targetBranchId: string,
+): Promise<void> {
+  if (sourceBranchId === targetBranchId) {
+    throw new TransferHttpError(400, "Cabang asal dan tujuan tidak boleh sama.");
+  }
+  const branches = await tx.branch.findMany({
+    where: { id: { in: [sourceBranchId, targetBranchId] } },
+    select: { id: true },
+  });
+  if (branches.length !== 2) throw new TransferHttpError(404, "Cabang asal atau tujuan tidak ditemukan.");
+}
+
+async function assertProductCanBeTransferred(
+  tx: Prisma.TransactionClient,
+  productId: string,
+  targetBranchId: string,
+): Promise<void> {
+  const product = await lockProductStatus(tx, productId);
+  if (!product) throw new TransferHttpError(404, "Produk tidak ditemukan.");
+  if (product.status !== "ACTIVE") {
+    throw new ProductLifecycleConflict("Produk nonaktif. Aktifkan kembali sebelum transfer stok.");
+  }
+  const details = await tx.product.findUnique({
+    where: { id: productId },
+    select: { visibleBranchIds: true },
+  });
+  if (!details || !isProductVisibleInBranch(details.visibleBranchIds, targetBranchId)) {
+    throw new TransferHttpError(409, "Produk tidak diizinkan tampil di cabang tujuan.", "PRODUCT_HIDDEN_IN_TARGET");
+  }
+}
+
+async function fetchTransfer(
+  prisma: PrismaClient,
+  id: string,
+) {
+  return prisma.stockTransfer.findUnique({ where: { id }, include: transferInclude });
+}
+
+function respondError(req: any, res: any, error: unknown, message: string): void {
+  if (error instanceof TransferHttpError) {
+    res.status(error.status).json({
+      error: error.message,
+      ...(error.code ? { code: error.code } : {}),
+    });
+    return;
+  }
+  if (error instanceof ShiftConflict) {
+    res.status(error.status).json({ error: error.message });
+    return;
+  }
+  if (error instanceof ProductLifecycleConflict) {
+    res.status(409).json({ error: error.message });
+    return;
+  }
+  logger.error({ err: error, path: req.path }, message);
+  res.status(500).json({ error: message });
+}
+
+function emitTransferUpdate(
+  emitBranch: EmitBranch,
+  sourceBranchId: string,
+  targetBranchId: string,
+  transferId: string,
+  status: string,
+): void {
+  const payload = { id: transferId, status };
+  emitBranch(sourceBranchId, "stockTransferUpdated", payload);
+  emitBranch(targetBranchId, "stockTransferUpdated", payload);
+}
+
+export function registerStockTransferRoutes(
+  app: Application,
+  prisma: PrismaClient,
+  authenticateToken: RequestHandler,
+  requireRole: (...roles: string[]) => RequestHandler,
+  emitBranch: EmitBranch,
+): void {
+  const access = [authenticateToken, requireRole("ADMIN", "AUDIT", "CASHIER")];
+
+  app.get("/api/stock-transfers", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const allowedStatuses = new Set(["REQUESTED", "ACCEPTED", "IN_TRANSIT", "RECEIVED", "REJECTED", "CANCELLED"]);
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    if (status && !allowedStatuses.has(status)) {
+      res.status(400).json({ error: "Status transfer tidak valid." });
+      return;
+    }
+    const rawLimit = Number(req.query.limit ?? 100);
+    if (!Number.isInteger(rawLimit) || rawLimit < 1) {
+      res.status(400).json({ error: "Batas riwayat transfer tidak valid." });
+      return;
+    }
+    const limit = Math.min(rawLimit, 100);
+    const branchId = actor.role === "CASHIER"
+      ? cashierBranchOrRespond(req, res, actor, "Riwayat transfer gagal dimuat.")
+      : (typeof req.query.branchId === "string" ? req.query.branchId : undefined);
+    if (actor.role === "CASHIER" && !branchId) return;
+    const where: Prisma.StockTransferWhereInput = {
+      ...(status ? { status } : {}),
+      ...(actor.role === "CASHIER"
+        ? { OR: [{ sourceBranchId: branchId }, { targetBranchId: branchId }] }
+        : branchId
+          ? { OR: [{ sourceBranchId: branchId }, { targetBranchId: branchId }] }
+          : {}),
+    };
+    try {
+      const rows = await prisma.stockTransfer.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit + 1,
+        include: transferInclude,
+      });
+      res.json({ items: rows.slice(0, limit), hasMore: rows.length > limit });
+    } catch (error) {
+      respondError(req, res, error, "Riwayat transfer gagal dimuat.");
+    }
+  });
+
+  app.post("/api/stock-transfers/requests", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const productId = typeof req.body?.productId === "string" ? req.body.productId.trim() : "";
+    const qty = positiveInt(req.body?.qty);
+    let note: string | null;
+    try {
+      note = parseNote(req.body?.note, "Catatan permintaan");
+    } catch (error) {
+      respondError(req, res, error, "Permintaan transfer gagal dibuat.");
+      return;
+    }
+    const targetBranchId = actor.role === "CASHIER"
+      ? cashierBranchOrRespond(req, res, actor, "Permintaan transfer gagal dibuat.")
+      : (typeof req.body?.targetBranchId === "string" ? req.body.targetBranchId.trim() : "");
+    if (actor.role === "CASHIER" && !targetBranchId) return;
+    const sourceBranchId = typeof req.body?.sourceBranchId === "string" ? req.body.sourceBranchId.trim() : "";
+    if (!productId || !sourceBranchId || !targetBranchId || qty === null) {
+      res.status(400).json({ error: "Produk, cabang sumber, cabang tujuan, dan jumlah positif wajib diisi." });
+      return;
+    }
+    if (actor.role === "CASHIER" && targetBranchId !== actor.branchId) {
+      res.status(403).json({ error: "Kasir hanya dapat meminta stok untuk cabangnya sendiri." });
+      return;
+    }
+
+    try {
+      const transfer = await prisma.$transaction(async (tx) => {
+        await lockBranch(tx, targetBranchId);
+        await requireOpenShift(tx, actor, targetBranchId);
+        await assertBranchPair(tx, sourceBranchId, targetBranchId);
+        await assertProductCanBeTransferred(tx, productId, targetBranchId);
+        return tx.stockTransfer.create({
+          data: {
+            productId,
+            sourceBranchId,
+            targetBranchId,
+            kind: "REQUEST",
+            status: "REQUESTED",
+            requestedQty: qty,
+            requestNote: note,
+            requestedById: actor.userId,
+          },
+          include: transferInclude,
+        });
+      });
+      emitTransferUpdate(emitBranch, sourceBranchId, targetBranchId, transfer.id, transfer.status);
+      res.status(201).json(transfer);
+    } catch (error) {
+      respondError(req, res, error, "Permintaan transfer gagal dibuat.");
+    }
+  });
+
+  app.post("/api/stocks/transfer", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const productId = typeof req.body?.productId === "string" ? req.body.productId.trim() : "";
+    const qty = positiveInt(req.body?.qty);
+    let note: string | null;
+    try {
+      note = parseNote(req.body?.note, "Catatan pengiriman");
+    } catch (error) {
+      respondError(req, res, error, "Pengiriman transfer gagal dibuat.");
+      return;
+    }
+    const sourceBranchId = actor.role === "CASHIER"
+      ? cashierBranchOrRespond(req, res, actor, "Pengiriman transfer gagal dibuat.")
+      : (typeof req.body?.sourceBranchId === "string" ? req.body.sourceBranchId.trim() : "");
+    if (actor.role === "CASHIER" && !sourceBranchId) return;
+    const targetBranchId = typeof req.body?.targetBranchId === "string" ? req.body.targetBranchId.trim() : "";
+    if (!productId || !sourceBranchId || !targetBranchId || qty === null) {
+      res.status(400).json({ error: "Produk, cabang asal, cabang tujuan, dan jumlah positif wajib diisi." });
+      return;
+    }
+    if (actor.role === "CASHIER" && req.body?.sourceBranchId && req.body.sourceBranchId !== actor.branchId) {
+      res.status(403).json({ error: "Kasir hanya dapat mengirim stok dari cabangnya sendiri." });
+      return;
+    }
+
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        await lockBranch(tx, sourceBranchId);
+        await requireOpenShift(tx, actor, sourceBranchId);
+        await assertBranchPair(tx, sourceBranchId, targetBranchId);
+        await assertProductCanBeTransferred(tx, productId, targetBranchId);
+        const decremented = await tx.productStock.updateMany({
+          where: { productId, branchId: sourceBranchId, qty: { gte: qty } },
+          data: { qty: { decrement: qty } },
+        });
+        if (decremented.count !== 1) {
+          throw new TransferHttpError(409, "Stok cabang asal tidak mencukupi.", "INSUFFICIENT_STOCK");
+        }
+        const transfer = await tx.stockTransfer.create({
+          data: {
+            productId,
+            sourceBranchId,
+            targetBranchId,
+            kind: "DIRECT",
+            status: "IN_TRANSIT",
+            dispatchedQty: qty,
+            requestNote: note,
+            requestedById: actor.userId,
+            dispatchedById: actor.userId,
+            dispatchedAt: new Date(),
+          },
+          include: transferInclude,
+        });
+        await tx.adjustment.create({
+          data: {
+            productId,
+            branchId: sourceBranchId,
+            qty,
+            type: "TRANSFER_OUT",
+            reason: `Transfer ${transfer.id} dikirim ke ${transfer.targetBranch.name}`,
+          },
+        });
+        const sourceStock = await tx.productStock.findUnique({
+          where: { productId_branchId: { productId, branchId: sourceBranchId } },
+          select: { qty: true },
+        });
+        return { transfer, sourceQty: sourceStock?.qty ?? 0 };
+      });
+      emitBranch(sourceBranchId, "stockUpdated", {
+        productId,
+        branchId: sourceBranchId,
+        qty: result.sourceQty,
+      });
+      emitTransferUpdate(emitBranch, sourceBranchId, targetBranchId, result.transfer.id, result.transfer.status);
+      res.status(201).json(result.transfer);
+    } catch (error) {
+      respondError(req, res, error, "Pengiriman transfer gagal dibuat.");
+    }
+  });
+
+  app.patch("/api/stock-transfers/:id/respond", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const action = req.body?.action;
+    let note: string | null;
+    try {
+      note = parseNote(req.body?.note, "Catatan respons");
+    } catch (error) {
+      respondError(req, res, error, "Respons permintaan transfer gagal disimpan.");
+      return;
+    }
+    const approvedQty = action === "ACCEPT" ? positiveInt(req.body?.qty) : null;
+    if (!id || !["ACCEPT", "REJECT"].includes(action) || (action === "ACCEPT" && approvedQty === null)) {
+      res.status(400).json({ error: "Respons harus menerima dengan jumlah positif atau menolak permintaan." });
+      return;
+    }
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const current = await tx.stockTransfer.findUnique({ where: { id } });
+        if (!current) throw new TransferHttpError(404, "Permintaan transfer tidak ditemukan.");
+        if (current.kind !== "REQUEST" || current.status !== "REQUESTED") {
+          throw new TransferHttpError(409, "Permintaan ini sudah diproses.");
+        }
+        if (actor.role === "CASHIER" && current.sourceBranchId !== actor.branchId) {
+          throw new TransferHttpError(403, "Hanya cabang sumber yang dapat merespons permintaan ini.");
+        }
+        await lockBranch(tx, current.sourceBranchId);
+        await requireOpenShift(tx, actor, current.sourceBranchId);
+        if (action === "ACCEPT") {
+          if (approvedQty! > (current.requestedQty ?? 0)) {
+            throw new TransferHttpError(400, "Jumlah persetujuan tidak boleh melebihi jumlah yang diminta.");
+          }
+          const availableStock = await tx.productStock.findUnique({
+            where: {
+              productId_branchId: {
+                productId: current.productId,
+                branchId: current.sourceBranchId,
+              },
+            },
+            select: { qty: true },
+          });
+          if (!availableStock || approvedQty! > availableStock.qty) {
+            throw new TransferHttpError(409, "Stok sumber tidak cukup untuk jumlah yang disetujui.", "INSUFFICIENT_STOCK");
+          }
+        }
+        const changed = await tx.stockTransfer.updateMany({
+          where: { id, status: "REQUESTED", kind: "REQUEST" },
+          data: action === "ACCEPT"
+            ? {
+                status: "ACCEPTED",
+                approvedQty,
+                acceptedById: actor.userId,
+                acceptedAt: new Date(),
+                responseNote: note,
+              }
+            : {
+                status: "REJECTED",
+                closedById: actor.userId,
+                closedAt: new Date(),
+                responseNote: note,
+              },
+        });
+        if (changed.count !== 1) throw new TransferHttpError(409, "Permintaan sudah berubah. Muat ulang daftar.");
+        return tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+      });
+      emitTransferUpdate(emitBranch, result.sourceBranchId, result.targetBranchId, result.id, result.status);
+      res.json(result);
+    } catch (error) {
+      respondError(req, res, error, "Respons permintaan transfer gagal disimpan.");
+    }
+  });
+
+  app.post("/api/stock-transfers/:id/dispatch", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    if (!id) {
+      res.status(400).json({ error: "ID transfer tidak valid." });
+      return;
+    }
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const current = await tx.stockTransfer.findUnique({ where: { id } });
+        if (!current) throw new TransferHttpError(404, "Transfer tidak ditemukan.");
+        if (current.kind !== "REQUEST" || current.status !== "ACCEPTED" || !current.approvedQty) {
+          throw new TransferHttpError(409, "Transfer belum disetujui atau sudah dikirim.");
+        }
+        if (actor.role === "CASHIER" && current.sourceBranchId !== actor.branchId) {
+          throw new TransferHttpError(403, "Hanya cabang sumber yang dapat mengirim barang.");
+        }
+        await lockBranch(tx, current.sourceBranchId);
+        await requireOpenShift(tx, actor, current.sourceBranchId);
+        await assertProductCanBeTransferred(tx, current.productId, current.targetBranchId);
+        const changed = await tx.stockTransfer.updateMany({
+          where: { id, status: "ACCEPTED", kind: "REQUEST" },
+          data: {
+            status: "IN_TRANSIT",
+            dispatchedQty: current.approvedQty,
+            dispatchedById: actor.userId,
+            dispatchedAt: new Date(),
+          },
+        });
+        if (changed.count !== 1) throw new TransferHttpError(409, "Transfer sudah berubah. Muat ulang daftar.");
+        const decremented = await tx.productStock.updateMany({
+          where: {
+            productId: current.productId,
+            branchId: current.sourceBranchId,
+            qty: { gte: current.approvedQty },
+          },
+          data: { qty: { decrement: current.approvedQty } },
+        });
+        if (decremented.count !== 1) {
+          throw new TransferHttpError(409, "Stok cabang sumber berubah dan tidak mencukupi.", "INSUFFICIENT_STOCK");
+        }
+        const sourceStock = await tx.productStock.findUnique({
+          where: { productId_branchId: { productId: current.productId, branchId: current.sourceBranchId } },
+          select: { qty: true },
+        });
+        await tx.adjustment.create({
+          data: {
+            productId: current.productId,
+            branchId: current.sourceBranchId,
+            qty: current.approvedQty,
+            type: "TRANSFER_OUT",
+            reason: `Transfer ${id} dikirim ke cabang tujuan`,
+          },
+        });
+        const transfer = await tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+        return { transfer, sourceQty: sourceStock?.qty ?? 0 };
+      });
+      emitBranch(result.transfer.sourceBranchId, "stockUpdated", {
+        productId: result.transfer.productId,
+        branchId: result.transfer.sourceBranchId,
+        qty: result.sourceQty,
+      });
+      emitTransferUpdate(
+        emitBranch,
+        result.transfer.sourceBranchId,
+        result.transfer.targetBranchId,
+        result.transfer.id,
+        result.transfer.status,
+      );
+      res.json(result.transfer);
+    } catch (error) {
+      respondError(req, res, error, "Pengiriman transfer gagal dicatat.");
+    }
+  });
+
+  app.post("/api/stock-transfers/:id/receive", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const receivedQty = nonnegativeInt(req.body?.receivedQty);
+    let discrepancyNote: string | null;
+    try {
+      discrepancyNote = parseNote(req.body?.discrepancyNote, "Catatan selisih");
+    } catch (error) {
+      respondError(req, res, error, "Konfirmasi penerimaan gagal disimpan.");
+      return;
+    }
+    if (!id || receivedQty === null) {
+      res.status(400).json({ error: "ID transfer dan jumlah diterima (nol atau lebih) wajib diisi." });
+      return;
+    }
+    if (actor.role !== "CASHIER") {
+      res.status(403).json({ error: "Penerimaan harus dikonfirmasi oleh kasir cabang tujuan." });
+      return;
+    }
+    try {
+      const targetBranchId = requireCashierBranch(actor);
+      const result = await prisma.$transaction(async (tx) => {
+        await lockBranch(tx, targetBranchId);
+        await requireOpenShift(tx, actor, targetBranchId);
+        const current = await tx.stockTransfer.findUnique({ where: { id } });
+        if (!current) throw new TransferHttpError(404, "Transfer tidak ditemukan.");
+        if (current.targetBranchId !== targetBranchId) {
+          throw new TransferHttpError(403, "Kasir hanya dapat mengonfirmasi penerimaan cabangnya sendiri.");
+        }
+        if (current.status !== "IN_TRANSIT" || !current.dispatchedQty) {
+          throw new TransferHttpError(409, "Transfer belum dikirim atau sudah diterima.");
+        }
+        if (receivedQty > current.dispatchedQty) {
+          throw new TransferHttpError(400, "Jumlah diterima tidak boleh melebihi jumlah yang dikirim.");
+        }
+        if (receivedQty !== current.dispatchedQty && !discrepancyNote) {
+          throw new TransferHttpError(400, "Catatan selisih wajib diisi jika jumlah diterima berbeda.");
+        }
+        const changed = await tx.stockTransfer.updateMany({
+          where: { id, status: "IN_TRANSIT" },
+          data: {
+            status: "RECEIVED",
+            receivedQty,
+            receivedById: actor.userId,
+            receivedAt: new Date(),
+            discrepancyNote,
+          },
+        });
+        if (changed.count !== 1) throw new TransferHttpError(409, "Transfer sudah berubah. Muat ulang daftar.");
+        let targetStock = await tx.productStock.findUnique({
+          where: { productId_branchId: { productId: current.productId, branchId: targetBranchId } },
+          select: { qty: true },
+        });
+        if (receivedQty > 0) {
+          targetStock = await tx.productStock.upsert({
+            where: { productId_branchId: { productId: current.productId, branchId: targetBranchId } },
+            update: { qty: { increment: receivedQty } },
+            create: { productId: current.productId, branchId: targetBranchId, qty: receivedQty },
+            select: { qty: true },
+          });
+          await tx.adjustment.create({
+            data: {
+              productId: current.productId,
+              branchId: targetBranchId,
+              qty: receivedQty,
+              type: "TRANSFER_IN",
+              reason: `Transfer ${id} diterima dari cabang sumber`,
+            },
+          });
+        }
+        const transfer = await tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+        return { transfer, targetQty: targetStock?.qty ?? 0 };
+      });
+      emitBranch(targetBranchId, "stockUpdated", {
+        productId: result.transfer.productId,
+        branchId: targetBranchId,
+        qty: result.targetQty,
+      });
+      emitTransferUpdate(
+        emitBranch,
+        result.transfer.sourceBranchId,
+        result.transfer.targetBranchId,
+        result.transfer.id,
+        result.transfer.status,
+      );
+      res.json(result.transfer);
+    } catch (error) {
+      respondError(req, res, error, "Konfirmasi penerimaan gagal disimpan.");
+    }
+  });
+
+  app.patch("/api/stock-transfers/:id/cancel", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    let note: string | null;
+    try {
+      note = parseNote(req.body?.note, "Alasan pembatalan");
+    } catch (error) {
+      respondError(req, res, error, "Pembatalan transfer gagal disimpan.");
+      return;
+    }
+    if (!id) {
+      res.status(400).json({ error: "ID transfer tidak valid." });
+      return;
+    }
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const current = await tx.stockTransfer.findUnique({ where: { id } });
+        if (!current) throw new TransferHttpError(404, "Transfer tidak ditemukan.");
+        if (!["REQUESTED", "ACCEPTED"].includes(current.status) || current.kind !== "REQUEST") {
+          throw new TransferHttpError(409, "Transfer yang sudah dikirim tidak dapat dibatalkan dari sini.");
+        }
+        if (actor.role === "CASHIER" && current.targetBranchId !== actor.branchId) {
+          throw new TransferHttpError(403, "Hanya cabang peminta yang dapat membatalkan permintaan.");
+        }
+        const branchId = actor.role === "CASHIER" ? current.targetBranchId : current.sourceBranchId;
+        await lockBranch(tx, branchId);
+        await requireOpenShift(tx, actor, branchId);
+        const changed = await tx.stockTransfer.updateMany({
+          where: { id, status: current.status, kind: "REQUEST" },
+          data: {
+            status: "CANCELLED",
+            closedById: actor.userId,
+            closedAt: new Date(),
+            responseNote: note,
+          },
+        });
+        if (changed.count !== 1) throw new TransferHttpError(409, "Transfer sudah berubah. Muat ulang daftar.");
+        return tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+      });
+      emitTransferUpdate(emitBranch, result.sourceBranchId, result.targetBranchId, result.id, result.status);
+      res.json(result);
+    } catch (error) {
+      respondError(req, res, error, "Pembatalan transfer gagal disimpan.");
+    }
+  });
+}

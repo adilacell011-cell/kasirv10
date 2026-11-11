@@ -313,3 +313,32 @@ test("legacy 14-to-15 migration is guarded and strictly additive", () => {
   assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });
+
+test("stock-transfer migration is guarded, additive, and retains transfer history", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261112090000_add_stock_transfer_workflow/migration.sql", import.meta.url),
+    "utf8",
+  );
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
+  assert.match(sql, /expected the approved 17-table schema/);
+  assert.match(sql, /CREATE TABLE "public"\."StockTransfer"/);
+  for (const field of [
+    "productId", "sourceBranchId", "targetBranchId", "kind", "status",
+    "requestedQty", "approvedQty", "dispatchedQty", "receivedQty",
+    "requestedById", "acceptedById", "dispatchedById", "receivedById",
+    "closedById", "discrepancyNote",
+  ]) {
+    assert.match(sql, new RegExp(`"${field}"`));
+  }
+  assert.match(sql, /StockTransfer_sourceBranchId_status_createdAt_idx/);
+  assert.match(sql, /StockTransfer_targetBranchId_status_createdAt_idx/);
+  assert.match(sql, /StockTransfer_productId_createdAt_idx/);
+  assert.match(main, /STOCK_TRANSFER_MIGRATION/);
+  assert.match(main, /const PRE_TRANSFER_MODELS = Prisma\.dmmf\.datamodel\.models\s*\.filter\(\(model\) => model\.name !== "StockTransfer"\)/);
+  assert.match(main, /isCurrent17/);
+  assert.match(main, /isCurrent18/);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
+});

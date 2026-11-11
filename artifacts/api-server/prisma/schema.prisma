@@ -26,6 +26,11 @@ model User {
   sales       Sale[]
   commissions Commission[]
   shifts      Shift[]
+  stockTransfersRequested StockTransfer[] @relation("StockTransferRequestedBy")
+  stockTransfersAccepted  StockTransfer[] @relation("StockTransferAcceptedBy")
+  stockTransfersDispatched StockTransfer[] @relation("StockTransferDispatchedBy")
+  stockTransfersReceived   StockTransfer[] @relation("StockTransferReceivedBy")
+  stockTransfersClosed     StockTransfer[] @relation("StockTransferClosedBy")
 }
 
 model Branch {
@@ -46,6 +51,8 @@ model Branch {
   voucherSNs           VoucherSN[]
   dailyIncomeSummaries DailyIncomeSummary[]
   stockAudits          BranchStockAudit[]
+  stockTransfersFrom   StockTransfer[] @relation("StockTransferSource")
+  stockTransfersTo     StockTransfer[] @relation("StockTransferTarget")
 }
 
 model Product {
@@ -77,6 +84,7 @@ model Product {
   stockSnapshots StockSnapshot[]
   stocks         ProductStock[]
   voucherSNs     VoucherSN[]
+  stockTransfers StockTransfer[]
 }
 
 model ProductStock {
@@ -186,6 +194,44 @@ model Adjustment {
   type      String // STOCK_IN, STOCK_OUT, TRANSFER_IN, TRANSFER_OUT
   reason    String?
   createdAt DateTime @default(now())
+}
+
+model StockTransfer {
+  id                String   @id @default(uuid())
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sourceBranchId    String
+  sourceBranch      Branch   @relation("StockTransferSource", fields: [sourceBranchId], references: [id], onDelete: Restrict)
+  targetBranchId    String
+  targetBranch      Branch   @relation("StockTransferTarget", fields: [targetBranchId], references: [id], onDelete: Restrict)
+  kind              String   // REQUEST, DIRECT
+  status            String   // REQUESTED, ACCEPTED, IN_TRANSIT, RECEIVED, REJECTED, CANCELLED
+  requestedQty      Int?
+  approvedQty       Int?
+  dispatchedQty     Int?
+  receivedQty       Int?
+  requestNote       String?
+  responseNote      String?
+  discrepancyNote   String?
+  requestedById     String?
+  requestedBy       User?    @relation("StockTransferRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  acceptedById      String?
+  acceptedBy        User?    @relation("StockTransferAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  dispatchedById    String?
+  dispatchedBy      User?    @relation("StockTransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
+  receivedById      String?
+  receivedBy        User?    @relation("StockTransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  closedById        String?
+  closedBy          User?    @relation("StockTransferClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now())
+  acceptedAt        DateTime?
+  dispatchedAt      DateTime?
+  receivedAt        DateTime?
+  closedAt          DateTime?
+
+  @@index([sourceBranchId, status, createdAt])
+  @@index([targetBranchId, status, createdAt])
+  @@index([productId, createdAt])
 }
 
 model GlobalConfig {

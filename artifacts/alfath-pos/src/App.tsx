@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { OpnameStockInput } from "./components/OpnameStockInput";
 import BranchStockAuditPage from "./components/BranchStockAuditPage";
 import type { AuditPageApi } from "./components/BranchStockAuditPage";
+import StockTransferActivity from "./components/StockTransferActivity";
 import { toCsvRow } from "./lib/csv";
 // POS Refined Version 2.0
 
@@ -743,6 +744,10 @@ export default function App() {
   const [savingGlobalCashierStockInput, setSavingGlobalCashierStockInput] = useState(false);
   const [updatingBranchStockInput, setUpdatingBranchStockInput] = useState<Record<string, boolean>>({});
   const [adjustments, setAdjustments] = useState<any[]>([]);
+  const [stockTransfers, setStockTransfers] = useState<any[]>([]);
+  const [stockTransfersLoading, setStockTransfersLoading] = useState(false);
+  const [stockTransfersError, setStockTransfersError] = useState("");
+  const [stockTransferRefreshTick, setStockTransferRefreshTick] = useState(0);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [commissionsSummary, setCommissionsSummary] = useState<any>(null);
   const [branchSummaries, setBranchSummaries] = useState<Record<string, any>>({});
@@ -840,6 +845,15 @@ export default function App() {
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [paymentSuccessOverlay, setPaymentSuccessOverlay] = useState<{ total: number; saleId: string; itemCount: number } | null>(null);
   const [isProcessingTransfer, setIsProcessingTransfer] = useState(false);
+  const updateStockTransfer = (transfer: any) => {
+    if (!transfer?.id) return;
+    setStockTransfersError("");
+    setStockTransfers((current) =>
+      [transfer, ...current.filter((item) => item.id !== transfer.id)]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 100),
+    );
+  };
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [isProcessingStock, setIsProcessingStock] = useState(false);
   const [isProcessingWithdraw, setIsProcessingWithdraw] = useState(false);
@@ -1803,6 +1817,8 @@ export default function App() {
     setShifts([]);
     setUsers([]);
     setAdjustments([]);
+    setStockTransfers([]);
+    setStockTransfersError("");
     setShoppingPlans([]);
     setCommissionsSummary(null);
     setBranchSummaries({});
@@ -1949,6 +1965,9 @@ export default function App() {
     socket.on("productUpdated", refreshProductData);
     socket.on("productDeleted", refreshProductData);
     socket.on("stockUpdated", refresh.schedule);
+    socket.on("stockTransferUpdated", () => {
+      setStockTransferRefreshTick((tick) => tick + 1);
+    });
     socket.on("commissionsUpdated", refresh.schedule);
     socket.on(
       "branchStockInputPermissionUpdated",
@@ -1992,6 +2011,57 @@ export default function App() {
       socket.disconnect();
     };
   }, [syncKey, syncToken]);
+
+  const transferViewActive =
+    (activeMenu === "pos" && posSubView === "transfer") ||
+    (activeMenu === "audit" && auditSidebarTab === "transfer");
+  useEffect(() => {
+    if (!syncToken || !fullSyncEnabled) {
+      setStockTransfers([]);
+      setStockTransfersLoading(false);
+      setStockTransfersError("");
+      return;
+    }
+    if (!transferViewActive) return;
+
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
+    const current = () =>
+      !controller.signal.aborted &&
+      readEpoch.current === epoch &&
+      localStorage.getItem("token") === syncToken;
+    setStockTransfersLoading(true);
+    setStockTransfersError("");
+    api.getStockTransfers({
+      branchId: profile?.role === "CASHIER" ? undefined : auditSelectedBranch || undefined,
+      limit: 100,
+    }, controller.signal)
+      .then((result: any) => {
+        if (!current()) return;
+        if (!result || !Array.isArray(result.items)) throw new ReadError("invalid-response");
+        setStockTransfers(result.items);
+      })
+      .catch((error: any) => {
+        if (!current()) return;
+        if (isSessionError(error)) expireReadSession();
+        else setStockTransfersError(error?.message || "Riwayat transfer gagal dimuat.");
+      })
+      .finally(() => {
+        if (current()) setStockTransfersLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [
+    activeMenu,
+    auditSelectedBranch,
+    fullSyncEnabled,
+    posSubView,
+    profile?.role,
+    stockTransferRefreshTick,
+    syncToken,
+    transferViewActive,
+    auditSidebarTab,
+  ]);
 
   useEffect(() => {
     if (previousShiftReadScope.current !== shiftReadScope) {
@@ -2992,16 +3062,17 @@ export default function App() {
 
       setIsProcessingTransfer(true);
       try {
-        await api.transferStock({
+        const transfer = await api.transferStock({
           productId,
           qty,
           sourceBranchId,
           targetBranchId,
         });
+        updateStockTransfer(transfer);
         const pData = await api.getProducts();
         setProducts(pData);
         setTimeout(() => {
-          alert("Stok Berhasil Ditransfer! (Otomatis Sync saat Online)");
+          alert("Pengiriman dicatat. Stok cabang tujuan bertambah setelah kasir mengonfirmasi penerimaan.");
         }, 100);
       } catch (e: any) {
         setTimeout(() => {
@@ -7578,6 +7649,23 @@ export default function App() {
                             </div>
                           </div>
                         )}
+                        {auditSidebarTab === "transfer" && (
+                          <StockTransferActivity
+                            role={profile?.role || ""}
+                            branchId={profile?.role === "CASHIER" ? profile?.branchId : auditSelectedBranch}
+                            branches={profile?.role === "CASHIER" ? transferTargetBranches : branches}
+                            products={products}
+                            transfers={stockTransfers.filter((transfer) =>
+                              !auditSelectedBranch ||
+                              transfer.sourceBranchId === auditSelectedBranch ||
+                              transfer.targetBranchId === auditSelectedBranch,
+                            )}
+                            loading={stockTransfersLoading}
+                            error={stockTransfersError}
+                            shiftOpen={shiftOpen}
+                            onUpdated={updateStockTransfer}
+                          />
+                        )}
                         {auditSidebarTab === "logs" && (
                           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                              <div className="flex items-center gap-3 mb-4 bg-white p-3 rounded-2xl border border-slate-200 text-left">
@@ -8979,6 +9067,17 @@ export default function App() {
                           </button>
                         </div>
                       </div>
+                      <StockTransferActivity
+                        role={profile?.role || ""}
+                        branchId={profile?.branchId}
+                        branches={transferTargetBranches}
+                        products={products}
+                        transfers={stockTransfers}
+                        loading={stockTransfersLoading}
+                        error={stockTransfersError}
+                        shiftOpen={shiftOpen}
+                        onUpdated={updateStockTransfer}
+                      />
                     </div>
                   )}
 
