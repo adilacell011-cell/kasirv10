@@ -9067,17 +9067,6 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                      <StockTransferActivity
-                        role={profile?.role || ""}
-                        branchId={profile?.branchId}
-                        branches={transferTargetBranches}
-                        products={products}
-                        transfers={stockTransfers}
-                        loading={stockTransfersLoading}
-                        error={stockTransfersError}
-                        shiftOpen={shiftOpen}
-                        onUpdated={updateStockTransfer}
-                      />
                     </div>
                   )}
 
@@ -9384,6 +9373,17 @@ export default function App() {
                           </button>
                         </div>
                       </div>
+                      <StockTransferActivity
+                        role={profile?.role || ""}
+                        branchId={profile?.branchId}
+                        branches={transferTargetBranches}
+                        products={products}
+                        transfers={stockTransfers}
+                        loading={stockTransfersLoading}
+                        error={stockTransfersError}
+                        shiftOpen={shiftOpen}
+                        onUpdated={updateStockTransfer}
+                      />
                     </div>
                   )}
                 </div>
