@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       candidate_source_sha:
-        description: Exact source SHA for the clean stock-audit candidate
+        description: Exact approved source SHA for the clean stock-audit candidate
         required: false
         type: string
       verify_existing_candidate:
@@ -63,8 +63,8 @@ jobs:
               echo "Candidate publication requires explicit confirmation."
               exit 1
             fi
-            if [[ "$CANDIDATE_SOURCE_SHA" != "1e720bb8eacedd267213b5424730c79e79c44c37" ]]; then
-              echo "Refusing to publish: source SHA does not match the approved kasirv10_migrasi schema-preflight candidate."
+            if [[ "$CANDIDATE_SOURCE_SHA" != "3f3674b7344b50e37f1c1d2f99d3feed9929ac59" ]]; then
+              echo "Refusing to publish: source SHA does not match the approved current stock-audit candidate."
               exit 1
             fi
             source_sha="$CANDIDATE_SOURCE_SHA"
