@@ -1,5 +1,6 @@
 - [Multi-artifact socket.io routing](multi-artifact-socketio.md) — same-origin `io()` needs `/socket.io` added to the api artifact.toml `paths`, else the proxy sends it to the frontend.
 - [Prisma dual-schema pitfall](prisma-dual-schema.md) — Prisma prefers `./schema.prisma` over `./prisma/schema.prisma`; a stray root copy silently overrides edits.
+- [Branch stock and replenishment flow](branch-stock-and-replenishment.md) — Owner controls per-branch purchase quantities and cashier intake; transfers change destination stock only after receipt confirmation.
 - [AlfathPOS authz & realtime model](alfathpos-authz-model.md) — role matrix, verified branch scoping, open-shift cashier gates, socket rooms, and no-oversell guards.
 - [AlfathPOS session revocation](alfathpos-session-revocation.md) — preserve sessions across API restarts; account-record edits revoke existing tokens without schema changes.
 - [AlfathPOS Docker deploy](alfathpos-docker-deploy.md) — guarded schema upgrades and preserving the shared PostgreSQL volume while the VPS app targets `kasirv10_migrasi`.
