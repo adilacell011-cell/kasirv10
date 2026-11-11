@@ -241,7 +241,12 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(data),
     });
-    if (!res.ok) { const txt = await res.text(); throw new Error(`Failed to adjust stock: ${res.status} ${txt}`); }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const error = new Error(body.error || `Failed to adjust stock: ${res.status}`);
+      Object.assign(error, { status: res.status, code: body.code });
+      throw error;
+    }
     return res.json();
   },
 

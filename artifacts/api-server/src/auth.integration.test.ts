@@ -377,6 +377,101 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(activeShift.status, "open");
   assert.equal(activeShift.cashierId, cashierA.id);
 
+  const globalStockInputBeforeTest = await prisma.globalConfig.findUnique({
+    where: { id: "default" },
+    select: { allowCashierStockInput: true },
+  });
+  const originalGlobalStockInput = globalStockInputBeforeTest?.allowCashierStockInput ?? true;
+  const setGlobalStockInput = async (allowCashierStockInput: boolean) => {
+    const response = await fetch(`${apiUrl}/api/config`, {
+      method: "PATCH",
+      headers: {
+        authorization: `Bearer ${adminPayload.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ allowCashierStockInput }),
+    });
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  await setGlobalStockInput(true);
+
+  const permissionEvent = new Promise<{ branchId: string; allowEmployeeInput: boolean }>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Branch stock-input permission event was not emitted.")), 4_000);
+    cashierASocket.once(
+      "branchStockInputPermissionUpdated",
+      (event: { branchId: string; allowEmployeeInput: boolean }) => {
+        clearTimeout(timeout);
+        resolve(event);
+      },
+    );
+  });
+  const lockBranchStockInput = await fetch(`${apiUrl}/api/branches/${branchAId}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ allowEmployeeInput: false }),
+  });
+  assert.equal(lockBranchStockInput.status, 200);
+  assert.deepEqual(await permissionEvent, { branchId: branchAId, allowEmployeeInput: false });
+  const adjustmentCountBeforeLockedAttempt = await prisma.adjustment.count({
+    where: { productId, branchId: branchAId },
+  });
+  const lockedCashierStockInput = await fetch(`${apiUrl}/api/stocks/adjust`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ productId, branchId: branchAId, qty: 1, type: "STOCK_IN" }),
+  });
+  assert.equal(lockedCashierStockInput.status, 403);
+  assert.equal((await lockedCashierStockInput.json() as { code: string }).code, "CASHIER_STOCK_INPUT_LOCKED");
+  assert.equal(
+    await prisma.adjustment.count({ where: { productId, branchId: branchAId } }),
+    adjustmentCountBeforeLockedAttempt,
+    "A rejected cashier stock input must not write an adjustment.",
+  );
+  const unaffectedBranch = await prisma.branch.findUniqueOrThrow({
+    where: { id: branchBId },
+    select: { allowEmployeeInput: true },
+  });
+  assert.notEqual(unaffectedBranch.allowEmployeeInput, false);
+
+  const unlockBranchStockInput = await fetch(`${apiUrl}/api/branches/${branchAId}`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${adminPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ allowEmployeeInput: true }),
+  });
+  assert.equal(unlockBranchStockInput.status, 200);
+  const allowedCashierStockInput = await fetch(`${apiUrl}/api/stocks/adjust`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ productId, branchId: branchAId, qty: 1, type: "STOCK_IN" }),
+  });
+  assert.equal(allowedCashierStockInput.status, 200);
+
+  await setGlobalStockInput(false);
+  const globallyLockedCashierStockInput = await fetch(`${apiUrl}/api/stocks/adjust`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ productId, branchId: branchAId, qty: 1, type: "STOCK_IN" }),
+  });
+  assert.equal(globallyLockedCashierStockInput.status, 403);
+  assert.equal((await globallyLockedCashierStockInput.json() as { code: string }).code, "CASHIER_STOCK_INPUT_LOCKED");
+  await setGlobalStockInput(originalGlobalStockInput);
+
   const assertRosterEditKeepsSession = async (body: Record<string, string>) => {
     const beforeEdit = await prisma.user.findUniqueOrThrow({
       where: { id: cashierA.id },

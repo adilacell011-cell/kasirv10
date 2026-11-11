@@ -740,6 +740,8 @@ export default function App() {
   const [appConfig, setAppConfig] = useState<any>({
     allowCashierStockInput: true,
   });
+  const [savingGlobalCashierStockInput, setSavingGlobalCashierStockInput] = useState(false);
+  const [updatingBranchStockInput, setUpdatingBranchStockInput] = useState<Record<string, boolean>>({});
   const [adjustments, setAdjustments] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [commissionsSummary, setCommissionsSummary] = useState<any>(null);
@@ -1590,6 +1592,11 @@ export default function App() {
 
   const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
   const branchMap = useMemo(() => new Map(branches.map(b => [b.id, b])), [branches]);
+  const isCashierStockInputAllowed = (branchId?: string | null) => {
+    if (!branchId || appConfig.allowCashierStockInput === false) return false;
+    const branch = branchMap.get(branchId);
+    return Boolean(branch) && branch.allowEmployeeInput !== false;
+  };
 
   const branchModalData = useMemo(() => {
     return branches
@@ -1943,6 +1950,29 @@ export default function App() {
     socket.on("productDeleted", refreshProductData);
     socket.on("stockUpdated", refresh.schedule);
     socket.on("commissionsUpdated", refresh.schedule);
+    socket.on(
+      "branchStockInputPermissionUpdated",
+      (event: { branchId?: string; allowEmployeeInput?: boolean }) => {
+        if (!event.branchId || typeof event.allowEmployeeInput !== "boolean") return;
+        setBranches((prev) =>
+          prev.map((branch) =>
+            branch.id === event.branchId
+              ? { ...branch, allowEmployeeInput: event.allowEmployeeInput }
+              : branch,
+          ),
+        );
+      },
+    );
+    socket.on(
+      "globalCashierStockInputUpdated",
+      (event: { allowCashierStockInput?: boolean }) => {
+        if (typeof event.allowCashierStockInput !== "boolean") return;
+        setAppConfig((prev: any) => ({
+          ...prev,
+          allowCashierStockInput: event.allowCashierStockInput,
+        }));
+      },
+    );
     // On reconnect, always do a full refresh so stale data from a network gap is corrected.
     socket.on("connect", refresh.schedule);
     socket.connect();
@@ -2404,6 +2434,39 @@ export default function App() {
       setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: 'base' })));
     } catch(err) {
       console.error(err);
+    }
+  };
+
+  const toggleBranchCashierStockInput = async (branch: any) => {
+    if (!branch?.id || updatingBranchStockInput[branch.id]) return;
+    const allowEmployeeInput = branch.allowEmployeeInput === false;
+    setUpdatingBranchStockInput((prev) => ({ ...prev, [branch.id]: true }));
+    try {
+      const res = await fetch(`/api/branches/${branch.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ allowEmployeeInput }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal mengubah izin input stok cabang.");
+      }
+      setBranches((prev) =>
+        prev.map((current) =>
+          current.id === branch.id ? { ...current, ...result } : current,
+        ),
+      );
+    } catch (error: any) {
+      alert(error.message || "Gagal mengubah izin input stok cabang.");
+    } finally {
+      setUpdatingBranchStockInput((prev) => {
+        const next = { ...prev };
+        delete next[branch.id];
+        return next;
+      });
     }
   };
 
@@ -2889,6 +2952,18 @@ export default function App() {
       setProducts(pData);
       alert("Stok Berhasil Ditambahkan.");
     } catch (err: any) {
+      if (err?.code === "CASHIER_STOCK_INPUT_LOCKED" && profile?.branchId) {
+        try {
+          const bData = await api.getBranches();
+          setBranches(
+            bData.sort((a: any, b: any) =>
+              (a.name || "").localeCompare(b.name || ""),
+            ),
+          );
+        } catch {
+          // Keep the server rejection visible even if branch refresh also fails.
+        }
+      }
       alert(err.message || "Gagal Update Stok");
     } finally {
       setIsProcessingStock(false);
@@ -3511,7 +3586,7 @@ export default function App() {
         id: "cashier_stock",
         icon: MdAddBox,
         label: "Stok",
-        locked: !appConfig.allowCashierStockInput || !shiftOpen,
+        locked: !isCashierStockInputAllowed(profile?.branchId) || !shiftOpen,
       });
     } else if (profile?.role === "AUDIT") {
       items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
@@ -3844,10 +3919,8 @@ export default function App() {
                   active={activeMenu === "cashier_stock"}
                   onClick={() => setActiveMenu("cashier_stock")}
                   locked={
-                    !appConfig.allowCashierStockInput ||
-                    !shiftOpen ||
-                    branches.find((b) => b.id === profile?.branchId)
-                      ?.allowEmployeeInput === false
+                    !isCashierStockInputAllowed(profile?.branchId) ||
+                    !shiftOpen
                   }
                 />
               </>
@@ -4922,27 +4995,33 @@ export default function App() {
             {activeMenu === "settings" && profile?.role === "ADMIN" && (
               <div data-ui-screen="settings" className="ui-screen-settings flex-1 p-4 md:p-4 md:p-6 overflow-y-auto">
                 <div data-settings-content className="max-w-3xl mx-auto space-y-6 text-left pb-20">
-                  {/* Card Configuration Switch */}
+                  {/* Global master switch; each branch can also be locked below. */}
                   <div data-ui-panel="global-access" className="bg-white p-4 md:p-7 rounded-2xl md:rounded-[32px]">
                     <h3 className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] mb-4 md:mb-8 flex items-center gap-2">
                       <Settings className="w-4 h-4 text-emerald-500" />
-                      Fitur & Hak Akses Global
+                      Kunci Input Stok Kasir
                     </h3>
                     <div className="bg-slate-50 p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 flex items-center justify-between">
                       <div>
                         <p className="text-xs font-black text-slate-700 uppercase tracking-tight">
-                          Kasir Input Stok Cabang
+                          Izinkan input stok di semua cabang
                         </p>
                         <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 opacity-70">
-                          Izinkan kasir melakukan input stok masuk mandiri di
-                          cabang mereka.
+                          Sakelar utama. Jika mati, semua cabang terkunci. Izin tiap cabang diatur di bawah.
+                        </p>
+                        <p className="mt-2 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                          {appConfig.allowCashierStockInput === false
+                            ? "Semua cabang terkunci"
+                            : "Sakelar utama aktif"}
                         </p>
                       </div>
                       <button
                         onClick={async () => {
+                          if (savingGlobalCashierStockInput) return;
+                          setSavingGlobalCashierStockInput(true);
                           try {
-                            const newVal = !appConfig.allowCashierStockInput;
-                            await fetch("/api/config", {
+                            const newVal = appConfig.allowCashierStockInput === false;
+                            const res = await fetch("/api/config", {
                               method: "PATCH",
                               headers: {
                                 "Content-Type": "application/json",
@@ -4954,17 +5033,21 @@ export default function App() {
                                 allowCashierStockInput: newVal,
                               }),
                             });
-                            setAppConfig((prev: any) => ({
-                              ...prev,
-                              allowCashierStockInput: newVal,
-                            }));
-                          } catch (e) {
-                            console.error(e);
+                            const result = await res.json().catch(() => ({}));
+                            if (!res.ok) {
+                              throw new Error(result.error || "Gagal menyimpan izin input stok.");
+                            }
+                            setAppConfig(result);
+                          } catch (error: any) {
+                            alert(error.message || "Gagal menyimpan izin input stok.");
+                          } finally {
+                            setSavingGlobalCashierStockInput(false);
                           }
                         }}
+                        disabled={savingGlobalCashierStockInput}
                         aria-label="Izinkan kasir input stok cabang"
                         aria-pressed={appConfig.allowCashierStockInput}
-                        className="relative flex h-11 w-12 shrink-0 items-center justify-center rounded-full"
+                        className="relative flex h-11 w-12 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
                       >
                         <div
                           className={`absolute inset-x-1 top-1/2 h-6 -translate-y-1/2 rounded-full transition-colors ${appConfig.allowCashierStockInput ? "bg-slate-700" : "bg-slate-300"}`}
@@ -5054,21 +5137,20 @@ export default function App() {
                               </div>
                               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <button
-                                  onClick={async () => {
-                                    try {
-                                      const newVal = !b.allowEmployeeInput;
-                                      await fetch(`/api/branches/${b.id}`, {
-                                        method: "PATCH",
-                                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-                                        body: JSON.stringify({ allowEmployeeInput: newVal }),
-                                      });
-                                      const bData = await api.getBranches();
-                                      setBranches(bData.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
-                                    } catch (e) { console.error(e); }
-                                  }}
-                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all ${b.allowEmployeeInput !== false ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}
+                                  onClick={() => void toggleBranchCashierStockInput(b)}
+                                  disabled={Boolean(updatingBranchStockInput[b.id])}
+                                  aria-pressed={b.allowEmployeeInput !== false}
+                                  aria-label={`${b.allowEmployeeInput !== false ? "Kunci" : "Buka"} input stok kasir ${b.name}`}
+                                  title={b.allowEmployeeInput !== false
+                                    ? `Klik untuk mengunci input stok kasir di ${b.name}`
+                                    : `Klik untuk membuka input stok kasir di ${b.name}`}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all disabled:opacity-50 ${b.allowEmployeeInput !== false ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}
                                 >
-                                  {b.allowEmployeeInput !== false ? "Input ✓" : "Input Off"}
+                                  {updatingBranchStockInput[b.id]
+                                    ? "Menyimpan..."
+                                    : b.allowEmployeeInput !== false
+                                      ? "Stok Kasir ✓"
+                                      : "Stok Kasir 🔒"}
                                 </button>
                                 <button
                                   onClick={() => toggleBranchShoppingHidden(b.id)}
@@ -7588,19 +7670,18 @@ export default function App() {
 
             {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && shiftOpen && (
               <div data-ui-screen="cashier-stock" data-stock-workspace className="ui-screen-cashier-stock flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
-                {!appConfig.allowCashierStockInput ? (
+                {!isCashierStockInputAllowed(profile?.branchId) ? (
                   <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white rounded-[32px] border border-slate-200 shadow-sm max-w-md mx-auto my-auto text-center space-y-6">
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 shadow-inner">
                       <Lock className="w-8 h-8 md:w-10 md:h-10 text-amber-500" />
                     </div>
                     <div className="space-y-2">
                       <h2 className="text-lg md:text-2xl font-black text-slate-800 uppercase tracking-tighter">
-                        Akses Terkunci
+                        Input Stok Dikunci
                       </h2>
                       <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                        Menu input stok mandiri saat ini dinonaktifkan oleh
-                        Admin Pusat. Hubungi atasan Anda untuk mengaktifkan
-                        fitur ini.
+                        Owner mengunci input stok untuk cabang ini atau untuk
+                        semua cabang. Hubungi Owner jika input stok diperlukan.
                       </p>
                     </div>
                   </div>

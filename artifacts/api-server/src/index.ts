@@ -12,6 +12,10 @@ import type { Prisma } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { closeShiftSafely, lockBranch, openShiftSafely, ShiftConflict, validateReportedIncome } from "./shift-safety";
+import {
+  lockCashierStockInputForBranch,
+  lockGlobalCashierStockInputUpdate,
+} from "./stock-input-permission";
 import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { registerStockAuditRoutes } from "./stock-audit";
@@ -79,6 +83,14 @@ function emitBranch(branchId: string | null | undefined, event: string, payload:
 }
 
 const PORT = Number(process.env.PORT) || 8080;
+
+class CashierStockInputLocked extends Error {
+  readonly code = "CASHIER_STOCK_INPUT_LOCKED";
+
+  constructor() {
+    super("Input stok kasir sedang dikunci oleh Owner untuk cabang ini.");
+  }
+}
 
 // Resolve the JWT signing secret WITHOUT a hardcoded fallback.
 // Priority: JWT_SECRET env var -> persisted local secret file -> freshly generated
@@ -425,6 +437,10 @@ app.delete("/api/products/:id", authenticateToken, requireRole("ADMIN"), async (
 
 app.post("/api/branches", authenticateToken, requireRole("ADMIN"), async (req, res) => {
   const { name, address, phone, allowEmployeeInput } = req.body;
+  if (allowEmployeeInput !== undefined && typeof allowEmployeeInput !== "boolean") {
+    res.status(400).json({ error: "Izin input stok kasir harus berupa true atau false." });
+    return;
+  }
   try {
     const branch = await prisma.branch.create({
       data: { name, address, phone, allowEmployeeInput: allowEmployeeInput ?? true }
@@ -437,11 +453,31 @@ app.post("/api/branches", authenticateToken, requireRole("ADMIN"), async (req, r
 
 app.patch("/api/branches/:id", authenticateToken, requireRole("ADMIN"), async (req, res) => {
   const { name, address, phone, allowEmployeeInput } = req.body;
+  if (allowEmployeeInput !== undefined && typeof allowEmployeeInput !== "boolean") {
+    res.status(400).json({ error: "Izin input stok kasir harus berupa true atau false." });
+    return;
+  }
   try {
-    const branch = await prisma.branch.update({
-      where: { id: req.params.id },
-      data: { name, address, phone, allowEmployeeInput }
+    const branch = await prisma.$transaction(async (tx) => {
+      if (allowEmployeeInput !== undefined) {
+        await lockBranch(tx, req.params.id);
+      }
+      const data: Prisma.BranchUpdateInput = {};
+      if (name !== undefined) data.name = name;
+      if (address !== undefined) data.address = address;
+      if (phone !== undefined) data.phone = phone;
+      if (allowEmployeeInput !== undefined) data.allowEmployeeInput = allowEmployeeInput;
+      return tx.branch.update({
+        where: { id: req.params.id },
+        data,
+      });
     });
+    if (allowEmployeeInput !== undefined) {
+      emitBranch(branch.id, "branchStockInputPermissionUpdated", {
+        branchId: branch.id,
+        allowEmployeeInput: branch.allowEmployeeInput,
+      });
+    }
     res.json(branch);
   } catch (error) {
     res.status(500).json({ error: "Failed to update branch" });
@@ -537,10 +573,21 @@ app.get("/api/config", authenticateToken, async (req, res) => {
 app.patch("/api/config", authenticateToken, async (req, res) => {
   if ((req as any).user.role !== "ADMIN") return void res.status(403).json({ error: "Forbidden" });
   const { allowCashierStockInput } = req.body;
+  if (typeof allowCashierStockInput !== "boolean") {
+    res.status(400).json({ error: "Izin input stok kasir harus berupa true atau false." });
+    return;
+  }
   try {
-    const config = await prisma.globalConfig.update({
-      where: { id: "default" },
-      data: { allowCashierStockInput }
+    const config = await prisma.$transaction(async (tx) => {
+      await lockGlobalCashierStockInputUpdate(tx);
+      return tx.globalConfig.upsert({
+        where: { id: "default" },
+        create: { id: "default", allowCashierStockInput },
+        update: { allowCashierStockInput },
+      });
+    });
+    io.emit("globalCashierStockInputUpdated", {
+      allowCashierStockInput: config.allowCashierStockInput,
     });
     res.json(config);
   } catch (error) {
@@ -1341,7 +1388,24 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
   try {
     const result = await prisma.$transaction(async (tx) => {
       if (requester.role === "CASHIER") {
-        await lockBranch(tx, requester.branchId);
+        await lockCashierStockInputForBranch(tx, requester.branchId);
+        const [branchPermission, globalConfig] = await Promise.all([
+          tx.branch.findUnique({
+            where: { id: requester.branchId },
+            select: { allowEmployeeInput: true },
+          }),
+          tx.globalConfig.findUnique({
+            where: { id: "default" },
+            select: { allowCashierStockInput: true },
+          }),
+        ]);
+        if (
+          !branchPermission ||
+          branchPermission.allowEmployeeInput === false ||
+          globalConfig?.allowCashierStockInput === false
+        ) {
+          throw new CashierStockInputLocked();
+        }
         const activeShift = await tx.shift.findFirst({
           where: {
             branchId: requester.branchId,
@@ -1385,6 +1449,10 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
     emitBranch(branchId, "stockUpdated", { productId, branchId, qty: result.qty });
     res.json(result);
   } catch (error) {
+    if (error instanceof CashierStockInputLocked) {
+      res.status(403).json({ error: error.message, code: error.code });
+      return;
+    }
     if (error instanceof ShiftConflict) {
       res.status(error.status).json({ error: error.message });
       return;
