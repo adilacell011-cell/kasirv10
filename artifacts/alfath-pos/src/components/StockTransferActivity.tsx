@@ -13,7 +13,6 @@ import StockTransferBatchSenderTable from "./StockTransferBatchSenderTable";
 import StockInHistory from "./StockInHistory";
 import StockTransferReturns from "./StockTransferReturns";
 import { api } from "../services/api";
-import { getUnresolvedTransferDiscrepancyQty } from "../lib/stock-transfer-discrepancy";
 
 type Branch = { id: string; name: string };
 type Product = { id: string; name: string; barcode?: string | null; brand?: string | null; status?: string };
@@ -114,7 +113,6 @@ export default function StockTransferActivity({
   const [historyMode, setHistoryMode] = useState<"transfers" | "incoming" | "returns">("transfers");
   const [acceptQty, setAcceptQty] = useState<Record<string, string>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
-  const [receiveNotes, setReceiveNotes] = useState<Record<string, string>>({});
   const [receiveIssueOpen, setReceiveIssueOpen] = useState<Record<string, boolean>>({});
   const [skuCorrectionOpen, setSkuCorrectionOpen] = useState<Record<string, boolean>>({});
   const [actualProductIdByTransfer, setActualProductIdByTransfer] = useState<Record<string, string>>({});
@@ -143,16 +141,8 @@ export default function StockTransferActivity({
         items: items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
         createdAt: Math.max(...items.map((item) => new Date(item.createdAt).getTime())),
         open: items.some(isOpen),
-        unresolvedDiscrepancyQty: items.reduce(
-          (total, item) => total + getUnresolvedTransferDiscrepancyQty(item),
-          0,
-        ),
       }))
-      .sort((a, b) =>
-        Number(b.open) - Number(a.open) ||
-        Number(b.unresolvedDiscrepancyQty > 0) - Number(a.unresolvedDiscrepancyQty > 0) ||
-        b.createdAt - a.createdAt,
-      );
+      .sort((a, b) => Number(b.open) - Number(a.open) || b.createdAt - a.createdAt);
   }, [transfers]);
 
   const orderedTransfers = useMemo(
@@ -334,7 +324,6 @@ export default function StockTransferActivity({
               const canManageSource = role !== "CASHIER" || transfer.sourceBranch.id === branchId;
               const canReceive = isCashier && transfer.targetBranch.id === branchId;
               const isBusy = busyId === transfer.id;
-              const unresolvedDiscrepancyQty = getUnresolvedTransferDiscrepancyQty(transfer);
               const corrections = transfer.skuCorrections || [];
               const activeCorrection = corrections.find((correction) =>
                 correction.status === "PENDING_SOURCE" || correction.status === "APPROVED_PENDING_RECEIPT",
@@ -359,8 +348,7 @@ export default function StockTransferActivity({
                 Number.isSafeInteger(receiveQtyNumber) &&
                 receiveQtyNumber >= 0 &&
                 receiveQtyNumber <= (transfer.dispatchedQty ?? 0) &&
-                receiveQtyNumber !== transfer.dispatchedQty &&
-                Boolean(receiveNotes[transfer.id]?.trim());
+                receiveQtyNumber !== transfer.dispatchedQty;
               const isDirectGroup = Boolean(group) &&
                 group!.items.every((item) => item.kind === "DIRECT");
 
@@ -430,12 +418,6 @@ export default function StockTransferActivity({
                     {transfer.dispatchedQty != null && <span>Dikirim {transfer.dispatchedQty} pcs</span>}
                     {transfer.receivedQty != null && <span>Diterima {transfer.receivedQty} pcs</span>}
                   </div>
-                  {unresolvedDiscrepancyQty > 0 && (
-                    <div role="status" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
-                      <p className="font-black">Selisih {unresolvedDiscrepancyQty} pcs · belum diselesaikan</p>
-                      <p className="mt-0.5">Tetap tercatat di riwayat, tidak dihitung sebagai stok tersedia.</p>
-                    </div>
-                  )}
                   {(transfer.dispatchedBy?.name || transfer.dispatchedAt) && (
                     <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
                       Dikirim{transfer.dispatchedBy?.name ? ` oleh ${transfer.dispatchedBy.name}` : ""}
@@ -450,8 +432,6 @@ export default function StockTransferActivity({
                   )}
                   {transfer.requestNote && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Catatan: {transfer.requestNote}</p>}
                   {transfer.responseNote && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Respons: {transfer.responseNote}</p>}
-                  {transfer.discrepancyNote && <p className="mt-1 text-[10px] font-semibold text-amber-800 dark:text-amber-300">Catatan selisih: {transfer.discrepancyNote}</p>}
-
                   {transfer.status === "REQUESTED" && canManageSource && (
                     <div className="mt-2 space-y-2 border-t border-slate-200 pt-2 dark:border-slate-700">
                       <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300">
@@ -527,7 +507,7 @@ export default function StockTransferActivity({
                             onClick={() => setReceiveIssueOpen((state) => ({ ...state, [transfer.id]: true }))}
                             className="min-h-9 w-full rounded-lg border border-amber-300 px-3 text-[10px] font-bold uppercase text-amber-800 hover:bg-amber-50 disabled:opacity-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-500/10"
                           >
-                            Jumlah tidak sesuai
+                            Isi jumlah fisik
                           </button>
                         </>
                       ) : (
@@ -545,16 +525,8 @@ export default function StockTransferActivity({
                               className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                             />
                           </label>
-                          <textarea
-                            value={receiveNotes[transfer.id] || ""}
-                            onChange={(event) => setReceiveNotes((state) => ({ ...state, [transfer.id]: event.target.value }))}
-                            maxLength={500}
-                            placeholder="Jelaskan jumlah yang berbeda"
-                            disabled={Boolean(busyId) || !shiftOpen}
-                            className="min-h-16 w-full rounded-lg border border-amber-300 bg-white p-2 text-xs text-slate-800 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-100"
-                          />
                           <p className="text-[10px] text-amber-900 dark:text-amber-200">
-                            Selisih dicatat untuk ditelusuri. Stok pengirim tidak otomatis bertambah; retur harus diterima secara fisik.
+                            Stok penerima dicatat sesuai jumlah fisik yang dimasukkan.
                           </p>
                           {currentReceiveQty.trim() !== "" && receiveQtyNumber === transfer.dispatchedQty && (
                             <p className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
@@ -567,11 +539,10 @@ export default function StockTransferActivity({
                               disabled={Boolean(busyId) || !shiftOpen || !canSubmitReceiptIssue}
                               onClick={() => void run(transfer.id, () => api.receiveStockTransfer(transfer.id, {
                                 receivedQty: receiveQtyNumber,
-                                discrepancyNote: receiveNotes[transfer.id]?.trim(),
                               }))}
                               className="flex min-h-10 items-center justify-center gap-1 rounded-lg bg-amber-500 px-2 text-[10px] font-black uppercase text-slate-950 hover:bg-amber-400 disabled:opacity-50"
                             >
-                              <PackageCheck className="h-4 w-4" /> Catat selisih
+                              <PackageCheck className="h-4 w-4" /> Simpan jumlah
                             </button>
                             <button
                               type="button"

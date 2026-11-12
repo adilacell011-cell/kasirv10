@@ -1139,9 +1139,6 @@ export function registerStockTransferRoutes(
         if (receivedQty > current.dispatchedQty) {
           throw new TransferHttpError(400, "Jumlah diterima tidak boleh melebihi jumlah yang dikirim.");
         }
-        if (receivedQty !== current.dispatchedQty && !discrepancyNote) {
-          throw new TransferHttpError(400, "Catatan selisih wajib diisi jika jumlah diterima berbeda.");
-        }
         const changed = await tx.stockTransfer.updateMany({
           where: { id, status: "IN_TRANSIT" },
           data: {

@@ -589,7 +589,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   });
   assert.equal(duplicateDispatchResponse.status, 409);
 
-  const missingDiscrepancyResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
+  const receiveTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${cashierBPayload.token}`,
@@ -597,28 +597,15 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     },
     body: JSON.stringify({ receivedQty: 1 }),
   });
-  assert.equal(missingDiscrepancyResponse.status, 400, "A partial receipt must include a discrepancy note.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchBId } },
-  })).qty, 0);
-
-  const receiveTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${cashierBPayload.token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ receivedQty: 1, discrepancyNote: "Satu pcs tidak ada di paket." }),
-  });
   assert.equal(receiveTransferResponse.status, 200);
   const receivedTransfer = await receiveTransferResponse.json() as {
-    status: string; dispatchedQty: number; receivedQty: number; discrepancyNote: string;
+    status: string; dispatchedQty: number; receivedQty: number; discrepancyNote: string | null;
   };
   assert.equal(receivedTransfer.status, "RECEIVED");
   assert.equal(receivedTransfer.dispatchedQty, 2);
   assert.equal(receivedTransfer.receivedQty, 1);
   assert.equal(receivedTransfer.dispatchedQty - receivedTransfer.receivedQty, 1);
-  assert.equal(receivedTransfer.discrepancyNote, "Satu pcs tidak ada di paket.");
+  assert.equal(receivedTransfer.discrepancyNote, null, "The actual count is stored without requiring a discrepancy note.");
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchBId } },
   })).qty, 1);
@@ -1032,23 +1019,6 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   })).qty, 0);
   const mainReturn = multiProductReturn.items.find((item) => item.productId === productId)!;
   const secondaryReturn = multiProductReturn.items.find((item) => item.productId === batchProduct.id)!;
-  const partialReturnWithoutReason = await fetch(
-    `${apiUrl}/api/stock-transfers/returns/${multiProductReturn.batchId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        items: [
-          { transferId: mainReturn.id, receivedQty: 1 },
-          { transferId: secondaryReturn.id, receivedQty: 0 },
-        ],
-      }),
-    },
-  );
-  assert.equal(partialReturnWithoutReason.status, 400, "A return shortage requires a written discrepancy note.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 4, "A rejected partial return receipt does not change source stock.");
   const confirmMultiProductReturn = await fetch(
     `${apiUrl}/api/stock-transfers/returns/${multiProductReturn.batchId}/receive`,
     {
@@ -1057,7 +1027,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
       body: JSON.stringify({
         items: [
           { transferId: mainReturn.id, receivedQty: 1 },
-          { transferId: secondaryReturn.id, receivedQty: 0, discrepancyNote: "Barang kedua tidak sampai." },
+          { transferId: secondaryReturn.id, receivedQty: 0 },
         ],
       }),
     },
@@ -1072,7 +1042,8 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(confirmedMultiProductReturn.items.find((item) => item.id === secondaryReturn.id)?.receivedQty, 0);
   assert.equal(
     confirmedMultiProductReturn.items.find((item) => item.id === secondaryReturn.id)?.discrepancyNote,
-    "Barang kedua tidak sampai.",
+    null,
+    "Partial return receipts keep actual quantity without requiring or inventing a note.",
   );
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchAId } },

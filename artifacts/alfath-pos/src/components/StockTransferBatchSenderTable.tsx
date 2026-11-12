@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ArrowRightLeft, Check, Clock3, PackageCheck, X } from "lucide-react";
 import { api } from "../services/api";
-import { getUnresolvedTransferDiscrepancyQty } from "../lib/stock-transfer-discrepancy";
 
 type Transfer = {
   id: string;
@@ -39,8 +38,6 @@ type Props = {
 
 const statusLabel = (transfer: Transfer) => {
   const correction = transfer.skuCorrections?.[0];
-  const discrepancyQty = getUnresolvedTransferDiscrepancyQty(transfer);
-  if (discrepancyQty > 0) return `Selisih ${discrepancyQty} pcs belum diselesaikan`;
   if (correction?.status === "PENDING_SOURCE") return "Perlu pemeriksaan pengirim";
   if (correction?.status === "APPROVED_PENDING_RECEIPT") return "Koreksi disetujui";
   if (correction?.status === "RECEIVED") return "SKU koreksi diterima";
@@ -79,10 +76,6 @@ export default function StockTransferBatchSenderTable({
   const waitingCount = items.filter((item) =>
     item.status === "IN_TRANSIT" && !item.skuCorrections?.length,
   ).length;
-  const unresolvedDiscrepancies = items
-    .map((item) => getUnresolvedTransferDiscrepancyQty(item))
-    .filter((qty) => qty > 0);
-  const unresolvedDiscrepancyQty = unresolvedDiscrepancies.reduce((sum, qty) => sum + qty, 0);
 
   const run = async (transfer: Transfer, action: () => Promise<Transfer>) => {
     if (busyId) return;
@@ -131,9 +124,7 @@ export default function StockTransferBatchSenderTable({
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[9px] font-bold text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
           <ArrowRightLeft className="h-3 w-3" />
-          {unresolvedDiscrepancies.length
-            ? `${unresolvedDiscrepancies.length} selisih · ${unresolvedDiscrepancyQty} pcs belum selesai`
-            : pendingCorrectionCount
+          {pendingCorrectionCount
             ? `${pendingCorrectionCount} koreksi perlu diperiksa`
             : waitingCount
               ? `${waitingCount} menunggu penerima`
@@ -167,7 +158,6 @@ export default function StockTransferBatchSenderTable({
             {items.map((transfer) => {
               const correction = transfer.skuCorrections?.[0];
               const isPending = correction?.status === "PENDING_SOURCE";
-              const discrepancyQty = getUnresolvedTransferDiscrepancyQty(transfer);
               return (
                 <tr key={transfer.id} className="align-top bg-white dark:bg-slate-900">
                   <td data-card-title className="break-words px-2.5 py-2">
@@ -204,14 +194,8 @@ export default function StockTransferBatchSenderTable({
                           {correction.responseNote && <p className="break-words text-[9px] text-slate-600 dark:text-slate-300">Respons: {correction.responseNote}</p>}
                         </div>
                       )}
-                      {discrepancyQty > 0 && (
-                        <div role="status" className="mt-1 rounded-md border border-amber-300 bg-amber-50 px-1.5 py-1 text-[9px] text-amber-900 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
-                          <p className="font-black">Selisih {discrepancyQty} pcs · belum diselesaikan</p>
-                          <p>Tetap tercatat di riwayat, tidak dihitung sebagai stok tersedia.</p>
-                        </div>
-                      )}
                       {transfer.discrepancyNote && (
-                        <p className="mt-1 break-words text-[9px] text-amber-800 dark:text-amber-300">Selisih: {transfer.discrepancyNote}</p>
+                        <p className="mt-1 break-words text-[9px] text-slate-500 dark:text-slate-400">Catatan tersimpan: {transfer.discrepancyNote}</p>
                       )}
                       {isPending && (
                         <div className="mt-2 space-y-1.5">

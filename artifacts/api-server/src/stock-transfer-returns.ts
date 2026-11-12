@@ -284,12 +284,6 @@ export function registerStockTransferReturnRoutes(
             if (receipt.receivedQty > row.dispatchedQty) {
               throw new TransferHttpError(400, "Jumlah diterima tidak boleh melebihi jumlah yang dikirim.");
             }
-            if (receipt.receivedQty !== row.dispatchedQty && !receipt.discrepancyNote) {
-              throw new TransferHttpError(
-                400,
-                `${row.product.name}: catatan wajib diisi jika jumlah retur yang diterima berbeda.`,
-              );
-            }
           }
 
           const updatedRows = [];
