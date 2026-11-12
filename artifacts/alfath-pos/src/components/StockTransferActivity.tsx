@@ -55,6 +55,7 @@ type Props = {
   loading?: boolean;
   error?: string;
   shiftOpen: boolean;
+  confirm: (message: string) => Promise<boolean>;
   onUpdated: (transfer: Transfer) => void;
 };
 
@@ -80,6 +81,7 @@ export default function StockTransferActivity({
   loading = false,
   error: loadError = "",
   shiftOpen,
+  confirm,
   onUpdated,
 }: Props) {
   const isCashier = role === "CASHIER";
@@ -173,10 +175,10 @@ export default function StockTransferActivity({
       setError("Alasan menolak koreksi SKU wajib diisi.");
       return;
     }
-    if (action === "APPROVE" && !window.confirm(
+    if (action === "APPROVE" && !(await confirm(
       `Setujui koreksi ${transfer.product.name} menjadi ${correction.actualProduct.name}? ` +
       `Stok cabang pengirim akan dikoreksi dan cabang penerima harus mengonfirmasi barang aktual.`,
-    )) return;
+    ))) return;
     await run(transfer.id, () => api.reviewStockTransferSkuCorrection(transfer.id, correction.id, {
       action,
       responseNote: responseNote || undefined,
@@ -195,6 +197,7 @@ export default function StockTransferActivity({
           products={products}
           stocks={stocks}
           shiftOpen={shiftOpen}
+          confirm={confirm}
           onCreated={(items) => {
             for (const item of items) onUpdated(item as unknown as Transfer);
           }}
@@ -275,6 +278,7 @@ export default function StockTransferActivity({
                     items={group.items}
                     products={products}
                     shiftOpen={shiftOpen}
+                    confirm={confirm}
                     onUpdated={(updated) => onUpdated(updated as Transfer)}
                   />
                 );
@@ -288,6 +292,7 @@ export default function StockTransferActivity({
                     items={group.items}
                     shiftOpen={shiftOpen}
                     isCashier={isCashier}
+                    confirm={confirm}
                     onUpdated={(updated) => onUpdated(updated as Transfer)}
                   />
                 );

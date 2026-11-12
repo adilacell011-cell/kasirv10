@@ -37,6 +37,7 @@ type Props = {
   items: ReceiptTransfer[];
   products: Product[];
   shiftOpen: boolean;
+  confirm: (message: string) => Promise<boolean>;
   onUpdated: (transfer: ReceiptTransfer) => void;
 };
 
@@ -59,6 +60,7 @@ export default function StockTransferBatchReceiptTable({
   items,
   products,
   shiftOpen,
+  confirm,
   onUpdated,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -119,7 +121,7 @@ export default function StockTransferBatchReceiptTable({
       setError("Selesaikan koreksi atau penerimaan per produk terlebih dahulu.");
       return;
     }
-    if (!window.confirm(`Konfirmasi semua ${items.length} produk (${totalQty} pcs) sudah sesuai?`)) return;
+    if (!(await confirm(`Konfirmasi semua ${items.length} produk (${totalQty} pcs) sudah sesuai?`))) return;
     if (busyId) return;
     setBusyId(batchId);
     setError("");
@@ -135,13 +137,13 @@ export default function StockTransferBatchReceiptTable({
     }
   };
 
-  const receiveAsSent = (transfer: ReceiptTransfer) => {
+  const receiveAsSent = async (transfer: ReceiptTransfer) => {
     if (!shiftOpen) {
       setError("Buka shift sebelum mengonfirmasi penerimaan.");
       return;
     }
     if (transfer.dispatchedQty == null) return;
-    if (!window.confirm(`Konfirmasi ${transfer.product.name}, ${transfer.dispatchedQty} pcs, sudah sesuai?`)) return;
+    if (!(await confirm(`Konfirmasi ${transfer.product.name}, ${transfer.dispatchedQty} pcs, sudah sesuai?`))) return;
     void run(transfer.id, () =>
       api.receiveStockTransfer(transfer.id, { receivedQty: transfer.dispatchedQty! }),
     );
@@ -179,14 +181,14 @@ export default function StockTransferBatchReceiptTable({
     }));
   };
 
-  const confirmCorrectedSku = (transfer: ReceiptTransfer) => {
+  const confirmCorrectedSku = async (transfer: ReceiptTransfer) => {
     const correction = transfer.skuCorrections?.find(
       (item) => item.status === "APPROVED_PENDING_RECEIPT",
     );
     if (!correction) return;
-    if (!window.confirm(
+    if (!(await confirm(
       `Konfirmasi ${correction.actualProduct.name}, ${correction.actualQty} pcs, benar diterima?`,
-    )) return;
+    ))) return;
     void run(transfer.id, () =>
       api.receiveStockTransferSkuCorrection(transfer.id, correction.id),
     );
@@ -295,7 +297,7 @@ export default function StockTransferBatchReceiptTable({
                         <button
                           type="button"
                           disabled={Boolean(busyId) || !shiftOpen}
-                          onClick={() => confirmCorrectedSku(transfer)}
+                          onClick={() => void confirmCorrectedSku(transfer)}
                           className="mt-1 min-h-8 w-full rounded-md bg-amber-500 px-1 text-[9px] font-black text-slate-950 disabled:opacity-50"
                         >
                           Konfirmasi SKU
@@ -307,7 +309,7 @@ export default function StockTransferBatchReceiptTable({
                             <button
                               type="button"
                               disabled={Boolean(busyId) || !shiftOpen}
-                              onClick={() => receiveAsSent(transfer)}
+                              onClick={() => void receiveAsSent(transfer)}
                               className="min-h-8 w-full rounded-md bg-emerald-700 px-1 text-[9px] font-black text-white disabled:opacity-50 dark:bg-emerald-600"
                             >
                               Terima sesuai

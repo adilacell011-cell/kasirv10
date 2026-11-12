@@ -7664,6 +7664,7 @@ export default function App() {
                             loading={stockTransfersLoading}
                             error={stockTransfersError}
                             shiftOpen={shiftOpen}
+                            confirm={triggerConfirm}
                             onUpdated={updateStockTransfer}
                           />
                         )}
@@ -9401,6 +9402,7 @@ export default function App() {
                           loading={stockTransfersLoading}
                           error={stockTransfersError}
                           shiftOpen={shiftOpen}
+                          confirm={triggerConfirm}
                           onUpdated={updateStockTransfer}
                         />
                       </div>

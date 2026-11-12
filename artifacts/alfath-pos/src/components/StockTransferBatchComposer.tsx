@@ -22,6 +22,7 @@ type Props = {
   products: Product[];
   stocks: Stock[];
   shiftOpen: boolean;
+  confirm: (message: string) => Promise<boolean>;
   onCreated: (items: TransferItem[]) => void;
 };
 
@@ -31,6 +32,7 @@ export default function StockTransferBatchComposer({
   products,
   stocks,
   shiftOpen,
+  confirm,
   onCreated,
 }: Props) {
   const [targetBranchId, setTargetBranchId] = useState("");
@@ -143,9 +145,9 @@ export default function StockTransferBatchComposer({
       return;
     }
     const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
-    if (!window.confirm(
+    if (!(await confirm(
       `Kirim ${items.length} jenis produk (${totalQty} pcs) ke ${targetBranch?.name || "cabang tujuan"}? Stok sumber berkurang setelah kiriman dicatat.`,
-    )) return;
+    ))) return;
 
     setBusy(true);
     try {

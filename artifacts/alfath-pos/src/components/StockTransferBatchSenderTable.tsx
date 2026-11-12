@@ -28,6 +28,7 @@ type Props = {
   items: Transfer[];
   shiftOpen: boolean;
   isCashier: boolean;
+  confirm: (message: string) => Promise<boolean>;
   onUpdated: (transfer: Transfer) => void;
 };
 
@@ -49,6 +50,7 @@ export default function StockTransferBatchSenderTable({
   items,
   shiftOpen,
   isCashier,
+  confirm,
   onUpdated,
 }: Props) {
   const [responseNotes, setResponseNotes] = useState<Record<string, string>>({});
@@ -78,7 +80,7 @@ export default function StockTransferBatchSenderTable({
     }
   };
 
-  const reviewCorrection = (transfer: Transfer, action: "APPROVE" | "REJECT") => {
+  const reviewCorrection = async (transfer: Transfer, action: "APPROVE" | "REJECT") => {
     const correction = transfer.skuCorrections?.[0];
     const responseNote = responseNotes[transfer.id]?.trim() || "";
     if (!correction || correction.status !== "PENDING_SOURCE") return;
@@ -86,9 +88,9 @@ export default function StockTransferBatchSenderTable({
       setError(`Isi alasan penolakan untuk ${transfer.product.name}.`);
       return;
     }
-    if (action === "APPROVE" && !window.confirm(
+    if (action === "APPROVE" && !(await confirm(
       `Setujui koreksi ${transfer.product.name} menjadi ${correction.actualProduct.name}? Cabang penerima tetap harus mengonfirmasi barang aktual.`,
-    )) return;
+    ))) return;
     void run(transfer, () => api.reviewStockTransferSkuCorrection(transfer.id, correction.id, {
       action,
       responseNote: responseNote || undefined,
@@ -125,7 +127,7 @@ export default function StockTransferBatchSenderTable({
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-[10px]" aria-label="Produk yang dikirim">
+        <table className="mobile-cards w-full table-fixed text-left text-[10px]" aria-label="Produk yang dikirim">
           <colgroup>
             <col className="w-[42%]" />
             <col className="w-[13%]" />
@@ -146,71 +148,73 @@ export default function StockTransferBatchSenderTable({
               const isPending = correction?.status === "PENDING_SOURCE";
               return (
                 <tr key={transfer.id} className="align-top bg-white dark:bg-slate-900">
-                  <td className="break-words px-2.5 py-2">
+                  <td data-card-title className="break-words px-2.5 py-2">
                     <span className="block font-bold leading-tight text-slate-800 dark:text-slate-100">{transfer.product.name}</span>
                     {transfer.product.barcode && (
                       <span className="mt-0.5 block truncate text-[9px] text-slate-500 dark:text-slate-400">{transfer.product.barcode}</span>
                     )}
                   </td>
-                  <td className="px-2 py-2 text-center font-black text-slate-700 dark:text-slate-200">{transfer.dispatchedQty ?? "—"}</td>
-                  <td className="px-2 py-2 text-center font-black text-slate-700 dark:text-slate-200">{transfer.receivedQty ?? "—"}</td>
-                  <td className="px-2 py-2">
-                    <span className={`block text-[9px] font-bold ${isPending ? "text-amber-800 dark:text-amber-300" : "text-slate-600 dark:text-slate-300"}`}>
-                      {statusLabel(transfer)}
-                    </span>
-                    {correction && (
-                      <div className="mt-1 space-y-1 rounded-lg border border-amber-200 bg-amber-50/70 p-2 dark:border-amber-800 dark:bg-amber-500/5">
-                        <p className="text-[9px] font-semibold text-slate-700 dark:text-slate-200">
-                          SKU aktual: {correction.actualProduct.name} · {correction.actualQty} pcs
-                        </p>
-                        {correction.note && <p className="break-words text-[9px] text-slate-600 dark:text-slate-300">Catatan penerima: {correction.note}</p>}
-                        {correction.responseNote && <p className="break-words text-[9px] text-slate-600 dark:text-slate-300">Respons: {correction.responseNote}</p>}
-                      </div>
-                    )}
-                    {transfer.discrepancyNote && (
-                      <p className="mt-1 break-words text-[9px] text-amber-800 dark:text-amber-300">Selisih: {transfer.discrepancyNote}</p>
-                    )}
-                    {isPending && (
-                      <div className="mt-2 space-y-1.5">
-                        <textarea
-                          value={responseNotes[transfer.id] || ""}
-                          onChange={(event) => setResponseNotes((state) => ({ ...state, [transfer.id]: event.target.value }))}
-                          maxLength={500}
-                          aria-label={`Respons koreksi ${transfer.product.name}`}
-                          placeholder="Catatan persetujuan atau alasan penolakan"
-                          disabled={Boolean(busyId) || (isCashier && !shiftOpen)}
-                          className="min-h-14 w-full rounded-lg border border-amber-300 bg-white p-2 text-[10px] text-slate-800 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-100"
-                        />
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            disabled={Boolean(busyId) || (isCashier && !shiftOpen)}
-                            onClick={() => reviewCorrection(transfer, "APPROVE")}
-                            className="flex min-h-9 items-center justify-center gap-1 rounded-lg bg-amber-500 px-2 text-[9px] font-black text-slate-950 disabled:opacity-50"
-                          >
-                            <Check className="h-3.5 w-3.5" /> Setujui
-                          </button>
-                          <button
-                            type="button"
-                            disabled={Boolean(busyId) || (isCashier && !shiftOpen)}
-                            onClick={() => reviewCorrection(transfer, "REJECT")}
-                            className="flex min-h-9 items-center justify-center gap-1 rounded-lg border border-rose-300 px-2 text-[9px] font-black text-rose-700 disabled:opacity-50 dark:border-rose-900 dark:text-rose-300"
-                          >
-                            <X className="h-3.5 w-3.5" /> Tolak
-                          </button>
+                  <td data-label="Dikirim" className="px-2 py-2 text-center font-black text-slate-700 dark:text-slate-200">{transfer.dispatchedQty ?? "—"}</td>
+                  <td data-label="Diterima" className="px-2 py-2 text-center font-black text-slate-700 dark:text-slate-200">{transfer.receivedQty ?? "—"}</td>
+                  <td data-label="Status / tindakan" className="px-2 py-2">
+                    <div className="min-w-0 flex-1 text-left">
+                      <span className={`block text-[9px] font-bold ${isPending ? "text-amber-800 dark:text-amber-300" : "text-slate-600 dark:text-slate-300"}`}>
+                        {statusLabel(transfer)}
+                      </span>
+                      {correction && (
+                        <div className="mt-1 space-y-1 rounded-lg border border-amber-200 bg-amber-50/70 p-2 dark:border-amber-800 dark:bg-amber-500/5">
+                          <p className="text-[9px] font-semibold text-slate-700 dark:text-slate-200">
+                            SKU aktual: {correction.actualProduct.name} · {correction.actualQty} pcs
+                          </p>
+                          {correction.note && <p className="break-words text-[9px] text-slate-600 dark:text-slate-300">Catatan penerima: {correction.note}</p>}
+                          {correction.responseNote && <p className="break-words text-[9px] text-slate-600 dark:text-slate-300">Respons: {correction.responseNote}</p>}
                         </div>
-                      </div>
-                    )}
-                    {transfer.status === "IN_TRANSIT" && !isPending && correction?.status !== "APPROVED_PENDING_RECEIPT" && correction?.status !== "RECEIVED" && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400">
-                        <Clock3 className="h-3 w-3" /> Menunggu konfirmasi cabang tujuan.
-                      </p>
-                    )}
-                    {correction?.status === "APPROVED_PENDING_RECEIPT" && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-[9px] font-semibold text-amber-800 dark:text-amber-300">
-                        <PackageCheck className="h-3 w-3" /> Menunggu konfirmasi SKU aktual.
-                      </p>
-                    )}
+                      )}
+                      {transfer.discrepancyNote && (
+                        <p className="mt-1 break-words text-[9px] text-amber-800 dark:text-amber-300">Selisih: {transfer.discrepancyNote}</p>
+                      )}
+                      {isPending && (
+                        <div className="mt-2 space-y-1.5">
+                          <textarea
+                            value={responseNotes[transfer.id] || ""}
+                            onChange={(event) => setResponseNotes((state) => ({ ...state, [transfer.id]: event.target.value }))}
+                            maxLength={500}
+                            aria-label={`Respons koreksi ${transfer.product.name}`}
+                            placeholder="Catatan persetujuan atau alasan penolakan"
+                            disabled={Boolean(busyId) || (isCashier && !shiftOpen)}
+                            className="min-h-14 w-full rounded-lg border border-amber-300 bg-white p-2 text-[10px] text-slate-800 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              disabled={Boolean(busyId) || (isCashier && !shiftOpen)}
+                              onClick={() => void reviewCorrection(transfer, "APPROVE")}
+                              className="flex min-h-9 items-center justify-center gap-1 rounded-lg bg-amber-500 px-2 text-[9px] font-black text-slate-950 disabled:opacity-50"
+                            >
+                              <Check className="h-3.5 w-3.5" /> Setujui
+                            </button>
+                            <button
+                              type="button"
+                              disabled={Boolean(busyId) || (isCashier && !shiftOpen)}
+                              onClick={() => void reviewCorrection(transfer, "REJECT")}
+                              className="flex min-h-9 items-center justify-center gap-1 rounded-lg border border-rose-300 px-2 text-[9px] font-black text-rose-700 disabled:opacity-50 dark:border-rose-900 dark:text-rose-300"
+                            >
+                              <X className="h-3.5 w-3.5" /> Tolak
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {transfer.status === "IN_TRANSIT" && !isPending && correction?.status !== "APPROVED_PENDING_RECEIPT" && correction?.status !== "RECEIVED" && (
+                        <p className="mt-1 inline-flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400">
+                          <Clock3 className="h-3 w-3" /> Menunggu konfirmasi cabang tujuan.
+                        </p>
+                      )}
+                      {correction?.status === "APPROVED_PENDING_RECEIPT" && (
+                        <p className="mt-1 inline-flex items-center gap-1 text-[9px] font-semibold text-amber-800 dark:text-amber-300">
+                          <PackageCheck className="h-3 w-3" /> Menunggu konfirmasi SKU aktual.
+                        </p>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
