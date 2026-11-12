@@ -1355,6 +1355,92 @@ app.get("/api/adjustments", authenticateToken, async (req, res) => {
   }
 });
 
+app.get("/api/stock-in-history", authenticateToken, requireRole("ADMIN", "AUDIT", "CASHIER"), async (req: any, res) => {
+  const requester = req.user;
+  const rawLimit = Number(req.query.limit ?? 25);
+  if (!Number.isInteger(rawLimit) || rawLimit < 1) {
+    return void res.status(400).json({ error: "Batas riwayat stok masuk tidak valid." });
+  }
+  const limit = Math.min(rawLimit, 50);
+  const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+  if (cursor && cursor.length > 128) {
+    return void res.status(400).json({ error: "Penanda halaman riwayat stok masuk tidak valid." });
+  }
+  const branchId = requester.role === "CASHIER"
+    ? requester.branchId
+    : (typeof req.query.branchId === "string" ? req.query.branchId : undefined);
+  if (requester.role === "CASHIER" && !branchId) {
+    return void res.status(403).json({ error: "Cabang kasir tidak tersedia." });
+  }
+
+  try {
+    const rows = await prisma.adjustment.findMany({
+      where: {
+        type: {
+          in: [
+            "STOCK_IN",
+            "TRANSFER_IN",
+            "TRANSFER_SKU_CORRECTION_IN",
+            "TRANSFER_SKU_CORRECTION_RESTORE",
+          ],
+        },
+        ...(branchId ? { branchId } : {}),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: limit + 1,
+      include: {
+        product: { select: { id: true, name: true, barcode: true } },
+        branch: { select: { id: true, name: true } },
+      },
+    });
+    const items = rows.slice(0, limit);
+    const referenceIds = [...new Set(items
+      .map((item) => item.reason?.match(/(?:Kiriman|Transfer|Koreksi SKU transfer)\s+([a-f0-9-]{36})/i)?.[1])
+      .filter((id): id is string => Boolean(id)))];
+    const relatedTransfers = referenceIds.length
+      ? await prisma.stockTransfer.findMany({
+          where: { OR: [{ id: { in: referenceIds } }, { batchId: { in: referenceIds } }] },
+          select: {
+            id: true,
+            batchId: true,
+            sourceBranch: { select: { id: true, name: true } },
+            targetBranch: { select: { id: true, name: true } },
+            dispatchedAt: true,
+            receivedAt: true,
+            dispatchedBy: { select: { id: true, name: true } },
+            receivedBy: { select: { id: true, name: true } },
+            skuCorrections: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                receivedAt: true,
+                receivedBy: { select: { id: true, name: true } },
+              },
+            },
+          },
+        })
+      : [];
+    const withReferences = items.map((item) => {
+      const referenceId = item.reason?.match(/(?:Kiriman|Transfer|Koreksi SKU transfer)\s+([a-f0-9-]{36})/i)?.[1];
+      const relatedTransfer = referenceId
+        ? relatedTransfers.find((transfer) => transfer.id === referenceId || transfer.batchId === referenceId) ?? null
+        : null;
+      return { ...item, relatedTransfer };
+    });
+    res.json({
+      items: withReferences,
+      hasMore: rows.length > limit,
+      nextCursor: items.at(-1)?.id ?? null,
+    });
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      return void res.status(400).json({ error: "Penanda halaman riwayat stok masuk sudah tidak valid." });
+    }
+    res.status(500).json({ error: "Riwayat stok masuk gagal dimuat." });
+  }
+});
+
 app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", "CASHIER"), async (req, res) => {
   const { productId, branchId, qty, type, reason, oldQty, newQty } = req.body;
   const requester = (req as any).user;

@@ -746,6 +746,9 @@ export default function App() {
   const [adjustments, setAdjustments] = useState<any[]>([]);
   const [stockTransfers, setStockTransfers] = useState<any[]>([]);
   const [stockTransfersLoading, setStockTransfersLoading] = useState(false);
+  const [stockTransfersHasMore, setStockTransfersHasMore] = useState(false);
+  const [stockTransfersCursor, setStockTransfersCursor] = useState<string | null>(null);
+  const [stockTransfersLoadingMore, setStockTransfersLoadingMore] = useState(false);
   const [stockTransfersError, setStockTransfersError] = useState("");
   const [stockTransferRefreshTick, setStockTransferRefreshTick] = useState(0);
   const [commissions, setCommissions] = useState<any[]>([]);
@@ -850,9 +853,35 @@ export default function App() {
     setStockTransfersError("");
     setStockTransfers((current) =>
       [transfer, ...current.filter((item) => item.id !== transfer.id)]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 100),
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     );
+  };
+  const loadMoreStockTransfers = async () => {
+    if (!stockTransfersHasMore || !stockTransfersCursor || stockTransfersLoadingMore) return;
+    setStockTransfersLoadingMore(true);
+    setStockTransfersError("");
+    try {
+      const result = await api.getStockTransfers({
+        branchId: profile?.role === "CASHIER" ? undefined : auditSelectedBranch || undefined,
+        limit: 30,
+        cursor: stockTransfersCursor,
+      }) as { items?: any[]; hasMore?: boolean; nextCursor?: string | null };
+      if (!result || !Array.isArray(result.items)) throw new ReadError("invalid-response");
+      setStockTransfers((current) => {
+        const byId = new Map(current.map((item) => [item.id, item]));
+        for (const item of result.items!) byId.set(item.id, item);
+        return [...byId.values()].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      });
+      setStockTransfersHasMore(Boolean(result.hasMore));
+      setStockTransfersCursor(result.nextCursor || result.items.at(-1)?.id || null);
+    } catch (error: any) {
+      if (isSessionError(error)) expireReadSession();
+      else setStockTransfersError(error?.message || "Riwayat transfer gagal dimuat.");
+    } finally {
+      setStockTransfersLoadingMore(false);
+    }
   };
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
   const [isProcessingStock, setIsProcessingStock] = useState(false);
@@ -1818,6 +1847,9 @@ export default function App() {
     setUsers([]);
     setAdjustments([]);
     setStockTransfers([]);
+    setStockTransfersHasMore(false);
+    setStockTransfersCursor(null);
+    setStockTransfersLoadingMore(false);
     setStockTransfersError("");
     setShoppingPlans([]);
     setCommissionsSummary(null);
@@ -2019,6 +2051,8 @@ export default function App() {
     if (!syncToken || !fullSyncEnabled) {
       setStockTransfers([]);
       setStockTransfersLoading(false);
+      setStockTransfersHasMore(false);
+      setStockTransfersCursor(null);
       setStockTransfersError("");
       return;
     }
@@ -2030,16 +2064,21 @@ export default function App() {
       !controller.signal.aborted &&
       readEpoch.current === epoch &&
       localStorage.getItem("token") === syncToken;
+    setStockTransfers([]);
+    setStockTransfersHasMore(false);
+    setStockTransfersCursor(null);
     setStockTransfersLoading(true);
     setStockTransfersError("");
     api.getStockTransfers({
       branchId: profile?.role === "CASHIER" ? undefined : auditSelectedBranch || undefined,
-      limit: 100,
+      limit: 30,
     }, controller.signal)
       .then((result: any) => {
         if (!current()) return;
         if (!result || !Array.isArray(result.items)) throw new ReadError("invalid-response");
         setStockTransfers(result.items);
+        setStockTransfersHasMore(Boolean(result.hasMore));
+        setStockTransfersCursor(result.nextCursor || result.items.at(-1)?.id || null);
       })
       .catch((error: any) => {
         if (!current()) return;
@@ -7665,6 +7704,9 @@ export default function App() {
                             error={stockTransfersError}
                             shiftOpen={shiftOpen}
                             confirm={triggerConfirm}
+                            hasMoreTransfers={stockTransfersHasMore}
+                            loadingMoreTransfers={stockTransfersLoadingMore}
+                            onLoadMoreTransfers={loadMoreStockTransfers}
                             onUpdated={updateStockTransfer}
                           />
                         )}
@@ -9403,6 +9445,9 @@ export default function App() {
                           error={stockTransfersError}
                           shiftOpen={shiftOpen}
                           confirm={triggerConfirm}
+                          hasMoreTransfers={stockTransfersHasMore}
+                          loadingMoreTransfers={stockTransfersLoadingMore}
+                          onLoadMoreTransfers={loadMoreStockTransfers}
                           onUpdated={updateStockTransfer}
                         />
                       </div>

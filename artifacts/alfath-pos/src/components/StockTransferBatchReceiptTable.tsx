@@ -11,8 +11,12 @@ type ReceiptTransfer = {
   status: TransferStatus;
   dispatchedQty: number | null;
   receivedQty: number | null;
+  dispatchedAt?: string | null;
+  receivedAt?: string | null;
   discrepancyNote?: string | null;
   createdAt: string;
+  dispatchedBy?: { id: string; name?: string | null } | null;
+  receivedBy?: { id: string; name?: string | null } | null;
   product: { id: string; name: string; barcode?: string | null };
   sourceBranch: { id: string; name: string };
   targetBranch: { id: string; name: string };
@@ -54,6 +58,14 @@ const itemStatus = (transfer: ReceiptTransfer) => {
   if (transfer.status === "IN_TRANSIT") return "Menunggu penerima";
   return transfer.status;
 };
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 export default function StockTransferBatchReceiptTable({
   batchId,
@@ -288,6 +300,18 @@ export default function StockTransferBatchReceiptTable({
                       <span className={`mb-1 block text-[9px] font-bold leading-tight ${waiting ? "text-amber-800 dark:text-amber-300" : "text-slate-600 dark:text-slate-300"}`}>
                         {itemStatus(transfer)}
                       </span>
+                      {(transfer.dispatchedBy?.name || transfer.dispatchedAt) && (
+                        <span className="mb-1 block text-[9px] text-slate-500 dark:text-slate-400">
+                          Dikirim{transfer.dispatchedBy?.name ? ` oleh ${transfer.dispatchedBy.name}` : ""}
+                          {transfer.dispatchedAt ? ` · ${formatDateTime(transfer.dispatchedAt)}` : ""}
+                        </span>
+                      )}
+                      {(transfer.receivedBy?.name || transfer.receivedAt) && (
+                        <span className="mb-1 block text-[9px] text-slate-500 dark:text-slate-400">
+                          Diterima{transfer.receivedBy?.name ? ` oleh ${transfer.receivedBy.name}` : ""}
+                          {transfer.receivedAt ? ` · ${formatDateTime(transfer.receivedAt)}` : ""}
+                        </span>
+                      )}
                       {transfer.status === "IN_TRANSIT" && activeCorrection && (
                         <span className="block text-[9px] text-slate-500 dark:text-slate-400">
                           {activeCorrection.actualProduct.name} · {activeCorrection.actualQty} pcs

@@ -264,13 +264,14 @@ export const api = {
   },
 
   async getStockTransfers(
-    params: { branchId?: string; status?: string; limit?: number } = {},
+    params: { branchId?: string; status?: string; limit?: number; cursor?: string } = {},
     signal?: AbortSignal,
   ) {
     const query = new URLSearchParams();
     if (params.branchId) query.set("branchId", params.branchId);
     if (params.status) query.set("status", params.status);
     if (params.limit) query.set("limit", String(params.limit));
+    if (params.cursor) query.set("cursor", params.cursor);
     const suffix = query.size ? `?${query.toString()}` : "";
     return readJson(`/stock-transfers${suffix}`, signal);
   },
@@ -511,6 +512,17 @@ export const api = {
 
   async getAdjustments(signal?: AbortSignal) {
     return readJson("/adjustments", signal);
+  },
+
+  async getStockInHistory(
+    params: { branchId?: string; limit?: number; cursor?: string } = {},
+    signal?: AbortSignal,
+  ) {
+    const query = new URLSearchParams();
+    if (params.branchId) query.set("branchId", params.branchId);
+    if (params.limit) query.set("limit", String(params.limit));
+    if (params.cursor) query.set("cursor", params.cursor);
+    return readJson(`/stock-in-history?${query.toString()}`, signal);
   },
 
   async cleanupAdjustments() {

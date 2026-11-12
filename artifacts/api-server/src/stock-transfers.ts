@@ -208,6 +208,11 @@ export function registerStockTransferRoutes(
       return;
     }
     const limit = Math.min(rawLimit, 100);
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    if (cursor && cursor.length > 128) {
+      res.status(400).json({ error: "Penanda halaman riwayat transfer tidak valid." });
+      return;
+    }
     const branchId = actor.role === "CASHIER"
       ? cashierBranchOrRespond(req, res, actor, "Riwayat transfer gagal dimuat.")
       : (typeof req.query.branchId === "string" ? req.query.branchId : undefined);
@@ -224,10 +229,16 @@ export function registerStockTransferRoutes(
       const rows = await prisma.stockTransfer.findMany({
         where,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         take: limit + 1,
         include: transferInclude,
       });
-      res.json({ items: rows.slice(0, limit), hasMore: rows.length > limit });
+      const items = rows.slice(0, limit);
+      res.json({
+        items,
+        hasMore: rows.length > limit,
+        nextCursor: items.at(-1)?.id ?? null,
+      });
     } catch (error) {
       respondError(req, res, error, "Riwayat transfer gagal dimuat.");
     }

@@ -10,6 +10,7 @@ import {
 import StockTransferBatchComposer from "./StockTransferBatchComposer";
 import StockTransferBatchReceiptTable from "./StockTransferBatchReceiptTable";
 import StockTransferBatchSenderTable from "./StockTransferBatchSenderTable";
+import StockInHistory from "./StockInHistory";
 import { api } from "../services/api";
 
 type Branch = { id: string; name: string };
@@ -39,9 +40,13 @@ type Transfer = {
   responseNote?: string | null;
   discrepancyNote?: string | null;
   createdAt: string;
+  dispatchedAt?: string | null;
+  receivedAt?: string | null;
   product: { id: string; name: string; barcode?: string | null };
   sourceBranch: Branch;
   targetBranch: Branch;
+  dispatchedBy?: { id: string; name?: string | null } | null;
+  receivedBy?: { id: string; name?: string | null } | null;
   skuCorrections?: SkuCorrection[];
 };
 
@@ -56,6 +61,9 @@ type Props = {
   error?: string;
   shiftOpen: boolean;
   confirm: (message: string) => Promise<boolean>;
+  hasMoreTransfers: boolean;
+  loadingMoreTransfers: boolean;
+  onLoadMoreTransfers: () => void;
   onUpdated: (transfer: Transfer) => void;
 };
 
@@ -71,6 +79,14 @@ const statusLabels: Record<Transfer["status"], string> = {
 const isOpen = (transfer: Transfer) =>
   ["REQUESTED", "ACCEPTED", "IN_TRANSIT"].includes(transfer.status);
 
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 export default function StockTransferActivity({
   role,
   branchId,
@@ -82,9 +98,13 @@ export default function StockTransferActivity({
   error: loadError = "",
   shiftOpen,
   confirm,
+  hasMoreTransfers,
+  loadingMoreTransfers,
+  onLoadMoreTransfers,
   onUpdated,
 }: Props) {
   const isCashier = role === "CASHIER";
+  const [historyMode, setHistoryMode] = useState<"transfers" | "incoming">("transfers");
   const [acceptQty, setAcceptQty] = useState<Record<string, string>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
   const [receiveNotes, setReceiveNotes] = useState<Record<string, string>>({});
@@ -113,8 +133,7 @@ export default function StockTransferActivity({
         createdAt: Math.max(...items.map((item) => new Date(item.createdAt).getTime())),
         open: items.some(isOpen),
       }))
-      .sort((a, b) => Number(b.open) - Number(a.open) || b.createdAt - a.createdAt)
-      .slice(0, 60);
+      .sort((a, b) => Number(b.open) - Number(a.open) || b.createdAt - a.createdAt);
   }, [transfers]);
 
   const orderedTransfers = useMemo(
@@ -204,13 +223,43 @@ export default function StockTransferActivity({
         />
       )}
 
+      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <button
+          type="button"
+          aria-pressed={historyMode === "transfers"}
+          onClick={() => setHistoryMode("transfers")}
+          className={`min-h-10 rounded-xl px-3 text-[10px] font-black uppercase tracking-wide transition-colors ${
+            historyMode === "transfers"
+              ? "bg-slate-800 text-white dark:bg-amber-500 dark:text-slate-950"
+              : "text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          }`}
+        >
+          Riwayat transfer
+        </button>
+        <button
+          type="button"
+          aria-pressed={historyMode === "incoming"}
+          onClick={() => setHistoryMode("incoming")}
+          className={`min-h-10 rounded-xl px-3 text-[10px] font-black uppercase tracking-wide transition-colors ${
+            historyMode === "incoming"
+              ? "bg-slate-800 text-white dark:bg-amber-500 dark:text-slate-950"
+              : "text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          }`}
+        >
+          Stok masuk
+        </button>
+      </div>
+
+      {historyMode === "incoming" ? (
+        <StockInHistory branchId={branchId} />
+      ) : (
       <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
-            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100">Kiriman & penerimaan</h3>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">Stok tujuan masuk setelah kasir penerima mengonfirmasi.</p>
+            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100">Riwayat transfer stok</h3>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Menampilkan kiriman, jumlah dikirim/diterima, dan status konfirmasi.</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">{orderedTransfers.length}</span>
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">{transferGroups.length} kiriman</span>
         </div>
 
         {loadError && (
@@ -335,6 +384,18 @@ export default function StockTransferActivity({
                     {transfer.dispatchedQty != null && <span>Dikirim {transfer.dispatchedQty} pcs</span>}
                     {transfer.receivedQty != null && <span>Diterima {transfer.receivedQty} pcs</span>}
                   </div>
+                  {(transfer.dispatchedBy?.name || transfer.dispatchedAt) && (
+                    <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                      Dikirim{transfer.dispatchedBy?.name ? ` oleh ${transfer.dispatchedBy.name}` : ""}
+                      {transfer.dispatchedAt ? ` · ${formatDateTime(transfer.dispatchedAt)}` : ""}
+                    </p>
+                  )}
+                  {(transfer.receivedBy?.name || transfer.receivedAt) && (
+                    <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                      Diterima{transfer.receivedBy?.name ? ` oleh ${transfer.receivedBy.name}` : ""}
+                      {transfer.receivedAt ? ` · ${formatDateTime(transfer.receivedAt)}` : ""}
+                    </p>
+                  )}
                   {transfer.requestNote && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Catatan: {transfer.requestNote}</p>}
                   {transfer.responseNote && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Respons: {transfer.responseNote}</p>}
                   {transfer.discrepancyNote && <p className="mt-1 text-[10px] font-semibold text-amber-800 dark:text-amber-300">Selisih: {transfer.discrepancyNote}</p>}
@@ -663,9 +724,20 @@ export default function StockTransferActivity({
                 </div>
               );
             })}
+            {hasMoreTransfers && (
+              <button
+                type="button"
+                onClick={onLoadMoreTransfers}
+                disabled={loadingMoreTransfers}
+                className="flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                {loadingMoreTransfers ? "Memuat..." : "Muat riwayat transfer sebelumnya"}
+              </button>
+            )}
           </div>
         )}
       </div>
+      )}
     </section>
   );
 }

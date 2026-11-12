@@ -661,6 +661,80 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     where: { productId_branchId: { productId, branchId: branchBId } },
   })).qty, 2);
 
+  const transferHistoryPage = await fetch(`${apiUrl}/api/stock-transfers?limit=1`, {
+    headers: { authorization: `Bearer ${cashierBPayload.token}` },
+  });
+  assert.equal(transferHistoryPage.status, 200);
+  const firstTransferHistoryPage = await transferHistoryPage.json() as {
+    items: Array<{ id: string }>;
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+  assert.equal(firstTransferHistoryPage.items.length, 1);
+  assert.equal(firstTransferHistoryPage.hasMore, true);
+  assert.ok(firstTransferHistoryPage.nextCursor);
+  const nextTransferHistoryPage = await fetch(
+    `${apiUrl}/api/stock-transfers?limit=1&cursor=${encodeURIComponent(firstTransferHistoryPage.nextCursor!)}`,
+    { headers: { authorization: `Bearer ${cashierBPayload.token}` } },
+  );
+  assert.equal(nextTransferHistoryPage.status, 200);
+  const secondTransferHistoryPage = await nextTransferHistoryPage.json() as {
+    items: Array<{ id: string }>;
+  };
+  assert.equal(secondTransferHistoryPage.items.length, 1);
+  assert.notEqual(secondTransferHistoryPage.items[0].id, firstTransferHistoryPage.items[0].id);
+
+  const allStockInHistory = await fetch(`${apiUrl}/api/stock-in-history?limit=50&branchId=${branchAId}`, {
+    headers: { authorization: `Bearer ${cashierBPayload.token}` },
+  });
+  assert.equal(allStockInHistory.status, 200);
+  const stockInHistory = await allStockInHistory.json() as {
+    items: Array<{
+      branchId: string;
+      type: string;
+      productId: string;
+      relatedTransfer?: {
+        id: string;
+        sourceBranch: { id: string };
+        receivedBy?: { id: string } | null;
+      } | null;
+    }>;
+  };
+  assert.ok(stockInHistory.items.length > 0);
+  assert.ok(stockInHistory.items.every((item) => item.branchId === branchBId), "Cashiers cannot read another branch's stock-in history.");
+  const actualTransferReceipt = stockInHistory.items.find(
+    (item) => item.type === "TRANSFER_IN" && item.relatedTransfer?.id === directTransfer.id,
+  );
+  assert.ok(actualTransferReceipt, "Confirmed transfer stock-in history must link to its transfer record.");
+  assert.equal(actualTransferReceipt?.productId, productId);
+  assert.equal(actualTransferReceipt?.relatedTransfer?.sourceBranch.id, branchAId);
+  assert.equal(actualTransferReceipt?.relatedTransfer?.receivedBy?.id, cashierB.id);
+
+  const stockInHistoryFirstPage = await fetch(`${apiUrl}/api/stock-in-history?limit=1`, {
+    headers: { authorization: `Bearer ${cashierBPayload.token}` },
+  });
+  assert.equal(stockInHistoryFirstPage.status, 200);
+  const firstStockInHistoryPage = await stockInHistoryFirstPage.json() as {
+    items: Array<{ id: string; branchId: string }>;
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+  assert.equal(firstStockInHistoryPage.items.length, 1);
+  assert.equal(firstStockInHistoryPage.items[0].branchId, branchBId);
+  assert.equal(firstStockInHistoryPage.hasMore, true);
+  assert.ok(firstStockInHistoryPage.nextCursor);
+  const nextStockInHistoryPage = await fetch(
+    `${apiUrl}/api/stock-in-history?limit=1&cursor=${encodeURIComponent(firstStockInHistoryPage.nextCursor!)}`,
+    { headers: { authorization: `Bearer ${cashierBPayload.token}` } },
+  );
+  assert.equal(nextStockInHistoryPage.status, 200);
+  const secondStockInHistoryPage = await nextStockInHistoryPage.json() as {
+    items: Array<{ id: string; branchId: string }>;
+  };
+  assert.equal(secondStockInHistoryPage.items.length, 1);
+  assert.equal(secondStockInHistoryPage.items[0].branchId, branchBId);
+  assert.notEqual(secondStockInHistoryPage.items[0].id, firstStockInHistoryPage.items[0].id);
+
   const batchProduct = await prisma.product.create({
     data: {
       name: "Batch Transfer Product",

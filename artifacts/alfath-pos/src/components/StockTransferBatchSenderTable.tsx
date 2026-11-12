@@ -9,6 +9,10 @@ type Transfer = {
   dispatchedQty: number | null;
   receivedQty: number | null;
   createdAt: string;
+  dispatchedAt?: string | null;
+  receivedAt?: string | null;
+  dispatchedBy?: { id: string; name?: string | null } | null;
+  receivedBy?: { id: string; name?: string | null } | null;
   product: { id: string; name: string; barcode?: string | null };
   sourceBranch: { id: string; name: string };
   targetBranch: { id: string; name: string };
@@ -44,6 +48,14 @@ const statusLabel = (transfer: Transfer) => {
   if (transfer.status === "CANCELLED") return "Dibatalkan";
   return transfer.status;
 };
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 export default function StockTransferBatchSenderTable({
   batchId,
@@ -161,6 +173,18 @@ export default function StockTransferBatchSenderTable({
                       <span className={`block text-[9px] font-bold ${isPending ? "text-amber-800 dark:text-amber-300" : "text-slate-600 dark:text-slate-300"}`}>
                         {statusLabel(transfer)}
                       </span>
+                      {(transfer.dispatchedBy?.name || transfer.dispatchedAt) && (
+                        <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                          Dikirim{transfer.dispatchedBy?.name ? ` oleh ${transfer.dispatchedBy.name}` : ""}
+                          {transfer.dispatchedAt ? ` · ${formatDateTime(transfer.dispatchedAt)}` : ""}
+                        </p>
+                      )}
+                      {(transfer.receivedBy?.name || transfer.receivedAt) && (
+                        <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                          Diterima{transfer.receivedBy?.name ? ` oleh ${transfer.receivedBy.name}` : ""}
+                          {transfer.receivedAt ? ` · ${formatDateTime(transfer.receivedAt)}` : ""}
+                        </p>
+                      )}
                       {correction && (
                         <div className="mt-1 space-y-1 rounded-lg border border-amber-200 bg-amber-50/70 p-2 dark:border-amber-800 dark:bg-amber-500/5">
                           <p className="text-[9px] font-semibold text-slate-700 dark:text-slate-200">
