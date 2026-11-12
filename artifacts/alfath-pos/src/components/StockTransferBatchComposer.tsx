@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ArrowRightLeft, Plus, Search, Send, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRightLeft, Check, Plus, Search, Send, Trash2, X } from "lucide-react";
 import { isProductVisibleInBranch } from "../lib/product-visibility";
 import { api } from "../services/api";
 
@@ -9,6 +9,7 @@ type Product = {
   name: string;
   barcode?: string | null;
   brand?: string | null;
+  category?: string | null;
   status?: string;
   visibleBranchIds?: string | null;
 };
@@ -34,6 +35,9 @@ export default function StockTransferBatchComposer({
 }: Props) {
   const [targetBranchId, setTargetBranchId] = useState("");
   const [search, setSearch] = useState("");
+  const [manualPickerOpen, setManualPickerOpen] = useState(false);
+  const [manualCategory, setManualCategory] = useState("Semua");
+  const [manualPickerMessage, setManualPickerMessage] = useState("");
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -48,27 +52,62 @@ export default function StockTransferBatchComposer({
   const getStock = (productId: string) =>
     stocks.find((stock) => stock.productId === productId && stock.branchId === sourceBranchId)?.qty ?? 0;
 
-  const availableProducts = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase("id-ID");
-    if (!sourceBranchId || !targetBranchId || !query) return [];
+  const eligibleProducts = useMemo(() => {
+    if (!sourceBranchId || !targetBranchId) return [];
     return products
       .filter((product) => product.status !== "INACTIVE" && product.status !== "ARCHIVED")
       .filter((product) => isProductVisibleInBranch(product.visibleBranchIds, sourceBranchId))
       .filter((product) => isProductVisibleInBranch(product.visibleBranchIds, targetBranchId))
+      .filter((product) => !selectedIds.includes(product.id) && getStock(product.id) > 0)
+      .sort((a, b) => a.name.localeCompare(b.name, "id"));
+  }, [products, stocks, sourceBranchId, targetBranchId, selectedIds]);
+
+  const availableProducts = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("id-ID");
+    if (!query) return [];
+    return eligibleProducts
       .filter((product) =>
         product.name.toLocaleLowerCase("id-ID").includes(query) ||
         String(product.barcode || "").toLocaleLowerCase("id-ID").includes(query) ||
         String(product.brand || "").toLocaleLowerCase("id-ID").includes(query),
       )
-      .filter((product) => !selectedIds.includes(product.id) && getStock(product.id) > 0)
       .slice(0, 12);
-  }, [products, stocks, sourceBranchId, targetBranchId, search, selectedIds]);
+  }, [eligibleProducts, search]);
+
+  const manualCategories = useMemo(() => {
+    const categories = [...new Set(eligibleProducts.map((product) => product.category?.trim() || "Lainnya"))]
+      .sort((a, b) => a.localeCompare(b, "id"));
+    return ["Semua", ...categories];
+  }, [eligibleProducts]);
+  const manualProducts = useMemo(
+    () => manualCategory === "Semua"
+      ? eligibleProducts
+      : eligibleProducts.filter((product) => (product.category?.trim() || "Lainnya") === manualCategory),
+    [eligibleProducts, manualCategory],
+  );
+  const selectedTotalQty = selectedProducts.reduce((sum, product) => {
+    const qty = Number(quantities[product.id] || 0);
+    return sum + (Number.isSafeInteger(qty) && qty > 0 ? qty : 0);
+  }, 0);
+
+  useEffect(() => {
+    if (!manualPickerOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setManualPickerOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [manualPickerOpen]);
 
   const addProduct = (productId: string) => {
+    const product = products.find((candidate) => candidate.id === productId);
     setSelectedIds((current) => current.includes(productId) ? current : [...current, productId]);
     setQuantities((current) => ({ ...current, [productId]: current[productId] || "1" }));
     setSearch("");
     setError("");
+    if (manualPickerOpen && product) {
+      setManualPickerMessage(`${product.name} ditambahkan ke daftar kiriman.`);
+    }
   };
 
   const removeProduct = (productId: string) => {
@@ -149,6 +188,8 @@ export default function StockTransferBatchComposer({
             setSelectedIds([]);
             setQuantities({});
             setSearch("");
+            setManualCategory("Semua");
+            setManualPickerMessage("");
             setError("");
           }}
           disabled={!shiftOpen || busy}
@@ -194,6 +235,17 @@ export default function StockTransferBatchComposer({
           </div>
         )}
       </div>
+      <button
+        type="button"
+        onClick={() => {
+          setManualPickerMessage("");
+          setManualPickerOpen(true);
+        }}
+        disabled={!shiftOpen || busy || !targetBranchId}
+        className="mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-amber-400 bg-amber-50 px-3 text-[10px] font-black uppercase text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/15"
+      >
+        <Plus className="h-4 w-4" /> Pilih produk manual · kategori
+      </button>
 
       <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
         <table className="w-full min-w-[430px] text-left text-[10px]" aria-label="Daftar produk dalam kiriman">
@@ -276,6 +328,111 @@ export default function StockTransferBatchComposer({
         <Send className="h-4 w-4" />
         {busy ? "Mengirim..." : `Kirim ${selectedProducts.length} jenis produk`}
       </button>
+
+      {manualPickerOpen && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-end justify-center bg-slate-950/70 p-0 sm:items-center sm:p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setManualPickerOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transfer-manual-picker-title"
+            className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-slate-300 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:rounded-2xl"
+          >
+            <header className="flex items-start justify-between gap-3 border-b border-slate-200 p-3 dark:border-slate-700">
+              <div className="min-w-0">
+                <h4 id="transfer-manual-picker-title" className="text-sm font-black text-slate-900 dark:text-slate-100">
+                  Pilih produk manual
+                </h4>
+                <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                  {targetBranch?.name} · {eligibleProducts.length} produk tersedia · {selectedProducts.length} dipilih
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Tutup pemilih produk"
+                onClick={() => setManualPickerOpen(false)}
+                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+
+            <nav aria-label="Kategori produk" className="flex gap-2 overflow-x-auto border-b border-slate-200 px-3 py-2 dark:border-slate-700">
+              {manualCategories.map((category) => {
+                const count = category === "Semua"
+                  ? eligibleProducts.length
+                  : eligibleProducts.filter((product) => (product.category?.trim() || "Lainnya") === category).length;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    aria-pressed={manualCategory === category}
+                    onClick={() => setManualCategory(category)}
+                    className={`min-h-9 shrink-0 rounded-lg px-3 text-[10px] font-bold ${manualCategory === category
+                      ? "bg-amber-500 text-slate-950"
+                      : "border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"}`}
+                  >
+                    {category} ({count})
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              {manualPickerMessage && (
+                <p role="status" className="mb-2 flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-2 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  <Check className="h-3.5 w-3.5 shrink-0" /> {manualPickerMessage}
+                </p>
+              )}
+              {manualProducts.length ? (
+                <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
+                  {manualProducts.map((product) => (
+                    <div key={product.id} className="flex min-h-14 items-center justify-between gap-3 px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-slate-800 dark:text-slate-100">{product.name}</p>
+                        <p className="truncate text-[9px] text-slate-500 dark:text-slate-400">
+                          {[product.category, product.barcode || product.brand].filter(Boolean).join(" · ") || "Produk aktif"}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">Stok {getStock(product.id)}</span>
+                        <button
+                          type="button"
+                          onClick={() => addProduct(product.id)}
+                          className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-amber-500 px-2.5 text-[10px] font-black text-slate-950 hover:bg-amber-400"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Tambah
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-xs text-slate-500 dark:border-slate-700">
+                  Tidak ada produk tersedia di kategori ini.
+                </p>
+              )}
+            </div>
+
+            <footer className="flex items-center justify-between gap-3 border-t border-slate-200 px-3 py-2.5 dark:border-slate-700">
+              <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                Dipilih: {selectedProducts.length} jenis · {selectedTotalQty} pcs
+              </p>
+              <button
+                type="button"
+                onClick={() => setManualPickerOpen(false)}
+                className="min-h-9 rounded-lg bg-slate-900 px-4 text-[10px] font-black uppercase text-white dark:bg-amber-500 dark:text-slate-950"
+              >
+                Selesai
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
-import { Check, PackageCheck, RotateCcw, Scale, Send } from "lucide-react";
+import { Check, ChevronDown, PackageCheck, RotateCcw, Send } from "lucide-react";
 import { api } from "../services/api";
 
 type TransferStatus = "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
@@ -61,6 +61,7 @@ export default function StockTransferBatchReceiptTable({
   shiftOpen,
   onUpdated,
 }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const [issueMode, setIssueMode] = useState<Record<string, IssueMode | undefined>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
   const [receiveNote, setReceiveNote] = useState<Record<string, string>>({});
@@ -78,6 +79,19 @@ export default function StockTransferBatchReceiptTable({
   const canConfirmAll = items.length > 0 &&
     items.every((item) => item.status === "IN_TRANSIT") &&
     items.every((item) => !(item.skuCorrections?.length));
+  const pendingCount = items.filter((item) => item.status === "IN_TRANSIT").length;
+  const pendingSourceCount = items.filter((item) =>
+    item.skuCorrections?.some((correction) => correction.status === "PENDING_SOURCE"),
+  ).length;
+  const receivedCount = items.filter((item) => item.status === "RECEIVED").length;
+  const batchStatus = pendingSourceCount > 0
+    ? `${pendingSourceCount} koreksi menunggu pengirim`
+    : pendingCount > 0
+      ? `${pendingCount} menunggu penerimaan`
+      : receivedCount === items.length
+        ? "Semua sudah diterima"
+        : `${receivedCount} dari ${items.length} diterima`;
+  const latestCreatedAt = Math.max(...items.map((item) => new Date(item.createdAt).getTime()));
 
   const run = async (key: string, action: () => Promise<ReceiptTransfer>) => {
     if (busyId) return;
@@ -180,21 +194,32 @@ export default function StockTransferBatchReceiptTable({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900" aria-label="Daftar penerimaan satu kiriman">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800/80">
-        <div className="min-w-0">
-          <h4 className="text-[11px] font-black uppercase text-slate-800 dark:text-slate-100">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={`transfer-receipt-details-${batchId}`}
+        onClick={() => setExpanded((value) => !value)}
+        className="flex min-h-16 w-full flex-wrap items-center justify-between gap-2 bg-slate-50 px-3 py-3 text-left hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-[11px] font-black uppercase text-slate-800 dark:text-slate-100">
             Kiriman {batchId.slice(0, 8).toUpperCase()}
-          </h4>
-          <p className="truncate text-[10px] text-slate-500 dark:text-slate-400">
+          </span>
+          <span className="block truncate text-[10px] text-slate-500 dark:text-slate-400">
             {items[0]?.sourceBranch.name} → {items[0]?.targetBranch.name}
-            {" · "}{items.length} produk · {totalQty} pcs
-            {items[0] ? ` · ${new Date(items[0].createdAt).toLocaleString("id-ID")}` : ""}
-          </p>
-        </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[9px] font-bold text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
-          <PackageCheck className="h-3 w-3" /> Penerimaan cabang
+            {" · "}{items.length} produk · {totalQty} pcs · {new Date(latestCreatedAt).toLocaleString("id-ID")}
+          </span>
         </span>
-      </header>
+        <span className="inline-flex shrink-0 items-center gap-2">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ${pendingCount
+            ? "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200"
+            : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"}`}>
+            <PackageCheck className="h-3 w-3" /> {batchStatus}
+          </span>
+          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{expanded ? "Tutup" : "Detail"}</span>
+          <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform dark:text-slate-300 ${expanded ? "rotate-180" : ""}`} />
+        </span>
+      </button>
 
       {(error || message) && (
         <p role={error ? "alert" : "status"} className={`mx-3 mt-3 rounded-lg px-2.5 py-2 text-[10px] font-semibold ${error ? "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300" : "bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300"}`}>
@@ -202,6 +227,8 @@ export default function StockTransferBatchReceiptTable({
         </p>
       )}
 
+      {expanded && (
+        <div id={`transfer-receipt-details-${batchId}`} className="border-t border-slate-200 dark:border-slate-700">
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-left text-[10px]" aria-label="Produk dalam kiriman">
           <colgroup>
@@ -478,6 +505,8 @@ export default function StockTransferBatchReceiptTable({
         <p className="px-3 pb-3 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
           Buka shift sebelum mengonfirmasi penerimaan.
         </p>
+      )}
+        </div>
       )}
     </section>
   );

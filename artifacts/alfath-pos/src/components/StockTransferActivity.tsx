@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import StockTransferBatchComposer from "./StockTransferBatchComposer";
 import StockTransferBatchReceiptTable from "./StockTransferBatchReceiptTable";
+import StockTransferBatchSenderTable from "./StockTransferBatchSenderTable";
 import { api } from "../services/api";
 
 type Branch = { id: string; name: string };
@@ -262,10 +263,10 @@ export default function StockTransferActivity({
                 receiveQtyNumber <= (transfer.dispatchedQty ?? 0) &&
                 receiveQtyNumber !== transfer.dispatchedQty &&
                 Boolean(receiveNotes[transfer.id]?.trim());
-              const isDirectReceiverGroup = Boolean(group && canReceive) &&
+              const isDirectGroup = Boolean(group) &&
                 group!.items.every((item) => item.kind === "DIRECT");
 
-              if (isDirectReceiverGroup) {
+              if (isDirectGroup && group && canReceive) {
                 if (!isFirstInGroup || !group) return null;
                 return (
                   <StockTransferBatchReceiptTable
@@ -274,6 +275,19 @@ export default function StockTransferActivity({
                     items={group.items}
                     products={products}
                     shiftOpen={shiftOpen}
+                    onUpdated={(updated) => onUpdated(updated as Transfer)}
+                  />
+                );
+              }
+              if (isDirectGroup && group && canManageSource) {
+                if (!isFirstInGroup) return null;
+                return (
+                  <StockTransferBatchSenderTable
+                    key={group.batchId}
+                    batchId={group.batchId}
+                    items={group.items}
+                    shiftOpen={shiftOpen}
+                    isCashier={isCashier}
                     onUpdated={(updated) => onUpdated(updated as Transfer)}
                   />
                 );
