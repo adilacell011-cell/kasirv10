@@ -5,7 +5,7 @@ import { api } from "../services/api";
 type Transfer = {
   id: string;
   batchId?: string | null;
-  status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
+  status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RETURN_PENDING" | "RECEIVED" | "RETURNED" | "REJECTED" | "CANCELLED";
   dispatchedQty: number | null;
   receivedQty: number | null;
   createdAt: string;
@@ -21,7 +21,7 @@ type Transfer = {
     id: string;
     actualQty: number;
     note: string;
-    status: "PENDING_SOURCE" | "APPROVED_PENDING_RECEIPT" | "REJECTED" | "RECEIVED";
+    status: "PENDING_SOURCE" | "APPROVED_PENDING_RECEIPT" | "REJECTED" | "RECEIVED" | "SUPERSEDED_BY_RETURN";
     responseNote?: string | null;
     actualProduct: { id: string; name: string };
   }>;
@@ -37,6 +37,8 @@ type Props = {
 };
 
 const statusLabel = (transfer: Transfer) => {
+  if (transfer.status === "RETURN_PENDING") return "Menunggu pengirim menerima retur";
+  if (transfer.status === "RETURNED") return "Barang kembali · stok pulih";
   const correction = transfer.skuCorrections?.[0];
   if (correction?.status === "PENDING_SOURCE") return "Perlu pemeriksaan pengirim";
   if (correction?.status === "APPROVED_PENDING_RECEIPT") return "Koreksi disetujui";

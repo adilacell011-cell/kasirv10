@@ -71,6 +71,44 @@ export const StockTransferReturnStatus = {
   RECEIVED: 'RECEIVED',
 } as const;
 
+export type StockTransferReturnParentStatus = typeof StockTransferReturnParentStatus[keyof typeof StockTransferReturnParentStatus];
+
+
+export const StockTransferReturnParentStatus = {
+  REQUESTED: 'REQUESTED',
+  ACCEPTED: 'ACCEPTED',
+  IN_TRANSIT: 'IN_TRANSIT',
+  RETURN_PENDING: 'RETURN_PENDING',
+  RECEIVED: 'RECEIVED',
+  RETURNED: 'RETURNED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type StockTransferReturnParentProduct = {
+  id: string;
+  name: string;
+  /** @nullable */
+  barcode?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  category?: string | null;
+};
+
+export interface StockTransferReturnParent {
+  id: string;
+  /** @nullable */
+  batchId?: string | null;
+  productId?: string;
+  sourceBranchId?: string;
+  targetBranchId?: string;
+  status: StockTransferReturnParentStatus;
+  /** @nullable */
+  dispatchedQty?: number | null;
+  product: StockTransferReturnParentProduct;
+}
+
 export interface StockTransferReturn {
   id: string;
   batchId: string;
@@ -85,6 +123,7 @@ export interface StockTransferReturn {
   receivedQty?: number | null;
   /** @nullable */
   discrepancyNote?: string | null;
+  returnOf: StockTransferReturnParent;
 }
 
 export interface StockTransferReturnBatch {

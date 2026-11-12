@@ -698,9 +698,9 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const prematureReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
     method: "POST",
     headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ items: [{ transferId: directTransfer.id, qty: 1 }] }),
+    body: JSON.stringify({ items: [{ transferId: directTransfer.id, qty: 2 }] }),
   });
-  assert.equal(prematureReturn.status, 409, "A physical return cannot start before the original transfer is received.");
+  assert.equal(prematureReturn.status, 400, "A SKU rejection cannot return more than the entire sent line.");
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchAId } },
   })).qty, 2);
@@ -780,7 +780,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     body: JSON.stringify({ items: [{ transferId: directTransfer.id, qty: 1 }] }),
   });
   assert.equal(duplicateReturnQty.status, 409, "Pending returns reserve their quantity and prevent over-return.");
-  const wrongReturnReceiver = await fetch(
+  const wrongBatchReturnReceiver = await fetch(
     `${apiUrl}/api/stock-transfers/returns/${directReturn.batchId}/receive`,
     {
       method: "POST",
@@ -790,7 +790,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
       }),
     },
   );
-  assert.equal(wrongReturnReceiver.status, 403, "The return sender cannot confirm receipt on behalf of the original branch.");
+  assert.equal(wrongBatchReturnReceiver.status, 403, "The return sender cannot confirm receipt on behalf of the original branch.");
   const confirmDirectReturn = await fetch(
     `${apiUrl}/api/stock-transfers/returns/${directReturn.batchId}/receive`,
     {
@@ -1344,7 +1344,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const skuExceptionBatchResponse = await postBatch(cashierPayload.token, {
     targetBranchId: branchBId,
     items: [
-      { productId: batchRecordedProduct.id, qty: 1 },
+      { productId: batchRecordedProduct.id, qty: 2 },
       { productId: batchNormalProduct.id, qty: 2 },
     ],
   });
@@ -1356,70 +1356,152 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const recordedTransfer = skuExceptionBatch.items.find((item) => item.productId === batchRecordedProduct.id);
   const normalTransfer = skuExceptionBatch.items.find((item) => item.productId === batchNormalProduct.id);
   assert.ok(recordedTransfer && normalTransfer);
-  const skuReportResponse = await fetch(
+  const skuCorrectionDisabled = await fetch(
     `${apiUrl}/api/stock-transfers/${recordedTransfer.id}/sku-corrections`,
     {
       method: "POST",
       headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ actualProductId: batchActualProduct.id, actualQty: 1, note: "Produk fisik sesuai, SKU tercatat keliru." }),
+      body: JSON.stringify({ actualProductId: batchActualProduct.id, actualQty: 1, note: "SKU berbeda." }),
     },
   );
-  assert.equal(skuReportResponse.status, 201);
-  const skuReport = await skuReportResponse.json() as { skuCorrections: Array<{ id: string }> };
-  const batchCorrectionId = skuReport.skuCorrections[0]?.id;
-  assert.ok(batchCorrectionId);
-  const bulkWithPendingCorrection = await fetch(
-    `${apiUrl}/api/stock-transfers/batches/${skuExceptionBatch.batchId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({}),
-    },
-  );
-  assert.equal(bulkWithPendingCorrection.status, 409);
-  assert.equal((await bulkWithPendingCorrection.json() as { code: string }).code, "SKU_CORRECTION_PENDING");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: batchNormalProduct.id, branchId: branchBId } },
-  })).qty, 0, "A pending SKU correction blocks the whole grouped receipt.");
-  const approveBatchCorrection = await fetch(
-    `${apiUrl}/api/stock-transfers/${recordedTransfer.id}/sku-corrections/${batchCorrectionId}`,
-    {
-      method: "PATCH",
-      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ action: "APPROVE" }),
-    },
-  );
-  assert.equal(approveBatchCorrection.status, 200);
-  const receiveCorrectedSku = await fetch(
-    `${apiUrl}/api/stock-transfers/${recordedTransfer.id}/sku-corrections/${batchCorrectionId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({}),
-    },
-  );
-  assert.equal(receiveCorrectedSku.status, 200);
-  const bulkAfterPerLineCorrection = await fetch(
-    `${apiUrl}/api/stock-transfers/batches/${skuExceptionBatch.batchId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({}),
-    },
-  );
-  assert.equal(bulkAfterPerLineCorrection.status, 409, "A mixed batch must not partially confirm remaining lines.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: batchNormalProduct.id, branchId: branchBId } },
-  })).qty, 0);
-  const receiveRemainingBatchLine = await fetch(`${apiUrl}/api/stock-transfers/${normalTransfer.id}/receive`, {
+  assert.equal(skuCorrectionDisabled.status, 409, "The receiver can no longer revise the SKU.");
+  assert.equal((await skuCorrectionDisabled.json() as { code: string }).code, "SKU_CORRECTION_USE_RETURN");
+
+  const partialWrongSkuReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
     method: "POST",
     headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ receivedQty: 2 }),
+    body: JSON.stringify({ items: [{ transferId: recordedTransfer.id, qty: 1 }] }),
   });
-  assert.equal(receiveRemainingBatchLine.status, 200);
+  assert.equal(partialWrongSkuReturn.status, 400, "A wrong-SKU rejection must return the entire line, not part of it.");
+
+  const fullLineReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ items: [{ transferId: recordedTransfer.id, qty: 2 }] }),
+  });
+  assert.equal(fullLineReturn.status, 201);
+  const fullLineReturnBatch = await fullLineReturn.json() as {
+    batchId: string;
+    items: Array<{ id: string; productId: string; returnOfId: string; returnOf: { status: string } }>;
+  };
+  const rejectedReturnLine = fullLineReturnBatch.items[0]!;
+  assert.equal(rejectedReturnLine.productId, batchRecordedProduct.id);
+  assert.equal(rejectedReturnLine.returnOfId, recordedTransfer.id);
+  assert.equal(rejectedReturnLine.returnOf.status, "RETURN_PENDING");
+  assert.equal((await prisma.stockTransfer.findUniqueOrThrow({ where: { id: recordedTransfer.id } })).status, "RETURN_PENDING");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchRecordedProduct.id, branchId: branchAId } },
+  })).qty, 1, "Rejecting a wrong SKU does not restore sender stock until the sender confirms receipt.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchRecordedProduct.id, branchId: branchBId } },
+  })).qty, 0, "The receiving branch never receives stock for a rejected line.");
+
+  const duplicateWrongSkuReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ items: [{ transferId: recordedTransfer.id, qty: 2 }] }),
+  });
+  assert.equal(duplicateWrongSkuReturn.status, 409);
+
+  const receiveRemainingBatchLine = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${skuExceptionBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(receiveRemainingBatchLine.status, 200, "A rejected line does not block other valid products in the batch.");
+  assert.deepEqual(
+    (await receiveRemainingBatchLine.json() as { items: Array<{ id: string }> }).items.map((item) => item.id),
+    [normalTransfer.id],
+  );
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId: batchNormalProduct.id, branchId: branchBId } },
-  })).qty, 2);
+  })).qty, 2, "The other, correctly identified product is received normally.");
+
+  const wrongReturnReceiver = await fetch(
+    `${apiUrl}/api/stock-transfers/returns/${fullLineReturnBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ items: [{ transferId: rejectedReturnLine.id, receivedQty: 2 }] }),
+    },
+  );
+  assert.equal(wrongBatchReturnReceiver.status, 403, "Only the original sender branch can confirm the physical return.");
+  const partialWrongSkuReturnReceipt = await fetch(
+    `${apiUrl}/api/stock-transfers/returns/${fullLineReturnBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ items: [{ transferId: rejectedReturnLine.id, receivedQty: 1 }] }),
+    },
+  );
+  assert.equal(partialWrongSkuReturnReceipt.status, 400, "A rejected wrong-SKU line must return in full.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchRecordedProduct.id, branchId: branchAId } },
+  })).qty, 1, "A failed partial-return confirmation does not change stock.");
+
+  const confirmLegacyWrongSkuReturn = await fetch(
+    `${apiUrl}/api/stock-transfers/returns/${fullLineReturnBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ items: [{ transferId: rejectedReturnLine.id, receivedQty: 2 }] }),
+    },
+  );
+  assert.equal(confirmLegacyWrongSkuReturn.status, 200);
+  const confirmedBatchWrongSkuReturn = await confirmLegacyWrongSkuReturn.json() as {
+    items: Array<{ returnOf: { status: string } }>;
+  };
+  assert.equal(confirmedBatchWrongSkuReturn.items[0]?.returnOf.status, "RETURNED");
+  assert.equal((await prisma.stockTransfer.findUniqueOrThrow({ where: { id: recordedTransfer.id } })).status, "RETURNED");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchRecordedProduct.id, branchId: branchAId } },
+  })).qty, 3, "The sender's recorded SKU stock is restored only after confirming the returned item.");
+  const restoredStockAdjustment = await prisma.adjustment.findFirst({
+    where: {
+      productId: batchRecordedProduct.id,
+      branchId: branchAId,
+      type: "TRANSFER_RETURN_IN",
+      reason: { contains: `SKU salah pada transfer ${recordedTransfer.id}` },
+    },
+  });
+  assert.equal(restoredStockAdjustment?.qty, 2, "The returned quantity remains visible in the stock adjustment history.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchRecordedProduct.id, branchId: branchBId } },
+  })).qty, 0);
+  const duplicateWrongSkuReceipt = await fetch(
+    `${apiUrl}/api/stock-transfers/returns/${fullLineReturnBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ items: [{ transferId: rejectedReturnLine.id, receivedQty: 2 }] }),
+    },
+  );
+  assert.equal(duplicateWrongSkuReceipt.status, 409, "Return confirmation cannot restore stock twice.");
+
+  const resendWithCorrectSku = await postBatch(cashierPayload.token, {
+    targetBranchId: branchBId,
+    items: [{ productId: batchActualProduct.id, qty: 1 }],
+  });
+  assert.equal(resendWithCorrectSku.status, 201);
+  const correctSkuBatch = await resendWithCorrectSku.json() as { batchId: string; items: Array<{ id: string }> };
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchActualProduct.id, branchId: branchAId } },
+  })).qty, 2, "The sender can create a new transfer using the correct SKU after return confirmation.");
+  const receiveCorrectSkuResend = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${correctSkuBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(receiveCorrectSkuResend.status, 200);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchActualProduct.id, branchId: branchBId } },
+  })).qty, 1);
 
   await prisma.productStock.update({
     where: { productId_branchId: { productId, branchId: branchAId } },
@@ -1461,181 +1543,87 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(dispatchWrongSkuRequest.status, 200);
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 1, "The recorded SKU is decremented when the source dispatches.");
+  })).qty, 1, "The original SKU is deducted at dispatch.");
 
-  const wrongBranchSkuReport = await fetch(`${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ actualProductId: actualSkuProduct.id, actualQty: 1, note: "SKU actual 3GB." }),
-  });
-  assert.equal(wrongBranchSkuReport.status, 403, "Only the destination cashier can report the actual SKU.");
-  const reportWrongSku = await fetch(`${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections`, {
+  const wrongSkuRevision = await fetch(`${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections`, {
     method: "POST",
     headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ actualProductId: actualSkuProduct.id, actualQty: 1, note: "Kasir memilih SKU 2GB; yang diserahkan 3GB." }),
+    body: JSON.stringify({ actualProductId: actualSkuProduct.id, actualQty: 1, note: "SKU tercatat salah." }),
   });
-  assert.equal(reportWrongSku.status, 201);
-  const reportedWrongSku = await reportWrongSku.json() as {
-    id: string;
-    status: string;
-    skuCorrections: Array<{ id: string; status: string }>;
-  };
-  const firstCorrectionId = reportedWrongSku.skuCorrections[0]?.id;
-  assert.ok(firstCorrectionId);
-  assert.equal(reportedWrongSku.status, "IN_TRANSIT");
-  assert.equal(reportedWrongSku.skuCorrections[0]?.status, "PENDING_SOURCE");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchBId } },
-  })).qty, 0, "Reporting the actual SKU must not add stock before the sender reviews it.");
+  assert.equal(wrongSkuRevision.status, 409, "The receiver cannot revise an incorrect SKU on a legacy transfer either.");
 
-  const normalReceiptWhileSkuCorrection = await fetch(`${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/receive`, {
+  const wrongBranchReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ items: [{ transferId: wrongSkuRequest.id, qty: 1 }] }),
+  });
+  assert.equal(wrongBranchReturn.status, 403, "Only the receiving branch can start the physical return.");
+  const startWrongSkuReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ items: [{ transferId: wrongSkuRequest.id, qty: 1 }] }),
+  });
+  assert.equal(startWrongSkuReturn.status, 201);
+  const wrongSkuReturnBatch = await startWrongSkuReturn.json() as {
+    batchId: string;
+    items: Array<{ id: string; productId: string; returnOfId: string; returnOf: { status: string } }>;
+  };
+  const wrongSkuReturnLine = wrongSkuReturnBatch.items[0]!;
+  assert.equal(wrongSkuReturnLine.productId, productId);
+  assert.equal(wrongSkuReturnLine.returnOfId, wrongSkuRequest.id);
+  assert.equal(wrongSkuReturnLine.returnOf.status, "RETURN_PENDING");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 1, "Sender stock remains deducted until the physical return is confirmed.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 2, "The rejected line does not add stock to the receiving branch.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchAId } },
+  })).qty, 4, "Rejecting the line does not alter another SKU's stock.");
+
+  const confirmWrongSkuReturn = await fetch(
+    `${apiUrl}/api/stock-transfers/returns/${wrongSkuReturnBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ items: [{ transferId: wrongSkuReturnLine.id, receivedQty: 1 }] }),
+    },
+  );
+  assert.equal(confirmWrongSkuReturn.status, 200);
+  assert.equal((await prisma.stockTransfer.findUniqueOrThrow({ where: { id: wrongSkuRequest.id } })).status, "RETURNED");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 2, "The sender's original SKU is restored after its cashier confirms the return.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 2);
+
+  const resendCorrectSkuRequest = await createLegacyRequest(actualSkuProduct.id, 1);
+  const acceptCorrectSkuRequest = await fetch(`${apiUrl}/api/stock-transfers/${resendCorrectSkuRequest.id}/respond`, {
+    method: "PATCH",
+    headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ action: "ACCEPT", qty: 1 }),
+  });
+  assert.equal(acceptCorrectSkuRequest.status, 200);
+  const dispatchCorrectSkuRequest = await fetch(`${apiUrl}/api/stock-transfers/${resendCorrectSkuRequest.id}/dispatch`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.equal(dispatchCorrectSkuRequest.status, 200);
+  const receiveCorrectSkuRequest = await fetch(`${apiUrl}/api/stock-transfers/${resendCorrectSkuRequest.id}/receive`, {
     method: "POST",
     headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
     body: JSON.stringify({ receivedQty: 1 }),
   });
-  assert.equal(normalReceiptWhileSkuCorrection.status, 409, "A SKU correction must use the correction receipt flow.");
-  const rejectWrongSkuCorrection = await fetch(
-    `${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections/${firstCorrectionId}`,
-    {
-      method: "PATCH",
-      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ action: "REJECT", responseNote: "Periksa ulang, laporan belum sesuai." }),
-    },
-  );
-  assert.equal(rejectWrongSkuCorrection.status, 200);
-  const rejectedSkuCorrection = await rejectWrongSkuCorrection.json() as {
-    status: string;
-    skuCorrections: Array<{ status: string }>;
-  };
-  assert.equal(rejectedSkuCorrection.status, "IN_TRANSIT");
-  assert.equal(rejectedSkuCorrection.skuCorrections[0]?.status, "REJECTED");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 1, "Rejecting a correction must not restore or decrement the source's recorded SKU.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchAId } },
-  })).qty, 4, "Rejecting a correction must not alter the source's actual SKU.");
-
-  const resubmitWrongSku = await fetch(`${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-    body: JSON.stringify({ actualProductId: actualSkuProduct.id, actualQty: 1, note: "Barang fisik sudah dicek ulang." }),
-  });
-  assert.equal(resubmitWrongSku.status, 201, "A rejected report can be corrected and submitted again.");
-  const resubmittedWrongSku = await resubmitWrongSku.json() as {
-    skuCorrections: Array<{ id: string; status: string }>;
-  };
-  const approvedCorrectionId = resubmittedWrongSku.skuCorrections[0]?.id;
-  assert.ok(approvedCorrectionId);
-  const wrongBranchSkuApproval = await fetch(
-    `${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections/${approvedCorrectionId}`,
-    {
-      method: "PATCH",
-      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ action: "APPROVE" }),
-    },
-  );
-  assert.equal(wrongBranchSkuApproval.status, 403, "Only the source cashier can approve a SKU correction.");
-  const approveWrongSkuCorrection = await fetch(
-    `${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections/${approvedCorrectionId}`,
-    {
-      method: "PATCH",
-      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ action: "APPROVE", responseNote: "Dikonfirmasi cabang pengirim." }),
-    },
-  );
-  assert.equal(approveWrongSkuCorrection.status, 200);
-  const approvedSkuCorrection = await approveWrongSkuCorrection.json() as {
-    status: string;
-    receivedQty: number | null;
-    skuCorrections: Array<{ status: string }>;
-  };
-  assert.equal(approvedSkuCorrection.status, "IN_TRANSIT");
-  assert.equal(approvedSkuCorrection.receivedQty, null);
-  assert.equal(approvedSkuCorrection.skuCorrections[0]?.status, "APPROVED_PENDING_RECEIPT");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 2, "Source approval restores the SKU recorded by mistake.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchAId } },
-  })).qty, 3, "Source approval decrements the actual SKU that was sent.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchBId } },
-  })).qty, 0, "Source approval still waits for destination confirmation.");
-
-  const confirmActualSkuReceipt = await fetch(
-    `${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections/${approvedCorrectionId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({}),
-    },
-  );
-  assert.equal(confirmActualSkuReceipt.status, 200);
-  const receivedActualSku = await confirmActualSkuReceipt.json() as {
-    status: string;
-    receivedQty: number;
-    skuCorrections: Array<{ status: string }>;
-  };
-  assert.equal(receivedActualSku.status, "RECEIVED");
-  assert.equal(receivedActualSku.receivedQty, 1);
-  assert.equal(receivedActualSku.skuCorrections[0]?.status, "RECEIVED");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 2, "The original SKU remains restored at the source.");
+  assert.equal(receiveCorrectSkuRequest.status, 200, "The sender can create a new transfer under the correct SKU.");
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchAId } },
   })).qty, 3);
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchBId } },
-  })).qty, 1, "The actual SKU is added to the destination only after its confirmation.");
-  const duplicateSkuReceipt = await fetch(
-    `${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/sku-corrections/${approvedCorrectionId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({}),
-    },
-  );
-  assert.equal(duplicateSkuReceipt.status, 409, "A correction receipt cannot be applied twice.");
-  const correctedSkuReturn = await fetch(`${apiUrl}/api/stock-transfers/returns`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      items: [{ transferId: wrongSkuRequest.id, qty: 1 }],
-      note: "SKU aktual dikembalikan ke cabang asal.",
-    }),
-  });
-  assert.equal(correctedSkuReturn.status, 201);
-  const correctedSkuReturnBatch = await correctedSkuReturn.json() as {
-    batchId: string;
-    items: Array<{ id: string; productId: string; returnOfId: string }>;
-  };
-  assert.equal(correctedSkuReturnBatch.items[0]?.productId, actualSkuProduct.id);
-  assert.equal(correctedSkuReturnBatch.items[0]?.returnOfId, wrongSkuRequest.id);
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchBId } },
-  })).qty, 0, "A return after a SKU correction removes the actual product, not the mistaken recorded SKU.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 2);
-  const receiveCorrectedSkuReturn = await fetch(
-    `${apiUrl}/api/stock-transfers/returns/${correctedSkuReturnBatch.batchId}/receive`,
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        items: [{ transferId: correctedSkuReturnBatch.items[0]!.id, receivedQty: 1 }],
-      }),
-    },
-  );
-  assert.equal(receiveCorrectedSkuReturn.status, 200);
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId: actualSkuProduct.id, branchId: branchAId } },
-  })).qty, 4, "The original branch receives the actual corrected SKU back.");
-  assert.equal((await prisma.productStock.findUniqueOrThrow({
-    where: { productId_branchId: { productId, branchId: branchAId } },
-  })).qty, 2, "Returning a corrected SKU does not alter the original erroneous SKU.");
+  })).qty, 1);
 
   const rejectedRequest = await createLegacyRequest(productId, 4);
   const rejectTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${rejectedRequest.id}/respond`, {

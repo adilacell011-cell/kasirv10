@@ -21,7 +21,7 @@ type SkuCorrection = {
   actualProductId: string;
   actualQty: number;
   note: string;
-  status: "PENDING_SOURCE" | "APPROVED_PENDING_RECEIPT" | "REJECTED" | "RECEIVED";
+  status: "PENDING_SOURCE" | "APPROVED_PENDING_RECEIPT" | "REJECTED" | "RECEIVED" | "SUPERSEDED_BY_RETURN";
   responseNote?: string | null;
   actualProduct: { id: string; name: string; barcode?: string | null };
   reportedBy?: { name?: string | null } | null;
@@ -32,7 +32,7 @@ type Transfer = {
   id: string;
   batchId?: string | null;
   kind: "REQUEST" | "DIRECT" | "RETURN";
-  status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
+  status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RETURN_PENDING" | "RECEIVED" | "RETURNED" | "REJECTED" | "CANCELLED";
   requestedQty: number | null;
   approvedQty: number | null;
   dispatchedQty: number | null;
@@ -50,7 +50,7 @@ type Transfer = {
   receivedBy?: { id: string; name?: string | null } | null;
   skuCorrections?: SkuCorrection[];
   returnOfId?: string | null;
-  returnOf?: { id: string; batchId?: string | null; product: Product } | null;
+  returnOf?: { id: string; batchId?: string | null; status: string; product: Product } | null;
   returnedQty?: number | null;
   returnableQty?: number | null;
   returnableProduct?: Product | null;
@@ -77,13 +77,15 @@ const statusLabels: Record<Transfer["status"], string> = {
   REQUESTED: "Menunggu jawaban cabang sumber",
   ACCEPTED: "Disetujui, menunggu pengiriman",
   IN_TRANSIT: "Dalam perjalanan",
+  RETURN_PENDING: "Menunggu pengirim menerima retur",
   RECEIVED: "Sudah diterima",
+  RETURNED: "Sudah dikembalikan",
   REJECTED: "Ditolak",
   CANCELLED: "Dibatalkan sebelum dikirim",
 };
 
 const isOpen = (transfer: Transfer) =>
-  ["REQUESTED", "ACCEPTED", "IN_TRANSIT"].includes(transfer.status);
+  ["REQUESTED", "ACCEPTED", "IN_TRANSIT", "RETURN_PENDING"].includes(transfer.status);
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("id-ID", {
@@ -114,10 +116,6 @@ export default function StockTransferActivity({
   const [acceptQty, setAcceptQty] = useState<Record<string, string>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
   const [receiveIssueOpen, setReceiveIssueOpen] = useState<Record<string, boolean>>({});
-  const [skuCorrectionOpen, setSkuCorrectionOpen] = useState<Record<string, boolean>>({});
-  const [actualProductIdByTransfer, setActualProductIdByTransfer] = useState<Record<string, string>>({});
-  const [actualQtyByTransfer, setActualQtyByTransfer] = useState<Record<string, string>>({});
-  const [skuCorrectionNotes, setSkuCorrectionNotes] = useState<Record<string, string>>({});
   const [skuCorrectionResponseNotes, setSkuCorrectionResponseNotes] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
@@ -173,24 +171,32 @@ export default function StockTransferActivity({
     }
   };
 
-  const submitSkuCorrection = async (transfer: Transfer) => {
-    const actualProductId = actualProductIdByTransfer[transfer.id] || "";
-    const actualQty = Number(actualQtyByTransfer[transfer.id] || "");
-    const note = skuCorrectionNotes[transfer.id]?.trim() || "";
-    if (!actualProductId || !Number.isSafeInteger(actualQty) || actualQty <= 0 || !note) {
-      setError("Pilih SKU yang benar, isi jumlah aktual, dan jelaskan koreksinya.");
-      return;
-    }
+  const rejectSkuAndReturn = async (transfer: Transfer) => {
+    if (busyId) return;
     if (!shiftOpen) {
-      setError("Buka shift sebelum melaporkan penerimaan transfer.");
+      setError("Buka shift sebelum mengembalikan barang yang ditolak.");
       return;
     }
-    await run(transfer.id, () => api.reportStockTransferSkuCorrection(transfer.id, {
-      actualProductId,
-      actualQty,
-      note,
-    }));
-    setSkuCorrectionOpen((state) => ({ ...state, [transfer.id]: false }));
+    if (transfer.status !== "IN_TRANSIT" || transfer.dispatchedQty == null) return;
+    if (!(await confirm(
+      `Tolak seluruh ${transfer.dispatchedQty} pcs ${transfer.product.name} dan kembalikan ke pengirim? ` +
+      "Stok cabang penerima tidak bertambah. Stok pengirim pulih setelah retur fisik dikonfirmasi.",
+    ))) return;
+    setBusyId(transfer.id);
+    setError("");
+    setMessage("");
+    try {
+      const result = await api.createStockTransferReturn({
+        items: [{ transferId: transfer.id, qty: transfer.dispatchedQty }],
+      }) as unknown as { items?: Transfer[] };
+      if (!Array.isArray(result?.items)) throw new Error("Respons retur SKU tidak valid.");
+      result.items.forEach((item) => onUpdated(item));
+      setMessage("Baris SKU ditolak dan menunggu pengirim mengonfirmasi barang kembali.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Retur SKU gagal dibuat.");
+    } finally {
+      setBusyId("");
+    }
   };
 
   const reviewSkuCorrection = async (
@@ -329,16 +335,8 @@ export default function StockTransferActivity({
                 correction.status === "PENDING_SOURCE" || correction.status === "APPROVED_PENDING_RECEIPT",
               );
               const latestCorrection = corrections[0];
-              const canReportSkuCorrection = transfer.status === "IN_TRANSIT" &&
-                canReceive && !activeCorrection && latestCorrection?.status !== "RECEIVED";
-              const alternativeProducts = products.filter((product) =>
-                product.id !== transfer.product.id &&
-                product.status !== "INACTIVE" &&
-                product.status !== "ARCHIVED",
-              );
               const currentAcceptQty = acceptQty[transfer.id] ?? String(transfer.requestedQty ?? "");
               const currentReceiveQty = receiveQty[transfer.id] ?? String(transfer.dispatchedQty ?? "");
-              const currentActualQty = actualQtyByTransfer[transfer.id] ?? "";
               const acceptQtyNumber = Number(currentAcceptQty);
               const receiveQtyNumber = Number(currentReceiveQty);
               const canSubmitAccept = Number.isSafeInteger(acceptQtyNumber) &&
@@ -359,7 +357,6 @@ export default function StockTransferActivity({
                     key={group.batchId}
                     batchId={group.batchId}
                     items={group.items}
-                    products={products}
                     shiftOpen={shiftOpen}
                     confirm={confirm}
                     onUpdated={(updated) => onUpdated(updated as Transfer)}
@@ -558,89 +555,20 @@ export default function StockTransferActivity({
                     </div>
                   )}
 
-                  {transfer.status === "IN_TRANSIT" && canReportSkuCorrection && (
-                    <div className="mt-2 space-y-2 border-t border-slate-200 pt-2 dark:border-slate-700">
-                      {latestCorrection?.status === "REJECTED" && (
-                        <p className="rounded-lg border border-rose-300 bg-rose-50 p-2 text-[10px] font-semibold text-rose-800 dark:border-rose-900 dark:bg-rose-500/10 dark:text-rose-200">
-                          Koreksi sebelumnya ditolak: {latestCorrection.responseNote || "SKU aktual belum disepakati."}
-                          {" "}Stok belum dipindahkan. Periksa kembali barang dan ajukan koreksi baru bila perlu.
-                        </p>
-                      )}
-                      {!skuCorrectionOpen[transfer.id] ? (
-                        <button
-                          type="button"
-                          disabled={Boolean(busyId) || !shiftOpen}
-                          onClick={() => setSkuCorrectionOpen((state) => ({ ...state, [transfer.id]: true }))}
-                          className="min-h-10 w-full rounded-lg border border-amber-300 px-3 text-[10px] font-black uppercase text-amber-900 hover:bg-amber-50 disabled:opacity-50 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-500/10"
-                        >
-                          {latestCorrection?.status === "REJECTED" ? "Ajukan koreksi SKU lagi" : "SKU pada catatan berbeda"}
-                        </button>
-                      ) : (
-                        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50/70 p-2 dark:border-amber-800 dark:bg-amber-500/5">
-                          <p className="text-[10px] font-semibold text-slate-700 dark:text-slate-200">
-                            Pilih SKU dan jumlah yang benar-benar diterima. Stok belum berubah sampai cabang pengirim menyetujui.
-                          </p>
-                          <select
-                            aria-label={`SKU aktual untuk transfer ${transfer.product.name}`}
-                            value={actualProductIdByTransfer[transfer.id] || ""}
-                            onChange={(event) => setActualProductIdByTransfer((state) => ({
-                              ...state,
-                              [transfer.id]: event.target.value,
-                            }))}
-                            disabled={Boolean(busyId) || !shiftOpen}
-                            className="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                          >
-                            <option value="">Pilih SKU yang diterima</option>
-                            {alternativeProducts.map((product) => (
-                              <option key={product.id} value={product.id}>{product.name}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            value={currentActualQty}
-                            onChange={(event) => setActualQtyByTransfer((state) => ({
-                              ...state,
-                              [transfer.id]: event.target.value,
-                            }))}
-                            placeholder="Jumlah SKU aktual"
-                            aria-label="Jumlah SKU aktual"
-                            disabled={Boolean(busyId) || !shiftOpen}
-                            className="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                          />
-                          <textarea
-                            value={skuCorrectionNotes[transfer.id] || ""}
-                            onChange={(event) => setSkuCorrectionNotes((state) => ({
-                              ...state,
-                              [transfer.id]: event.target.value,
-                            }))}
-                            maxLength={500}
-                            placeholder="Contoh: kasir memilih SKU 2GB, barang yang diserahkan 3GB"
-                            aria-label="Alasan koreksi SKU"
-                            disabled={Boolean(busyId) || !shiftOpen}
-                            className="min-h-16 w-full rounded-lg border border-amber-300 bg-white p-2 text-xs text-slate-800 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-100"
-                          />
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              disabled={Boolean(busyId) || !shiftOpen}
-                              onClick={() => void submitSkuCorrection(transfer)}
-                              className="min-h-10 rounded-lg bg-amber-500 px-2 text-[10px] font-black uppercase text-slate-950 hover:bg-amber-400 disabled:opacity-50"
-                            >
-                              Kirim ke pengirim
-                            </button>
-                            <button
-                              type="button"
-                              disabled={Boolean(busyId)}
-                              onClick={() => setSkuCorrectionOpen((state) => ({ ...state, [transfer.id]: false }))}
-                              className="min-h-10 rounded-lg border border-slate-300 px-2 text-[10px] font-bold uppercase text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                            >
-                              Kembali
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                  {transfer.status === "IN_TRANSIT" && canReceive && (
+                    <div className="mt-2 border-t border-slate-200 pt-2 dark:border-slate-700">
+                      <p className="mb-2 text-[10px] text-slate-600 dark:text-slate-300">
+                        Jika SKU pada catatan salah, tolak seluruh baris. Jangan ubah SKU di sisi penerima.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={Boolean(busyId) || !shiftOpen || transfer.dispatchedQty == null}
+                        onClick={() => void rejectSkuAndReturn(transfer)}
+                        className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-rose-300 px-3 text-[10px] font-black uppercase text-rose-800 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-700 dark:text-rose-200 dark:hover:bg-rose-500/10"
+                      >
+                        <X className="h-4 w-4" />
+                        Tolak SKU · kembalikan {transfer.dispatchedQty ?? 0} pcs
+                      </button>
                     </div>
                   )}
 

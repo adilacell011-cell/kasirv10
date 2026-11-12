@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StockTransferReturnKind } from './stockTransferReturnKind';
+import type { StockTransferReturnParent } from './stockTransferReturnParent';
 import type { StockTransferReturnStatus } from './stockTransferReturnStatus';
 
 export interface StockTransferReturn {
@@ -22,4 +23,5 @@ export interface StockTransferReturn {
   receivedQty?: number | null;
   /** @nullable */
   discrepancyNote?: string | null;
+  returnOf: StockTransferReturnParent;
 }

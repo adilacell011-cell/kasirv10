@@ -543,7 +543,7 @@ export const getCreateStockTransferReturnBatchUrl = () => {
 }
 
 /**
- * @summary Dispatch a physical return for previously received stock transfers
+ * @summary Return received stock or reject a full in-transit product line
  */
 export const createStockTransferReturnBatch = async (stockTransferReturnBatchInput: StockTransferReturnBatchInput, options?: Parameters<typeof customFetch>[1]): Promise<StockTransferReturnBatch> => {
 
@@ -609,7 +609,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateStockTransferReturnBatchMutationVariables = {data: BodyType<StockTransferReturnBatchInput>}
 
     /**
- * @summary Dispatch a physical return for previously received stock transfers
+ * @summary Return received stock or reject a full in-transit product line
  */
 export const useCreateStockTransferReturnBatch = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockTransferReturnBatch>>, TError,CreateStockTransferReturnBatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

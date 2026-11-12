@@ -123,7 +123,7 @@ paths:
   /stock-transfers/returns:
     post:
       operationId: createStockTransferReturnBatch
-      summary: Dispatch a physical return for previously received stock transfers
+      summary: Return received stock or reject a full in-transit product line
       security:
         - bearerAuth: []
       requestBody:
@@ -134,7 +134,7 @@ paths:
               $ref: "#/components/schemas/StockTransferReturnBatchInput"
       responses:
         "201":
-          description: Return batch dispatched and sender-branch stock deducted.
+          description: Return dispatched. Rejected in-transit lines do not add stock to the receiving branch.
           content:
             application/json:
               schema:
@@ -146,7 +146,7 @@ paths:
         "404":
           description: Original transfer not found.
         "409":
-          description: Return quantity exceeds received stock or sender stock is insufficient.
+          description: Return quantity exceeds availability, a rejected line is not whole, or stock is insufficient.
         "401":
           description: Sign-in required.
   /stock-transfers/returns/{batchId}/receive:
@@ -169,13 +169,13 @@ paths:
               $ref: "#/components/schemas/StockTransferReturnReceiptInput"
       responses:
         "200":
-          description: Return receipt confirmed and actual accepted quantities credited.
+          description: Return receipt confirmed; stock credit follows the original transfer state.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StockTransferReturnBatch"
         "400":
-          description: Invalid receipt or missing discrepancy note.
+          description: Invalid receipt or a rejected product line was not returned in full.
         "403":
           description: Only the original sender branch can confirm receipt.
         "404":
@@ -656,7 +656,7 @@ components:
             $ref: "#/components/schemas/StockTransferReturn"
     StockTransferReturn:
       type: object
-      required: [id, batchId, returnOfId, productId, sourceBranchId, targetBranchId, kind, status, dispatchedQty]
+      required: [id, batchId, returnOfId, productId, sourceBranchId, targetBranchId, kind, status, dispatchedQty, returnOf]
       properties:
         id:
           type: string
@@ -682,6 +682,41 @@ components:
           type: ["integer", "null"]
         discrepancyNote:
           type: ["string", "null"]
+        returnOf:
+          $ref: "#/components/schemas/StockTransferReturnParent"
+    StockTransferReturnParent:
+      type: object
+      required: [id, status, product]
+      properties:
+        id:
+          type: string
+        batchId:
+          type: ["string", "null"]
+        productId:
+          type: string
+        sourceBranchId:
+          type: string
+        targetBranchId:
+          type: string
+        status:
+          type: string
+          enum: [REQUESTED, ACCEPTED, IN_TRANSIT, RETURN_PENDING, RECEIVED, RETURNED, REJECTED, CANCELLED]
+        dispatchedQty:
+          type: ["integer", "null"]
+        product:
+          type: object
+          required: [id, name]
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            barcode:
+              type: ["string", "null"]
+            brand:
+              type: ["string", "null"]
+            category:
+              type: ["string", "null"]
     ProductBranchStock:
       type: object
       required: [branchId, branchName, qty]

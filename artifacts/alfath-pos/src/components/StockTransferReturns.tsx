@@ -9,7 +9,7 @@ type Transfer = {
   batchId?: string | null;
   returnOfId?: string | null;
   kind: "REQUEST" | "DIRECT" | "RETURN";
-  status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
+  status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RETURN_PENDING" | "RECEIVED" | "RETURNED" | "REJECTED" | "CANCELLED";
   requestedQty: number | null;
   approvedQty: number | null;
   dispatchedQty: number | null;
@@ -22,7 +22,13 @@ type Transfer = {
   product: Product;
   sourceBranch: Branch;
   targetBranch: Branch;
-  returnOf?: { id: string; batchId?: string | null; product: Product } | null;
+  returnOf?: {
+    id: string;
+    batchId?: string | null;
+    status: string;
+    dispatchedQty?: number | null;
+    product: Product;
+  } | null;
   returnableQty?: number | null;
   returnableProduct?: Product | null;
 };
@@ -155,11 +161,15 @@ export default function StockTransferReturns({
     if (busyId) return;
     const receipts = group.items.map((item) => ({
       transferId: item.id,
-      receivedQty: Number(receiptQty[item.id] ?? String(item.dispatchedQty ?? 0)),
+      receivedQty: item.returnOf?.status === "RETURN_PENDING"
+        ? (item.dispatchedQty ?? 0)
+        : Number(receiptQty[item.id] ?? String(item.dispatchedQty ?? 0)),
     }));
     const invalid = group.items.find((item, index) => {
       const qty = receipts[index]!.receivedQty;
-      return !Number.isSafeInteger(qty) || qty < 0 || qty > (item.dispatchedQty ?? 0);
+      const fullLineReturn = item.returnOf?.status === "RETURN_PENDING";
+      return !Number.isSafeInteger(qty) || qty < 0 || qty > (item.dispatchedQty ?? 0) ||
+        (fullLineReturn && qty !== item.dispatchedQty);
     });
     if (invalid) {
       setError(`${invalid.product.name}: isi jumlah yang benar-benar diterima.`);
@@ -181,7 +191,9 @@ export default function StockTransferReturns({
       };
       if (!Array.isArray(result?.items)) throw new Error("Respons konfirmasi retur tidak valid.");
       result.items.forEach(onUpdated);
-      setMessage("Penerimaan retur tercatat sesuai jumlah fisik yang dikonfirmasi.");
+      setMessage(group.items.some((item) => item.returnOf?.status === "RETURN_PENDING")
+        ? "Retur SKU diterima. Stok SKU pada kiriman awal dipulihkan ke cabang asal."
+        : "Penerimaan retur tercatat sesuai jumlah fisik yang dikonfirmasi.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Konfirmasi retur gagal.");
     } finally {
@@ -201,7 +213,7 @@ export default function StockTransferReturns({
             Retur stok antar cabang
           </h3>
           <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-            Cabang pengirim retur berkurang saat dikirim. Cabang asal baru bertambah setelah mengonfirmasi jumlah fisik.
+            Untuk retur biasa, stok pengirim berkurang saat barang dikirim. Untuk penolakan SKU, stok asal pulih setelah barang dikonfirmasi kembali.
           </p>
         </div>
         <span className="shrink-0 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
@@ -384,22 +396,28 @@ export default function StockTransferReturns({
                             </span>
                           </div>
                           {item.status === "IN_TRANSIT" && canReceive && (
-                            <div className="mt-2 grid grid-cols-[80px_1fr] gap-2">
-                              <label className="text-[9px] font-bold text-slate-600 dark:text-slate-300">
-                                Jumlah fisik
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={sentQty}
-                                  step={1}
-                                  value={receiptQty[item.id] ?? String(sentQty)}
-                                  onChange={(event) => setReceiptQty((current) => ({ ...current, [item.id]: event.target.value }))}
-                                  className="mt-1 min-h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-center text-xs font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                                />
-                              </label>
-                              {actualQty !== sentQty && (
-                                <p className="col-span-2 text-[9px] font-semibold text-amber-800 dark:text-amber-300">
-                                  Stok hanya bertambah sesuai jumlah fisik yang dikonfirmasi. Jika perlu, koordinasikan di luar aplikasi.
+                            <div className="mt-2">
+                              {item.returnOf?.status === "RETURN_PENDING" ? (
+                                <p className="text-[9px] font-semibold text-amber-800 dark:text-amber-300">
+                                  Retur penolakan SKU harus diterima utuh: {sentQty} pcs.
+                                </p>
+                              ) : (
+                                <label className="block text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                                  Jumlah fisik
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={sentQty}
+                                    step={1}
+                                    value={receiptQty[item.id] ?? String(sentQty)}
+                                    onChange={(event) => setReceiptQty((current) => ({ ...current, [item.id]: event.target.value }))}
+                                    className="mt-1 min-h-9 w-24 rounded-lg border border-slate-300 bg-white px-2 text-center text-xs font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                  />
+                                </label>
+                              )}
+                              {item.returnOf?.status !== "RETURN_PENDING" && actualQty !== sentQty && (
+                                <p className="mt-1 text-[9px] font-semibold text-amber-800 dark:text-amber-300">
+                                  Stok hanya bertambah sesuai jumlah fisik yang dikonfirmasi.
                                 </p>
                               )}
                             </div>

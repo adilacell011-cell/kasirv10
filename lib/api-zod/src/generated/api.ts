@@ -72,7 +72,7 @@ export const GetBranchTransferTargetsResponse = zod.array(GetBranchTransferTarge
 
 
 /**
- * @summary Dispatch a physical return for previously received stock transfers
+ * @summary Return received stock or reject a full in-transit product line
  */
 export const createStockTransferReturnBatchBodyNoteMax = 500;
 
@@ -102,7 +102,23 @@ export const CreateStockTransferReturnBatchResponse = zod.object({
   "status": zod.enum(['IN_TRANSIT', 'RECEIVED']),
   "dispatchedQty": zod.number().int(),
   "receivedQty": zod.number().int().nullish(),
-  "discrepancyNote": zod.string().nullish()
+  "discrepancyNote": zod.string().nullish(),
+  "returnOf": zod.object({
+  "id": zod.string(),
+  "batchId": zod.string().nullish(),
+  "productId": zod.string().optional(),
+  "sourceBranchId": zod.string().optional(),
+  "targetBranchId": zod.string().optional(),
+  "status": zod.enum(['REQUESTED', 'ACCEPTED', 'IN_TRANSIT', 'RETURN_PENDING', 'RECEIVED', 'RETURNED', 'REJECTED', 'CANCELLED']),
+  "dispatchedQty": zod.number().int().nullish(),
+  "product": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "barcode": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "category": zod.string().nullish()
+})
+})
 }))
 })
 
@@ -143,7 +159,23 @@ export const ReceiveStockTransferReturnBatchResponse = zod.object({
   "status": zod.enum(['IN_TRANSIT', 'RECEIVED']),
   "dispatchedQty": zod.number().int(),
   "receivedQty": zod.number().int().nullish(),
-  "discrepancyNote": zod.string().nullish()
+  "discrepancyNote": zod.string().nullish(),
+  "returnOf": zod.object({
+  "id": zod.string(),
+  "batchId": zod.string().nullish(),
+  "productId": zod.string().optional(),
+  "sourceBranchId": zod.string().optional(),
+  "targetBranchId": zod.string().optional(),
+  "status": zod.enum(['REQUESTED', 'ACCEPTED', 'IN_TRANSIT', 'RETURN_PENDING', 'RECEIVED', 'RETURNED', 'REJECTED', 'CANCELLED']),
+  "dispatchedQty": zod.number().int().nullish(),
+  "product": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "barcode": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "category": zod.string().nullish()
+})
+})
 }))
 })
 

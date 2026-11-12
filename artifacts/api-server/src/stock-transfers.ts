@@ -37,6 +37,10 @@ export const transferInclude = {
       id: true,
       batchId: true,
       productId: true,
+      sourceBranchId: true,
+      targetBranchId: true,
+      status: true,
+      dispatchedQty: true,
       product: { select: { id: true, name: true, barcode: true, brand: true, category: true } },
     },
   },
@@ -204,7 +208,16 @@ export function registerStockTransferRoutes(
 
   app.get("/api/stock-transfers", ...access, async (req: any, res): Promise<void> => {
     const actor = getActor(req);
-    const allowedStatuses = new Set(["REQUESTED", "ACCEPTED", "IN_TRANSIT", "RECEIVED", "REJECTED", "CANCELLED"]);
+    const allowedStatuses = new Set([
+      "REQUESTED",
+      "ACCEPTED",
+      "IN_TRANSIT",
+      "RETURN_PENDING",
+      "RECEIVED",
+      "RETURNED",
+      "REJECTED",
+      "CANCELLED",
+    ]);
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     if (status && !allowedStatuses.has(status)) {
       res.status(400).json({ error: "Status transfer tidak valid." });
@@ -539,22 +552,29 @@ export function registerStockTransferRoutes(
       const transfers = await prisma.$transaction(async (tx) => {
         await lockBranch(tx, targetBranchId);
         await requireOpenShift(tx, actor, targetBranchId);
-        const rows = await tx.stockTransfer.findMany({
+        const batchRows = await tx.stockTransfer.findMany({
           where: { batchId },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           include: transferInclude,
         });
-        if (rows.length === 0) throw new TransferHttpError(404, "Kiriman tidak ditemukan untuk cabang Anda.");
-        if (rows.some((row) => row.targetBranchId !== targetBranchId)) {
+        if (batchRows.length === 0) throw new TransferHttpError(404, "Kiriman tidak ditemukan untuk cabang Anda.");
+        if (batchRows.some((row) => row.targetBranchId !== targetBranchId)) {
           throw new TransferHttpError(403, "Hanya kasir cabang tujuan yang dapat mengonfirmasi kiriman.");
         }
-        if (rows.some((row) => row.status !== "IN_TRANSIT" || !row.dispatchedQty)) {
+        const eligibleStatuses = new Set(["IN_TRANSIT", "RECEIVED", "RETURN_PENDING", "RETURNED"]);
+        if (batchRows.some((row) => !eligibleStatuses.has(row.status))) {
           throw new TransferHttpError(409, "Ada produk dalam kiriman yang sudah diproses atau belum dikirim.");
+        }
+        const rows = batchRows.filter((row) => row.status === "IN_TRANSIT");
+        if (rows.length === 0) {
+          throw new TransferHttpError(409, "Tidak ada produk tersisa yang menunggu penerimaan.");
+        }
+        if (rows.some((row) => !row.dispatchedQty)) {
+          throw new TransferHttpError(409, "Ada produk dalam kiriman yang belum dikirim.");
         }
         const activeCorrections = await tx.stockTransferSkuCorrection.findFirst({
           where: {
             transferId: { in: rows.map((row) => row.id) },
-            status: { in: ["PENDING_SOURCE", "APPROVED_PENDING_RECEIPT"] },
           },
           select: { id: true },
         });
@@ -775,6 +795,13 @@ export function registerStockTransferRoutes(
 
   app.post("/api/stock-transfers/:id/sku-corrections", ...access, async (req: any, res): Promise<void> => {
     const actor = getActor(req);
+    if (actor.role === "CASHIER") {
+      res.status(409).json({
+        error: "SKU tidak dapat direvisi oleh penerima. Tolak dan kembalikan seluruh baris kiriman.",
+        code: "SKU_CORRECTION_USE_RETURN",
+      });
+      return;
+    }
     const id = typeof req.params.id === "string" ? req.params.id : "";
     const actualProductId = typeof req.body?.actualProductId === "string" ? req.body.actualProductId.trim() : "";
     const actualQty = positiveInt(req.body?.actualQty);
