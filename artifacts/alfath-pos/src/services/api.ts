@@ -294,6 +294,33 @@ export const api = {
     return writeJson(`/stock-transfers/${encodeURIComponent(id)}/receive`, "POST", data);
   },
 
+  async reportStockTransferSkuCorrection(
+    id: string,
+    data: { actualProductId: string; actualQty: number; note: string },
+  ) {
+    return writeJson(`/stock-transfers/${encodeURIComponent(id)}/sku-corrections`, "POST", data);
+  },
+
+  async reviewStockTransferSkuCorrection(
+    id: string,
+    correctionId: string,
+    data: { action: "APPROVE" | "REJECT"; responseNote?: string },
+  ) {
+    return writeJson(
+      `/stock-transfers/${encodeURIComponent(id)}/sku-corrections/${encodeURIComponent(correctionId)}`,
+      "PATCH",
+      data,
+    );
+  },
+
+  async receiveStockTransferSkuCorrection(id: string, correctionId: string) {
+    return writeJson(
+      `/stock-transfers/${encodeURIComponent(id)}/sku-corrections/${encodeURIComponent(correctionId)}/receive`,
+      "POST",
+      {},
+    );
+  },
+
   async cancelStockTransfer(id: string, note?: string) {
     return writeJson(`/stock-transfers/${encodeURIComponent(id)}/cancel`, "PATCH", { note });
   },

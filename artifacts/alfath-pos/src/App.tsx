@@ -7686,16 +7686,27 @@ export default function App() {
                                {adjustments
                                  .filter(a => !auditSelectedBranch || a.branchId === auditSelectedBranch)
                                  .slice(0, 30)
-                                 .map((log: any, idx: number) => (
+                                  .map((log: any, idx: number) => {
+                                    const isInbound = ["STOCK_IN", "TRANSFER_IN", "TRANSFER_SKU_CORRECTION_RESTORE", "TRANSFER_SKU_CORRECTION_IN"].includes(log.type);
+                                    const isOutbound = ["STOCK_OUT", "TRANSFER_OUT", "TRANSFER_SKU_CORRECTION_OUT"].includes(log.type);
+                                    const typeLabel = log.type === "STOCK_IN" ? "Masuk"
+                                      : log.type === "STOCK_OUT" ? "Keluar"
+                                      : log.type === "TRANSFER_IN" ? "Trf In"
+                                      : log.type === "TRANSFER_OUT" ? "Trf Out"
+                                      : log.type === "TRANSFER_SKU_CORRECTION_RESTORE" ? "Pulih SKU"
+                                      : log.type === "TRANSFER_SKU_CORRECTION_OUT" ? "Koreksi Out"
+                                      : log.type === "TRANSFER_SKU_CORRECTION_IN" ? "Koreksi In"
+                                      : "Penyesuaian";
+                                    return (
                                     <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 transition-colors text-left">
                                      <div className="flex justify-between items-start mb-2">
                                        <p className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate max-w-[150px]">
                                          {products.find(p => p.id === log.productId)?.name || "Produk N/A"}
                                        </p>
                                        <span className={`px-2 py-0.5 rounded font-black uppercase text-[8px] tracking-widest ${
-                                          log.type?.includes("IN") ? "bg-slate-100 text-slate-700" : log.type?.includes("OUT") ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-700"
+                                           isInbound ? "bg-slate-100 text-slate-700" : isOutbound ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-700"
                                        }`}>
-                                         {log.type === "STOCK_IN" ? "Masuk" : log.type === "STOCK_OUT" ? "Keluar" : log.type === "TRANSFER_IN" ? "Trf In" : "Trf Out"}
+                                          {typeLabel}
                                        </span>
                                      </div>
                                      <div className="flex justify-between items-end">
@@ -7708,11 +7719,12 @@ export default function App() {
                                          </p>
                                        </div>
                                        <p className="text-sm font-black text-slate-800">
-                                         {log.qty > 0 ? `+${log.qty}` : log.qty}
+                                          {isOutbound ? `−${Math.abs(log.qty)}` : log.qty > 0 ? `+${log.qty}` : log.qty}
                                        </p>
                                      </div>
                                    </div>
-                                 ))}
+                                    );
+                                  })}
 
                                {adjustments.filter(a => !auditSelectedBranch || a.branchId === auditSelectedBranch).length === 0 && (
                                   <div className="py-8 text-center opacity-40">
@@ -8043,7 +8055,7 @@ export default function App() {
                               </thead>
                               <tbody>
                                 {acts.map((a, idx) => {
-                                  const isPos = a.type === "STOCK_IN" || a.type === "TRANSFER_IN";
+                                  const isPos = ["STOCK_IN", "TRANSFER_IN", "TRANSFER_SKU_CORRECTION_RESTORE", "TRANSFER_SKU_CORRECTION_IN"].includes(a.type);
                                   const isSale = a.reason && a.reason.includes("SALE_");
                                   const prodName = products.find((p) => p.id === a.productId)?.name || "Produk";
                                   const timeStr = new Date(a.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });

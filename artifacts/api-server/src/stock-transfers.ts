@@ -21,6 +21,16 @@ const transferInclude = {
   dispatchedBy: { select: { id: true, name: true, username: true } },
   receivedBy: { select: { id: true, name: true, username: true } },
   closedBy: { select: { id: true, name: true, username: true } },
+  skuCorrections: {
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: {
+      actualProduct: { select: { id: true, name: true, barcode: true, brand: true, category: true } },
+      reportedBy: { select: { id: true, name: true, username: true } },
+      reviewedBy: { select: { id: true, name: true, username: true } },
+      receivedBy: { select: { id: true, name: true, username: true } },
+    },
+  },
 } satisfies Prisma.StockTransferInclude;
 
 class TransferHttpError extends Error {
@@ -104,6 +114,16 @@ async function assertBranchPair(
     select: { id: true },
   });
   if (branches.length !== 2) throw new TransferHttpError(404, "Cabang asal atau tujuan tidak ditemukan.");
+}
+
+async function lockTransferBranches(
+  tx: Prisma.TransactionClient,
+  sourceBranchId: string,
+  targetBranchId: string,
+): Promise<void> {
+  for (const branchId of [sourceBranchId, targetBranchId].sort()) {
+    await lockBranch(tx, branchId);
+  }
 }
 
 async function assertProductCanBeTransferred(
@@ -491,6 +511,327 @@ export function registerStockTransferRoutes(
     }
   });
 
+  app.post("/api/stock-transfers/:id/sku-corrections", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const actualProductId = typeof req.body?.actualProductId === "string" ? req.body.actualProductId.trim() : "";
+    const actualQty = positiveInt(req.body?.actualQty);
+    let note: string | null;
+    try {
+      note = parseNote(req.body?.note, "Alasan koreksi");
+    } catch (error) {
+      respondError(req, res, error, "Laporan koreksi SKU gagal disimpan.");
+      return;
+    }
+    if (!id || !actualProductId || actualQty === null || !note) {
+      res.status(400).json({ error: "Transfer, produk SKU aktual, jumlah, dan alasan koreksi wajib diisi." });
+      return;
+    }
+    if (actor.role !== "CASHIER") {
+      res.status(403).json({ error: "Laporan SKU aktual harus dibuat oleh kasir cabang penerima." });
+      return;
+    }
+    try {
+      const targetBranchId = requireCashierBranch(actor);
+      const transfer = await prisma.$transaction(async (tx) => {
+        await lockBranch(tx, targetBranchId);
+        await requireOpenShift(tx, actor, targetBranchId);
+        const current = await tx.stockTransfer.findUnique({ where: { id } });
+        if (!current) throw new TransferHttpError(404, "Transfer tidak ditemukan.");
+        if (current.targetBranchId !== targetBranchId) {
+          throw new TransferHttpError(403, "Transfer ini bukan untuk cabang penerima Anda.");
+        }
+        if (current.status !== "IN_TRANSIT" || !current.dispatchedQty) {
+          throw new TransferHttpError(409, "Hanya transfer yang sudah dikirim dan belum diterima yang dapat dikoreksi.");
+        }
+        if (actualProductId === current.productId) {
+          throw new TransferHttpError(400, "SKU aktual sama dengan SKU transfer. Gunakan konfirmasi jumlah biasa.");
+        }
+        await assertProductCanBeTransferred(tx, actualProductId, current.targetBranchId);
+        const activeCorrection = await tx.stockTransferSkuCorrection.findFirst({
+          where: { transferId: id, status: { in: ["PENDING_SOURCE", "APPROVED_PENDING_RECEIPT"] } },
+          select: { id: true },
+        });
+        if (activeCorrection) {
+          throw new TransferHttpError(409, "Koreksi SKU sebelumnya masih diproses.");
+        }
+        await tx.stockTransferSkuCorrection.create({
+          data: {
+            transferId: id,
+            actualProductId,
+            actualQty,
+            note,
+            status: "PENDING_SOURCE",
+            reportedById: actor.userId,
+          },
+        });
+        return tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+      });
+      emitTransferUpdate(emitBranch, transfer.sourceBranchId, transfer.targetBranchId, transfer.id, transfer.status);
+      res.status(201).json(transfer);
+    } catch (error) {
+      respondError(req, res, error, "Laporan koreksi SKU gagal disimpan.");
+    }
+  });
+
+  app.patch("/api/stock-transfers/:id/sku-corrections/:correctionId", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    const id = typeof req.params.id === "string" ? req.params.id : "";
+    const correctionId = typeof req.params.correctionId === "string" ? req.params.correctionId : "";
+    const action = req.body?.action;
+    let responseNote: string | null;
+    try {
+      responseNote = parseNote(req.body?.responseNote, "Catatan respons");
+    } catch (error) {
+      respondError(req, res, error, "Respons koreksi SKU gagal disimpan.");
+      return;
+    }
+    if (!id || !correctionId || (action !== "APPROVE" && action !== "REJECT")) {
+      res.status(400).json({ error: "Transfer, koreksi, dan tindakan persetujuan yang valid wajib diisi." });
+      return;
+    }
+    if (action === "REJECT" && !responseNote) {
+      res.status(400).json({ error: "Alasan penolakan koreksi wajib diisi." });
+      return;
+    }
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const correction = await tx.stockTransferSkuCorrection.findUnique({
+          where: { id: correctionId },
+          include: { transfer: true },
+        });
+        if (!correction || correction.transferId !== id) {
+          throw new TransferHttpError(404, "Laporan koreksi SKU tidak ditemukan.");
+        }
+        const current = correction.transfer;
+        if (actor.role === "CASHIER" && current.sourceBranchId !== actor.branchId) {
+          throw new TransferHttpError(403, "Hanya kasir cabang pengirim yang dapat menilai koreksi SKU.");
+        }
+        if (current.status !== "IN_TRANSIT" || correction.status !== "PENDING_SOURCE") {
+          throw new TransferHttpError(409, "Laporan koreksi SKU sudah berubah atau transfer tidak lagi menunggu penerimaan.");
+        }
+        await lockTransferBranches(tx, current.sourceBranchId, current.targetBranchId);
+        await requireOpenShift(tx, actor, current.sourceBranchId);
+
+        if (action === "REJECT") {
+          const changed = await tx.stockTransferSkuCorrection.updateMany({
+            where: { id: correctionId, status: "PENDING_SOURCE" },
+            data: {
+              status: "REJECTED",
+              responseNote,
+              reviewedById: actor.userId,
+              reviewedAt: new Date(),
+            },
+          });
+          if (changed.count !== 1) throw new TransferHttpError(409, "Koreksi SKU sudah ditangani. Muat ulang daftar.");
+          const transfer = await tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+          return { transfer, sourceStockUpdates: [] as { productId: string; qty: number }[] };
+        }
+
+        await assertProductCanBeTransferred(tx, correction.actualProductId, current.targetBranchId);
+        const changed = await tx.stockTransferSkuCorrection.updateMany({
+          where: { id: correctionId, status: "PENDING_SOURCE" },
+          data: {
+            status: "APPROVED_PENDING_RECEIPT",
+            responseNote,
+            reviewedById: actor.userId,
+            reviewedAt: new Date(),
+          },
+        });
+        if (changed.count !== 1) throw new TransferHttpError(409, "Koreksi SKU sudah ditangani. Muat ulang daftar.");
+
+        const actualStockDecremented = await tx.productStock.updateMany({
+          where: {
+            productId: correction.actualProductId,
+            branchId: current.sourceBranchId,
+            qty: { gte: correction.actualQty },
+          },
+          data: { qty: { decrement: correction.actualQty } },
+        });
+        if (actualStockDecremented.count !== 1) {
+          throw new TransferHttpError(
+            409,
+            "Stok SKU aktual di cabang pengirim tidak mencukupi untuk mengesahkan koreksi.",
+            "INSUFFICIENT_STOCK",
+          );
+        }
+        await tx.productStock.upsert({
+          where: {
+            productId_branchId: { productId: current.productId, branchId: current.sourceBranchId },
+          },
+          update: { qty: { increment: current.dispatchedQty ?? 0 } },
+          create: {
+            productId: current.productId,
+            branchId: current.sourceBranchId,
+            qty: current.dispatchedQty ?? 0,
+          },
+        });
+        await tx.adjustment.createMany({
+          data: [
+            {
+              productId: current.productId,
+              branchId: current.sourceBranchId,
+              qty: current.dispatchedQty ?? 0,
+              type: "TRANSFER_SKU_CORRECTION_RESTORE",
+              reason: `Koreksi SKU transfer ${id}: pemulihan SKU yang salah dicatat`,
+            },
+            {
+              productId: correction.actualProductId,
+              branchId: current.sourceBranchId,
+              qty: correction.actualQty,
+              type: "TRANSFER_SKU_CORRECTION_OUT",
+              reason: `Koreksi SKU transfer ${id}: SKU aktual dikirim`,
+            },
+          ],
+        });
+
+        const [expectedStock, actualStock] = await Promise.all([
+          tx.productStock.findUnique({
+            where: { productId_branchId: { productId: current.productId, branchId: current.sourceBranchId } },
+            select: { qty: true },
+          }),
+          tx.productStock.findUnique({
+            where: {
+              productId_branchId: { productId: correction.actualProductId, branchId: current.sourceBranchId },
+            },
+            select: { qty: true },
+          }),
+        ]);
+        const transfer = await tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+        return {
+          transfer,
+          sourceStockUpdates: [
+            { productId: current.productId, qty: expectedStock?.qty ?? 0 },
+            { productId: correction.actualProductId, qty: actualStock?.qty ?? 0 },
+          ],
+        };
+      });
+      for (const stock of result.sourceStockUpdates) {
+        emitBranch(result.transfer.sourceBranchId, "stockUpdated", {
+          productId: stock.productId,
+          branchId: result.transfer.sourceBranchId,
+          qty: stock.qty,
+        });
+      }
+      emitTransferUpdate(
+        emitBranch,
+        result.transfer.sourceBranchId,
+        result.transfer.targetBranchId,
+        result.transfer.id,
+        result.transfer.status,
+      );
+      res.json(result.transfer);
+    } catch (error) {
+      respondError(req, res, error, "Respons koreksi SKU gagal disimpan.");
+    }
+  });
+
+  app.post(
+    "/api/stock-transfers/:id/sku-corrections/:correctionId/receive",
+    ...access,
+    async (req: any, res): Promise<void> => {
+      const actor = getActor(req);
+      const id = typeof req.params.id === "string" ? req.params.id : "";
+      const correctionId = typeof req.params.correctionId === "string" ? req.params.correctionId : "";
+      if (!id || !correctionId) {
+        res.status(400).json({ error: "ID transfer dan koreksi SKU wajib diisi." });
+        return;
+      }
+      if (actor.role !== "CASHIER") {
+        res.status(403).json({ error: "Penerimaan SKU aktual harus dikonfirmasi kasir cabang tujuan." });
+        return;
+      }
+      try {
+        const targetBranchId = requireCashierBranch(actor);
+        const result = await prisma.$transaction(async (tx) => {
+          await lockBranch(tx, targetBranchId);
+          await requireOpenShift(tx, actor, targetBranchId);
+          const correction = await tx.stockTransferSkuCorrection.findUnique({
+            where: { id: correctionId },
+            include: { transfer: true },
+          });
+          if (!correction || correction.transferId !== id) {
+            throw new TransferHttpError(404, "Laporan koreksi SKU tidak ditemukan.");
+          }
+          const current = correction.transfer;
+          if (current.targetBranchId !== targetBranchId) {
+            throw new TransferHttpError(403, "Penerimaan ini bukan untuk cabang Anda.");
+          }
+          if (current.status !== "IN_TRANSIT" || correction.status !== "APPROVED_PENDING_RECEIPT") {
+            throw new TransferHttpError(409, "Koreksi belum disetujui pengirim atau transfer sudah diterima.");
+          }
+          await assertProductCanBeTransferred(tx, correction.actualProductId, current.targetBranchId);
+          const changedCorrection = await tx.stockTransferSkuCorrection.updateMany({
+            where: { id: correctionId, status: "APPROVED_PENDING_RECEIPT" },
+            data: {
+              status: "RECEIVED",
+              receivedById: actor.userId,
+              receivedAt: new Date(),
+            },
+          });
+          if (changedCorrection.count !== 1) {
+            throw new TransferHttpError(409, "Penerimaan koreksi SKU sudah dicatat. Muat ulang daftar.");
+          }
+          await tx.productStock.upsert({
+            where: {
+              productId_branchId: { productId: correction.actualProductId, branchId: current.targetBranchId },
+            },
+            update: { qty: { increment: correction.actualQty } },
+            create: {
+              productId: correction.actualProductId,
+              branchId: current.targetBranchId,
+              qty: correction.actualQty,
+            },
+          });
+          await tx.adjustment.create({
+            data: {
+              productId: correction.actualProductId,
+              branchId: current.targetBranchId,
+              qty: correction.actualQty,
+              type: "TRANSFER_SKU_CORRECTION_IN",
+              reason: `Koreksi SKU transfer ${id}: penerimaan SKU aktual`,
+            },
+          });
+          const changedTransfer = await tx.stockTransfer.updateMany({
+            where: { id, status: "IN_TRANSIT" },
+            data: {
+              status: "RECEIVED",
+              receivedQty: correction.actualQty,
+              receivedById: actor.userId,
+              receivedAt: new Date(),
+            },
+          });
+          if (changedTransfer.count !== 1) {
+            throw new TransferHttpError(409, "Transfer sudah berubah. Muat ulang daftar.");
+          }
+          const targetStock = await tx.productStock.findUnique({
+            where: {
+              productId_branchId: { productId: correction.actualProductId, branchId: current.targetBranchId },
+            },
+            select: { qty: true },
+          });
+          const transfer = await tx.stockTransfer.findUniqueOrThrow({ where: { id }, include: transferInclude });
+          return { transfer, targetQty: targetStock?.qty ?? 0, productId: correction.actualProductId };
+        });
+        emitBranch(result.transfer.targetBranchId, "stockUpdated", {
+          productId: result.productId,
+          branchId: result.transfer.targetBranchId,
+          qty: result.targetQty,
+        });
+        emitTransferUpdate(
+          emitBranch,
+          result.transfer.sourceBranchId,
+          result.transfer.targetBranchId,
+          result.transfer.id,
+          result.transfer.status,
+        );
+        res.json(result.transfer);
+      } catch (error) {
+        respondError(req, res, error, "Penerimaan SKU aktual gagal dicatat.");
+      }
+    },
+  );
+
   app.post("/api/stock-transfers/:id/receive", ...access, async (req: any, res): Promise<void> => {
     const actor = getActor(req);
     const id = typeof req.params.id === "string" ? req.params.id : "";
@@ -522,6 +863,16 @@ export function registerStockTransferRoutes(
         }
         if (current.status !== "IN_TRANSIT" || !current.dispatchedQty) {
           throw new TransferHttpError(409, "Transfer belum dikirim atau sudah diterima.");
+        }
+        const priorSkuCorrection = await tx.stockTransferSkuCorrection.findFirst({
+          where: { transferId: id },
+          select: { id: true },
+        });
+        if (priorSkuCorrection) {
+          throw new TransferHttpError(
+            409,
+            "Transfer ini memiliki laporan SKU salah. Selesaikan koreksi SKU sebelum menerima transfer.",
+          );
         }
         if (receivedQty > current.dispatchedQty) {
           throw new TransferHttpError(400, "Jumlah diterima tidak boleh melebihi jumlah yang dikirim.");

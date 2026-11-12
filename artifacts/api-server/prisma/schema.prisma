@@ -23,14 +23,17 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  sales       Sale[]
-  commissions Commission[]
-  shifts      Shift[]
-  stockTransfersRequested StockTransfer[] @relation("StockTransferRequestedBy")
-  stockTransfersAccepted  StockTransfer[] @relation("StockTransferAcceptedBy")
-  stockTransfersDispatched StockTransfer[] @relation("StockTransferDispatchedBy")
-  stockTransfersReceived   StockTransfer[] @relation("StockTransferReceivedBy")
-  stockTransfersClosed     StockTransfer[] @relation("StockTransferClosedBy")
+  sales                    Sale[]
+  commissions              Commission[]
+  shifts                   Shift[]
+  stockTransfersRequested  StockTransfer[]              @relation("StockTransferRequestedBy")
+  stockTransfersAccepted   StockTransfer[]              @relation("StockTransferAcceptedBy")
+  stockTransfersDispatched StockTransfer[]              @relation("StockTransferDispatchedBy")
+  stockTransfersReceived   StockTransfer[]              @relation("StockTransferReceivedBy")
+  stockTransfersClosed     StockTransfer[]              @relation("StockTransferClosedBy")
+  skuCorrectionsReported   StockTransferSkuCorrection[] @relation("StockTransferSkuCorrectionReportedBy")
+  skuCorrectionsReviewed   StockTransferSkuCorrection[] @relation("StockTransferSkuCorrectionReviewedBy")
+  skuCorrectionsReceived   StockTransferSkuCorrection[] @relation("StockTransferSkuCorrectionReceivedBy")
 }
 
 model Branch {
@@ -51,8 +54,8 @@ model Branch {
   voucherSNs           VoucherSN[]
   dailyIncomeSummaries DailyIncomeSummary[]
   stockAudits          BranchStockAudit[]
-  stockTransfersFrom   StockTransfer[] @relation("StockTransferSource")
-  stockTransfersTo     StockTransfer[] @relation("StockTransferTarget")
+  stockTransfersFrom   StockTransfer[]      @relation("StockTransferSource")
+  stockTransfersTo     StockTransfer[]      @relation("StockTransferTarget")
 }
 
 model Product {
@@ -78,13 +81,14 @@ model Product {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  saleItems      SaleItem[]
-  commissions    Commission[]
-  adjustments    Adjustment[]
-  stockSnapshots StockSnapshot[]
-  stocks         ProductStock[]
-  voucherSNs     VoucherSN[]
-  stockTransfers StockTransfer[]
+  saleItems            SaleItem[]
+  commissions          Commission[]
+  adjustments          Adjustment[]
+  stockSnapshots       StockSnapshot[]
+  stocks               ProductStock[]
+  voucherSNs           VoucherSN[]
+  stockTransfers       StockTransfer[]
+  skuCorrectionsActual StockTransferSkuCorrection[] @relation("StockTransferSkuCorrectionActualProduct")
 }
 
 model ProductStock {
@@ -197,41 +201,67 @@ model Adjustment {
 }
 
 model StockTransfer {
-  id                String   @id @default(uuid())
-  productId         String
-  product           Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  sourceBranchId    String
-  sourceBranch      Branch   @relation("StockTransferSource", fields: [sourceBranchId], references: [id], onDelete: Restrict)
-  targetBranchId    String
-  targetBranch      Branch   @relation("StockTransferTarget", fields: [targetBranchId], references: [id], onDelete: Restrict)
-  kind              String   // REQUEST, DIRECT
-  status            String   // REQUESTED, ACCEPTED, IN_TRANSIT, RECEIVED, REJECTED, CANCELLED
-  requestedQty      Int?
-  approvedQty       Int?
-  dispatchedQty     Int?
-  receivedQty       Int?
-  requestNote       String?
-  responseNote      String?
-  discrepancyNote   String?
-  requestedById     String?
-  requestedBy       User?    @relation("StockTransferRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
-  acceptedById      String?
-  acceptedBy        User?    @relation("StockTransferAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
-  dispatchedById    String?
-  dispatchedBy      User?    @relation("StockTransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
-  receivedById      String?
-  receivedBy        User?    @relation("StockTransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
-  closedById        String?
-  closedBy          User?    @relation("StockTransferClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
-  createdAt         DateTime @default(now())
-  acceptedAt        DateTime?
-  dispatchedAt      DateTime?
-  receivedAt        DateTime?
-  closedAt          DateTime?
+  id              String                       @id @default(uuid())
+  productId       String
+  product         Product                      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sourceBranchId  String
+  sourceBranch    Branch                       @relation("StockTransferSource", fields: [sourceBranchId], references: [id], onDelete: Restrict)
+  targetBranchId  String
+  targetBranch    Branch                       @relation("StockTransferTarget", fields: [targetBranchId], references: [id], onDelete: Restrict)
+  kind            String // REQUEST, DIRECT
+  status          String // REQUESTED, ACCEPTED, IN_TRANSIT, RECEIVED, REJECTED, CANCELLED
+  requestedQty    Int?
+  approvedQty     Int?
+  dispatchedQty   Int?
+  receivedQty     Int?
+  requestNote     String?
+  responseNote    String?
+  discrepancyNote String?
+  requestedById   String?
+  requestedBy     User?                        @relation("StockTransferRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  acceptedById    String?
+  acceptedBy      User?                        @relation("StockTransferAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  dispatchedById  String?
+  dispatchedBy    User?                        @relation("StockTransferDispatchedBy", fields: [dispatchedById], references: [id], onDelete: SetNull)
+  receivedById    String?
+  receivedBy      User?                        @relation("StockTransferReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  closedById      String?
+  closedBy        User?                        @relation("StockTransferClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime                     @default(now())
+  acceptedAt      DateTime?
+  dispatchedAt    DateTime?
+  receivedAt      DateTime?
+  closedAt        DateTime?
+  skuCorrections  StockTransferSkuCorrection[]
 
   @@index([sourceBranchId, status, createdAt])
   @@index([targetBranchId, status, createdAt])
   @@index([productId, createdAt])
+}
+
+model StockTransferSkuCorrection {
+  id              String        @id @default(uuid())
+  transferId      String
+  transfer        StockTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  actualProductId String
+  actualProduct   Product       @relation("StockTransferSkuCorrectionActualProduct", fields: [actualProductId], references: [id], onDelete: Restrict)
+  actualQty       Int
+  note            String
+  status          String // PENDING_SOURCE, APPROVED_PENDING_RECEIPT, REJECTED, RECEIVED
+  responseNote    String?
+  reportedById    String?
+  reportedBy      User?         @relation("StockTransferSkuCorrectionReportedBy", fields: [reportedById], references: [id], onDelete: SetNull)
+  reviewedById    String?
+  reviewedBy      User?         @relation("StockTransferSkuCorrectionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  receivedById    String?
+  receivedBy      User?         @relation("StockTransferSkuCorrectionReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+  reviewedAt      DateTime?
+  receivedAt      DateTime?
+
+  @@index([transferId, createdAt])
+  @@index([status, createdAt])
+  @@index([actualProductId, createdAt])
 }
 
 model GlobalConfig {

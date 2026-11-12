@@ -336,9 +336,37 @@ test("stock-transfer migration is guarded, additive, and retains transfer histor
   assert.match(sql, /StockTransfer_targetBranchId_status_createdAt_idx/);
   assert.match(sql, /StockTransfer_productId_createdAt_idx/);
   assert.match(main, /STOCK_TRANSFER_MIGRATION/);
-  assert.match(main, /const PRE_TRANSFER_MODELS = Prisma\.dmmf\.datamodel\.models\s*\.filter\(\(model\) => model\.name !== "StockTransfer"\)/);
+  assert.match(main, /STOCK_TRANSFER_SKU_CORRECTION_MIGRATION/);
+  assert.match(main, /const PRE_TRANSFER_MODELS = Prisma\.dmmf\.datamodel\.models\s*\.filter\(\(model\) => model\.name !== "StockTransfer" && model\.name !== "StockTransferSkuCorrection"\)/);
   assert.match(main, /isCurrent17/);
   assert.match(main, /isCurrent18/);
+  assert.match(main, /isCurrent19/);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
+});
+
+test("transfer SKU-correction migration is guarded, additive, and preserves both SKU histories", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261112100000_add_transfer_sku_corrections/migration.sql", import.meta.url),
+    "utf8",
+  );
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
+  assert.match(sql, /expected the approved 18-table transfer schema/);
+  assert.match(sql, /CREATE TABLE "public"\."StockTransferSkuCorrection"/);
+  for (const field of [
+    "transferId", "actualProductId", "actualQty", "note", "status",
+    "responseNote", "reportedById", "reviewedById", "receivedById",
+  ]) {
+    assert.match(sql, new RegExp(`"${field}"`));
+  }
+  assert.match(sql, /StockTransferSkuCorrection_one_open_per_transfer_idx/);
+  assert.match(sql, /PENDING_SOURCE.*APPROVED_PENDING_RECEIPT/is);
+  assert.match(sql, /StockTransferSkuCorrection_transferId_fkey/);
+  assert.match(main, /STOCK_TRANSFER_SKU_CORRECTION_MIGRATION/);
+  assert.match(main, /PRE_SKU_CORRECTION_MODELS/);
+  assert.match(main, /isCurrent19/);
   assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });
