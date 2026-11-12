@@ -770,6 +770,248 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     },
   );
   assert.equal(duplicateBatchReceipt.status, 409);
+
+  const postBatch = (token: string, body: unknown) => fetch(`${apiUrl}/api/stocks/transfer-batch`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  assert.equal((await fetch(`${apiUrl}/api/stocks/transfer-batch`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ targetBranchId: branchBId, items: [{ productId, qty: 1 }] }),
+  })).status, 401, "Batch sends require an authenticated user.");
+  const invalidPayloads: unknown[] = [
+    { targetBranchId: branchBId, items: [] },
+    { targetBranchId: branchBId, items: Array.from({ length: 51 }, (_, index) => ({ productId: `not-real-${index}`, qty: 1 })) },
+    { targetBranchId: branchBId, items: [{ productId, qty: 1 }, { productId, qty: 1 }] },
+    { targetBranchId: branchBId, items: [{ productId, qty: 0 }] },
+    { targetBranchId: branchBId, items: [{ productId, qty: 1.5 }] },
+    { targetBranchId: branchBId, items: [{ productId, qty: -1 }] },
+    { targetBranchId: branchBId, items: [{ productId, qty: 1 }], note: "x".repeat(501) },
+  ];
+  for (const payload of invalidPayloads) {
+    assert.equal((await postBatch(cashierPayload.token, payload)).status, 400);
+  }
+  assert.equal((await postBatch(cashierPayload.token, {
+    sourceBranchId: branchBId,
+    targetBranchId: branchAId,
+    items: [{ productId, qty: 1 }],
+  })).status, 403, "A cashier cannot spoof a different source branch.");
+  assert.equal((await postBatch(cashierPayload.token, {
+    targetBranchId: branchAId,
+    items: [{ productId, qty: 1 }],
+  })).status, 400, "A branch cannot transfer to itself.");
+  assert.equal((await postBatch(cashierPayload.token, {
+    targetBranchId: "missing-transfer-branch",
+    items: [{ productId, qty: 1 }],
+  })).status, 404, "Unknown destination branches are rejected.");
+
+  const batchHiddenProduct = await prisma.product.create({
+    data: { name: "Hidden From Transfer Destination", buyingPrice: 1000, sellingPrice: 2000, visibleBranchIds: branchAId },
+  });
+  await prisma.productStock.createMany({
+    data: [
+      { productId: batchHiddenProduct.id, branchId: branchAId, qty: 4 },
+      { productId: batchHiddenProduct.id, branchId: branchBId, qty: 0 },
+    ],
+  });
+  const baseStockBeforeHiddenBatch = (await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty;
+  const hiddenProductBatch = await postBatch(cashierPayload.token, {
+    targetBranchId: branchBId,
+    items: [{ productId, qty: 1 }, { productId: batchHiddenProduct.id, qty: 1 }],
+  });
+  assert.equal(hiddenProductBatch.status, 409);
+  assert.equal((await hiddenProductBatch.json() as { code: string }).code, "PRODUCT_HIDDEN_IN_TARGET");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, baseStockBeforeHiddenBatch, "A hidden product prevents every line in the batch from dispatching.");
+  await prisma.product.update({ where: { id: batchHiddenProduct.id }, data: { visibleBranchIds: "*", status: "INACTIVE" } });
+  assert.equal((await postBatch(cashierPayload.token, {
+    targetBranchId: branchBId,
+    items: [{ productId: batchHiddenProduct.id, qty: 1 }],
+  })).status, 409, "Inactive products cannot be transferred.");
+
+  await prisma.shift.update({ where: { id: activeShift.id }, data: { status: "closed" } });
+  const closedShiftBatch = await postBatch(cashierPayload.token, {
+    targetBranchId: branchBId,
+    items: [{ productId, qty: 1 }],
+  });
+  assert.equal(closedShiftBatch.status, 409, "Cashiers cannot dispatch without an open shift.");
+  await prisma.shift.update({ where: { id: activeShift.id }, data: { status: "open" } });
+
+  const maxBatchProductIds = Array.from({ length: 50 }, (_, index) => `qa-max-batch-${branchAId}-${index}`);
+  await prisma.product.createMany({
+    data: maxBatchProductIds.map((id, index) => ({
+      id,
+      name: `Maximum batch QA product ${index}`,
+      buyingPrice: 1000,
+      sellingPrice: 2000,
+    })),
+  });
+  await prisma.productStock.createMany({
+    data: maxBatchProductIds.map((maxProductId) => ({
+      productId: maxProductId,
+      branchId: branchAId,
+      qty: 1,
+    })),
+  });
+  const maximumBatchResponse = await postBatch(cashierPayload.token, {
+    targetBranchId: branchBId,
+    items: maxBatchProductIds.map((maxProductId) => ({ productId: maxProductId, qty: 1 })),
+  });
+  assert.equal(maximumBatchResponse.status, 201, "A batch at the 50-product limit is accepted.");
+  const maximumBatch = await maximumBatchResponse.json() as { batchId: string; items: Array<{ id: string }> };
+  assert.equal(maximumBatch.items.length, 50);
+  const maximumBatchReceipt = await fetch(`${apiUrl}/api/stock-transfers/batches/${maximumBatch.batchId}/receive`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.equal(maximumBatchReceipt.status, 200);
+  assert.equal((await maximumBatchReceipt.json() as { items: unknown[] }).items.length, 50);
+  assert.equal(await prisma.adjustment.count({
+    where: { reason: { contains: maximumBatch.batchId } },
+  }), 100, "Each line keeps a source and destination stock audit entry.");
+
+  const raceProduct = await prisma.product.create({
+    data: { name: "Concurrent Batch QA Product", buyingPrice: 1000, sellingPrice: 2000 },
+  });
+  await prisma.productStock.createMany({
+    data: [
+      { productId: raceProduct.id, branchId: branchAId, qty: 5 },
+      { productId: raceProduct.id, branchId: branchBId, qty: 0 },
+    ],
+  });
+  const concurrentSends = await Promise.all([
+    postBatch(cashierPayload.token, { targetBranchId: branchBId, items: [{ productId: raceProduct.id, qty: 4 }] }),
+    postBatch(cashierPayload.token, { targetBranchId: branchBId, items: [{ productId: raceProduct.id, qty: 4 }] }),
+  ]);
+  assert.deepEqual(concurrentSends.map((response) => response.status).sort(), [201, 409]);
+  const successfulSend = concurrentSends.find((response) => response.status === 201);
+  assert.ok(successfulSend);
+  const raceBatch = await successfulSend.json() as { batchId: string; items: Array<{ id: string }> };
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: raceProduct.id, branchId: branchAId } },
+  })).qty, 1, "Concurrent sends cannot oversell the source branch.");
+  const concurrentReceipts = await Promise.all([
+    fetch(`${apiUrl}/api/stock-transfers/batches/${raceBatch.batchId}/receive`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    }),
+    fetch(`${apiUrl}/api/stock-transfers/batches/${raceBatch.batchId}/receive`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    }),
+  ]);
+  assert.deepEqual(concurrentReceipts.map((response) => response.status).sort(), [200, 409]);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: raceProduct.id, branchId: branchBId } },
+  })).qty, 4, "Concurrent duplicate receipts add stock exactly once.");
+
+  const batchRecordedProduct = await prisma.product.create({
+    data: { name: "Batch SKU Mistake Recorded Product", buyingPrice: 1000, sellingPrice: 2000 },
+  });
+  const batchActualProduct = await prisma.product.create({
+    data: { name: "Batch SKU Mistake Actual Product", buyingPrice: 1000, sellingPrice: 2000 },
+  });
+  const batchNormalProduct = await prisma.product.create({
+    data: { name: "Batch SKU Normal Product", buyingPrice: 1000, sellingPrice: 2000 },
+  });
+  await prisma.productStock.createMany({
+    data: [
+      { productId: batchRecordedProduct.id, branchId: branchAId, qty: 3 },
+      { productId: batchRecordedProduct.id, branchId: branchBId, qty: 0 },
+      { productId: batchActualProduct.id, branchId: branchAId, qty: 3 },
+      { productId: batchActualProduct.id, branchId: branchBId, qty: 0 },
+      { productId: batchNormalProduct.id, branchId: branchAId, qty: 5 },
+      { productId: batchNormalProduct.id, branchId: branchBId, qty: 0 },
+    ],
+  });
+  const skuExceptionBatchResponse = await postBatch(cashierPayload.token, {
+    targetBranchId: branchBId,
+    items: [
+      { productId: batchRecordedProduct.id, qty: 1 },
+      { productId: batchNormalProduct.id, qty: 2 },
+    ],
+  });
+  assert.equal(skuExceptionBatchResponse.status, 201);
+  const skuExceptionBatch = await skuExceptionBatchResponse.json() as {
+    batchId: string;
+    items: Array<{ id: string; productId: string }>;
+  };
+  const recordedTransfer = skuExceptionBatch.items.find((item) => item.productId === batchRecordedProduct.id);
+  const normalTransfer = skuExceptionBatch.items.find((item) => item.productId === batchNormalProduct.id);
+  assert.ok(recordedTransfer && normalTransfer);
+  const skuReportResponse = await fetch(
+    `${apiUrl}/api/stock-transfers/${recordedTransfer.id}/sku-corrections`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ actualProductId: batchActualProduct.id, actualQty: 1, note: "Produk fisik sesuai, SKU tercatat keliru." }),
+    },
+  );
+  assert.equal(skuReportResponse.status, 201);
+  const skuReport = await skuReportResponse.json() as { skuCorrections: Array<{ id: string }> };
+  const batchCorrectionId = skuReport.skuCorrections[0]?.id;
+  assert.ok(batchCorrectionId);
+  const bulkWithPendingCorrection = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${skuExceptionBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(bulkWithPendingCorrection.status, 409);
+  assert.equal((await bulkWithPendingCorrection.json() as { code: string }).code, "SKU_CORRECTION_PENDING");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchNormalProduct.id, branchId: branchBId } },
+  })).qty, 0, "A pending SKU correction blocks the whole grouped receipt.");
+  const approveBatchCorrection = await fetch(
+    `${apiUrl}/api/stock-transfers/${recordedTransfer.id}/sku-corrections/${batchCorrectionId}`,
+    {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ action: "APPROVE" }),
+    },
+  );
+  assert.equal(approveBatchCorrection.status, 200);
+  const receiveCorrectedSku = await fetch(
+    `${apiUrl}/api/stock-transfers/${recordedTransfer.id}/sku-corrections/${batchCorrectionId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(receiveCorrectedSku.status, 200);
+  const bulkAfterPerLineCorrection = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${skuExceptionBatch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(bulkAfterPerLineCorrection.status, 409, "A mixed batch must not partially confirm remaining lines.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchNormalProduct.id, branchId: branchBId } },
+  })).qty, 0);
+  const receiveRemainingBatchLine = await fetch(`${apiUrl}/api/stock-transfers/${normalTransfer.id}/receive`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+    body: JSON.stringify({ receivedQty: 2 }),
+  });
+  assert.equal(receiveRemainingBatchLine.status, 200);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchNormalProduct.id, branchId: branchBId } },
+  })).qty, 2);
+
   await prisma.productStock.update({
     where: { productId_branchId: { productId, branchId: branchAId } },
     data: { qty: 2 },
