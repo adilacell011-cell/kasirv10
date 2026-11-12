@@ -312,6 +312,24 @@ export const api = {
     );
   },
 
+  async createStockTransferReturn(data: {
+    items: Array<{ transferId: string; qty: number }>;
+    note?: string;
+  }) {
+    return writeJson("/stock-transfers/returns", "POST", data);
+  },
+
+  async receiveStockTransferReturnBatch(
+    batchId: string,
+    data: { items: Array<{ transferId: string; receivedQty: number; discrepancyNote?: string }> },
+  ) {
+    return writeJson(
+      `/stock-transfers/returns/${encodeURIComponent(batchId)}/receive`,
+      "POST",
+      data,
+    );
+  },
+
   async reportStockTransferSkuCorrection(
     id: string,
     data: { actualProductId: string; actualQty: number; note: string },

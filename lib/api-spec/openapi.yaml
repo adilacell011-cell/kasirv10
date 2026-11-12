@@ -120,6 +120,70 @@ paths:
           description: Sign-in required.
         "403":
           description: Cashier access required.
+  /stock-transfers/returns:
+    post:
+      operationId: createStockTransferReturnBatch
+      summary: Dispatch a physical return for previously received stock transfers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockTransferReturnBatchInput"
+      responses:
+        "201":
+          description: Return batch dispatched and sender-branch stock deducted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockTransferReturnBatch"
+        "400":
+          description: Invalid return batch.
+        "403":
+          description: Only the original receiving branch can start a return.
+        "404":
+          description: Original transfer not found.
+        "409":
+          description: Return quantity exceeds received stock or sender stock is insufficient.
+        "401":
+          description: Sign-in required.
+  /stock-transfers/returns/{batchId}/receive:
+    post:
+      operationId: receiveStockTransferReturnBatch
+      summary: Confirm physical receipt of a complete return batch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockTransferReturnReceiptInput"
+      responses:
+        "200":
+          description: Return receipt confirmed and actual accepted quantities credited.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockTransferReturnBatch"
+        "400":
+          description: Invalid receipt or missing discrepancy note.
+        "403":
+          description: Only the original sender branch can confirm receipt.
+        "404":
+          description: Return batch not found.
+        "409":
+          description: Return batch was already processed or changed.
+        "401":
+          description: Sign-in required.
   /owner-dashboard:
     get:
       operationId: getOwnerDashboard
@@ -536,6 +600,88 @@ components:
           type: string
         name:
           type: string
+    StockTransferReturnBatchInput:
+      type: object
+      required: [items]
+      properties:
+        note:
+          type: string
+          maxLength: 500
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/StockTransferReturnItemInput"
+    StockTransferReturnItemInput:
+      type: object
+      required: [transferId, qty]
+      properties:
+        transferId:
+          type: string
+        qty:
+          type: integer
+          minimum: 1
+    StockTransferReturnReceiptInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/StockTransferReturnReceiptItemInput"
+    StockTransferReturnReceiptItemInput:
+      type: object
+      required: [transferId, receivedQty]
+      properties:
+        transferId:
+          type: string
+        receivedQty:
+          type: integer
+          minimum: 0
+        discrepancyNote:
+          type: string
+          maxLength: 500
+    StockTransferReturnBatch:
+      type: object
+      required: [batchId, items]
+      properties:
+        batchId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StockTransferReturn"
+    StockTransferReturn:
+      type: object
+      required: [id, batchId, returnOfId, productId, sourceBranchId, targetBranchId, kind, status, dispatchedQty]
+      properties:
+        id:
+          type: string
+        batchId:
+          type: string
+        returnOfId:
+          type: string
+        productId:
+          type: string
+        sourceBranchId:
+          type: string
+        targetBranchId:
+          type: string
+        kind:
+          type: string
+          enum: [RETURN]
+        status:
+          type: string
+          enum: [IN_TRANSIT, RECEIVED]
+        dispatchedQty:
+          type: integer
+        receivedQty:
+          type: ["integer", "null"]
+        discrepancyNote:
+          type: ["string", "null"]
     ProductBranchStock:
       type: object
       required: [branchId, branchName, qty]

@@ -389,3 +389,24 @@ test("transfer-batch migration safely adds a grouping key to the exact current s
   assert.match(main, /isPreBatch19/);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });
+
+test("physical-return migration adds a guarded self-reference to the exact transfer schema", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261112120000_add_stock_transfer_return_reference/migration.sql", import.meta.url),
+    "utf8",
+  );
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
+  assert.match(sql, /exact approved 19-table schema/i);
+  assert.match(sql, /returnOfId/);
+  assert.match(sql, /StockTransfer_returnOfId_createdAt_idx/);
+  assert.match(sql, /StockTransfer_returnOfId_fkey/);
+  assert.match(sql, /ON DELETE RESTRICT ON UPDATE CASCADE/);
+  assert.match(main, /STOCK_TRANSFER_RETURN_MIGRATION/);
+  assert.match(main, /PRE_RETURN_MODELS/);
+  assert.match(main, /hasTransferReturnColumn/);
+  assert.match(main, /STOCK_TRANSFER_RETURN_INDEXES/);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
+});

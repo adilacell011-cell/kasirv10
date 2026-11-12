@@ -19,6 +19,11 @@ type StockInRecord = {
     targetBranch: { id: string; name: string };
     receivedAt?: string | null;
     receivedBy?: { id: string; name: string } | null;
+    returnOf?: {
+      id: string;
+      batchId?: string | null;
+      product: { id: string; name: string; barcode?: string | null };
+    } | null;
     skuCorrections?: Array<{
       receivedAt?: string | null;
       receivedBy?: { id: string; name: string } | null;
@@ -39,6 +44,7 @@ const typeLabels: Record<string, string> = {
   TRANSFER_IN: "Transfer diterima",
   TRANSFER_SKU_CORRECTION_IN: "SKU koreksi diterima",
   TRANSFER_SKU_CORRECTION_RESTORE: "Pemulihan stok koreksi",
+  TRANSFER_RETURN_IN: "Retur diterima",
 };
 
 const formatDateTime = (value: string) =>
@@ -153,6 +159,9 @@ export default function StockInHistory({ branchId }: { branchId?: string | null 
             const reference = item.relatedTransfer
               ? item.relatedTransfer.batchId || item.relatedTransfer.id
               : "";
+            const originalReference = item.relatedTransfer?.returnOf
+              ? item.relatedTransfer.returnOf.batchId || item.relatedTransfer.returnOf.id
+              : "";
             return (
               <article
                 key={item.id}
@@ -186,6 +195,8 @@ export default function StockInHistory({ branchId }: { branchId?: string | null 
                     <span>
                       Dari {item.relatedTransfer.sourceBranch.name}
                       {reference ? ` · Rujukan ${reference.slice(0, 8).toUpperCase()}` : ""}
+                      {originalReference ? ` · Transfer asal ${originalReference.slice(0, 8).toUpperCase()}` : ""}
+                      {item.relatedTransfer.returnOf?.product.name ? ` · ${item.relatedTransfer.returnOf.product.name}` : ""}
                       {receiver?.name ? ` · Dikonfirmasi ${receiver.name}` : ""}
                       {relatedAt ? ` · ${formatDateTime(relatedAt)}` : ""}
                     </span>

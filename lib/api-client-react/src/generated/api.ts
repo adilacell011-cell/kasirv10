@@ -49,7 +49,10 @@ import type {
   StockAuditSession,
   StockAuditStartInput,
   StockAuditVisibilityRevocationInput,
-  StockAuditVisibilityRevocationResult
+  StockAuditVisibilityRevocationResult,
+  StockTransferReturnBatch,
+  StockTransferReturnBatchInput,
+  StockTransferReturnReceiptInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -530,6 +533,183 @@ export function useGetBranchTransferTargets<TData = Awaited<ReturnType<typeof ge
 
 
 
+
+export const getCreateStockTransferReturnBatchUrl = () => {
+
+
+
+
+  return `/api/stock-transfers/returns`
+}
+
+/**
+ * @summary Dispatch a physical return for previously received stock transfers
+ */
+export const createStockTransferReturnBatch = async (stockTransferReturnBatchInput: StockTransferReturnBatchInput, options?: Parameters<typeof customFetch>[1]): Promise<StockTransferReturnBatch> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockTransferReturnBatch>(getCreateStockTransferReturnBatchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockTransferReturnBatchInput)
+  }
+);}
+
+
+
+
+
+export const getCreateStockTransferReturnBatchMutationKey = () => ['createStockTransferReturnBatch'] as const;
+
+export const getCreateStockTransferReturnBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockTransferReturnBatch>>, TError,CreateStockTransferReturnBatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStockTransferReturnBatch>>, TError,CreateStockTransferReturnBatchMutationVariables, TContext> => {
+
+const mutationKey = getCreateStockTransferReturnBatchMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStockTransferReturnBatch>>, CreateStockTransferReturnBatchMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStockTransferReturnBatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStockTransferReturnBatchMutationResult = NonNullable<Awaited<ReturnType<typeof createStockTransferReturnBatch>>>
+    export type CreateStockTransferReturnBatchMutationBody = BodyType<StockTransferReturnBatchInput>
+    export type CreateStockTransferReturnBatchMutationError = ErrorType<void>
+    export type CreateStockTransferReturnBatchMutationVariables = {data: BodyType<StockTransferReturnBatchInput>}
+
+    /**
+ * @summary Dispatch a physical return for previously received stock transfers
+ */
+export const useCreateStockTransferReturnBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockTransferReturnBatch>>, TError,CreateStockTransferReturnBatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createStockTransferReturnBatch>>,
+        TError,
+        CreateStockTransferReturnBatchMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStockTransferReturnBatchMutationOptions(options), queryClient);
+    }
+
+export const getReceiveStockTransferReturnBatchUrl = (batchId: string,) => {
+
+
+
+
+  return `/api/stock-transfers/returns/${batchId}/receive`
+}
+
+/**
+ * @summary Confirm physical receipt of a complete return batch
+ */
+export const receiveStockTransferReturnBatch = async (batchId: string,
+    stockTransferReturnReceiptInput: StockTransferReturnReceiptInput, options?: Parameters<typeof customFetch>[1]): Promise<StockTransferReturnBatch> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockTransferReturnBatch>(getReceiveStockTransferReturnBatchUrl(batchId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockTransferReturnReceiptInput)
+  }
+);}
+
+
+
+
+
+export const getReceiveStockTransferReturnBatchMutationKey = () => ['receiveStockTransferReturnBatch'] as const;
+
+export const getReceiveStockTransferReturnBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveStockTransferReturnBatch>>, TError,ReceiveStockTransferReturnBatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof receiveStockTransferReturnBatch>>, TError,ReceiveStockTransferReturnBatchMutationVariables, TContext> => {
+
+const mutationKey = getReceiveStockTransferReturnBatchMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof receiveStockTransferReturnBatch>>, ReceiveStockTransferReturnBatchMutationVariables> = (props) => {
+          const {batchId,data} = props ?? {};
+
+          return  receiveStockTransferReturnBatch(batchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReceiveStockTransferReturnBatchMutationResult = NonNullable<Awaited<ReturnType<typeof receiveStockTransferReturnBatch>>>
+    export type ReceiveStockTransferReturnBatchMutationBody = BodyType<StockTransferReturnReceiptInput>
+    export type ReceiveStockTransferReturnBatchMutationError = ErrorType<void>
+    export type ReceiveStockTransferReturnBatchMutationVariables = {batchId: string;data: BodyType<StockTransferReturnReceiptInput>}
+
+    /**
+ * @summary Confirm physical receipt of a complete return batch
+ */
+export const useReceiveStockTransferReturnBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof receiveStockTransferReturnBatch>>, TError,ReceiveStockTransferReturnBatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof receiveStockTransferReturnBatch>>,
+        TError,
+        ReceiveStockTransferReturnBatchMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReceiveStockTransferReturnBatchMutationOptions(options), queryClient);
+    }
 
 export const getGetOwnerDashboardUrl = (params?: GetOwnerDashboardParams,) => {
   const normalizedParams = new URLSearchParams();

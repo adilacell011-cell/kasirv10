@@ -24,6 +24,74 @@ export interface BranchTransferTarget {
   name: string;
 }
 
+export interface StockTransferReturnItemInput {
+  transferId: string;
+  /** @minimum 1 */
+  qty: number;
+}
+
+export interface StockTransferReturnBatchInput {
+  /** @maxLength 500 */
+  note?: string;
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  items: StockTransferReturnItemInput[];
+}
+
+export interface StockTransferReturnReceiptItemInput {
+  transferId: string;
+  /** @minimum 0 */
+  receivedQty: number;
+  /** @maxLength 500 */
+  discrepancyNote?: string;
+}
+
+export interface StockTransferReturnReceiptInput {
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  items: StockTransferReturnReceiptItemInput[];
+}
+
+export type StockTransferReturnKind = typeof StockTransferReturnKind[keyof typeof StockTransferReturnKind];
+
+
+export const StockTransferReturnKind = {
+  RETURN: 'RETURN',
+} as const;
+
+export type StockTransferReturnStatus = typeof StockTransferReturnStatus[keyof typeof StockTransferReturnStatus];
+
+
+export const StockTransferReturnStatus = {
+  IN_TRANSIT: 'IN_TRANSIT',
+  RECEIVED: 'RECEIVED',
+} as const;
+
+export interface StockTransferReturn {
+  id: string;
+  batchId: string;
+  returnOfId: string;
+  productId: string;
+  sourceBranchId: string;
+  targetBranchId: string;
+  kind: StockTransferReturnKind;
+  status: StockTransferReturnStatus;
+  dispatchedQty: number;
+  /** @nullable */
+  receivedQty?: number | null;
+  /** @nullable */
+  discrepancyNote?: string | null;
+}
+
+export interface StockTransferReturnBatch {
+  batchId: string;
+  items: StockTransferReturn[];
+}
+
 export interface ProductBranchStock {
   branchId: string;
   branchName: string;

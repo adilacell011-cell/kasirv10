@@ -11,6 +11,7 @@ import StockTransferBatchComposer from "./StockTransferBatchComposer";
 import StockTransferBatchReceiptTable from "./StockTransferBatchReceiptTable";
 import StockTransferBatchSenderTable from "./StockTransferBatchSenderTable";
 import StockInHistory from "./StockInHistory";
+import StockTransferReturns from "./StockTransferReturns";
 import { api } from "../services/api";
 
 type Branch = { id: string; name: string };
@@ -30,7 +31,7 @@ type SkuCorrection = {
 type Transfer = {
   id: string;
   batchId?: string | null;
-  kind: "REQUEST" | "DIRECT";
+  kind: "REQUEST" | "DIRECT" | "RETURN";
   status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
   requestedQty: number | null;
   approvedQty: number | null;
@@ -48,6 +49,11 @@ type Transfer = {
   dispatchedBy?: { id: string; name?: string | null } | null;
   receivedBy?: { id: string; name?: string | null } | null;
   skuCorrections?: SkuCorrection[];
+  returnOfId?: string | null;
+  returnOf?: { id: string; batchId?: string | null; product: Product } | null;
+  returnedQty?: number | null;
+  returnableQty?: number | null;
+  returnableProduct?: Product | null;
 };
 
 type Props = {
@@ -104,7 +110,7 @@ export default function StockTransferActivity({
   onUpdated,
 }: Props) {
   const isCashier = role === "CASHIER";
-  const [historyMode, setHistoryMode] = useState<"transfers" | "incoming">("transfers");
+  const [historyMode, setHistoryMode] = useState<"transfers" | "incoming" | "returns">("transfers");
   const [acceptQty, setAcceptQty] = useState<Record<string, string>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
   const [receiveNotes, setReceiveNotes] = useState<Record<string, string>>({});
@@ -119,8 +125,12 @@ export default function StockTransferActivity({
   const [error, setError] = useState("");
 
   const transferGroups = useMemo(() => {
-    const groups = new Map<string, Transfer[]>();
-    for (const transfer of transfers) {
+    type OriginalTransfer = Transfer & { kind: "REQUEST" | "DIRECT" };
+    const groups = new Map<string, OriginalTransfer[]>();
+    const originalTransfers = transfers.filter(
+      (item): item is Transfer & { kind: "REQUEST" | "DIRECT" } => item.kind !== "RETURN",
+    );
+    for (const transfer of originalTransfers) {
       const key = transfer.batchId || transfer.id;
       const rows = groups.get(key) || [];
       rows.push(transfer);
@@ -223,7 +233,7 @@ export default function StockTransferActivity({
         />
       )}
 
-      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <button
           type="button"
           aria-pressed={historyMode === "transfers"}
@@ -235,6 +245,18 @@ export default function StockTransferActivity({
           }`}
         >
           Riwayat transfer
+        </button>
+        <button
+          type="button"
+          aria-pressed={historyMode === "returns"}
+          onClick={() => setHistoryMode("returns")}
+          className={`min-h-10 rounded-xl px-2 text-[9px] font-black uppercase tracking-wide transition-colors ${
+            historyMode === "returns"
+              ? "bg-slate-800 text-white dark:bg-amber-500 dark:text-slate-950"
+              : "text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          }`}
+        >
+          Retur stok
         </button>
         <button
           type="button"
@@ -252,6 +274,20 @@ export default function StockTransferActivity({
 
       {historyMode === "incoming" ? (
         <StockInHistory branchId={branchId} />
+      ) : historyMode === "returns" ? (
+        <StockTransferReturns
+          role={role}
+          branchId={branchId}
+          transfers={transfers}
+          loading={loading}
+          error={loadError}
+          shiftOpen={shiftOpen}
+          confirm={confirm}
+          hasMore={hasMoreTransfers}
+          loadingMore={loadingMoreTransfers}
+          onLoadMore={onLoadMoreTransfers}
+          onUpdated={(transfer) => onUpdated(transfer as Transfer)}
+        />
       ) : (
       <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="mb-3 flex items-center justify-between gap-2">

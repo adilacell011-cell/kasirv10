@@ -20,6 +20,7 @@ import { registerOwnerDashboardRoutes } from "./owner-dashboard";
 import { registerBranchReadRoutes } from "./read-routes";
 import { registerStockAuditRoutes } from "./stock-audit";
 import { registerStockTransferRoutes } from "./stock-transfers";
+import { registerStockTransferReturnRoutes } from "./stock-transfer-returns";
 import {
   isProductVisibleInBranch,
   lockProductStatus,
@@ -1382,6 +1383,7 @@ app.get("/api/stock-in-history", authenticateToken, requireRole("ADMIN", "AUDIT"
             "TRANSFER_IN",
             "TRANSFER_SKU_CORRECTION_IN",
             "TRANSFER_SKU_CORRECTION_RESTORE",
+            "TRANSFER_RETURN_IN",
           ],
         },
         ...(branchId ? { branchId } : {}),
@@ -1396,7 +1398,7 @@ app.get("/api/stock-in-history", authenticateToken, requireRole("ADMIN", "AUDIT"
     });
     const items = rows.slice(0, limit);
     const referenceIds = [...new Set(items
-      .map((item) => item.reason?.match(/(?:Kiriman|Transfer|Koreksi SKU transfer)\s+([a-f0-9-]{36})/i)?.[1])
+      .map((item) => item.reason?.match(/(?:Kiriman|Transfer|Koreksi SKU transfer|Retur)\s+([a-f0-9-]{36})/i)?.[1])
       .filter((id): id is string => Boolean(id)))];
     const relatedTransfers = referenceIds.length
       ? await prisma.stockTransfer.findMany({
@@ -1418,11 +1420,18 @@ app.get("/api/stock-in-history", authenticateToken, requireRole("ADMIN", "AUDIT"
                 receivedBy: { select: { id: true, name: true } },
               },
             },
+            returnOf: {
+              select: {
+                id: true,
+                batchId: true,
+                product: { select: { id: true, name: true, barcode: true } },
+              },
+            },
           },
         })
       : [];
     const withReferences = items.map((item) => {
-      const referenceId = item.reason?.match(/(?:Kiriman|Transfer|Koreksi SKU transfer)\s+([a-f0-9-]{36})/i)?.[1];
+      const referenceId = item.reason?.match(/(?:Kiriman|Transfer|Koreksi SKU transfer|Retur)\s+([a-f0-9-]{36})/i)?.[1];
       const relatedTransfer = referenceId
         ? relatedTransfers.find((transfer) => transfer.id === referenceId || transfer.batchId === referenceId) ?? null
         : null;
@@ -1562,6 +1571,7 @@ app.post("/api/stocks/adjust", authenticateToken, requireRole("ADMIN", "AUDIT", 
 });
 
 registerStockTransferRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
+registerStockTransferReturnRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
 
 app.patch("/api/users/:id", authenticateToken, async (req, res) => {
   // Security: only admins may modify users (role/branch/status/password). Without this

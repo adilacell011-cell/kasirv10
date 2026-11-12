@@ -5,7 +5,7 @@ import { logger } from "./lib/logger";
 import { lockBranch, ShiftConflict } from "./shift-safety";
 import { isProductVisibleInBranch, lockProductStatus, ProductLifecycleConflict } from "./product-lifecycle";
 
-type TransferActor = {
+export type TransferActor = {
   userId: string;
   role: "ADMIN" | "AUDIT" | "CASHIER" | string;
   branchId: string | null;
@@ -13,7 +13,7 @@ type TransferActor = {
 
 type EmitBranch = (branchId: string | null | undefined, event: string, payload: any) => void;
 
-const transferInclude = {
+export const transferInclude = {
   product: { select: { id: true, name: true, barcode: true, brand: true, category: true } },
   sourceBranch: { select: { id: true, name: true } },
   targetBranch: { select: { id: true, name: true } },
@@ -32,9 +32,17 @@ const transferInclude = {
       receivedBy: { select: { id: true, name: true, username: true } },
     },
   },
+  returnOf: {
+    select: {
+      id: true,
+      batchId: true,
+      productId: true,
+      product: { select: { id: true, name: true, barcode: true, brand: true, category: true } },
+    },
+  },
 } satisfies Prisma.StockTransferInclude;
 
-class TransferHttpError extends Error {
+export class TransferHttpError extends Error {
   constructor(
     readonly status: number,
     message: string,
@@ -44,21 +52,21 @@ class TransferHttpError extends Error {
   }
 }
 
-const positiveInt = (value: unknown): number | null => {
+export const positiveInt = (value: unknown): number | null => {
   if (typeof value !== "number" && typeof value !== "string") return null;
   if (typeof value === "string" && value.trim() === "") return null;
   const number = Number(value);
   return Number.isSafeInteger(number) && number > 0 ? number : null;
 };
 
-const nonnegativeInt = (value: unknown): number | null => {
+export const nonnegativeInt = (value: unknown): number | null => {
   if (typeof value !== "number" && typeof value !== "string") return null;
   if (typeof value === "string" && value.trim() === "") return null;
   const number = Number(value);
   return Number.isSafeInteger(number) && number >= 0 ? number : null;
 };
 
-function parseNote(value: unknown, label: string): string | null {
+export function parseNote(value: unknown, label: string): string | null {
   if (value === undefined || value === null || value === "") return null;
   if (typeof value !== "string") throw new TransferHttpError(400, `${label} harus berupa teks.`);
   const note = value.trim();
@@ -66,11 +74,11 @@ function parseNote(value: unknown, label: string): string | null {
   return note || null;
 }
 
-function getActor(req: any): TransferActor {
+export function getActor(req: any): TransferActor {
   return req.user as TransferActor;
 }
 
-function requireCashierBranch(actor: TransferActor): string {
+export function requireCashierBranch(actor: TransferActor): string {
   if (!actor.branchId) throw new TransferHttpError(403, "Akun kasir belum terhubung ke cabang.");
   return actor.branchId;
 }
@@ -89,7 +97,7 @@ function cashierBranchOrRespond(
   }
 }
 
-async function requireOpenShift(
+export async function requireOpenShift(
   tx: Prisma.TransactionClient,
   actor: TransferActor,
   branchId: string,
@@ -117,7 +125,7 @@ async function assertBranchPair(
   if (branches.length !== 2) throw new TransferHttpError(404, "Cabang asal atau tujuan tidak ditemukan.");
 }
 
-async function lockTransferBranches(
+export async function lockTransferBranches(
   tx: Prisma.TransactionClient,
   sourceBranchId: string,
   targetBranchId: string,
@@ -153,7 +161,7 @@ async function fetchTransfer(
   return prisma.stockTransfer.findUnique({ where: { id }, include: transferInclude });
 }
 
-function respondError(req: any, res: any, error: unknown, message: string): void {
+export function respondError(req: any, res: any, error: unknown, message: string): void {
   if (error instanceof TransferHttpError) {
     res.status(error.status).json({
       error: error.message,
@@ -173,7 +181,7 @@ function respondError(req: any, res: any, error: unknown, message: string): void
   res.status(500).json({ error: message });
 }
 
-function emitTransferUpdate(
+export function emitTransferUpdate(
   emitBranch: EmitBranch,
   sourceBranchId: string,
   targetBranchId: string,
@@ -234,8 +242,39 @@ export function registerStockTransferRoutes(
         include: transferInclude,
       });
       const items = rows.slice(0, limit);
+      const parentIds = items.filter((item) => item.kind !== "RETURN").map((item) => item.id);
+      const returnedTotals = parentIds.length
+        ? await prisma.stockTransfer.groupBy({
+            by: ["returnOfId"],
+            where: {
+              kind: "RETURN",
+              returnOfId: { in: parentIds },
+              status: { in: ["IN_TRANSIT", "RECEIVED"] },
+            },
+            _sum: { dispatchedQty: true },
+          })
+        : [];
+      const returnedQtyByParent = new Map(
+        returnedTotals
+          .filter((row) => row.returnOfId)
+          .map((row) => [row.returnOfId!, row._sum.dispatchedQty ?? 0]),
+      );
+      const enrichedItems = items.map((item) => {
+        if (item.kind === "RETURN") {
+          return { ...item, returnedQty: null, returnableQty: null, returnableProduct: null };
+        }
+        const acceptedCorrection = item.skuCorrections.find((correction) => correction.status === "RECEIVED");
+        const receivedQty = acceptedCorrection?.actualQty ?? item.receivedQty ?? 0;
+        const returnedQty = returnedQtyByParent.get(item.id) ?? 0;
+        return {
+          ...item,
+          returnedQty,
+          returnableQty: Math.max(0, receivedQty - returnedQty),
+          returnableProduct: acceptedCorrection?.actualProduct ?? item.product,
+        };
+      });
       res.json({
-        items,
+        items: enrichedItems,
         hasMore: rows.length > limit,
         nextCursor: items.at(-1)?.id ?? null,
       });

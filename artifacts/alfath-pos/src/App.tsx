@@ -7731,15 +7731,17 @@ export default function App() {
                                  .filter(a => !auditSelectedBranch || a.branchId === auditSelectedBranch)
                                  .slice(0, 30)
                                   .map((log: any, idx: number) => {
-                                    const isInbound = ["STOCK_IN", "TRANSFER_IN", "TRANSFER_SKU_CORRECTION_RESTORE", "TRANSFER_SKU_CORRECTION_IN"].includes(log.type);
-                                    const isOutbound = ["STOCK_OUT", "TRANSFER_OUT", "TRANSFER_SKU_CORRECTION_OUT"].includes(log.type);
+                                     const isInbound = ["STOCK_IN", "TRANSFER_IN", "TRANSFER_SKU_CORRECTION_RESTORE", "TRANSFER_SKU_CORRECTION_IN", "TRANSFER_RETURN_IN"].includes(log.type);
+                                     const isOutbound = ["STOCK_OUT", "TRANSFER_OUT", "TRANSFER_SKU_CORRECTION_OUT", "TRANSFER_RETURN_OUT"].includes(log.type);
                                     const typeLabel = log.type === "STOCK_IN" ? "Masuk"
                                       : log.type === "STOCK_OUT" ? "Keluar"
                                       : log.type === "TRANSFER_IN" ? "Trf In"
                                       : log.type === "TRANSFER_OUT" ? "Trf Out"
                                       : log.type === "TRANSFER_SKU_CORRECTION_RESTORE" ? "Pulih SKU"
                                       : log.type === "TRANSFER_SKU_CORRECTION_OUT" ? "Koreksi Out"
-                                      : log.type === "TRANSFER_SKU_CORRECTION_IN" ? "Koreksi In"
+                                       : log.type === "TRANSFER_SKU_CORRECTION_IN" ? "Koreksi In"
+                                       : log.type === "TRANSFER_RETURN_IN" ? "Retur In"
+                                       : log.type === "TRANSFER_RETURN_OUT" ? "Retur Out"
                                       : "Penyesuaian";
                                     return (
                                     <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 transition-colors text-left">
@@ -8099,7 +8101,7 @@ export default function App() {
                               </thead>
                               <tbody>
                                 {acts.map((a, idx) => {
-                                  const isPos = ["STOCK_IN", "TRANSFER_IN", "TRANSFER_SKU_CORRECTION_RESTORE", "TRANSFER_SKU_CORRECTION_IN"].includes(a.type);
+                                  const isPos = ["STOCK_IN", "TRANSFER_IN", "TRANSFER_SKU_CORRECTION_RESTORE", "TRANSFER_SKU_CORRECTION_IN", "TRANSFER_RETURN_IN"].includes(a.type);
                                   const isSale = a.reason && a.reason.includes("SALE_");
                                   const prodName = products.find((p) => p.id === a.productId)?.name || "Produk";
                                   const timeStr = new Date(a.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });

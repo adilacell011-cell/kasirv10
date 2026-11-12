@@ -16,6 +16,7 @@ const AUDIT_MIGRATION = "20261106120000_add_branch_stock_audit_tables";
 const STOCK_TRANSFER_MIGRATION = "20261112090000_add_stock_transfer_workflow";
 const STOCK_TRANSFER_SKU_CORRECTION_MIGRATION = "20261112100000_add_transfer_sku_corrections";
 const STOCK_TRANSFER_BATCH_MIGRATION = "20261112110000_add_stock_transfer_batch_id";
+const STOCK_TRANSFER_RETURN_MIGRATION = "20261112120000_add_stock_transfer_return_reference";
 const LEGACY14_MIGRATION = "20261106105000_upgrade_legacy14_sale_idempotency";
 const VERIFIED_LEGACY_BASELINE_MIGRATION = "20261106104000_baseline_verified_legacy_schema";
 const LEGACY14_MODEL_NAMES = new Set([
@@ -53,6 +54,9 @@ const STOCK_TRANSFER_SKU_CORRECTION_INDEXES = [
 const STOCK_TRANSFER_BATCH_INDEXES = [
   { table: "StockTransfer", columns: ["batchId", "createdAt"] },
 ];
+const STOCK_TRANSFER_RETURN_INDEXES = [
+  { table: "StockTransfer", columns: ["returnOfId", "createdAt"] },
+];
 const LEGACY14_INDEXES = LEGACY_INDEXES.filter(
   (index) => !(index.table === "Sale" && index.columns.join(",") === "createdAt,id")
     && index.table !== "SaleIdempotency",
@@ -71,14 +75,26 @@ const LEGACY_MODELS = Prisma.dmmf.datamodel.models
   .filter((model) => LEGACY_MODEL_NAMES.has(model.name));
 const PRE_TRANSFER_MODELS = Prisma.dmmf.datamodel.models
   .filter((model) => model.name !== "StockTransfer" && model.name !== "StockTransferSkuCorrection");
-const PRE_SKU_CORRECTION_MODELS = Prisma.dmmf.datamodel.models
-  .filter((model) => model.name !== "StockTransferSkuCorrection");
 const ALL_MODELS = Prisma.dmmf.datamodel.models;
-const PRE_BATCH_MODELS = Prisma.dmmf.datamodel.models.map((model) =>
+const withoutTransferReturnFields = (model: (typeof Prisma.dmmf.datamodel.models)[number]) =>
+  model.name === "StockTransfer"
+    ? {
+        ...model,
+        fields: model.fields.filter((field) => !["returnOfId", "returnOf", "returns"].includes(field.name)),
+      }
+    : model;
+const withoutTransferBatchField = (model: (typeof Prisma.dmmf.datamodel.models)[number]) =>
   model.name === "StockTransfer"
     ? { ...model, fields: model.fields.filter((field) => field.name !== "batchId") }
-    : model,
-);
+    : model;
+const PRE_SKU_CORRECTION_MODELS = Prisma.dmmf.datamodel.models
+  .filter((model) => model.name !== "StockTransferSkuCorrection")
+  .map(withoutTransferReturnFields)
+  .map(withoutTransferBatchField);
+const PRE_BATCH_MODELS = Prisma.dmmf.datamodel.models
+  .map(withoutTransferReturnFields)
+  .map(withoutTransferBatchField);
+const PRE_RETURN_MODELS = Prisma.dmmf.datamodel.models.map(withoutTransferReturnFields);
 
 function hasExactTableSet(
   snapshot: Awaited<ReturnType<typeof readDatabaseSnapshot>>,
@@ -132,6 +148,7 @@ async function main() {
       hasTransferTable: boolean;
       hasSkuCorrectionTable: boolean;
       hasTransferBatchColumn: boolean;
+      hasTransferReturnColumn: boolean;
     }>>`
       SELECT current_database() AS "currentDatabase",
         to_regclass('public."_prisma_migrations"') IS NOT NULL AS "hasMigrationTable",
@@ -144,7 +161,13 @@ async function main() {
           WHERE table_schema = 'public'
             AND table_name = 'StockTransfer'
             AND column_name = 'batchId'
-        ) AS "hasTransferBatchColumn"
+        ) AS "hasTransferBatchColumn",
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'StockTransfer'
+            AND column_name = 'returnOfId'
+        ) AS "hasTransferReturnColumn"
     `;
     if (targetState[0]?.currentDatabase !== target.database) {
       throw new Error("Connected database does not match the validated target.");
@@ -172,7 +195,7 @@ async function main() {
     const knownMigrationNames = new Set([
       VERIFIED_LEGACY_BASELINE_MIGRATION, LEGACY14_MIGRATION, BASELINE_MIGRATION,
       AUDIT_MIGRATION, STOCK_TRANSFER_MIGRATION, STOCK_TRANSFER_SKU_CORRECTION_MIGRATION,
-      STOCK_TRANSFER_BATCH_MIGRATION,
+      STOCK_TRANSFER_BATCH_MIGRATION, STOCK_TRANSFER_RETURN_MIGRATION,
     ]);
     const unknownMigrations = migrationRows.filter(
       (row) => !knownMigrationNames.has(row.migration_name),
@@ -199,6 +222,9 @@ async function main() {
     const transferBatchMigration = migrationRows.find(
       (row) => row.migration_name === STOCK_TRANSFER_BATCH_MIGRATION,
     );
+    const transferReturnMigration = migrationRows.find(
+      (row) => row.migration_name === STOCK_TRANSFER_RETURN_MIGRATION,
+    );
 
     if (LEGACY14_MODELS.length !== LEGACY14_MODEL_NAMES.size
         || LEGACY_MODELS.length !== LEGACY_MODEL_NAMES.size) {
@@ -211,8 +237,12 @@ async function main() {
     const isCurrent18 = hasExactTableSet(snapshot, PRE_SKU_CORRECTION_MODELS);
     const hasCurrentTransferTables = hasExactTableSet(snapshot, PRE_BATCH_MODELS);
     const isPreBatch19 = hasCurrentTransferTables && !targetState[0].hasTransferBatchColumn;
-    const isCurrent19 = hasCurrentTransferTables && targetState[0].hasTransferBatchColumn;
-    if ([isLegacy14, isLegacy15, isCurrent17, isCurrent18, isPreBatch19, isCurrent19].filter(Boolean).length !== 1) {
+    const isPreReturn19 = hasCurrentTransferTables &&
+      targetState[0].hasTransferBatchColumn && !targetState[0].hasTransferReturnColumn;
+    const isCurrent19 = hasCurrentTransferTables &&
+      targetState[0].hasTransferBatchColumn && targetState[0].hasTransferReturnColumn;
+    if ([isLegacy14, isLegacy15, isCurrent17, isCurrent18, isPreBatch19, isPreReturn19, isCurrent19]
+      .filter(Boolean).length !== 1) {
       throw new Error("Database schema does not match a supported 14-, 15-, 17-, 18- or 19-table version.");
     }
 
@@ -222,7 +252,7 @@ async function main() {
       const valid14History = migrationRows.length === 0
         || (migrationRows.length === 1
           && verifiedLegacyBaseline?.finished_at && !verifiedLegacyBaseline.rolled_back_at);
-       if (!valid14History || baseline || additive || legacy14Migration || transferMigration || skuCorrectionMigration || transferBatchMigration) {
+        if (!valid14History || baseline || additive || legacy14Migration || transferMigration || skuCorrectionMigration || transferBatchMigration || transferReturnMigration) {
         throw new Error("A 14-table database with existing Prisma migration history requires manual inspection.");
       }
       if (targetState[0].hasAuditTable || targetState[0].hasAuditItemTable) {
@@ -234,7 +264,7 @@ async function main() {
     } else if (isLegacy15) {
       assertExactModelTablesAndColumns(snapshot, LEGACY_MODELS);
       assertCompatibleSchema(snapshot, target, LEGACY_MODELS, LEGACY_INDEXES);
-        if (additive || transferMigration || skuCorrectionMigration || transferBatchMigration) {
+        if (additive || transferMigration || skuCorrectionMigration || transferBatchMigration || transferReturnMigration) {
         throw new Error("Additive schema migration history exists but its tables are absent; refusing to continue.");
       }
       if (!baseline) {
@@ -249,7 +279,7 @@ async function main() {
     } else if (isCurrent17) {
       assertExactModelTablesAndColumns(snapshot, PRE_TRANSFER_MODELS);
       assertCompatibleSchema(snapshot, target, PRE_TRANSFER_MODELS, [...LEGACY_INDEXES, ...AUDIT_INDEXES]);
-      if (!baseline || !additive || transferMigration || skuCorrectionMigration || transferBatchMigration) {
+      if (!baseline || !additive || transferMigration || skuCorrectionMigration || transferBatchMigration || transferReturnMigration) {
         throw new Error("The 17-table schema has unexpected or incomplete migration history.");
       }
     } else if (isCurrent18) {
@@ -260,7 +290,7 @@ async function main() {
         PRE_SKU_CORRECTION_MODELS,
         [...LEGACY_INDEXES, ...AUDIT_INDEXES, ...STOCK_TRANSFER_INDEXES],
       );
-      if (!baseline || !additive || !transferMigration || skuCorrectionMigration || transferBatchMigration) {
+      if (!baseline || !additive || !transferMigration || skuCorrectionMigration || transferBatchMigration || transferReturnMigration) {
         throw new Error("The 18-table schema has unexpected or incomplete migration history.");
       }
     } else if (isPreBatch19) {
@@ -271,8 +301,26 @@ async function main() {
         PRE_BATCH_MODELS,
         [...LEGACY_INDEXES, ...AUDIT_INDEXES, ...STOCK_TRANSFER_INDEXES, ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES],
       );
-      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration || transferBatchMigration) {
+      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration || transferBatchMigration || transferReturnMigration) {
         throw new Error("The pre-batch 19-table schema has unexpected or incomplete migration history.");
+      }
+    } else if (isPreReturn19) {
+      assertExactModelTablesAndColumns(snapshot, PRE_RETURN_MODELS);
+      assertCompatibleSchema(
+        snapshot,
+        target,
+        PRE_RETURN_MODELS,
+        [
+          ...LEGACY_INDEXES,
+          ...AUDIT_INDEXES,
+          ...STOCK_TRANSFER_INDEXES,
+          ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES,
+          ...STOCK_TRANSFER_BATCH_INDEXES,
+        ],
+      );
+      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
+          !transferBatchMigration || transferReturnMigration) {
+        throw new Error("The pre-return 19-table schema has unexpected or incomplete migration history.");
       }
     } else {
       assertExactModelTablesAndColumns(snapshot, ALL_MODELS);
@@ -280,10 +328,18 @@ async function main() {
         snapshot,
         target,
         ALL_MODELS,
-        [...LEGACY_INDEXES, ...AUDIT_INDEXES, ...STOCK_TRANSFER_INDEXES, ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES, ...STOCK_TRANSFER_BATCH_INDEXES],
+        [
+          ...LEGACY_INDEXES,
+          ...AUDIT_INDEXES,
+          ...STOCK_TRANSFER_INDEXES,
+          ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES,
+          ...STOCK_TRANSFER_BATCH_INDEXES,
+          ...STOCK_TRANSFER_RETURN_INDEXES,
+        ],
       );
-      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration || !transferBatchMigration) {
-        throw new Error("The transfer-batch schema exists without completed approved migration records.");
+      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
+          !transferBatchMigration || !transferReturnMigration) {
+        throw new Error("The return-enabled transfer schema exists without completed approved migration records.");
       }
     }
 
@@ -298,7 +354,9 @@ async function main() {
               ? "supported 18-table schema; SKU-correction upgrade is available"
           : isPreBatch19
             ? "supported 19-table schema; transfer-batch upgrade is available"
-            : "current 19-table transfer-batch schema";
+          : isPreReturn19
+              ? "supported 19-table schema; physical-return upgrade is available"
+              : "current 19-table physical-return schema";
       console.log(
         `Read-only schema preflight passed for ${target.database}: ${schemaVersion}. No changes performed.`,
       );
@@ -366,7 +424,14 @@ async function main() {
       migratedSnapshot,
       target,
       ALL_MODELS,
-      [...LEGACY_INDEXES, ...AUDIT_INDEXES, ...STOCK_TRANSFER_INDEXES, ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES],
+      [
+        ...LEGACY_INDEXES,
+        ...AUDIT_INDEXES,
+        ...STOCK_TRANSFER_INDEXES,
+        ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES,
+        ...STOCK_TRANSFER_BATCH_INDEXES,
+        ...STOCK_TRANSFER_RETURN_INDEXES,
+      ],
     );
     console.log("Schema migration and read-only compatibility check completed.");
   } catch (error) {

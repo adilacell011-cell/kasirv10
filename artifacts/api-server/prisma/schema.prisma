@@ -234,11 +234,15 @@ model StockTransfer {
   receivedAt      DateTime?
   closedAt        DateTime?
   skuCorrections  StockTransferSkuCorrection[]
+  returnOfId      String?
+  returnOf        StockTransfer?               @relation("StockTransferReturnOf", fields: [returnOfId], references: [id], onDelete: Restrict)
+  returns         StockTransfer[]              @relation("StockTransferReturnOf")
 
   @@index([sourceBranchId, status, createdAt])
   @@index([targetBranchId, status, createdAt])
   @@index([productId, createdAt])
   @@index([batchId, createdAt])
+  @@index([returnOfId, createdAt])
 }
 
 model StockTransferSkuCorrection {

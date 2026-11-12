@@ -72,6 +72,83 @@ export const GetBranchTransferTargetsResponse = zod.array(GetBranchTransferTarge
 
 
 /**
+ * @summary Dispatch a physical return for previously received stock transfers
+ */
+export const createStockTransferReturnBatchBodyNoteMax = 500;
+
+
+export const createStockTransferReturnBatchBodyItemsMax = 50;
+
+
+
+export const CreateStockTransferReturnBatchBody = zod.object({
+  "note": zod.string().max(createStockTransferReturnBatchBodyNoteMax).optional(),
+  "items": zod.array(zod.object({
+  "transferId": zod.string(),
+  "qty": zod.number().int().min(1)
+})).min(1).max(createStockTransferReturnBatchBodyItemsMax)
+})
+
+export const CreateStockTransferReturnBatchResponse = zod.object({
+  "batchId": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "batchId": zod.string(),
+  "returnOfId": zod.string(),
+  "productId": zod.string(),
+  "sourceBranchId": zod.string(),
+  "targetBranchId": zod.string(),
+  "kind": zod.enum(['RETURN']),
+  "status": zod.enum(['IN_TRANSIT', 'RECEIVED']),
+  "dispatchedQty": zod.number().int(),
+  "receivedQty": zod.number().int().nullish(),
+  "discrepancyNote": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Confirm physical receipt of a complete return batch
+ */
+export const ReceiveStockTransferReturnBatchParams = zod.object({
+  "batchId": zod.coerce.string()
+})
+
+export const receiveStockTransferReturnBatchBodyItemsItemReceivedQtyMin = 0;
+
+export const receiveStockTransferReturnBatchBodyItemsItemDiscrepancyNoteMax = 500;
+
+export const receiveStockTransferReturnBatchBodyItemsMax = 50;
+
+
+
+export const ReceiveStockTransferReturnBatchBody = zod.object({
+  "items": zod.array(zod.object({
+  "transferId": zod.string(),
+  "receivedQty": zod.number().int().min(receiveStockTransferReturnBatchBodyItemsItemReceivedQtyMin),
+  "discrepancyNote": zod.string().max(receiveStockTransferReturnBatchBodyItemsItemDiscrepancyNoteMax).optional()
+})).min(1).max(receiveStockTransferReturnBatchBodyItemsMax)
+})
+
+export const ReceiveStockTransferReturnBatchResponse = zod.object({
+  "batchId": zod.string(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "batchId": zod.string(),
+  "returnOfId": zod.string(),
+  "productId": zod.string(),
+  "sourceBranchId": zod.string(),
+  "targetBranchId": zod.string(),
+  "kind": zod.enum(['RETURN']),
+  "status": zod.enum(['IN_TRANSIT', 'RECEIVED']),
+  "dispatchedQty": zod.number().int(),
+  "receivedQty": zod.number().int().nullish(),
+  "discrepancyNote": zod.string().nullish()
+}))
+})
+
+
+/**
  * @summary Read-only owner daily income summaries
  */
 export const GetOwnerDashboardQueryParams = zod.object({
