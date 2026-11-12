@@ -589,6 +589,24 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   });
   assert.equal(duplicateDispatchResponse.status, 409);
 
+  for (const invalidReceivedQty of [-1, 1.5, 3]) {
+    const invalidReceipt = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${cashierBPayload.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ receivedQty: invalidReceivedQty }),
+    });
+    assert.equal(invalidReceipt.status, 400, `Invalid received quantity ${invalidReceivedQty} must be rejected.`);
+  }
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 3, "Invalid receipt quantities must not change the sender stock.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 0, "Invalid receipt quantities must not change the receiver stock.");
+
   const receiveTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
     method: "POST",
     headers: {
@@ -621,6 +639,50 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     body: JSON.stringify({ receivedQty: 1 }),
   });
   assert.equal(duplicateReceiveResponse.status, 409);
+
+  const zeroReceiptProduct = await prisma.product.create({
+    data: { name: "Zero Quantity Receipt QA Product", buyingPrice: 1000, sellingPrice: 2000 },
+  });
+  await prisma.productStock.createMany({
+    data: [
+      { productId: zeroReceiptProduct.id, branchId: branchAId, qty: 1 },
+      { productId: zeroReceiptProduct.id, branchId: branchBId, qty: 0 },
+    ],
+  });
+  const zeroReceiptSend = await fetch(`${apiUrl}/api/stocks/transfer`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      productId: zeroReceiptProduct.id,
+      qty: 1,
+      sourceBranchId: branchAId,
+      targetBranchId: branchBId,
+    }),
+  });
+  assert.equal(zeroReceiptSend.status, 201);
+  const zeroReceiptTransfer = await zeroReceiptSend.json() as { id: string };
+  const zeroQuantityReceipt = await fetch(
+    `${apiUrl}/api/stock-transfers/${zeroReceiptTransfer.id}/receive`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${cashierBPayload.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ receivedQty: 0 }),
+    },
+  );
+  assert.equal(zeroQuantityReceipt.status, 200, "The destination can record zero physically received.");
+  assert.equal((await zeroQuantityReceipt.json() as { receivedQty: number }).receivedQty, 0);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: zeroReceiptProduct.id, branchId: branchAId } },
+  })).qty, 0, "Dispatch still removes the full sent quantity from the source.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: zeroReceiptProduct.id, branchId: branchBId } },
+  })).qty, 0, "A zero receipt does not add stock to the destination.");
 
   const directTransferResponse = await fetch(`${apiUrl}/api/stocks/transfer`, {
     method: "POST",
@@ -1019,6 +1081,26 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   })).qty, 0);
   const mainReturn = multiProductReturn.items.find((item) => item.productId === productId)!;
   const secondaryReturn = multiProductReturn.items.find((item) => item.productId === batchProduct.id)!;
+  const overReceivedReturn = await fetch(
+    `${apiUrl}/api/stock-transfers/returns/${multiProductReturn.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        items: [
+          { transferId: mainReturn.id, receivedQty: 2 },
+          { transferId: secondaryReturn.id, receivedQty: 0 },
+        ],
+      }),
+    },
+  );
+  assert.equal(overReceivedReturn.status, 400, "A return receipt cannot exceed the physically dispatched quantity.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 4, "An invalid multi-product return receipt does not credit any line.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchAId } },
+  })).qty, 3);
   const confirmMultiProductReturn = await fetch(
     `${apiUrl}/api/stock-transfers/returns/${multiProductReturn.batchId}/receive`,
     {
