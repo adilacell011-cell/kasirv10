@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import StockTransferBatchComposer from "./StockTransferBatchComposer";
+import StockTransferBatchReceiptTable from "./StockTransferBatchReceiptTable";
 import { api } from "../services/api";
 
 type Branch = { id: string; name: string };
@@ -141,27 +142,6 @@ export default function StockTransferActivity({
     }
   };
 
-  const confirmBatchReceipt = async (batchId: string, itemCount: number) => {
-    if (!shiftOpen) {
-      setError("Buka shift sebelum mengonfirmasi penerimaan.");
-      return;
-    }
-    if (!window.confirm(`Konfirmasi semua ${itemCount} produk dalam kiriman ini sudah sesuai?`)) return;
-    if (busyId) return;
-    setBusyId(batchId);
-    setError("");
-    setMessage("");
-    try {
-      const result = await api.receiveStockTransferBatch(batchId);
-      for (const transfer of result.items || []) onUpdated(transfer);
-      setMessage(`${result.items?.length || itemCount} produk dalam kiriman sudah diterima.`);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Konfirmasi kiriman gagal.");
-    } finally {
-      setBusyId("");
-    }
-  };
-
   const submitSkuCorrection = async (transfer: Transfer) => {
     const actualProductId = actualProductIdByTransfer[transfer.id] || "";
     const actualQty = Number(actualQtyByTransfer[transfer.id] || "");
@@ -282,9 +262,22 @@ export default function StockTransferActivity({
                 receiveQtyNumber <= (transfer.dispatchedQty ?? 0) &&
                 receiveQtyNumber !== transfer.dispatchedQty &&
                 Boolean(receiveNotes[transfer.id]?.trim());
-              const groupCanBulkReceive = Boolean(group) &&
-                group!.items.every((item) => item.status === "IN_TRANSIT") &&
-                group!.items.every((item) => !(item.skuCorrections?.length));
+              const isDirectReceiverGroup = Boolean(group && canReceive) &&
+                group!.items.every((item) => item.kind === "DIRECT");
+
+              if (isDirectReceiverGroup) {
+                if (!isFirstInGroup || !group) return null;
+                return (
+                  <StockTransferBatchReceiptTable
+                    key={group.batchId}
+                    batchId={group.batchId}
+                    items={group.items}
+                    products={products}
+                    shiftOpen={shiftOpen}
+                    onUpdated={(updated) => onUpdated(updated as Transfer)}
+                  />
+                );
+              }
 
               return (
                 <div key={transfer.id} className="space-y-2">
@@ -298,16 +291,6 @@ export default function StockTransferActivity({
                         {transfer.sourceBranch.name} → {transfer.targetBranch.name} · {new Date(group.createdAt).toLocaleString("id-ID")}
                       </p>
                     </div>
-                    {canReceive && groupCanBulkReceive && (
-                      <button
-                        type="button"
-                        disabled={Boolean(busyId) || !shiftOpen}
-                        onClick={() => void confirmBatchReceipt(group.batchId, group.items.length)}
-                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 text-[10px] font-black uppercase text-slate-950 hover:bg-amber-400 disabled:opacity-50"
-                      >
-                        <PackageCheck className="h-3.5 w-3.5" /> Konfirmasi semua sesuai
-                      </button>
-                    )}
                     {canReceive && group!.items.some((item) => item.skuCorrections?.length) && (
                       <span className="text-[9px] font-semibold text-amber-800 dark:text-amber-300">
                         Selesaikan koreksi SKU per produk sebelum konfirmasi semua.
