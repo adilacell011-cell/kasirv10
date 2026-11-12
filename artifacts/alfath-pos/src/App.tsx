@@ -7650,11 +7650,12 @@ export default function App() {
                           </div>
                         )}
                         {auditSidebarTab === "transfer" && (
-                          <StockTransferActivity
+                            <StockTransferActivity
                             role={profile?.role || ""}
                             branchId={profile?.role === "CASHIER" ? profile?.branchId : auditSelectedBranch}
                             branches={profile?.role === "CASHIER" ? transferTargetBranches : branches}
                             products={products}
+                              stocks={stocks}
                             transfers={stockTransfers.filter((transfer) =>
                               !auditSelectedBranch ||
                               transfer.sourceBranchId === auditSelectedBranch ||
@@ -9082,7 +9083,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {posSubView === "transfer" && (
+                  {false && posSubView === "transfer" && (
                     <div data-pos-stock-transfer className="flex-1 overflow-y-auto bg-slate-50 p-2 space-y-2 text-left">
                       <div data-pos-transfer-card className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm w-full max-w-xl mx-auto text-left shadow-lg">
                         <div className="flex items-center gap-2.5 mb-4 text-left">
@@ -9385,17 +9386,24 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                      <StockTransferActivity
-                        role={profile?.role || ""}
-                        branchId={profile?.branchId}
-                        branches={transferTargetBranches}
-                        products={products}
-                        transfers={stockTransfers}
-                        loading={stockTransfersLoading}
-                        error={stockTransfersError}
-                        shiftOpen={shiftOpen}
-                        onUpdated={updateStockTransfer}
-                      />
+                    </div>
+                  )}
+                  {posSubView === "transfer" && (
+                    <div data-pos-stock-transfer className="flex-1 overflow-y-auto bg-slate-50 p-2 text-left">
+                      <div className="mx-auto w-full max-w-2xl space-y-3">
+                        <StockTransferActivity
+                          role={profile?.role || ""}
+                          branchId={profile?.branchId}
+                          branches={transferTargetBranches}
+                          products={products}
+                          stocks={stocks}
+                          transfers={stockTransfers}
+                          loading={stockTransfersLoading}
+                          error={stockTransfersError}
+                          shiftOpen={shiftOpen}
+                          onUpdated={updateStockTransfer}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

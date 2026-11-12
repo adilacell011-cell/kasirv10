@@ -359,6 +359,32 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   const cashierBPayload = await cashierBLogin.json() as { token: string };
   const cashierBSocket = await connectSocket({ token: cashierBPayload.token });
   const adminSocket = await connectSocket({ token: adminPayload.token });
+  const retiredStockRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierBPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 1 }),
+  });
+  assert.equal(retiredStockRequestResponse.status, 410);
+  assert.equal(
+    (await retiredStockRequestResponse.json() as { code: string }).code,
+    "STOCK_REQUESTS_RETIRED",
+  );
+  const createLegacyRequest = (requestedProductId: string, qty: number, note?: string) =>
+    prisma.stockTransfer.create({
+      data: {
+        productId: requestedProductId,
+        sourceBranchId: branchAId,
+        targetBranchId: branchBId,
+        kind: "REQUEST",
+        status: "REQUESTED",
+        requestedQty: qty,
+        requestNote: note,
+        requestedById: cashierB.id,
+      },
+    });
 
   const shiftOpenResponse = await fetch(`${apiUrl}/api/shifts`, {
     method: "POST",
@@ -497,18 +523,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(cashierBShiftResponse.status, 200);
   const cashierBShift = await cashierBShiftResponse.json() as { id: string };
 
-  const transferRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${cashierBPayload.token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 3, note: "Stok cabang B menipis." }),
-  });
-  assert.equal(transferRequestResponse.status, 201);
-  const transferRequest = await transferRequestResponse.json() as {
-    id: string; status: string; requestedQty: number; sourceBranchId: string; targetBranchId: string;
-  };
+  const transferRequest = await createLegacyRequest(productId, 3, "Stok cabang B menipis.");
   assert.equal(transferRequest.status, "REQUESTED");
   assert.equal(transferRequest.requestedQty, 3);
   assert.equal(transferRequest.sourceBranchId, branchAId);
@@ -646,6 +661,124 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     where: { productId_branchId: { productId, branchId: branchBId } },
   })).qty, 2);
 
+  const batchProduct = await prisma.product.create({
+    data: {
+      name: "Batch Transfer Product",
+      buyingPrice: 10000,
+      sellingPrice: 15000,
+    },
+  });
+  await prisma.productStock.upsert({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+    create: { productId, branchId: branchAId, qty: 6 },
+    update: { qty: 6 },
+  });
+  await prisma.productStock.upsert({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchAId } },
+    create: { productId: batchProduct.id, branchId: branchAId, qty: 4 },
+    update: { qty: 4 },
+  });
+  await prisma.productStock.upsert({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchBId } },
+    create: { productId: batchProduct.id, branchId: branchBId, qty: 0 },
+    update: { qty: 0 },
+  });
+  const batchResponse = await fetch(`${apiUrl}/api/stocks/transfer-batch`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      targetBranchId: branchBId,
+      items: [{ productId, qty: 2 }, { productId: batchProduct.id, qty: 1 }],
+      note: "Kirim beberapa produk sekaligus.",
+    }),
+  });
+  assert.equal(batchResponse.status, 201);
+  const batch = await batchResponse.json() as {
+    batchId: string;
+    items: Array<{ id: string; batchId: string; status: string; productId: string; dispatchedQty: number }>;
+  };
+  assert.ok(batch.batchId);
+  assert.equal(batch.items.length, 2);
+  assert.ok(batch.items.every((item) => item.batchId === batch.batchId && item.status === "IN_TRANSIT"));
+  assert.deepEqual(batch.items.map((item) => item.dispatchedQty).sort(), [1, 2]);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 4);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchAId } },
+  })).qty, 3);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 2, "Batch dispatch does not increase destination stock before receipt.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchBId } },
+  })).qty, 0);
+
+  const failedBatchResponse = await fetch(`${apiUrl}/api/stocks/transfer-batch`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      targetBranchId: branchBId,
+      items: [{ productId, qty: 1 }, { productId: batchProduct.id, qty: 4 }],
+    }),
+  });
+  assert.equal(failedBatchResponse.status, 409);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 4, "An insufficient item leaves every source item unchanged.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchAId } },
+  })).qty, 3);
+
+  const wrongBatchReceiver = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${batch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(wrongBatchReceiver.status, 403, "Only the destination cashier can confirm the batch.");
+  const batchReceiptResponse = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${batch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(batchReceiptResponse.status, 200);
+  assert.equal((await batchReceiptResponse.json() as { items: unknown[] }).items.length, 2);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 4);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId: batchProduct.id, branchId: branchBId } },
+  })).qty, 1);
+  const duplicateBatchReceipt = await fetch(
+    `${apiUrl}/api/stock-transfers/batches/${batch.batchId}/receive`,
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${cashierBPayload.token}`, "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  assert.equal(duplicateBatchReceipt.status, 409);
+  await prisma.productStock.update({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+    data: { qty: 2 },
+  });
+  await prisma.productStock.update({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+    data: { qty: 2 },
+  });
+
   const actualSkuProduct = await prisma.product.create({
     data: {
       name: "Transfer Actual SKU Product",
@@ -659,16 +792,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
       { productId: actualSkuProduct.id, branchId: branchBId, qty: 0 },
     ],
   });
-  const wrongSkuRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${cashierBPayload.token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 1 }),
-  });
-  assert.equal(wrongSkuRequestResponse.status, 201);
-  const wrongSkuRequest = await wrongSkuRequestResponse.json() as { id: string };
+  const wrongSkuRequest = await createLegacyRequest(productId, 1);
   const acceptWrongSkuRequest = await fetch(`${apiUrl}/api/stock-transfers/${wrongSkuRequest.id}/respond`, {
     method: "PATCH",
     headers: {
@@ -824,16 +948,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   );
   assert.equal(duplicateSkuReceipt.status, 409, "A correction receipt cannot be applied twice.");
 
-  const rejectedRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${cashierBPayload.token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 4 }),
-  });
-  assert.equal(rejectedRequestResponse.status, 201);
-  const rejectedRequest = await rejectedRequestResponse.json() as { id: string };
+  const rejectedRequest = await createLegacyRequest(productId, 4);
   const rejectTransferResponse = await fetch(`${apiUrl}/api/stock-transfers/${rejectedRequest.id}/respond`, {
     method: "PATCH",
     headers: {
@@ -845,16 +960,7 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(rejectTransferResponse.status, 200);
   assert.equal((await rejectTransferResponse.json() as { status: string }).status, "REJECTED");
 
-  const cancelRequestResponse = await fetch(`${apiUrl}/api/stock-transfers/requests`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${cashierBPayload.token}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ sourceBranchId: branchAId, productId, qty: 2 }),
-  });
-  assert.equal(cancelRequestResponse.status, 201);
-  const cancelRequest = await cancelRequestResponse.json() as { id: string };
+  const cancelRequest = await createLegacyRequest(productId, 2);
   const overRequestApproval = await fetch(`${apiUrl}/api/stock-transfers/${cancelRequest.id}/respond`, {
     method: "PATCH",
     headers: {

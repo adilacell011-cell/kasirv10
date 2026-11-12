@@ -9,6 +9,12 @@ In this workspace, a detached PostgreSQL server started from a short shell comma
 
 **How to apply:** for multi-step isolated QA, create a dedicated temporary data directory and start `postgres -D ...` as a foreground background task; keep using that exact cluster across calls, and stop it with `pg_ctl -D ... -m fast -w stop` when finished. For a single-command test, keeping startup, test, and cleanup in one shell invocation remains suitable.
 
+For one-command local test clusters, create a socket directory inside the temporary data directory and pass it with PostgreSQL's `-k` option; the default `/run/postgresql` directory is absent here. The API auth integration runner requires `TEST_DATABASE_URL` while refusing when `DATABASE_URL` is set to the same URL.
+
+**Why:** PostgreSQL otherwise fails before listening, and the auth test's guard is designed to prevent accidental use of the app's normal database.
+
+**How to apply:** use a unique temporary port and cluster, set `TEST_DATABASE_URL` to its dedicated test database, unset `DATABASE_URL` for the test command, and clean up the cluster in a shell trap.
+
 For `pg_restore` and `psql`, use a plain PostgreSQL URI rather than Prisma's `?schema=public` URL option; libpq rejects `schema` as an invalid URI parameter. Keep the schema option only for Prisma clients.
 
 **Why:** a QA dump restored successfully once the PostgreSQL CLI connection string was separated from the Prisma datasource URL.

@@ -370,3 +370,22 @@ test("transfer SKU-correction migration is guarded, additive, and preserves both
   assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });
+
+test("transfer-batch migration safely adds a grouping key to the exact current schema", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261112110000_add_stock_transfer_batch_id/migration.sql", import.meta.url),
+    "utf8",
+  );
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
+  assert.match(sql, /exact approved 19-table schema/i);
+  assert.match(sql, /ALTER TABLE "public"\."StockTransfer"\s+ADD COLUMN "batchId" TEXT/i);
+  assert.match(sql, /StockTransfer_batchId_createdAt_idx/);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(main, /STOCK_TRANSFER_BATCH_MIGRATION/);
+  assert.match(main, /PRE_BATCH_MODELS/);
+  assert.match(main, /hasTransferBatchColumn/);
+  assert.match(main, /isPreBatch19/);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
+});

@@ -7,6 +7,7 @@ import {
   Send,
   X,
 } from "lucide-react";
+import StockTransferBatchComposer from "./StockTransferBatchComposer";
 import { api } from "../services/api";
 
 type Branch = { id: string; name: string };
@@ -25,6 +26,7 @@ type SkuCorrection = {
 };
 type Transfer = {
   id: string;
+  batchId?: string | null;
   kind: "REQUEST" | "DIRECT";
   status: "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
   requestedQty: number | null;
@@ -46,6 +48,7 @@ type Props = {
   branchId?: string | null;
   branches: Branch[];
   products: Product[];
+  stocks: Array<{ productId: string; branchId: string; qty: number }>;
   transfers: Transfer[];
   loading?: boolean;
   error?: string;
@@ -70,6 +73,7 @@ export default function StockTransferActivity({
   branchId,
   branches,
   products,
+  stocks,
   transfers,
   loading = false,
   error: loadError = "",
@@ -77,11 +81,6 @@ export default function StockTransferActivity({
   onUpdated,
 }: Props) {
   const isCashier = role === "CASHIER";
-  const [sourceBranchId, setSourceBranchId] = useState("");
-  const [productSearch, setProductSearch] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [requestQty, setRequestQty] = useState("");
-  const [requestNote, setRequestNote] = useState("");
   const [acceptQty, setAcceptQty] = useState<Record<string, string>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
   const [receiveNotes, setReceiveNotes] = useState<Record<string, string>>({});
@@ -95,26 +94,36 @@ export default function StockTransferActivity({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const requestableProducts = useMemo(() => {
-    const query = productSearch.trim().toLowerCase();
-    return products
-      .filter((product) => product.status !== "INACTIVE" && product.status !== "ARCHIVED")
-      .filter((product) =>
-        !query ||
-        product.name.toLowerCase().includes(query) ||
-        String(product.barcode || "").toLowerCase().includes(query) ||
-        String(product.brand || "").toLowerCase().includes(query),
-      )
-      .slice(0, 12);
-  }, [products, productSearch]);
+  const transferGroups = useMemo(() => {
+    const groups = new Map<string, Transfer[]>();
+    for (const transfer of transfers) {
+      const key = transfer.batchId || transfer.id;
+      const rows = groups.get(key) || [];
+      rows.push(transfer);
+      groups.set(key, rows);
+    }
+    return [...groups.entries()]
+      .map(([batchId, items]) => ({
+        batchId,
+        items: items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+        createdAt: Math.max(...items.map((item) => new Date(item.createdAt).getTime())),
+        open: items.some(isOpen),
+      }))
+      .sort((a, b) => Number(b.open) - Number(a.open) || b.createdAt - a.createdAt)
+      .slice(0, 60);
+  }, [transfers]);
 
   const orderedTransfers = useMemo(
-    () => [...transfers]
-      .sort((a, b) => Number(isOpen(b)) - Number(isOpen(a)) ||
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 60),
-    [transfers],
+    () => transferGroups.flatMap((group) => group.items),
+    [transferGroups],
   );
+  const transferGroupById = useMemo(() => {
+    const map = new Map<string, (typeof transferGroups)[number]>();
+    for (const group of transferGroups) {
+      for (const item of group.items) map.set(item.id, group);
+    }
+    return map;
+  }, [transferGroups]);
 
   const run = async (id: string, action: () => Promise<Transfer>) => {
     if (busyId) return;
@@ -132,33 +141,25 @@ export default function StockTransferActivity({
     }
   };
 
-  const submitRequest = async () => {
-    if (!branchId || !sourceBranchId || !selectedProductId || !requestQty) {
-      setError("Pilih cabang sumber, produk, dan jumlah permintaan.");
-      return;
-    }
+  const confirmBatchReceipt = async (batchId: string, itemCount: number) => {
     if (!shiftOpen) {
-      setError("Buka shift terlebih dahulu untuk meminta transfer.");
+      setError("Buka shift sebelum mengonfirmasi penerimaan.");
       return;
     }
-    const qty = Number(requestQty);
-    if (!Number.isSafeInteger(qty) || qty <= 0) {
-      setError("Jumlah harus bilangan bulat positif.");
-      return;
+    if (!window.confirm(`Konfirmasi semua ${itemCount} produk dalam kiriman ini sudah sesuai?`)) return;
+    if (busyId) return;
+    setBusyId(batchId);
+    setError("");
+    setMessage("");
+    try {
+      const result = await api.receiveStockTransferBatch(batchId);
+      for (const transfer of result.items || []) onUpdated(transfer);
+      setMessage(`${result.items?.length || itemCount} produk dalam kiriman sudah diterima.`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Konfirmasi kiriman gagal.");
+    } finally {
+      setBusyId("");
     }
-    await run("new-request", async () => {
-      const result = await api.requestStockTransfer({
-        productId: selectedProductId,
-        sourceBranchId,
-        qty,
-        note: requestNote.trim() || undefined,
-      });
-      setRequestQty("");
-      setRequestNote("");
-      setSelectedProductId("");
-      setProductSearch("");
-      return result;
-    });
   };
 
   const submitSkuCorrection = async (transfer: Transfer) => {
@@ -206,100 +207,24 @@ export default function StockTransferActivity({
 
   return (
     <section className="mt-4 space-y-3 text-left" aria-label="Aktivitas transfer stok">
-      {isCashier && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-              <ArrowRightLeft className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100">Minta stok dari cabang lain</h3>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400">Cabang sumber harus menyetujui dan mengirim.</p>
-            </div>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <select
-              aria-label="Cabang sumber permintaan"
-              value={sourceBranchId}
-              onChange={(event) => setSourceBranchId(event.target.value)}
-              disabled={!shiftOpen || Boolean(busyId)}
-              className="min-h-11 rounded-xl border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            >
-              <option value="">Pilih cabang sumber</option>
-              {branches.filter((branch) => branch.id !== branchId).map((branch) => (
-                <option key={branch.id} value={branch.id}>{branch.name}</option>
-              ))}
-            </select>
-            <input
-              value={requestQty}
-              onChange={(event) => setRequestQty(event.target.value)}
-              type="number"
-              min="1"
-              step="1"
-              placeholder="Jumlah yang diminta"
-              aria-label="Jumlah yang diminta"
-              disabled={!shiftOpen || Boolean(busyId)}
-              className="min-h-11 rounded-xl border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            />
-          </div>
-          <div className="relative mt-2">
-            <input
-              value={productSearch}
-              onChange={(event) => {
-                setProductSearch(event.target.value);
-                setSelectedProductId("");
-              }}
-              placeholder="Cari nama atau barcode produk"
-              aria-label="Cari produk untuk permintaan"
-              disabled={!shiftOpen || Boolean(busyId)}
-              className="min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-xs text-slate-800 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            />
-            {productSearch && !selectedProductId && (
-              <div className="mt-1 max-h-36 overflow-y-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-                {requestableProducts.length ? requestableProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedProductId(product.id);
-                      setProductSearch(product.name);
-                    }}
-                    className="block min-h-10 w-full border-b border-slate-100 px-3 py-2 text-left text-xs font-semibold text-slate-700 last:border-0 hover:bg-amber-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
-                  >
-                    {product.name}
-                    {product.barcode ? <span className="ml-2 text-[10px] text-slate-400">{product.barcode}</span> : null}
-                  </button>
-                )) : (
-                  <p className="p-3 text-xs text-slate-500">Produk tidak ditemukan.</p>
-                )}
-              </div>
-            )}
-          </div>
-          <input
-            value={requestNote}
-            onChange={(event) => setRequestNote(event.target.value)}
-            maxLength={500}
-            placeholder="Catatan permintaan (opsional)"
-            disabled={!shiftOpen || Boolean(busyId)}
-            className="mt-2 min-h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-xs text-slate-800 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          />
-          <button
-            type="button"
-            onClick={() => void submitRequest()}
-            disabled={!shiftOpen || Boolean(busyId)}
-            className="mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-3 text-xs font-black uppercase text-slate-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Send className="h-4 w-4" /> Ajukan permintaan stok
-          </button>
-          {!shiftOpen && <p className="mt-2 text-[10px] font-semibold text-amber-700 dark:text-amber-300">Buka shift untuk mengajukan atau memproses transfer.</p>}
-        </div>
+      {isCashier && branchId && (
+        <StockTransferBatchComposer
+          sourceBranchId={branchId}
+          branches={branches}
+          products={products}
+          stocks={stocks}
+          shiftOpen={shiftOpen}
+          onCreated={(items) => {
+            for (const item of items) onUpdated(item as unknown as Transfer);
+          }}
+        />
       )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
-            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100">Permintaan & penerimaan</h3>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">Stok tujuan masuk hanya setelah kasir tujuan mengonfirmasi.</p>
+            <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100">Kiriman & penerimaan</h3>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Stok tujuan masuk setelah kasir penerima mengonfirmasi.</p>
           </div>
           <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">{orderedTransfers.length}</span>
         </div>
@@ -321,11 +246,13 @@ export default function StockTransferActivity({
           </div>
         ) : orderedTransfers.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-xs text-slate-500 dark:border-slate-700">
-            Belum ada permintaan atau pengiriman stok.
+            Belum ada kiriman atau penerimaan stok.
           </div>
         ) : (
-          <div className="max-h-[62vh] space-y-2 overflow-y-auto pr-1">
+          <div className="max-h-[62vh] space-y-3 overflow-y-auto pr-1">
             {orderedTransfers.map((transfer) => {
+              const group = transferGroupById.get(transfer.id);
+              const isFirstInGroup = group?.items[0]?.id === transfer.id;
               const canManageSource = role !== "CASHIER" || transfer.sourceBranch.id === branchId;
               const canReceive = isCashier && transfer.targetBranch.id === branchId;
               const isBusy = busyId === transfer.id;
@@ -355,9 +282,40 @@ export default function StockTransferActivity({
                 receiveQtyNumber <= (transfer.dispatchedQty ?? 0) &&
                 receiveQtyNumber !== transfer.dispatchedQty &&
                 Boolean(receiveNotes[transfer.id]?.trim());
+              const groupCanBulkReceive = Boolean(group) &&
+                group!.items.every((item) => item.status === "IN_TRANSIT") &&
+                group!.items.every((item) => !(item.skuCorrections?.length));
 
               return (
-                <article key={transfer.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                <div key={transfer.id} className="space-y-2">
+                {isFirstInGroup && group && (
+                  <header className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase text-slate-800 dark:text-slate-100">
+                        Kiriman {group.batchId.slice(0, 8).toUpperCase()} · {group.items.length} produk
+                      </p>
+                      <p className="truncate text-[10px] text-slate-500 dark:text-slate-400">
+                        {transfer.sourceBranch.name} → {transfer.targetBranch.name} · {new Date(group.createdAt).toLocaleString("id-ID")}
+                      </p>
+                    </div>
+                    {canReceive && groupCanBulkReceive && (
+                      <button
+                        type="button"
+                        disabled={Boolean(busyId) || !shiftOpen}
+                        onClick={() => void confirmBatchReceipt(group.batchId, group.items.length)}
+                        className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 text-[10px] font-black uppercase text-slate-950 hover:bg-amber-400 disabled:opacity-50"
+                      >
+                        <PackageCheck className="h-3.5 w-3.5" /> Konfirmasi semua sesuai
+                      </button>
+                    )}
+                    {canReceive && group!.items.some((item) => item.skuCorrections?.length) && (
+                      <span className="text-[9px] font-semibold text-amber-800 dark:text-amber-300">
+                        Selesaikan koreksi SKU per produk sebelum konfirmasi semua.
+                      </span>
+                    )}
+                  </header>
+                )}
+                <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-xs font-black text-slate-800 dark:text-slate-100">{transfer.product.name}</p>
@@ -700,6 +658,7 @@ export default function StockTransferActivity({
                     </p>
                   )}
                 </article>
+                </div>
               );
             })}
           </div>

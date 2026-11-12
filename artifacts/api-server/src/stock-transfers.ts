@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import type { Application, RequestHandler } from "express";
+import { randomUUID } from "node:crypto";
 import { logger } from "./lib/logger";
 import { lockBranch, ShiftConflict } from "./shift-safety";
 import { isProductVisibleInBranch, lockProductStatus, ProductLifecycleConflict } from "./product-lifecycle";
@@ -233,54 +234,161 @@ export function registerStockTransferRoutes(
   });
 
   app.post("/api/stock-transfers/requests", ...access, async (req: any, res): Promise<void> => {
+    res.status(410).json({
+      error: "Fitur minta stok sudah dihentikan. Buat kiriman langsung beberapa produk ke cabang tujuan.",
+      code: "STOCK_REQUESTS_RETIRED",
+    });
+  });
+
+  app.post("/api/stocks/transfer-batch", ...access, async (req: any, res): Promise<void> => {
     const actor = getActor(req);
-    const productId = typeof req.body?.productId === "string" ? req.body.productId.trim() : "";
-    const qty = positiveInt(req.body?.qty);
+    const sourceBranchId = actor.role === "CASHIER"
+      ? cashierBranchOrRespond(req, res, actor, "Pengiriman transfer gagal dibuat.")
+      : (typeof req.body?.sourceBranchId === "string" ? req.body.sourceBranchId.trim() : "");
+    if (actor.role === "CASHIER" && !sourceBranchId) return;
+    const targetBranchId = typeof req.body?.targetBranchId === "string" ? req.body.targetBranchId.trim() : "";
+    const rawItems = req.body?.items;
     let note: string | null;
     try {
-      note = parseNote(req.body?.note, "Catatan permintaan");
+      note = parseNote(req.body?.note, "Catatan pengiriman");
     } catch (error) {
-      respondError(req, res, error, "Permintaan transfer gagal dibuat.");
+      respondError(req, res, error, "Pengiriman transfer gagal dibuat.");
       return;
     }
-    const targetBranchId = actor.role === "CASHIER"
-      ? cashierBranchOrRespond(req, res, actor, "Permintaan transfer gagal dibuat.")
-      : (typeof req.body?.targetBranchId === "string" ? req.body.targetBranchId.trim() : "");
-    if (actor.role === "CASHIER" && !targetBranchId) return;
-    const sourceBranchId = typeof req.body?.sourceBranchId === "string" ? req.body.sourceBranchId.trim() : "";
-    if (!productId || !sourceBranchId || !targetBranchId || qty === null) {
-      res.status(400).json({ error: "Produk, cabang sumber, cabang tujuan, dan jumlah positif wajib diisi." });
+    if (!sourceBranchId || !targetBranchId || !Array.isArray(rawItems) ||
+        rawItems.length < 1 || rawItems.length > 50) {
+      res.status(400).json({ error: "Cabang asal, cabang tujuan, dan 1–50 baris produk wajib diisi." });
       return;
     }
-    if (actor.role === "CASHIER" && targetBranchId !== actor.branchId) {
-      res.status(403).json({ error: "Kasir hanya dapat meminta stok untuk cabangnya sendiri." });
+    if (actor.role === "CASHIER" && req.body?.sourceBranchId &&
+        req.body.sourceBranchId !== actor.branchId) {
+      res.status(403).json({ error: "Kasir hanya dapat mengirim stok dari cabangnya sendiri." });
       return;
+    }
+    const items: Array<{ productId: string; qty: number }> = [];
+    const seenProductIds = new Set<string>();
+    for (const value of rawItems) {
+      const productId = typeof value?.productId === "string" ? value.productId.trim() : "";
+      const qty = positiveInt(value?.qty);
+      if (!productId || qty === null) {
+        res.status(400).json({ error: "Setiap produk harus memiliki ID dan jumlah pcs positif." });
+        return;
+      }
+      if (seenProductIds.has(productId)) {
+        res.status(400).json({ error: "Produk yang sama tidak boleh muncul dua kali dalam satu kiriman." });
+        return;
+      }
+      seenProductIds.add(productId);
+      items.push({ productId, qty });
     }
 
+    const batchId = randomUUID();
     try {
-      const transfer = await prisma.$transaction(async (tx) => {
-        await lockBranch(tx, targetBranchId);
-        await requireOpenShift(tx, actor, targetBranchId);
+      const transfers = await prisma.$transaction(async (tx) => {
+        await lockTransferBranches(tx, sourceBranchId, targetBranchId);
+        await requireOpenShift(tx, actor, sourceBranchId);
         await assertBranchPair(tx, sourceBranchId, targetBranchId);
-        await assertProductCanBeTransferred(tx, productId, targetBranchId);
-        return tx.stockTransfer.create({
-          data: {
-            productId,
-            sourceBranchId,
-            targetBranchId,
-            kind: "REQUEST",
-            status: "REQUESTED",
-            requestedQty: qty,
-            requestNote: note,
-            requestedById: actor.userId,
-          },
-          include: transferInclude,
-        });
+
+        const prepared: Array<{
+          productId: string;
+          qty: number;
+          product: { id: string; name: string };
+        }> = [];
+        for (const item of items) {
+          await assertProductCanBeTransferred(tx, item.productId, targetBranchId);
+          const [product, stock] = await Promise.all([
+            tx.product.findUnique({
+              where: { id: item.productId },
+              select: { id: true, name: true },
+            }),
+            tx.productStock.findUnique({
+              where: {
+                productId_branchId: {
+                  productId: item.productId,
+                  branchId: sourceBranchId,
+                },
+              },
+              select: { qty: true },
+            }),
+          ]);
+          if (!product) throw new TransferHttpError(404, "Produk tidak ditemukan.");
+          if (!stock || stock.qty < item.qty) {
+            throw new TransferHttpError(
+              409,
+              `Stok ${product.name} tidak cukup untuk kiriman. Tidak ada stok yang diubah.`,
+              "INSUFFICIENT_STOCK",
+            );
+          }
+          prepared.push({ ...item, product });
+        }
+
+        const created = [];
+        for (const item of prepared) {
+          const decremented = await tx.productStock.updateMany({
+            where: {
+              productId: item.productId,
+              branchId: sourceBranchId,
+              qty: { gte: item.qty },
+            },
+            data: { qty: { decrement: item.qty } },
+          });
+          if (decremented.count !== 1) {
+            throw new TransferHttpError(
+              409,
+              `Stok ${item.product.name} berubah dan tidak cukup. Kiriman dibatalkan tanpa perubahan.`,
+              "INSUFFICIENT_STOCK",
+            );
+          }
+          const transfer = await tx.stockTransfer.create({
+            data: {
+              batchId,
+              productId: item.productId,
+              sourceBranchId,
+              targetBranchId,
+              kind: "DIRECT",
+              status: "IN_TRANSIT",
+              dispatchedQty: item.qty,
+              requestNote: note,
+              requestedById: actor.userId,
+              dispatchedById: actor.userId,
+              dispatchedAt: new Date(),
+            },
+            include: transferInclude,
+          });
+          await tx.adjustment.create({
+            data: {
+              productId: item.productId,
+              branchId: sourceBranchId,
+              qty: item.qty,
+              type: "TRANSFER_OUT",
+              reason: `Kiriman ${batchId} dikirim ke ${transfer.targetBranch.name}`,
+            },
+          });
+          created.push(transfer);
+        }
+        return created;
       });
-      emitTransferUpdate(emitBranch, sourceBranchId, targetBranchId, transfer.id, transfer.status);
-      res.status(201).json(transfer);
+
+      for (const transfer of transfers) {
+        const sourceStock = await prisma.productStock.findUnique({
+          where: {
+            productId_branchId: {
+              productId: transfer.productId,
+              branchId: sourceBranchId,
+            },
+          },
+          select: { qty: true },
+        });
+        emitBranch(sourceBranchId, "stockUpdated", {
+          productId: transfer.productId,
+          branchId: sourceBranchId,
+          qty: sourceStock?.qty ?? 0,
+        });
+        emitTransferUpdate(emitBranch, sourceBranchId, targetBranchId, transfer.id, transfer.status);
+      }
+      res.status(201).json({ batchId, items: transfers });
     } catch (error) {
-      respondError(req, res, error, "Permintaan transfer gagal dibuat.");
+      respondError(req, res, error, "Pengiriman transfer gagal dibuat.");
     }
   });
 
@@ -324,6 +432,7 @@ export function registerStockTransferRoutes(
         }
         const transfer = await tx.stockTransfer.create({
           data: {
+            batchId: randomUUID(),
             productId,
             sourceBranchId,
             targetBranchId,
@@ -361,6 +470,109 @@ export function registerStockTransferRoutes(
       res.status(201).json(result.transfer);
     } catch (error) {
       respondError(req, res, error, "Pengiriman transfer gagal dibuat.");
+    }
+  });
+
+  app.post("/api/stock-transfers/batches/:batchId/receive", ...access, async (req: any, res): Promise<void> => {
+    const actor = getActor(req);
+    if (actor.role !== "CASHIER") {
+      res.status(403).json({ error: "Penerimaan kiriman harus dikonfirmasi kasir cabang tujuan." });
+      return;
+    }
+    const batchId = typeof req.params.batchId === "string" ? req.params.batchId : "";
+    if (!batchId) {
+      res.status(400).json({ error: "ID kiriman tidak valid." });
+      return;
+    }
+    try {
+      const targetBranchId = requireCashierBranch(actor);
+      const transfers = await prisma.$transaction(async (tx) => {
+        await lockBranch(tx, targetBranchId);
+        await requireOpenShift(tx, actor, targetBranchId);
+        const rows = await tx.stockTransfer.findMany({
+          where: { batchId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          include: transferInclude,
+        });
+        if (rows.length === 0) throw new TransferHttpError(404, "Kiriman tidak ditemukan untuk cabang Anda.");
+        if (rows.some((row) => row.targetBranchId !== targetBranchId)) {
+          throw new TransferHttpError(403, "Hanya kasir cabang tujuan yang dapat mengonfirmasi kiriman.");
+        }
+        if (rows.some((row) => row.status !== "IN_TRANSIT" || !row.dispatchedQty)) {
+          throw new TransferHttpError(409, "Ada produk dalam kiriman yang sudah diproses atau belum dikirim.");
+        }
+        const activeCorrections = await tx.stockTransferSkuCorrection.findFirst({
+          where: {
+            transferId: { in: rows.map((row) => row.id) },
+            status: { in: ["PENDING_SOURCE", "APPROVED_PENDING_RECEIPT"] },
+          },
+          select: { id: true },
+        });
+        if (activeCorrections) {
+          throw new TransferHttpError(
+            409,
+            "Kiriman memiliki laporan SKU yang perlu ditangani per produk terlebih dahulu.",
+            "SKU_CORRECTION_PENDING",
+          );
+        }
+        const received = [];
+        for (const row of rows) {
+          const changed = await tx.stockTransfer.updateMany({
+            where: { id: row.id, batchId, status: "IN_TRANSIT" },
+            data: {
+              status: "RECEIVED",
+              receivedQty: row.dispatchedQty,
+              receivedById: actor.userId,
+              receivedAt: new Date(),
+              discrepancyNote: null,
+            },
+          });
+          if (changed.count !== 1) {
+            throw new TransferHttpError(409, "Kiriman berubah. Muat ulang sebelum mengonfirmasi.");
+          }
+          const targetStock = await tx.productStock.upsert({
+            where: {
+              productId_branchId: {
+                productId: row.productId,
+                branchId: targetBranchId,
+              },
+            },
+            update: { qty: { increment: row.dispatchedQty! } },
+            create: {
+              productId: row.productId,
+              branchId: targetBranchId,
+              qty: row.dispatchedQty!,
+            },
+            select: { qty: true },
+          });
+          await tx.adjustment.create({
+            data: {
+              productId: row.productId,
+              branchId: targetBranchId,
+              qty: row.dispatchedQty!,
+              type: "TRANSFER_IN",
+              reason: `Kiriman ${batchId} diterima dari cabang sumber`,
+            },
+          });
+          const updated = await tx.stockTransfer.findUniqueOrThrow({
+            where: { id: row.id },
+            include: transferInclude,
+          });
+          received.push({ row: updated, targetQty: targetStock.qty });
+        }
+        return received;
+      });
+      for (const { row, targetQty } of transfers) {
+        emitBranch(targetBranchId, "stockUpdated", {
+          productId: row.productId,
+          branchId: targetBranchId,
+          qty: targetQty,
+        });
+        emitTransferUpdate(emitBranch, row.sourceBranchId, targetBranchId, row.id, "RECEIVED");
+      }
+      res.json({ batchId, items: transfers.map(({ row }) => row) });
+    } catch (error) {
+      respondError(req, res, error, "Konfirmasi kiriman gagal disimpan.");
     }
   });
 

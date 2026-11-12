@@ -254,6 +254,15 @@ export const api = {
     return writeJson("/stocks/transfer", "POST", data);
   },
 
+  async transferStockBatch(data: {
+    sourceBranchId?: string;
+    targetBranchId: string;
+    items: Array<{ productId: string; qty: number }>;
+    note?: string;
+  }) {
+    return writeJson("/stocks/transfer-batch", "POST", data);
+  },
+
   async getStockTransfers(
     params: { branchId?: string; status?: string; limit?: number } = {},
     signal?: AbortSignal,
@@ -292,6 +301,14 @@ export const api = {
     data: { receivedQty: number; discrepancyNote?: string },
   ) {
     return writeJson(`/stock-transfers/${encodeURIComponent(id)}/receive`, "POST", data);
+  },
+
+  async receiveStockTransferBatch(batchId: string) {
+    return writeJson(
+      `/stock-transfers/batches/${encodeURIComponent(batchId)}/receive`,
+      "POST",
+      {},
+    );
   },
 
   async reportStockTransferSkuCorrection(
