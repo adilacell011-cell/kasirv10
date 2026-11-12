@@ -612,10 +612,12 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   });
   assert.equal(receiveTransferResponse.status, 200);
   const receivedTransfer = await receiveTransferResponse.json() as {
-    status: string; receivedQty: number; discrepancyNote: string;
+    status: string; dispatchedQty: number; receivedQty: number; discrepancyNote: string;
   };
   assert.equal(receivedTransfer.status, "RECEIVED");
+  assert.equal(receivedTransfer.dispatchedQty, 2);
   assert.equal(receivedTransfer.receivedQty, 1);
+  assert.equal(receivedTransfer.dispatchedQty - receivedTransfer.receivedQty, 1);
   assert.equal(receivedTransfer.discrepancyNote, "Satu pcs tidak ada di paket.");
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchBId } },

@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { Check, ChevronDown, PackageCheck, RotateCcw, Send } from "lucide-react";
 import { api } from "../services/api";
+import { getUnresolvedTransferDiscrepancyQty } from "../lib/stock-transfer-discrepancy";
 
 type TransferStatus = "REQUESTED" | "ACCEPTED" | "IN_TRANSIT" | "RECEIVED" | "REJECTED" | "CANCELLED";
 type CorrectionStatus = "PENDING_SOURCE" | "APPROVED_PENDING_RECEIPT" | "REJECTED" | "RECEIVED";
@@ -49,6 +50,8 @@ const itemStatus = (transfer: ReceiptTransfer) => {
   if (transfer.status === "RECEIVED" && transfer.skuCorrections?.[0]?.status === "RECEIVED") {
     return "SKU dikoreksi";
   }
+  const discrepancyQty = getUnresolvedTransferDiscrepancyQty(transfer);
+  if (discrepancyQty > 0) return `Selisih ${discrepancyQty} pcs belum diselesaikan`;
   if (transfer.status === "RECEIVED" && transfer.discrepancyNote) return "Selisih dicatat";
   if (transfer.status === "RECEIVED") return "Sudah diterima";
   const correction = transfer.skuCorrections?.[0];
@@ -98,10 +101,16 @@ export default function StockTransferBatchReceiptTable({
     item.skuCorrections?.some((correction) => correction.status === "PENDING_SOURCE"),
   ).length;
   const receivedCount = items.filter((item) => item.status === "RECEIVED").length;
+  const unresolvedDiscrepancies = items
+    .map((item) => getUnresolvedTransferDiscrepancyQty(item))
+    .filter((qty) => qty > 0);
+  const unresolvedDiscrepancyQty = unresolvedDiscrepancies.reduce((sum, qty) => sum + qty, 0);
   const batchStatus = pendingSourceCount > 0
     ? `${pendingSourceCount} koreksi menunggu pengirim`
     : pendingCount > 0
       ? `${pendingCount} menunggu penerimaan`
+      : unresolvedDiscrepancies.length > 0
+        ? `${unresolvedDiscrepancies.length} selisih · ${unresolvedDiscrepancyQty} pcs belum selesai`
       : receivedCount === items.length
         ? "Semua sudah diterima"
         : `${receivedCount} dari ${items.length} diterima`;
@@ -225,7 +234,7 @@ export default function StockTransferBatchReceiptTable({
           </span>
         </span>
         <span className="inline-flex shrink-0 items-center gap-2">
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ${pendingCount
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ${pendingCount || unresolvedDiscrepancies.length
             ? "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200"
             : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"}`}>
             <PackageCheck className="h-3 w-3" /> {batchStatus}
@@ -266,6 +275,7 @@ export default function StockTransferBatchReceiptTable({
                 correction.status === "PENDING_SOURCE" || correction.status === "APPROVED_PENDING_RECEIPT",
               );
               const latestCorrection = corrections[0];
+              const discrepancyQty = getUnresolvedTransferDiscrepancyQty(transfer);
               const mode = issueMode[transfer.id];
               const alternatives = products.filter((product) =>
                 product.id !== transfer.product.id &&
@@ -375,7 +385,13 @@ export default function StockTransferBatchReceiptTable({
                       )}
                       {transfer.discrepancyNote && (
                         <span className="mt-1 block break-words text-[9px] text-amber-800 dark:text-amber-300">
-                          {transfer.discrepancyNote}
+                          Catatan: {transfer.discrepancyNote}
+                        </span>
+                      )}
+                      {discrepancyQty > 0 && (
+                        <span role="status" className="mt-1 block rounded-md border border-amber-300 bg-amber-50 px-1.5 py-1 text-[9px] text-amber-900 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                          <strong className="block">Selisih {discrepancyQty} pcs · belum diselesaikan</strong>
+                          Tetap tercatat di riwayat, tidak dihitung sebagai stok tersedia.
                         </span>
                       )}
                     </td>

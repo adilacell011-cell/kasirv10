@@ -13,6 +13,7 @@ import StockTransferBatchSenderTable from "./StockTransferBatchSenderTable";
 import StockInHistory from "./StockInHistory";
 import StockTransferReturns from "./StockTransferReturns";
 import { api } from "../services/api";
+import { getUnresolvedTransferDiscrepancyQty } from "../lib/stock-transfer-discrepancy";
 
 type Branch = { id: string; name: string };
 type Product = { id: string; name: string; barcode?: string | null; brand?: string | null; status?: string };
@@ -142,8 +143,16 @@ export default function StockTransferActivity({
         items: items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
         createdAt: Math.max(...items.map((item) => new Date(item.createdAt).getTime())),
         open: items.some(isOpen),
+        unresolvedDiscrepancyQty: items.reduce(
+          (total, item) => total + getUnresolvedTransferDiscrepancyQty(item),
+          0,
+        ),
       }))
-      .sort((a, b) => Number(b.open) - Number(a.open) || b.createdAt - a.createdAt);
+      .sort((a, b) =>
+        Number(b.open) - Number(a.open) ||
+        Number(b.unresolvedDiscrepancyQty > 0) - Number(a.unresolvedDiscrepancyQty > 0) ||
+        b.createdAt - a.createdAt,
+      );
   }, [transfers]);
 
   const orderedTransfers = useMemo(
@@ -325,6 +334,7 @@ export default function StockTransferActivity({
               const canManageSource = role !== "CASHIER" || transfer.sourceBranch.id === branchId;
               const canReceive = isCashier && transfer.targetBranch.id === branchId;
               const isBusy = busyId === transfer.id;
+              const unresolvedDiscrepancyQty = getUnresolvedTransferDiscrepancyQty(transfer);
               const corrections = transfer.skuCorrections || [];
               const activeCorrection = corrections.find((correction) =>
                 correction.status === "PENDING_SOURCE" || correction.status === "APPROVED_PENDING_RECEIPT",
@@ -420,6 +430,12 @@ export default function StockTransferActivity({
                     {transfer.dispatchedQty != null && <span>Dikirim {transfer.dispatchedQty} pcs</span>}
                     {transfer.receivedQty != null && <span>Diterima {transfer.receivedQty} pcs</span>}
                   </div>
+                  {unresolvedDiscrepancyQty > 0 && (
+                    <div role="status" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                      <p className="font-black">Selisih {unresolvedDiscrepancyQty} pcs · belum diselesaikan</p>
+                      <p className="mt-0.5">Tetap tercatat di riwayat, tidak dihitung sebagai stok tersedia.</p>
+                    </div>
+                  )}
                   {(transfer.dispatchedBy?.name || transfer.dispatchedAt) && (
                     <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
                       Dikirim{transfer.dispatchedBy?.name ? ` oleh ${transfer.dispatchedBy.name}` : ""}
@@ -434,7 +450,7 @@ export default function StockTransferActivity({
                   )}
                   {transfer.requestNote && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Catatan: {transfer.requestNote}</p>}
                   {transfer.responseNote && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Respons: {transfer.responseNote}</p>}
-                  {transfer.discrepancyNote && <p className="mt-1 text-[10px] font-semibold text-amber-800 dark:text-amber-300">Selisih: {transfer.discrepancyNote}</p>}
+                  {transfer.discrepancyNote && <p className="mt-1 text-[10px] font-semibold text-amber-800 dark:text-amber-300">Catatan selisih: {transfer.discrepancyNote}</p>}
 
                   {transfer.status === "REQUESTED" && canManageSource && (
                     <div className="mt-2 space-y-2 border-t border-slate-200 pt-2 dark:border-slate-700">

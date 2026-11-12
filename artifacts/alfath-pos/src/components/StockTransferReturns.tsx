@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowRightLeft, Check, Clock3, LoaderCircle, PackageCheck, RotateCcw } from "lucide-react";
 import { api } from "../services/api";
+import { getUnresolvedTransferDiscrepancyQty } from "../lib/stock-transfer-discrepancy";
 
 type Branch = { id: string; name: string };
 type Product = { id: string; name: string; barcode?: string | null };
@@ -62,8 +63,17 @@ const groupTransfers = (items: Transfer[]) => {
       batchId,
       items: rows.sort((a, b) => a.product.name.localeCompare(b.product.name, "id")),
       createdAt: Math.max(...rows.map((row) => new Date(row.createdAt).getTime())),
+      pending: rows.some((row) => row.status === "IN_TRANSIT"),
+      unresolvedDiscrepancyQty: rows.reduce(
+        (total, row) => total + getUnresolvedTransferDiscrepancyQty(row),
+        0,
+      ),
     }))
-    .sort((a, b) => b.createdAt - a.createdAt);
+    .sort((a, b) =>
+      Number(b.pending) - Number(a.pending) ||
+      Number(b.unresolvedDiscrepancyQty > 0) - Number(a.unresolvedDiscrepancyQty > 0) ||
+      b.createdAt - a.createdAt,
+    );
 };
 
 export default function StockTransferReturns({
@@ -357,17 +367,22 @@ export default function StockTransferReturns({
                       </p>
                     </div>
                     <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black ${
-                      allPending
+                      allPending || group.unresolvedDiscrepancyQty > 0
                         ? "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200"
                         : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
                     }`}>
-                      {allPending ? "Menunggu penerimaan" : "Selesai"}
+                      {allPending
+                        ? "Menunggu penerimaan"
+                        : group.unresolvedDiscrepancyQty > 0
+                          ? `${group.unresolvedDiscrepancyQty} pcs selisih · belum selesai`
+                          : "Selesai"}
                     </span>
                   </header>
                   <div className="mt-2 space-y-2">
                     {group.items.map((item) => {
                       const sentQty = item.dispatchedQty ?? 0;
                       const actualQty = Number(receiptQty[item.id] ?? String(sentQty));
+                      const discrepancyQty = getUnresolvedTransferDiscrepancyQty(item);
                       return (
                         <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900/70">
                           <div className="flex items-start justify-between gap-2">
@@ -417,6 +432,12 @@ export default function StockTransferReturns({
                             <p className="mt-2 text-[9px] font-semibold text-amber-800 dark:text-amber-300">
                               Catatan selisih: {item.discrepancyNote}
                             </p>
+                          )}
+                          {discrepancyQty > 0 && (
+                            <div role="status" className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[9px] text-amber-900 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                              <p className="font-black">Selisih retur {discrepancyQty} pcs · belum diselesaikan</p>
+                              <p>Tetap tercatat di riwayat, tidak dihitung sebagai stok tersedia.</p>
+                            </div>
                           )}
                         </div>
                       );
