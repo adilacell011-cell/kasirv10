@@ -72,6 +72,7 @@ export default function StockTransferActivity({
   const [acceptQty, setAcceptQty] = useState<Record<string, string>>({});
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
   const [receiveNotes, setReceiveNotes] = useState<Record<string, string>>({});
+  const [receiveIssueOpen, setReceiveIssueOpen] = useState<Record<string, boolean>>({});
   const [busyId, setBusyId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -269,18 +270,17 @@ export default function StockTransferActivity({
               const isBusy = busyId === transfer.id;
               const currentAcceptQty = acceptQty[transfer.id] ?? String(transfer.requestedQty ?? "");
               const currentReceiveQty = receiveQty[transfer.id] ?? String(transfer.dispatchedQty ?? "");
-              const isMismatch = currentReceiveQty !== "" &&
-                Number(currentReceiveQty) !== transfer.dispatchedQty;
               const acceptQtyNumber = Number(currentAcceptQty);
               const receiveQtyNumber = Number(currentReceiveQty);
               const canSubmitAccept = Number.isSafeInteger(acceptQtyNumber) &&
                 acceptQtyNumber > 0 &&
                 acceptQtyNumber <= (transfer.requestedQty ?? 0);
-              const canSubmitReceipt = currentReceiveQty.trim() !== "" &&
+              const canSubmitReceiptIssue = currentReceiveQty.trim() !== "" &&
                 Number.isSafeInteger(receiveQtyNumber) &&
                 receiveQtyNumber >= 0 &&
                 receiveQtyNumber <= (transfer.dispatchedQty ?? 0) &&
-                (!isMismatch || Boolean(receiveNotes[transfer.id]?.trim()));
+                receiveQtyNumber !== transfer.dispatchedQty &&
+                Boolean(receiveNotes[transfer.id]?.trim());
 
               return (
                 <article key={transfer.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
@@ -359,39 +359,84 @@ export default function StockTransferActivity({
 
                   {transfer.status === "IN_TRANSIT" && canReceive && (
                     <div className="mt-2 space-y-2 border-t border-slate-200 pt-2 dark:border-slate-700">
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                        Jumlah yang benar-benar diterima
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={currentReceiveQty}
-                          onChange={(event) => setReceiveQty((state) => ({ ...state, [transfer.id]: event.target.value }))}
-                          disabled={Boolean(busyId) || !shiftOpen}
-                          className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                        />
-                      </label>
-                      {isMismatch && (
-                        <textarea
-                          value={receiveNotes[transfer.id] || ""}
-                          onChange={(event) => setReceiveNotes((state) => ({ ...state, [transfer.id]: event.target.value }))}
-                          maxLength={500}
-                          placeholder="Wajib jelaskan jumlah yang kurang"
-                          disabled={Boolean(busyId) || !shiftOpen}
-                          className="min-h-16 w-full rounded-lg border border-amber-300 bg-white p-2 text-xs text-slate-800 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-100"
-                        />
+                      <p className="text-[10px] text-slate-600 dark:text-slate-300">
+                        Pengirim mencatat {transfer.dispatchedQty ?? 0} pcs. Konfirmasi ini menjadi bukti serah-terima cabang.
+                      </p>
+                      {!receiveIssueOpen[transfer.id] ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={Boolean(busyId) || !shiftOpen || transfer.dispatchedQty == null}
+                            onClick={() => void run(transfer.id, () => api.receiveStockTransfer(transfer.id, {
+                              receivedQty: transfer.dispatchedQty ?? 0,
+                            }))}
+                            className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-[10px] font-black uppercase text-white hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            <PackageCheck className="h-4 w-4" /> Konfirmasi sesuai
+                          </button>
+                          <button
+                            type="button"
+                            disabled={Boolean(busyId) || !shiftOpen}
+                            onClick={() => setReceiveIssueOpen((state) => ({ ...state, [transfer.id]: true }))}
+                            className="min-h-9 w-full rounded-lg border border-amber-300 px-3 text-[10px] font-bold uppercase text-amber-800 hover:bg-amber-50 disabled:opacity-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-500/10"
+                          >
+                            Jumlah tidak sesuai
+                          </button>
+                        </>
+                      ) : (
+                        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50/70 p-2 dark:border-amber-800 dark:bg-amber-500/5">
+                          <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                            Jumlah yang benar-benar diterima
+                            <input
+                              type="number"
+                              min="0"
+                              max={transfer.dispatchedQty ?? undefined}
+                              step="1"
+                              value={currentReceiveQty}
+                              onChange={(event) => setReceiveQty((state) => ({ ...state, [transfer.id]: event.target.value }))}
+                              disabled={Boolean(busyId) || !shiftOpen}
+                              className="mt-1 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                            />
+                          </label>
+                          <textarea
+                            value={receiveNotes[transfer.id] || ""}
+                            onChange={(event) => setReceiveNotes((state) => ({ ...state, [transfer.id]: event.target.value }))}
+                            maxLength={500}
+                            placeholder="Jelaskan jumlah yang berbeda"
+                            disabled={Boolean(busyId) || !shiftOpen}
+                            className="min-h-16 w-full rounded-lg border border-amber-300 bg-white p-2 text-xs text-slate-800 dark:border-amber-800 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                          <p className="text-[10px] text-amber-900 dark:text-amber-200">
+                            Selisih dicatat untuk ditelusuri. Stok pengirim tidak otomatis bertambah; retur harus diterima secara fisik.
+                          </p>
+                          {currentReceiveQty.trim() !== "" && receiveQtyNumber === transfer.dispatchedQty && (
+                            <p className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
+                              Jumlah sama dengan yang dikirim. Gunakan “Konfirmasi sesuai”.
+                            </p>
+                          )}
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              disabled={Boolean(busyId) || !shiftOpen || !canSubmitReceiptIssue}
+                              onClick={() => void run(transfer.id, () => api.receiveStockTransfer(transfer.id, {
+                                receivedQty: receiveQtyNumber,
+                                discrepancyNote: receiveNotes[transfer.id]?.trim(),
+                              }))}
+                              className="flex min-h-10 items-center justify-center gap-1 rounded-lg bg-amber-500 px-2 text-[10px] font-black uppercase text-slate-950 hover:bg-amber-400 disabled:opacity-50"
+                            >
+                              <PackageCheck className="h-4 w-4" /> Catat selisih
+                            </button>
+                            <button
+                              type="button"
+                              disabled={Boolean(busyId)}
+                              onClick={() => setReceiveIssueOpen((state) => ({ ...state, [transfer.id]: false }))}
+                              className="min-h-10 rounded-lg border border-slate-300 px-2 text-[10px] font-bold uppercase text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                            >
+                              Kembali
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        disabled={Boolean(busyId) || !shiftOpen || !canSubmitReceipt}
-                        onClick={() => void run(transfer.id, () => api.receiveStockTransfer(transfer.id, {
-                          receivedQty: Number(currentReceiveQty),
-                          discrepancyNote: receiveNotes[transfer.id]?.trim() || undefined,
-                        }))}
-                        className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-[10px] font-black uppercase text-white hover:bg-emerald-700 disabled:opacity-50"
-                      >
-                        <PackageCheck className="h-4 w-4" /> Konfirmasi penerimaan
-                      </button>
                     </div>
                   )}
 
