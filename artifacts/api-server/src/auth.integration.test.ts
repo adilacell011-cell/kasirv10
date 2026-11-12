@@ -620,6 +620,9 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchBId } },
   })).qty, 1);
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 3, "A missing received unit is not silently returned to source stock without a physical return receipt.");
   const duplicateReceiveResponse = await fetch(`${apiUrl}/api/stock-transfers/${transferRequest.id}/receive`, {
     method: "POST",
     headers: {
@@ -647,6 +650,21 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal((await prisma.productStock.findUniqueOrThrow({
     where: { productId_branchId: { productId, branchId: branchBId } },
   })).qty, 1, "Direct send must also wait for destination receipt.");
+  const cancelDispatchedTransfer = await fetch(`${apiUrl}/api/stock-transfers/${directTransfer.id}/cancel`, {
+    method: "PATCH",
+    headers: {
+      authorization: `Bearer ${cashierPayload.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ note: "Uji pembatalan setelah dikirim." }),
+  });
+  assert.equal(cancelDispatchedTransfer.status, 409, "A dispatched transfer cannot be cancelled as if it were still a request.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchAId } },
+  })).qty, 2, "Rejected post-dispatch cancellation must not restore source stock.");
+  assert.equal((await prisma.productStock.findUniqueOrThrow({
+    where: { productId_branchId: { productId, branchId: branchBId } },
+  })).qty, 1, "Rejected post-dispatch cancellation must not change destination stock.");
 
   const directReceiveResponse = await fetch(`${apiUrl}/api/stock-transfers/${directTransfer.id}/receive`, {
     method: "POST",
