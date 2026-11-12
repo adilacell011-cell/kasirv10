@@ -20,6 +20,18 @@ export function assertOwnerBootstrapTarget(
   }
 }
 
+export function isReplitDevelopmentQaTarget(
+  target: DatabaseTarget,
+  env: NodeJS.ProcessEnv,
+): boolean {
+  return target.environment === "development"
+    && target.host === env.PGHOST?.toLowerCase()
+    && target.port === (env.PGPORT || "5432")
+    && target.database === "heliumdb"
+    && env.PGDATABASE === "heliumdb"
+    && target.schema === "public";
+}
+
 export function assertStagingSchemaInitTarget(
   target: DatabaseTarget,
   env: NodeJS.ProcessEnv,
@@ -36,13 +48,14 @@ export function assertStagingSchemaInitTarget(
     ? (target.host === "db" && target.port === "5432" && target.database === "kasirv10_staging")
       || isMigrasiCopyTarget
     : target.environment === "test" &&
-      ["127.0.0.1", "localhost", "::1"].includes(target.host) && isStagingDatabase;
+      ["127.0.0.1", "localhost", "::1"].includes(target.host) && isStagingDatabase
+      || isReplitDevelopmentQaTarget(target, env);
   if (!isApprovedEndpoint ||
       target.schema !== "public" ||
-      (!isStagingDatabase && !isMigrasiCopyTarget) ||
+      (!isStagingDatabase && !isMigrasiCopyTarget && !isReplitDevelopmentQaTarget(target, env)) ||
       !allowed || allowed !== actual) {
     throw new Error(
-      "Schema migration blocked: require an exact staging/QA or approved kasirv10_migrasi target, public schema, and matching STAGING_SCHEMA_INIT_TARGET.",
+      "Schema migration blocked: require an exact staging/QA, approved kasirv10_migrasi, or Replit heliumdb target, public schema, and matching STAGING_SCHEMA_INIT_TARGET.",
     );
   }
 }

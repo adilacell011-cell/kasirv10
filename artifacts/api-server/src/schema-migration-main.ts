@@ -8,7 +8,7 @@ import {
   assertExactModelTablesAndColumns,
   readDatabaseSnapshot,
 } from "./database-readiness";
-import { validateDatabaseTarget } from "./database-target";
+import { isReplitDevelopmentQaTarget, validateDatabaseTarget } from "./database-target";
 import { approveSchemaMigrationCheck, approveStagingSchemaMigration } from "./schema-migration";
 
 const BASELINE_MIGRATION = "20261106110000_baseline_existing_15_table_schema";
@@ -19,6 +19,15 @@ const STOCK_TRANSFER_BATCH_MIGRATION = "20261112110000_add_stock_transfer_batch_
 const STOCK_TRANSFER_RETURN_MIGRATION = "20261112120000_add_stock_transfer_return_reference";
 const LEGACY14_MIGRATION = "20261106105000_upgrade_legacy14_sale_idempotency";
 const VERIFIED_LEGACY_BASELINE_MIGRATION = "20261106104000_baseline_verified_legacy_schema";
+const REPLIT_DEV_PRE_RETURN_BASELINE_MIGRATIONS = [
+  VERIFIED_LEGACY_BASELINE_MIGRATION,
+  LEGACY14_MIGRATION,
+  BASELINE_MIGRATION,
+  AUDIT_MIGRATION,
+  STOCK_TRANSFER_MIGRATION,
+  STOCK_TRANSFER_SKU_CORRECTION_MIGRATION,
+  STOCK_TRANSFER_BATCH_MIGRATION,
+] as const;
 const LEGACY14_MODEL_NAMES = new Set([
   "User", "Branch", "Product", "ProductStock", "VoucherSN", "Sale", "SaleItem",
   "Commission", "Adjustment", "GlobalConfig", "Shift", "StockSnapshot",
@@ -121,6 +130,93 @@ function safePrismaDiagnostic(error: unknown): string {
     .replaceAll(configuredUrl ?? "\u0000", "[redacted DATABASE_URL]")
     .replace(/postgres(?:ql)?:\/\/[^\s'"]+/gi, "[redacted database URL]")
     .slice(-4000);
+}
+
+async function assertReplitDevelopmentQaTransferGuards(client: PrismaClient): Promise<void> {
+  const constraints = await client.$queryRaw<Array<{
+    table_name: string;
+    constraint_name: string;
+    definition: string;
+  }>>`
+    SELECT t.relname AS table_name, con.conname AS constraint_name,
+      pg_get_constraintdef(con.oid) AS definition
+    FROM pg_constraint con
+    JOIN pg_class t ON t.oid = con.conrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE n.nspname = 'public' AND con.contype = 'c'
+      AND t.relname IN ('StockTransfer', 'StockTransferSkuCorrection')
+  `;
+  const expectedChecks: Array<{
+    table: string;
+    name: string;
+    values?: string[];
+    fragments?: string[];
+  }> = [
+    { table: "StockTransfer", name: "StockTransfer_kind_check", values: ["REQUEST", "DIRECT"] },
+    {
+      table: "StockTransfer",
+      name: "StockTransfer_status_check",
+      values: ["REQUESTED", "ACCEPTED", "IN_TRANSIT", "RECEIVED", "REJECTED", "CANCELLED"],
+    },
+    { table: "StockTransfer", name: "StockTransfer_requestedQty_check", fragments: ["requestedqtyisnull", "requestedqty>0"] },
+    { table: "StockTransfer", name: "StockTransfer_approvedQty_check", fragments: ["approvedqtyisnull", "approvedqty>0"] },
+    { table: "StockTransfer", name: "StockTransfer_dispatchedQty_check", fragments: ["dispatchedqtyisnull", "dispatchedqty>0"] },
+    { table: "StockTransfer", name: "StockTransfer_receivedQty_check", fragments: ["receivedqtyisnull", "receivedqty>=0"] },
+    {
+      table: "StockTransferSkuCorrection",
+      name: "StockTransferSkuCorrection_status_check",
+      values: ["PENDING_SOURCE", "APPROVED_PENDING_RECEIPT", "REJECTED", "RECEIVED"],
+    },
+    { table: "StockTransferSkuCorrection", name: "StockTransferSkuCorrection_actualQty_check", fragments: ["actualqty>0"] },
+  ];
+  for (const expected of expectedChecks) {
+    const actual = constraints.find((row) =>
+      row.table_name === expected.table && row.constraint_name === expected.name);
+    if (!actual) throw new Error(`Missing verified QA constraint ${expected.name}.`);
+    const definition = actual.definition.toLowerCase().replaceAll('"', "").replace(/\s+/g, "");
+    if (expected.values) {
+      const values = [...actual.definition.matchAll(/'([^']+)'(?:::text)?/g)]
+        .map((match) => match[1])
+        .sort();
+      if (JSON.stringify(values) !== JSON.stringify([...expected.values].sort())) {
+        throw new Error(`Incompatible QA constraint ${expected.name}.`);
+      }
+    }
+    if (expected.fragments?.some((fragment) => !definition.includes(fragment))) {
+      throw new Error(`Incompatible QA constraint ${expected.name}.`);
+    }
+  }
+
+  const partialIndexes = await client.$queryRaw<Array<{
+    table_name: string;
+    index_name: string;
+    is_unique: boolean;
+    columns: string[];
+    predicate: string;
+  }>>`
+    SELECT t.relname AS table_name, i.relname AS index_name, ix.indisunique AS is_unique,
+      ARRAY(SELECT a.attname::text FROM unnest(ix.indkey) WITH ORDINALITY k(attnum, ord)
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
+        WHERE k.ord <= ix.indnkeyatts ORDER BY k.ord) AS columns,
+      pg_get_expr(ix.indpred, ix.indrelid) AS predicate
+    FROM pg_index ix
+    JOIN pg_class i ON i.oid = ix.indexrelid
+    JOIN pg_class t ON t.oid = ix.indrelid
+    JOIN pg_namespace n ON n.oid = t.relnamespace
+    WHERE n.nspname = 'public' AND ix.indisvalid AND ix.indpred IS NOT NULL
+      AND i.relname = 'StockTransferSkuCorrection_one_open_per_transfer_idx'
+  `;
+  const pendingIndex = partialIndexes[0];
+  const pendingStates = pendingIndex
+    ? [...pendingIndex.predicate.matchAll(/'([^']+)'(?:::text)?/g)].map((match) => match[1]).sort()
+    : [];
+  if (!pendingIndex || pendingIndex.table_name !== "StockTransferSkuCorrection" ||
+      !pendingIndex.is_unique || pendingIndex.columns.length !== 1 ||
+      pendingIndex.columns[0] !== "transferId" ||
+      !pendingIndex.predicate.toLowerCase().includes("status") ||
+      JSON.stringify(pendingStates) !== JSON.stringify(["APPROVED_PENDING_RECEIPT", "PENDING_SOURCE"])) {
+    throw new Error("Missing or incompatible verified QA partial index for open SKU corrections.");
+  }
 }
 
 async function main() {
@@ -241,6 +337,11 @@ async function main() {
       targetState[0].hasTransferBatchColumn && !targetState[0].hasTransferReturnColumn;
     const isCurrent19 = hasCurrentTransferTables &&
       targetState[0].hasTransferBatchColumn && targetState[0].hasTransferReturnColumn;
+    const isReplitDevelopmentPreReturnBaseline =
+      isReplitDevelopmentQaTarget(target, process.env) &&
+      isPreReturn19 &&
+      !targetState[0].hasMigrationTable &&
+      migrationRows.length === 0;
     if ([isLegacy14, isLegacy15, isCurrent17, isCurrent18, isPreBatch19, isPreReturn19, isCurrent19]
       .filter(Boolean).length !== 1) {
       throw new Error("Database schema does not match a supported 14-, 15-, 17-, 18- or 19-table version.");
@@ -318,8 +419,10 @@ async function main() {
           ...STOCK_TRANSFER_BATCH_INDEXES,
         ],
       );
-      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
-          !transferBatchMigration || transferReturnMigration) {
+      if (isReplitDevelopmentPreReturnBaseline) {
+        await assertReplitDevelopmentQaTransferGuards(client);
+      } else if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
+                 !transferBatchMigration || transferReturnMigration) {
         throw new Error("The pre-return 19-table schema has unexpected or incomplete migration history.");
       }
     } else {
@@ -354,6 +457,8 @@ async function main() {
               ? "supported 18-table schema; SKU-correction upgrade is available"
           : isPreBatch19
             ? "supported 19-table schema; transfer-batch upgrade is available"
+            : isReplitDevelopmentPreReturnBaseline
+              ? "verified Replit development 19-table schema; QA baseline is available"
           : isPreReturn19
               ? "supported 19-table schema; physical-return upgrade is available"
               : "current 19-table physical-return schema";
@@ -363,46 +468,62 @@ async function main() {
       return;
     }
 
-    if (!verifiedLegacyBaseline) {
-      const output = execFileSync(process.execPath, [
-        prismaCli, "migrate", "resolve", "--applied", VERIFIED_LEGACY_BASELINE_MIGRATION,
-        "--schema", schemaPath,
-      ], {
-        cwd: packageDir,
-        env: process.env,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 10 * 60 * 1000,
-      });
-      printSafeOutput(output);
-    }
+    if (isReplitDevelopmentPreReturnBaseline) {
+      for (const migration of REPLIT_DEV_PRE_RETURN_BASELINE_MIGRATIONS) {
+        const output = execFileSync(process.execPath, [
+          prismaCli, "migrate", "resolve", "--applied", migration,
+          "--schema", schemaPath,
+        ], {
+          cwd: packageDir,
+          env: process.env,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: 10 * 60 * 1000,
+        });
+        printSafeOutput(output);
+      }
+    } else {
+      if (!verifiedLegacyBaseline) {
+        const output = execFileSync(process.execPath, [
+          prismaCli, "migrate", "resolve", "--applied", VERIFIED_LEGACY_BASELINE_MIGRATION,
+          "--schema", schemaPath,
+        ], {
+          cwd: packageDir,
+          env: process.env,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: 10 * 60 * 1000,
+        });
+        printSafeOutput(output);
+      }
 
-    if (!isLegacy14 && !legacy14Migration) {
-      const output = execFileSync(process.execPath, [
-        prismaCli, "migrate", "resolve", "--applied", LEGACY14_MIGRATION,
-        "--schema", schemaPath,
-      ], {
-        cwd: packageDir,
-        env: process.env,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 10 * 60 * 1000,
-      });
-      printSafeOutput(output);
-    }
+      if (!isLegacy14 && !legacy14Migration) {
+        const output = execFileSync(process.execPath, [
+          prismaCli, "migrate", "resolve", "--applied", LEGACY14_MIGRATION,
+          "--schema", schemaPath,
+        ], {
+          cwd: packageDir,
+          env: process.env,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: 10 * 60 * 1000,
+        });
+        printSafeOutput(output);
+      }
 
-    if (!baseline && !isLegacy14) {
-      const baselineOutput = execFileSync(process.execPath, [
-        prismaCli, "migrate", "resolve", "--applied", BASELINE_MIGRATION,
-        "--schema", schemaPath,
-      ], {
-        cwd: packageDir,
-        env: process.env,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 10 * 60 * 1000,
-      });
-      printSafeOutput(baselineOutput);
+      if (!baseline && !isLegacy14) {
+        const baselineOutput = execFileSync(process.execPath, [
+          prismaCli, "migrate", "resolve", "--applied", BASELINE_MIGRATION,
+          "--schema", schemaPath,
+        ], {
+          cwd: packageDir,
+          env: process.env,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "pipe"],
+          timeout: 10 * 60 * 1000,
+        });
+        printSafeOutput(baselineOutput);
+      }
     }
 
     // On a 14-table database, the guarded idempotency migration sorts before

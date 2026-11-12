@@ -41,6 +41,23 @@ const migrasiCheckApproval = [
   "--check",
   "--approve=schema-check:production:kasirv10-staging-db:5432/kasirv10_migrasi/public",
 ];
+const replitDevQaTarget: DatabaseTarget = {
+  environment: "development",
+  host: "replit-dev-db",
+  port: "5432",
+  database: "heliumdb",
+  schema: "public",
+};
+const replitDevQaEnv = {
+  PGHOST: "replit-dev-db",
+  PGDATABASE: "heliumdb",
+  PGPORT: "5432",
+  STAGING_SCHEMA_INIT_TARGET: "development:replit-dev-db:5432/heliumdb/public",
+};
+const replitDevQaApproval = [
+  "--execute",
+  "--approve=schema-migrate:development:replit-dev-db:5432/heliumdb/public",
+];
 
 test("legacy migration requires explicit execution and exact staging/QA target approval", () => {
   assert.doesNotThrow(() => approveStagingSchemaMigration(qaApproval, qaTarget, qaEnv));
@@ -86,6 +103,29 @@ test("kasirv10_migrasi is allowed only as the exact VPS target", () => {
     STAGING_SCHEMA_INIT_TARGET: "production:kasirv10-staging-db:5432/kasirv10_staging/public",
   }));
   assert.throws(() => approveSchemaMigrationCheck(migrasiCheckApproval, migrasiTarget, {}));
+});
+
+test("Replit heliumdb migration requires the exact development PG target and approval", () => {
+  assert.doesNotThrow(() => approveStagingSchemaMigration(
+    replitDevQaApproval,
+    replitDevQaTarget,
+    replitDevQaEnv,
+  ));
+  assert.throws(() => approveStagingSchemaMigration(
+    replitDevQaApproval,
+    { ...replitDevQaTarget, database: "kasirv10" },
+    replitDevQaEnv,
+  ));
+  assert.throws(() => approveStagingSchemaMigration(
+    replitDevQaApproval,
+    { ...replitDevQaTarget, host: "other-db" },
+    replitDevQaEnv,
+  ));
+  assert.throws(() => approveStagingSchemaMigration(
+    replitDevQaApproval,
+    replitDevQaTarget,
+    { ...replitDevQaEnv, STAGING_SCHEMA_INIT_TARGET: undefined },
+  ));
 });
 
 test("read-only schema preflight exits before every Prisma migration command", () => {

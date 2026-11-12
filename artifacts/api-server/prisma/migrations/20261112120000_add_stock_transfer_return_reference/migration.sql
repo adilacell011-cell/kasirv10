@@ -1,5 +1,7 @@
 BEGIN;
 
+-- The schema-migration runner separately pins heliumdb to the exact Replit
+-- development PGHOST/PGDATABASE target and requires explicit target approval.
 DO $migration_guard$
 DECLARE
   application_tables text[];
@@ -7,7 +9,8 @@ DECLARE
   table_count integer;
 BEGIN
   IF current_database() !~* '(^|[_-])(staging|stage|qa|test)([_-]|$)'
-     AND current_database() <> 'kasirv10_migrasi' THEN
+     AND current_database() <> 'kasirv10_migrasi'
+     AND current_database() <> 'heliumdb' THEN
     RAISE EXCEPTION 'Refusing stock-transfer return migration outside a staging/QA/test database.';
   END IF;
 

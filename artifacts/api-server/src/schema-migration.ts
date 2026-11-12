@@ -15,7 +15,7 @@ export function approveStagingSchemaMigration(
     || !normalizedArgs.includes(approval)
   ) {
     throw new Error(
-      "Schema migration refused. Require --execute and an exact approved staging/QA/migrasi target.",
+      "Schema migration refused. Require --execute and an exact approved staging/QA/migrasi or Replit heliumdb target.",
     );
   }
 }
