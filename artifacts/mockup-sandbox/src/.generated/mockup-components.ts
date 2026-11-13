@@ -2,7 +2,6 @@
 type ModuleMap = Record<string, () => Promise<Record<string, unknown>>>;
 export const modules: ModuleMap = {
   "./components/mockups/alfath-dashboard/Dashboard.tsx": () => import("../components/mockups/alfath-dashboard/Dashboard.tsx"),
-  "./components/mockups/audit-product-cards/CompactRows.tsx": () => import("../components/mockups/audit-product-cards/CompactRows.tsx"),
   "./components/mockups/alfath-redesign/Aurora.tsx": () => import("../components/mockups/alfath-redesign/Aurora.tsx"),
   "./components/mockups/alfath-redesign/CleanPro.tsx": () => import("../components/mockups/alfath-redesign/CleanPro.tsx"),
   "./components/mockups/alfath-redesign/DarkCommand.tsx": () => import("../components/mockups/alfath-redesign/DarkCommand.tsx"),
@@ -10,6 +9,7 @@ export const modules: ModuleMap = {
   "./components/mockups/alfath-redesign/MidnightLuxe.tsx": () => import("../components/mockups/alfath-redesign/MidnightLuxe.tsx"),
   "./components/mockups/alfath-redesign/PeachSorbet.tsx": () => import("../components/mockups/alfath-redesign/PeachSorbet.tsx"),
   "./components/mockups/alfath-redesign/ProdukNeuLampu.tsx": () => import("../components/mockups/alfath-redesign/ProdukNeuLampu.tsx"),
+  "./components/mockups/audit-product-cards/CompactRows.tsx": () => import("../components/mockups/audit-product-cards/CompactRows.tsx"),
   "./components/mockups/kasir-android-dashboard/Compact.tsx": () => import("../components/mockups/kasir-android-dashboard/Compact.tsx"),
   "./components/mockups/kasir-android-dashboard/Current.tsx": () => import("../components/mockups/kasir-android-dashboard/Current.tsx"),
   "./components/mockups/kasirv10-audit-compact/CompactAudit.tsx": () => import("../components/mockups/kasirv10-audit-compact/CompactAudit.tsx"),
