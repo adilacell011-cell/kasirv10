@@ -6,12 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       publish_validated_candidate:
-        description: Publish the validated Kasir V10 candidate SHA from the validation branch
+        description: Publish the user-tested Kasir V10 candidate SHA from the validation branch
         required: true
         type: boolean
         default: false
       candidate_source_sha:
-        description: Exact approved source SHA for the clean stock-audit candidate
+        description: Exact approved source SHA for the current transfer candidate
         required: false
         type: string
       verify_existing_candidate:
@@ -63,8 +63,8 @@ jobs:
               echo "Candidate publication requires explicit confirmation."
               exit 1
             fi
-            if [[ "$CANDIDATE_SOURCE_SHA" != "3f3674b7344b50e37f1c1d2f99d3feed9929ac59" ]]; then
-              echo "Refusing to publish: source SHA does not match the approved current stock-audit candidate."
+            if [[ "$CANDIDATE_SOURCE_SHA" != "d486caa93916664b1b8418d44e23d1fec8ed13bd" ]]; then
+              echo "Refusing to publish: source SHA does not match the approved current transfer candidate."
               exit 1
             fi
             source_sha="$CANDIDATE_SOURCE_SHA"
