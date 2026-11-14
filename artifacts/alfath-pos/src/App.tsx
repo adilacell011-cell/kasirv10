@@ -3952,7 +3952,12 @@ export default function App() {
     <>
       <div
         className="app-shell flex h-[100dvh] bg-slate-50 font-sans text-slate-800 overflow-hidden"
-        data-admin-surface={profile?.role === "ADMIN" && activeMenu !== "pos" ? "true" : undefined}
+        data-admin-surface={
+          (profile?.role === "ADMIN" && activeMenu !== "pos") ||
+          (profile?.role === "AUDIT" && (activeMenu === "audit" || activeMenu === "stock_audit"))
+            ? "true"
+            : undefined
+        }
       >
         {/* --- DESKTOP/TABLET SIDEBAR --- */}
         <div
@@ -7113,26 +7118,15 @@ export default function App() {
             )}
             {activeMenu === "stock_audit" &&
               (profile?.role === "AUDIT" || profile?.role === "ADMIN") && (
-                <div
-                  className={profile.role === "AUDIT" ? "app-shell contents" : "contents"}
-                  data-admin-surface={profile.role === "AUDIT" ? "true" : undefined}
-                  data-testid="audit-role-visual-scope"
-                >
-                  <BranchStockAuditPage
-                    branches={branches.map((branch) => ({ id: branch.id, name: branch.name }))}
-                    role={profile.role}
-                    userId={profile.id}
-                    api={branchStockAuditApi}
-                  />
-                </div>
+                <BranchStockAuditPage
+                  branches={branches.map((branch) => ({ id: branch.id, name: branch.name }))}
+                  role={profile.role}
+                  userId={profile.id}
+                  api={branchStockAuditApi}
+                />
               )}
             {activeMenu === "audit" &&
               (profile?.role === "AUDIT" || profile?.role === "ADMIN") && (
-                <div
-                  className={profile.role === "AUDIT" ? "app-shell contents" : "contents"}
-                  data-admin-surface={profile.role === "AUDIT" ? "true" : undefined}
-                  data-testid="opname-role-visual-scope"
-                >
                 <div data-ui-screen="opname" className="ui-screen-opname flex-1 flex flex-col bg-white md:m-4 md:rounded shadow-sm border-t md:border border-slate-200 overflow-hidden">
                   <div data-opname-header className="p-3 md:p-4 border-b border-slate-200 bg-white flex flex-col gap-3 justify-between shrink-0">
                     <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
@@ -8015,7 +8009,6 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                </div>
                 </div>
             )}
 
