@@ -310,6 +310,10 @@ Audit product rows should stay compact and horizontal on phones and tablets, wit
 **Why:** the owner asked for short, wide product cards so large audit lists use less screen space.
 **How to apply:** preserve readable product identity, distinct status, and 44px action targets while reducing card height; do not change audit behavior.
 
+The Auditor role's Audit Stok and Opname page bodies must match the Admin visual system, while its role-specific menus, access, and landing selection remain unchanged.
+**Why:** the owner asked for both Auditor screens to look like the Admin versions without changing audit operations.
+**How to apply:** scope the Admin visual treatment to the Audit/Opname content only; never grant Admin access or apply Admin navigation styling to the Auditor shell.
+
 ## Owner purchase-plan matrix
 Use one compact product-by-branch matrix for purchase plans: branch names appear once in the header, each editable cell has a small dark quantity input, and current stock plus any recommendation appear as small text beneath it. Do not use white input fields; allow horizontal scrolling on narrow screens.
 **Why:** the owner supplied an Android reference to fit more products and branches without tall cards or bright fields.
