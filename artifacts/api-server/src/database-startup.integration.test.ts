@@ -124,7 +124,9 @@ test("real isolated development startup is SELECT-only and preserves all tables"
       for (const path of ["/products", "/daily-summaries", "/shifts", "/transactions", "/incentives"]) {
         const result = await fetch(`${base}${path}`, { headers });
         assert.equal(result.status, 200);
-        const rows = await result.json() as any[];
+        const payload = await result.json() as any;
+        const rows = path === "/transactions" ? payload?.items : payload;
+        assert.ok(Array.isArray(rows), `${path} should expose rows as an array`);
         if (user.role === "CASHIER") {
           for (const row of rows) {
             if (path === "/products") assert.ok(Object.keys(row.stocks).every(id => id === user.branchId));
