@@ -18,6 +18,33 @@ export type BranchPurchaseSuggestion = {
   suggestedQty: number;
 };
 
+export type BranchShoppingBasketCandidate = {
+  product: BranchPurchaseSuggestion["product"];
+  branchId: string;
+  currentStock: number;
+  minimumStock: number;
+};
+
+export function buildBranchShoppingBasketCandidates(input: {
+  products: readonly BranchPurchaseSuggestion["product"][];
+  branchIds: readonly string[];
+  stockForProduct: (branchId: string, productId: string) => number;
+}): BranchShoppingBasketCandidate[] {
+  return input.products.flatMap((product) => {
+    const minimumStock = Math.max(0, Math.trunc(Number(product.minStock) || 0));
+    if (minimumStock <= 0) return [];
+    return input.branchIds.flatMap((branchId) => {
+      if (!isProductVisibleInBranch(product.visibleBranchIds, branchId)) return [];
+      const currentStock = Math.max(
+        0,
+        Math.trunc(input.stockForProduct(branchId, product.id) || 0),
+      );
+      if (currentStock > minimumStock) return [];
+      return [{ product, branchId, currentStock, minimumStock }];
+    });
+  });
+}
+
 export function buildBranchPurchaseSuggestions(input: {
   products: readonly BranchPurchaseSuggestion["product"][];
   branchId: string;

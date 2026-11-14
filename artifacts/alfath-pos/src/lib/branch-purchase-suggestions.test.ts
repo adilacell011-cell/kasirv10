@@ -1,12 +1,48 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildBranchPurchaseSuggestions } from "./branch-purchase-suggestions";
+import {
+  buildBranchPurchaseSuggestions,
+  buildBranchShoppingBasketCandidates,
+} from "./branch-purchase-suggestions";
 
 const products = [
   { id: "fast", name: "Voucher 2 GB", category: "Voucher", minStock: 8, visibleBranchIds: "*" },
   { id: "slow", name: "Voucher 5 GB", category: "Voucher", minStock: 3, visibleBranchIds: "*" },
   { id: "hidden", name: "Voucher 10 GB", category: "Voucher", minStock: 5, visibleBranchIds: "branch-b" },
 ];
+
+test("automatic shopping basket includes stock at or below minimum for visible branches", () => {
+  const candidates = buildBranchShoppingBasketCandidates({
+    products: [
+      { id: "at-min", name: "At minimum", minStock: 5, visibleBranchIds: "*" },
+      { id: "below", name: "Below minimum", minStock: 5, visibleBranchIds: "*" },
+      { id: "above", name: "Above minimum", minStock: 5, visibleBranchIds: "*" },
+      { id: "no-min", name: "No minimum", minStock: 0, visibleBranchIds: "*" },
+      { id: "hidden", name: "Hidden", minStock: 5, visibleBranchIds: "branch-b" },
+    ],
+    branchIds: ["branch-a"],
+    stockForProduct: (_branchId, productId) => ({
+      "at-min": 5,
+      below: 2,
+      above: 6,
+      "no-min": 0,
+      hidden: 0,
+    })[productId] || 0,
+  });
+
+  assert.deepEqual(
+    candidates.map(({ product, branchId, currentStock, minimumStock }) => [
+      product.id,
+      branchId,
+      currentStock,
+      minimumStock,
+    ]),
+    [
+      ["at-min", "branch-a", 5, 5],
+      ["below", "branch-a", 2, 5],
+    ],
+  );
+});
 
 test("purchase suggestion tops up to the existing minimum when no coverage target is selected", () => {
   const suggestions = buildBranchPurchaseSuggestions({

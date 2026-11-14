@@ -19,7 +19,10 @@ import type {
   ShoppingPlanRevisionInput,
 } from "@workspace/api-client-react";
 import { Check, ChevronDown, ClipboardCheck, Clock3, FileText, PackageCheck, Plus, Printer, RotateCcw, Save, Share2, Store, Trash2, X, WandSparkles } from "lucide-react";
-import { buildBranchPurchaseSuggestions } from "../lib/branch-purchase-suggestions";
+import {
+  buildBranchPurchaseSuggestions,
+  buildBranchShoppingBasketCandidates,
+} from "../lib/branch-purchase-suggestions";
 import { isProductVisibleInBranch } from "../lib/product-visibility";
 
 type Product = { id: string; name: string; barcode?: string | null; category?: string | null; minStock?: number | string | null; visibleBranchIds?: string | null };
@@ -190,6 +193,25 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   const visibleProducts = useMemo(() => categoryProducts.filter((product) =>
     `${product.name} ${product.barcode || ""}`.toLowerCase().includes(search.toLowerCase()) &&
     selectedBranchIds.some((branchId) => visibleInBranch(product, branchId))), [categoryProducts, search, selectedBranchIds]);
+  const automaticCartCandidates = useMemo(() => buildBranchShoppingBasketCandidates({
+    products: categoryProducts,
+    branchIds: selectedBranchIds.filter((branchId) =>
+      shoppingBranches.some((branch) => branch.id === branchId)),
+    stockForProduct: (branchId, productId) =>
+      stockByBranchProduct.get(`${branchId}:${productId}`) || 0,
+  }), [categoryProducts, selectedBranchIds, shoppingBranches, stockByBranchProduct]);
+  const automaticCartDraftItems = useMemo(() => {
+    const byProduct = new Map<string, DraftItem>();
+    for (const candidate of automaticCartCandidates) {
+      const item: DraftItem = byProduct.get(candidate.product.id) || {
+        productId: candidate.product.id,
+        branchQtys: {},
+      };
+      item.branchQtys[candidate.branchId] = "";
+      byProduct.set(candidate.product.id, item);
+    }
+    return Array.from(byProduct.values());
+  }, [automaticCartCandidates]);
   const filteredDraftItems = useMemo(() => {
     const query = draftSearch.trim().toLocaleLowerCase("id-ID");
     if (!query) return items;
@@ -209,6 +231,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   );
   const hasPurchaseQty = items.some((item) =>
     Object.values(item.branchQtys).some((value) => value.trim() !== ""));
+  const hasSuggestedQty = items.some((item) =>
+    Object.keys(item.suggestedBranchQtys || {}).length > 0);
   const reset = () => {
     requestRef.current?.controller.abort();
     requestRef.current = null;
@@ -249,14 +273,31 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       : item));
   };
   const addProduct = (product: Product) => {
-    if (items.some((item) => item.productId === product.id)) return;
     const editableBranchIds = editingId
       ? branches.filter((branch) => !lockedBranchIds.has(branch.id)).map((branch) => branch.id)
       : selectedBranchIds;
-    const branchQtys = Object.fromEntries(editableBranchIds
-      .filter((branchId) => visibleInBranch(product, branchId))
-      .map((branchId) => [branchId, ""]));
-    setItems((old) => [...old, { productId: product.id, branchQtys }]);
+    setItems((old) => {
+      const existing = old.find((item) => item.productId === product.id);
+      const missingBranchIds = editableBranchIds.filter((branchId) =>
+        visibleInBranch(product, branchId) &&
+        !Object.prototype.hasOwnProperty.call(existing?.branchQtys || {}, branchId));
+      if (existing) {
+        if (missingBranchIds.length === 0) return old;
+        return old.map((item) => item.productId === product.id
+          ? {
+              ...item,
+              branchQtys: {
+                ...item.branchQtys,
+                ...Object.fromEntries(missingBranchIds.map((branchId) => [branchId, ""])),
+              },
+            }
+          : item);
+      }
+      const branchQtys = Object.fromEntries(editableBranchIds
+        .filter((branchId) => visibleInBranch(product, branchId))
+        .map((branchId) => [branchId, ""]));
+      return [...old, { productId: product.id, branchQtys }];
+    });
     setSearch("");
     setDraftSearch("");
     setDraftPage(1);
@@ -278,15 +319,13 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       return;
     }
     if (validDays === null) {
-      const manualDrafts = categoryProducts
-        .filter((product) => selectedBranchIds.some((branchId) => visibleInBranch(product, branchId)))
-        .map((product) => ({
-          productId: product.id,
-          branchQtys: Object.fromEntries(selectedBranchIds
-            .filter((branchId) => visibleInBranch(product, branchId))
-            .map((branchId) => [branchId, ""])),
-        }));
-      setItems(manualDrafts);
+      setItems(automaticCartDraftItems);
+      setDraftPage(1);
+      setCriteriaConfirmed(true);
+      return;
+    }
+    if (automaticCartCandidates.length === 0) {
+      setItems([]);
       setDraftPage(1);
       setCriteriaConfirmed(true);
       return;
@@ -298,18 +337,33 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setSuggestionsLoading(true);
     try {
       const salesByBranch: Array<readonly [string, Record<string, number>]> = [];
-      for (const branchId of selectedBranchIds) {
+      const candidateBranchIds = Array.from(new Set(
+        automaticCartCandidates.map((candidate) => candidate.branchId),
+      ));
+      for (const branchId of candidateBranchIds) {
         if (controller.signal.aborted || requestEpoch.current !== epoch) return;
         salesByBranch.push([branchId, await getSalesTotals(branchId, controller.signal)]);
       }
       if (controller.signal.aborted || requestEpoch.current !== epoch) return;
       const totalsByBranch = new Map(salesByBranch);
       const nextByProduct = new Map<string, DraftItem>();
-      for (const branchId of selectedBranchIds) {
+      for (const item of automaticCartDraftItems) {
+        nextByProduct.set(item.productId, {
+          ...item,
+          branchQtys: { ...item.branchQtys },
+          suggestedBranchQtys: {},
+        });
+      }
+      for (const branchId of candidateBranchIds) {
         const branch = branches.find((entry) => entry.id === branchId);
         if (!branch) continue;
+        const branchCandidateProductIds = new Set(
+          automaticCartCandidates
+            .filter((candidate) => candidate.branchId === branchId)
+            .map((candidate) => candidate.product.id),
+        );
         const results = buildBranchPurchaseSuggestions({
-          products: categoryProducts,
+          products: categoryProducts.filter((product) => branchCandidateProductIds.has(product.id)),
           branchId,
           branchName: branch.name,
           salesQty30dByProduct: totalsByBranch.get(branchId) || {},
@@ -317,22 +371,19 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           targetDays: validDays,
         });
         for (const result of results) {
-          const draft = nextByProduct.get(result.product.id) || {
-            productId: result.product.id,
-            branchQtys: Object.fromEntries(selectedBranchIds
-              .filter((candidateBranchId) => visibleInBranch(result.product, candidateBranchId))
-              .map((candidateBranchId) => [candidateBranchId, ""])),
-            suggestedBranchQtys: {},
-          };
+          const draft = nextByProduct.get(result.product.id);
+          if (!draft || !Object.prototype.hasOwnProperty.call(draft.branchQtys, branchId)) continue;
           draft.branchQtys[branchId] = String(result.suggestedQty);
           draft.suggestedBranchQtys![branchId] = result.suggestedQty;
-          nextByProduct.set(result.product.id, draft);
         }
       }
       setItems(Array.from(nextByProduct.values()));
       setCriteriaConfirmed(true);
     } catch (error) {
       if (!controller.signal.aborted && requestEpoch.current === epoch) {
+        setItems(automaticCartDraftItems);
+        setDraftPage(1);
+        setCriteriaConfirmed(true);
         setSuggestionError(error instanceof Error ? error.message : "Saran belanja belum dapat dimuat. Coba lagi.");
       }
     } finally {
@@ -460,14 +511,15 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           </div>
           <div className="flex flex-col justify-end gap-3">
             <button data-testid="button-confirm-purchase-criteria" disabled={suggestionsLoading || shoppingBranches.length === 0 || categories.length === 0} onClick={() => void loadSuggestions()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a] disabled:opacity-50"><WandSparkles size={15}/>{suggestionsLoading ? "Menghitung saran…" : validDays === null && targetDays.trim() === "" ? "Terapkan pilihan" : "Tampilkan saran"}</button>
-            <p className="text-[11px] text-slate-400">Target hari boleh dikosongkan. Tanpa target, saran tidak dihitung dan produk bisa ditambahkan manual.</p>
+             <p className="text-[11px] text-slate-400">Daftar awal mengikuti keranjang otomatis untuk stok cabang di bawah atau sama dengan minimum. Target hari hanya menentukan angka saran; produk lain bisa dicari dan ditambahkan manual.</p>
           </div>
         </div>}
         {suggestionError && !editingId && <p data-testid="status-purchase-suggestions-error" className="rounded-lg border border-rose-300/20 bg-rose-400/10 p-3 text-xs text-rose-200">{suggestionError}</p>}
         {suggestionsLoading && !editingId && <div data-testid="status-purchase-suggestions-loading" className="animate-pulse rounded-xl border border-white/10 bg-[#0d1a2e] p-4 text-xs text-slate-300">Menghitung saran tiap cabang…</div>}
-        {criteriaConfirmed && !editingId && validDays !== null && <div data-testid="status-purchase-suggestions-ready" className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">Saran siap ditinjau. Ubah jumlah sesuai kebutuhan sebelum diterbitkan.</div>}
-        {criteriaConfirmed && !editingId && validDays === null && <div data-testid="status-purchase-no-target" className="rounded-lg border border-[#c7ad79]/20 bg-[#c7ad79]/10 px-3 py-2 text-xs text-[#eee0c1]">Target hari kosong. Daftar produk dan stok tetap tampil; isi jumlah beli secara manual. Angka rekomendasi tidak ditampilkan.</div>}
-        {(editingId || (criteriaConfirmed && validDays !== null)) && <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tambahkan produk manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
+        {criteriaConfirmed && !editingId && validDays !== null && hasSuggestedQty && <div data-testid="status-purchase-suggestions-ready" className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">Angka saran tersedia untuk produk keranjang. Ubah jumlah sesuai kebutuhan sebelum diterbitkan.</div>}
+        {criteriaConfirmed && !editingId && validDays !== null && items.length > 0 && !hasSuggestedQty && <div data-testid="status-purchase-no-positive-suggestions" className="rounded-lg border border-[#c7ad79]/20 bg-[#c7ad79]/10 px-3 py-2 text-xs text-[#eee0c1]">Produk keranjang tetap tampil, tetapi target hari ini belum menghasilkan angka saran. Isi jumlah manual bila tetap ingin membeli.</div>}
+        {criteriaConfirmed && !editingId && validDays === null && <div data-testid="status-purchase-no-target" className="rounded-lg border border-[#c7ad79]/20 bg-[#c7ad79]/10 px-3 py-2 text-xs text-[#eee0c1]">Target hari kosong. Produk dalam keranjang otomatis dan stok cabang tetap tampil; angka rekomendasi disembunyikan. Isi jumlah beli sendiri.</div>}
+        {(editingId || criteriaConfirmed) && <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari produk lain untuk ditambahkan manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
           {search && <div className="mt-1 max-h-40 overflow-y-auto rounded-xl border border-white/15 bg-[#0b172a]">{visibleProducts.slice(0, 25).map((product) => <button key={product.id} data-testid={`button-add-purchase-product-${product.id}`} onClick={() => addProduct(product)} className="flex min-h-11 w-full items-center justify-between border-b border-white/10 px-3 text-left text-sm hover:bg-white/5"><span>{product.name}</span><Plus size={16}/></button>)}
             {visibleProducts.length === 0 && <p className="p-3 text-sm text-slate-400">Produk tidak ditemukan.</p>}</div>}
         </div>}
@@ -499,8 +551,7 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           <span className="text-[11px] text-slate-300">Halaman {currentDraftPage} / {draftPageCount}</span>
           <button data-testid="button-purchase-draft-next" disabled={currentDraftPage >= draftPageCount} onClick={() => setDraftPage(currentDraftPage + 1)} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200 disabled:opacity-40">Berikutnya</button>
         </div>}
-        {items.length === 0 && criteriaConfirmed && validDays === null && <div data-testid="empty-purchase-manual-products" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada produk yang terlihat pada kategori dan cabang terpilih.</div>}
-        {items.length === 0 && criteriaConfirmed && validDays !== null && <div data-testid="empty-purchase-suggestions" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada kekurangan untuk kategori, cabang, dan target yang dipilih. Produk dapat ditambahkan secara manual.</div>}
+        {items.length === 0 && criteriaConfirmed && <div data-testid="empty-purchase-shopping-basket" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada produk pada daftar saat ini. Kandidat otomatis mengikuti keranjang stok minimum; cari produk lain di atas untuk menambahkannya secara manual.</div>}
         <p className="text-xs text-slate-400">Jumlah akhir positif yang terisi saja akan dikirim ke cabang terkait. Produk yang tidak terlihat di cabang tidak memiliki kolom jumlah.</p>
         <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending || (!editingId && !hasPurchaseQty)} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
       </div> : null}
