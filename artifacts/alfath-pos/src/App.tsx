@@ -2248,54 +2248,6 @@ export default function App() {
     syncToken,
   ]);
 
-  useEffect(() => {
-    if (
-      !syncToken ||
-      profile?.role !== "ADMIN" ||
-      activeMenu !== "shopping_list" ||
-      !purchaseSuggestionBranchId
-    ) {
-      setPurchaseSuggestionSalesQty({});
-      setPurchaseSuggestionError("");
-      setPurchaseSuggestionLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const epoch = readEpoch.current;
-    const context = liveSyncKey.current;
-    const current = () =>
-      !controller.signal.aborted &&
-      readEpoch.current === epoch &&
-      liveSyncKey.current === context &&
-      localStorage.getItem("token") === syncToken;
-
-    setPurchaseSuggestionSalesQty({});
-    setPurchaseSuggestionError("");
-    setPurchaseSuggestionLoading(true);
-    api.getBranchProductSalesTotals(purchaseSuggestionBranchId, controller.signal).then((totals) => {
-      if (!current()) return;
-      setPurchaseSuggestionSalesQty(totals);
-    }).catch((error) => {
-      if (!current()) return;
-      if (isSessionError(error)) expireReadSession();
-      else setPurchaseSuggestionError(
-        error instanceof ReadError
-          ? error.message
-          : "Gagal memuat ringkasan penjualan 30 hari.",
-      );
-    }).finally(() => {
-      if (current()) setPurchaseSuggestionLoading(false);
-    });
-
-    return () => controller.abort();
-  }, [
-    activeMenu,
-    profile?.role,
-    purchaseSuggestionBranchId,
-    syncToken,
-  ]);
-
   useEffect(() => { fullRefreshRef.current(); }, [refreshTick]);
 
   const salesSyncKey = JSON.stringify([
@@ -6382,6 +6334,16 @@ export default function App() {
               <PurchasePlanAdmin
                 products={shoppingPlanEligibleProducts}
                 branches={branches}
+                shoppingBranches={purchaseSuggestionBranches}
+                stocks={stocks}
+                getSalesTotals={async (branchId, signal) => {
+                  try {
+                    return await api.getBranchProductSalesTotals(branchId, signal);
+                  } catch (error) {
+                    if (isSessionError(error)) expireReadSession();
+                    throw error;
+                  }
+                }}
                 confirm={triggerConfirm}
               />
             )}

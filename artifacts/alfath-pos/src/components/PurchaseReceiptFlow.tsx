@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetCashierShoppingPlanReceiptsQueryKey,
@@ -18,11 +18,18 @@ import type {
   ShoppingPlanReceiptConfirmationInput,
   ShoppingPlanRevisionInput,
 } from "@workspace/api-client-react";
-import { Check, ChevronDown, ClipboardCheck, Clock3, FileText, PackageCheck, Plus, Printer, RotateCcw, Save, Share2, Store, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ClipboardCheck, Clock3, FileText, PackageCheck, Plus, Printer, RotateCcw, Save, Share2, Store, Trash2, X, WandSparkles } from "lucide-react";
+import { buildBranchPurchaseSuggestions } from "../lib/branch-purchase-suggestions";
+import { isProductVisibleInBranch } from "../lib/product-visibility";
 
-type Product = { id: string; name: string; barcode?: string | null; category?: string };
+type Product = { id: string; name: string; barcode?: string | null; category?: string | null; minStock?: number | string | null; visibleBranchIds?: string | null };
 type Branch = { id: string; name: string };
-type DraftItem = { productId: string; branchQtys: Record<string, string> };
+type Stock = { productId: string; branchId: string; qty: number };
+type DraftItem = {
+  productId: string;
+  branchQtys: Record<string, string>;
+  suggestedBranchQtys?: Record<string, number>;
+};
 type ReceiptExceptionType = "SHORTAGE" | "NOT_AVAILABLE" | "EXTRA";
 type ReceiptCheck = { exceptionType: ReceiptExceptionType | ""; differenceQty: string; note: string };
 
@@ -97,10 +104,13 @@ function ReceiptStatus({ status }: { status: string }) {
   return <span data-testid={`status-purchase-${status.toLowerCase()}`} className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${colors}`}>{statusCopy[status] || status}</span>;
 }
 
-export function PurchasePlanAdmin({ products, branches, confirm }: {
+export function PurchasePlanAdmin({ products, branches, shoppingBranches, confirm, stocks, getSalesTotals }: {
   products: Product[];
   branches: Branch[];
+  shoppingBranches: Branch[];
   confirm: (message: string) => Promise<boolean>;
+  stocks: Stock[];
+  getSalesTotals: (branchId: string, signal: AbortSignal) => Promise<Record<string, number>>;
 }) {
   const queryClient = useQueryClient();
   const plansQuery = useGetShoppingPlans();
@@ -111,6 +121,14 @@ export function PurchasePlanAdmin({ products, branches, confirm }: {
   const [title, setTitle] = useState("");
   const [items, setItems] = useState<DraftItem[]>([]);
   const [search, setSearch] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
+  const [targetDays, setTargetDays] = useState("");
+  const [criteriaConfirmed, setCriteriaConfirmed] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionError, setSuggestionError] = useState("");
+  const requestRef = useRef<{ controller: AbortController; epoch: number } | null>(null);
+  const requestEpoch = useRef(0);
 
   useEffect(() => {
     const refresh = () => {
@@ -126,18 +144,76 @@ export function PurchasePlanAdmin({ products, branches, confirm }: {
       ?.filter((receipt) => receipt.status === "CONFIRMED")
       .map((receipt) => receipt.branchId) || [],
   ), [plans, editingId]);
-  const visibleProducts = useMemo(() => products.filter((product) =>
-    `${product.name} ${product.barcode || ""}`.toLowerCase().includes(search.toLowerCase())), [products, search]);
+  const categories = useMemo(() => Array.from(new Set(products
+    .filter((product) => shoppingBranches.some((branch) => isProductVisibleInBranch(product.visibleBranchIds, branch.id)))
+    .map((product) => product.category?.trim())
+    .filter((category): category is string => Boolean(category)))).sort((a, b) =>
+    a.localeCompare(b, "id", { numeric: true })), [products, shoppingBranches]);
+  const validDays = Number.isSafeInteger(Number(targetDays.trim())) && Number(targetDays.trim()) > 0
+    ? Number(targetDays.trim())
+    : null;
+  const stockByBranchProduct = useMemo(
+    () => new Map(stocks.map((stock) => [`${stock.branchId}:${stock.productId}`, stock.qty])),
+    [stocks],
+  );
+  const stockFor = (branchId: string, productId: string) =>
+    Math.max(0, Math.trunc(stockByBranchProduct.get(`${branchId}:${productId}`) || 0));
+  const visibleInBranch = (product: Product, branchId: string) =>
+    isProductVisibleInBranch(product.visibleBranchIds, branchId);
+  const invalidateSuggestions = () => {
+    requestRef.current?.controller.abort();
+    requestRef.current = null;
+    requestEpoch.current += 1;
+    setSuggestionsLoading(false);
+    setSuggestionError("");
+    setCriteriaConfirmed(false);
+    setItems([]);
+  };
+  const toggleCategory = (category: string) => {
+    invalidateSuggestions();
+    setSelectedCategories((current) => current.includes(category)
+      ? current.filter((entry) => entry !== category)
+      : [...current, category]);
+  };
+  const toggleBranch = (branchId: string) => {
+    invalidateSuggestions();
+    setSelectedBranchIds((current) => current.includes(branchId)
+      ? current.filter((entry) => entry !== branchId)
+      : [...current, branchId]);
+  };
+  const categoryProducts = useMemo(() => products.filter((product) =>
+    selectedCategories.length === 0 || selectedCategories.includes(product.category || "")), [products, selectedCategories]);
+  const visibleProducts = useMemo(() => categoryProducts.filter((product) =>
+    `${product.name} ${product.barcode || ""}`.toLowerCase().includes(search.toLowerCase()) &&
+    selectedBranchIds.some((branchId) => visibleInBranch(product, branchId))), [categoryProducts, search, selectedBranchIds]);
   const reset = () => {
+    requestRef.current?.controller.abort();
+    requestRef.current = null;
+    requestEpoch.current += 1;
     setEditingId(null);
     setTitle("");
     setItems([]);
     setSearch("");
+    setSelectedCategories([]);
+    setSelectedBranchIds([]);
+    setTargetDays("");
+    setCriteriaConfirmed(false);
+    setSuggestionsLoading(false);
+    setSuggestionError("");
   };
   const startNew = () => {
+    requestRef.current?.controller.abort();
+    requestRef.current = null;
+    requestEpoch.current += 1;
     setEditingId(null);
     setTitle(`Belanja ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`);
     setItems([]);
+    setSelectedCategories([]);
+    setSelectedBranchIds([]);
+    setTargetDays("");
+    setCriteriaConfirmed(false);
+    setSuggestionsLoading(false);
+    setSuggestionError("");
   };
   const setQty = (productId: string, branchId: string, value: string) => {
     if (lockedBranchIds.has(branchId)) return;
@@ -147,9 +223,82 @@ export function PurchasePlanAdmin({ products, branches, confirm }: {
   };
   const addProduct = (product: Product) => {
     if (items.some((item) => item.productId === product.id)) return;
-    setItems((old) => [...old, { productId: product.id, branchQtys: {} }]);
+    const editableBranchIds = editingId
+      ? branches.filter((branch) => !lockedBranchIds.has(branch.id)).map((branch) => branch.id)
+      : selectedBranchIds;
+    const branchQtys = Object.fromEntries(editableBranchIds
+      .filter((branchId) => visibleInBranch(product, branchId))
+      .map((branchId) => [branchId, ""]));
+    setItems((old) => [...old, { productId: product.id, branchQtys }]);
     setSearch("");
   };
+  const loadSuggestions = async () => {
+    if (!title.trim()) setTitle(`Belanja ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`);
+    if (!validDays || selectedBranchIds.length === 0 || selectedCategories.length === 0) {
+      setSuggestionError(!validDays
+        ? "Masukkan target hari berupa bilangan bulat lebih dari nol."
+        : selectedCategories.length === 0
+          ? "Pilih minimal satu kategori produk."
+          : "Pilih minimal satu cabang.");
+      return;
+    }
+    requestRef.current?.controller.abort();
+    const controller = new AbortController();
+    const epoch = ++requestEpoch.current;
+    requestRef.current = { controller, epoch };
+    setSuggestionsLoading(true);
+    setSuggestionError("");
+    setCriteriaConfirmed(false);
+    setItems([]);
+    try {
+      const salesByBranch: Array<readonly [string, Record<string, number>]> = [];
+      for (const branchId of selectedBranchIds) {
+        if (controller.signal.aborted || requestEpoch.current !== epoch) return;
+        salesByBranch.push([branchId, await getSalesTotals(branchId, controller.signal)]);
+      }
+      if (controller.signal.aborted || requestEpoch.current !== epoch) return;
+      const totalsByBranch = new Map(salesByBranch);
+      const nextByProduct = new Map<string, DraftItem>();
+      for (const branchId of selectedBranchIds) {
+        const branch = branches.find((entry) => entry.id === branchId);
+        if (!branch) continue;
+        const results = buildBranchPurchaseSuggestions({
+          products: categoryProducts,
+          branchId,
+          branchName: branch.name,
+          salesQty30dByProduct: totalsByBranch.get(branchId) || {},
+          stockForProduct: (productId) => stockFor(branchId, productId),
+          targetDays: validDays,
+        });
+        for (const result of results) {
+          const draft = nextByProduct.get(result.product.id) || {
+            productId: result.product.id,
+            branchQtys: Object.fromEntries(selectedBranchIds
+              .filter((candidateBranchId) => visibleInBranch(result.product, candidateBranchId))
+              .map((candidateBranchId) => [candidateBranchId, ""])),
+            suggestedBranchQtys: {},
+          };
+          draft.branchQtys[branchId] = String(result.suggestedQty);
+          draft.suggestedBranchQtys![branchId] = result.suggestedQty;
+          nextByProduct.set(result.product.id, draft);
+        }
+      }
+      setItems(Array.from(nextByProduct.values()));
+      setCriteriaConfirmed(true);
+    } catch (error) {
+      if (!controller.signal.aborted && requestEpoch.current === epoch) {
+        setSuggestionError(error instanceof Error ? error.message : "Saran belanja belum dapat dimuat. Coba lagi.");
+      }
+    } finally {
+      if (requestEpoch.current === epoch) {
+        setSuggestionsLoading(false);
+        requestRef.current = null;
+      }
+    }
+  };
+  useEffect(() => () => {
+    requestRef.current?.controller.abort();
+  }, []);
   const savePlan = async () => {
     const hasInvalidQty = items.some((item) => Object.values(item.branchQtys).some((value) => {
       const trimmed = value.trim();
@@ -190,15 +339,28 @@ export function PurchasePlanAdmin({ products, branches, confirm }: {
     }
   };
   const beginRevision = (plan: ShoppingPlan) => {
+    requestRef.current?.controller.abort();
+    requestRef.current = null;
+    requestEpoch.current += 1;
     const currentItems = (plan.items || []) as Array<{ productId: string; branchQtys?: Record<string, number> }>;
     setEditingId(plan.id);
     setTitle(plan.title);
-    setItems(currentItems.map((item) => ({
-      productId: item.productId,
-      branchQtys: Object.fromEntries(Object.entries(item.branchQtys || {})
-        .filter(([, qty]) => Number(qty) > 0)
-        .map(([id, qty]) => [id, String(qty)])),
-    })));
+    setSelectedCategories([]);
+    setTargetDays("");
+    setCriteriaConfirmed(false);
+    setSuggestionsLoading(false);
+    setSuggestionError("");
+    setSelectedBranchIds(branches.map((branch) => branch.id));
+    setItems(currentItems.map((item) => {
+      const product = products.find((entry) => entry.id === item.productId);
+      const savedQtys = item.branchQtys || {};
+      return {
+        productId: item.productId,
+        branchQtys: Object.fromEntries(branches
+          .filter((branch) => !product || visibleInBranch(product, branch.id))
+          .map((branch) => [branch.id, Number(savedQtys[branch.id]) > 0 ? String(savedQtys[branch.id]) : ""])),
+      };
+    }));
   };
 
   if (plansQuery.isLoading) return <div className="mx-3 my-4 rounded-2xl border border-white/10 bg-[#14233d] p-5 text-sm text-slate-200 animate-pulse">Memuat rencana pembelian…</div>;
@@ -219,7 +381,7 @@ export function PurchasePlanAdmin({ products, branches, confirm }: {
       }
       [data-testid="page-purchase-plans"] input::placeholder { color: #94a3b8 !important; -webkit-text-fill-color: #94a3b8 !important; }
     `}</style>
-    <div className="mx-auto max-w-6xl space-y-4">
+      <div className="mx-auto max-w-6xl space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#b89c65]/35 bg-[#14233d] p-4">
         <div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#d4bd8d]">Belanja lintas cabang</p><h1 className="mt-1 text-xl font-extrabold">Rencana pembelian</h1><p className="mt-1 text-xs text-slate-300">Terbitkan sekali; setiap kasir menerima nota sesuai cabangnya.</p></div>
         {!editingId && <button data-testid="button-new-purchase-plan" onClick={startNew} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-4 text-sm font-bold text-[#17233a]"><Plus size={17}/> Rencana baru</button>}
@@ -228,16 +390,56 @@ export function PurchasePlanAdmin({ products, branches, confirm }: {
       {(title || editingId) ? <div className="space-y-3 rounded-2xl border border-[#b89c65]/35 bg-[#14233d] p-3 md:p-4">
         <div className="flex items-center justify-between gap-2"><h2 className="font-bold">{editingId ? "Revisi rencana" : "Rencana baru"}</h2><button data-testid="button-cancel-plan-edit" onClick={reset} className="grid min-h-11 min-w-11 place-items-center rounded-xl border border-white/15 text-slate-300" aria-label="Batal"><X size={18}/></button></div>
         <input data-testid="input-purchase-plan-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Judul rencana" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
-        <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari produk untuk ditambahkan" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
+        {!editingId && <div className="grid gap-3 rounded-xl border border-white/10 bg-[#0d1a2e] p-3 md:grid-cols-[minmax(0,1fr)_13rem]">
+          <div className="space-y-3">
+            <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">1 · Kategori produk</p>
+              <div className="flex flex-wrap gap-2">{categories.map((category) => <label key={category} className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${selectedCategories.includes(category) ? "border-[#c7ad79] bg-[#c7ad79]/15 text-[#f0dfb6]" : "border-white/10 text-slate-300"}`}>
+                <input data-testid={`checkbox-purchase-category-${category.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`} type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} className="accent-[#c7ad79]"/>
+                {category}</label>)}
+                {categories.length === 0 && <p className="text-xs text-slate-400">Belum ada kategori produk.</p>}
+              </div>
+            </div>
+            <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">2 · Target persediaan cukup</span>
+              <div className="flex items-center gap-2"><input data-testid="input-purchase-target-days" type="number" min="1" step="1" inputMode="numeric" value={targetDays} onChange={(event) => { invalidateSuggestions(); setTargetDays(event.target.value); }} placeholder="Contoh: 3" className="w-28 rounded-lg border border-white/15 bg-[#0b172a] px-3 text-sm text-white"/><span className="text-xs text-slate-300">hari</span></div>
+            </label>
+            <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">3 · Cabang yang ikut</p>
+              <div className="flex flex-wrap gap-2">{shoppingBranches.map((branch) => <label key={branch.id} className={`inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-xs font-semibold ${selectedBranchIds.includes(branch.id) ? "border-[#c7ad79] bg-[#c7ad79]/15 text-[#f0dfb6]" : "border-white/10 text-slate-300"}`}>
+                <input data-testid={`checkbox-purchase-branch-${branch.id}`} type="checkbox" checked={selectedBranchIds.includes(branch.id)} onChange={() => toggleBranch(branch.id)} className="accent-[#c7ad79]"/>
+                {branch.name}</label>)}
+                {shoppingBranches.length === 0 && <p className="text-xs text-slate-400">Tidak ada cabang tersedia untuk belanja.</p>}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col justify-end gap-3">
+            <button data-testid="button-confirm-purchase-criteria" disabled={suggestionsLoading || shoppingBranches.length === 0 || categories.length === 0} onClick={() => void loadSuggestions()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a] disabled:opacity-50"><WandSparkles size={15}/>{suggestionsLoading ? "Menghitung saran…" : "Tampilkan saran"}</button>
+            <p className="text-[11px] text-slate-400">Saran hanya muncul setelah target hari dan pilihan dikonfirmasi.</p>
+          </div>
+        </div>}
+        {suggestionError && !editingId && <p data-testid="status-purchase-suggestions-error" className="rounded-lg border border-rose-300/20 bg-rose-400/10 p-3 text-xs text-rose-200">{suggestionError}</p>}
+        {suggestionsLoading && !editingId && <div data-testid="status-purchase-suggestions-loading" className="animate-pulse rounded-xl border border-white/10 bg-[#0d1a2e] p-4 text-xs text-slate-300">Menghitung saran tiap cabang…</div>}
+        {criteriaConfirmed && !editingId && <div data-testid="status-purchase-suggestions-ready" className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">Saran siap ditinjau. Ubah jumlah sesuai kebutuhan sebelum diterbitkan.</div>}
+        <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tambahkan produk manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
           {search && <div className="mt-1 max-h-40 overflow-y-auto rounded-xl border border-white/15 bg-[#0b172a]">{visibleProducts.slice(0, 25).map((product) => <button key={product.id} data-testid={`button-add-purchase-product-${product.id}`} onClick={() => addProduct(product)} className="flex min-h-11 w-full items-center justify-between border-b border-white/10 px-3 text-left text-sm hover:bg-white/5"><span>{product.name}</span><Plus size={16}/></button>)}
             {visibleProducts.length === 0 && <p className="p-3 text-sm text-slate-400">Produk tidak ditemukan.</p>}</div>}
         </div>
-        {items.length > 0 && <div className="overflow-x-auto rounded-xl border border-white/10"><table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-[#0a1425] text-[11px] uppercase text-[#d4bd8d]"><tr><th className="p-3">Produk</th>{branches.map((branch) => <th key={branch.id} className="w-24 p-2 text-center">{branch.name}{lockedBranchIds.has(branch.id) && <span className="block normal-case text-slate-400">Terkunci</span>}</th>)}<th className="w-12"/></tr></thead><tbody className="divide-y divide-white/10">{items.map((item) => {
+        {items.length > 0 && <div className="space-y-2">{items.map((item) => {
           const product = products.find((entry) => entry.id === item.productId);
-           return <tr key={item.productId} data-testid={`row-plan-product-${item.productId}`}><td className="p-3 font-semibold">{product?.name || "Produk"}</td>{branches.map((branch) => <td key={branch.id} className="p-2"><input data-testid={`input-plan-qty-${item.productId}-${branch.id}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={lockedBranchIds.has(branch.id)} value={item.branchQtys[branch.id] || ""} onChange={(event) => setQty(item.productId, branch.id, event.target.value)} className="w-full rounded-lg border border-white/15 bg-[#0b172a] px-2 text-center text-sm text-white disabled:opacity-50"/></td>)}<td className="p-2"><button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => setItems((old) => old.filter((entry) => entry.productId !== item.productId))} className="grid min-h-11 min-w-11 place-items-center rounded-lg text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={16}/></button></td></tr>;
-        })}</tbody></table></div>}
-        <p className="text-xs text-slate-400">Isi jumlah minimal 1 pcs. Kosongkan jika produk tidak dibeli untuk cabang tersebut. Cabang yang sudah mengonfirmasi tidak dapat direvisi.</p>
-        <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
+            return <article key={item.productId} data-testid={`row-plan-product-${item.productId}`} className="rounded-xl border border-white/10 bg-[#0d1a2e] p-3">
+              <div className="mb-2 flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{product?.name || "Produk"}</p><p className="text-[10px] text-slate-400">{product?.category || "Tanpa kategori"}</p></div><button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => setItems((old) => old.filter((entry) => entry.productId !== item.productId))} className="grid min-h-9 min-w-9 place-items-center rounded-lg text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={16}/></button></div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">{Object.keys(item.branchQtys).map((branchId) => {
+                const branch = branches.find((entry) => entry.id === branchId);
+                if (!branch) return null;
+                const suggestedQty = !editingId ? item.suggestedBranchQtys?.[branchId] : undefined;
+                return <label key={branchId} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-[#14233d] px-3 py-2">
+                  <span className="min-w-0"><span className="block truncate text-[11px] font-semibold text-slate-200">{branch.name}</span><span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="text-[10px] text-slate-400">Stok saat ini: {stockFor(branchId, item.productId)}{lockedBranchIds.has(branchId) ? " · terkunci" : ""}</span>{suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="block text-[10px] font-semibold text-[#e3d5b4]">Saran: {suggestedQty} pcs</span>}</span>
+                  <span className="flex shrink-0 items-center gap-2"><span className="text-[9px] uppercase tracking-wide text-[#d4bd8d]">Beli</span><input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={lockedBranchIds.has(branchId)} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="w-20 rounded-lg border border-white/15 bg-[#0b172a] px-2 text-center text-sm text-white disabled:opacity-50"/></span>
+                </label>;
+              })}</div>
+            </article>;
+        })}</div>}
+        {items.length === 0 && criteriaConfirmed && <div data-testid="empty-purchase-suggestions" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada kekurangan untuk kategori, cabang, dan target yang dipilih. Produk dapat ditambahkan secara manual.</div>}
+        <p className="text-xs text-slate-400">Jumlah akhir positif yang terisi saja akan dikirim ke cabang terkait. Produk yang tidak terlihat di cabang tidak memiliki kolom jumlah.</p>
+        <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending || (!editingId && !criteriaConfirmed && items.length === 0)} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
       </div> : null}
 
       <div className="space-y-3">
