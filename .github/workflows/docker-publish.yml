@@ -27,7 +27,7 @@ permissions:
 jobs:
   build:
     # Main keeps its existing release flow. Validation-branch publication is
-    # manual, explicitly confirmed, and pinned to the previously validated SHA.
+    # manual, explicitly confirmed, and pinned to this candidate's approved source SHA.
     if: >-
       github.ref == 'refs/heads/main' ||
       (github.event_name == 'workflow_dispatch' &&
@@ -63,7 +63,7 @@ jobs:
               echo "Candidate publication requires explicit confirmation."
               exit 1
             fi
-            if [[ "$CANDIDATE_SOURCE_SHA" != "d486caa93916664b1b8418d44e23d1fec8ed13bd" ]]; then
+            if [[ "$CANDIDATE_SOURCE_SHA" != "26c1adfbdd381df656f56a39991d1cb1ac75c97a" ]]; then
               echo "Refusing to publish: source SHA does not match the approved current transfer candidate."
               exit 1
             fi
