@@ -641,7 +641,7 @@ paths:
           description: Plan completed or a confirmed branch would be changed.
     delete:
       operationId: deleteShoppingPlan
-      summary: Delete an unpublished draft only
+      summary: Permanently delete a draft or unconfirmed published plan
       security:
         - bearerAuth: []
       parameters:
@@ -652,7 +652,7 @@ paths:
             type: string
       responses:
         "200":
-          description: Draft deleted.
+          description: The plan, branch receipts, and revision history were permanently deleted.
           content:
             application/json:
               schema:
@@ -664,7 +664,7 @@ paths:
         "404":
           description: Purchase plan not found.
         "409":
-          description: Published purchase plans and their history cannot be deleted.
+          description: A branch has already confirmed or closed a receipt, or the plan changed during deletion.
   /shopping-plans/{id}/revisions:
     get:
       operationId: getShoppingPlanRevisions

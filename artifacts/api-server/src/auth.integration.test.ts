@@ -2935,6 +2935,66 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
     const receiptA = receiptsA.find((receipt) => receipt.status === "PENDING")!;
     const receiptB = receiptsB.find((receipt) => receipt.status === "PENDING")!;
 
+    const deletablePlanResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA deletable ${suffix}`,
+        status: "PUBLISHED",
+        items: [{
+          productId: purchaseProductId,
+          branchQtys: { [purchaseBranchA]: 1, [purchaseBranchB]: 1 },
+        }],
+      }),
+    });
+    assert.equal(deletablePlanResponse.status, 201);
+    const deletablePlan = await deletablePlanResponse.json() as {
+      id: string;
+      receipts: Array<{ id: string; branchId: string; status: string }>;
+    };
+    shoppingPlanIds.push(deletablePlan.id);
+    assert.equal(deletablePlan.receipts.length, 2);
+    assert.ok(deletablePlan.receipts.every((receipt) => receipt.status === "PENDING"));
+
+    const [visibleToA, visibleToB] = await Promise.all([
+      fetch(`${apiUrl}/api/shopping-plans/receipts`, { headers: cashierAHeaders }),
+      fetch(`${apiUrl}/api/shopping-plans/receipts`, { headers: cashierBHeaders }),
+    ]);
+    const visibleReceiptsA = await visibleToA.json() as Array<{ shoppingPlanId: string }>;
+    const visibleReceiptsB = await visibleToB.json() as Array<{ shoppingPlanId: string }>;
+    assert.ok(visibleReceiptsA.some((receipt) => receipt.shoppingPlanId === deletablePlan.id));
+    assert.ok(visibleReceiptsB.some((receipt) => receipt.shoppingPlanId === deletablePlan.id));
+
+    const stockBeforePlanDeleteA = await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchA } },
+    });
+    const stockBeforePlanDeleteB = await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchB } },
+    });
+    const deleteUnconfirmedPlan = await fetch(`${apiUrl}/api/shopping-plans/${deletablePlan.id}`, {
+      method: "DELETE",
+      headers: adminHeaders,
+    });
+    assert.equal(deleteUnconfirmedPlan.status, 200, "An unconfirmed published plan can be permanently deleted.");
+    assert.deepEqual(await deleteUnconfirmedPlan.json(), { success: true });
+    const [afterDeleteAResponse, afterDeleteBResponse, ownerPlansAfterDeleteResponse] = await Promise.all([
+      fetch(`${apiUrl}/api/shopping-plans/receipts`, { headers: cashierAHeaders }),
+      fetch(`${apiUrl}/api/shopping-plans/receipts`, { headers: cashierBHeaders }),
+      fetch(`${apiUrl}/api/shopping-plans`, { headers: adminHeaders }),
+    ]);
+    const afterDeleteA = await afterDeleteAResponse.json() as Array<{ shoppingPlanId: string }>;
+    const afterDeleteB = await afterDeleteBResponse.json() as Array<{ shoppingPlanId: string }>;
+    const ownerPlansAfterDelete = await ownerPlansAfterDeleteResponse.json() as Array<{ id: string }>;
+    assert.ok(!afterDeleteA.some((receipt) => receipt.shoppingPlanId === deletablePlan.id));
+    assert.ok(!afterDeleteB.some((receipt) => receipt.shoppingPlanId === deletablePlan.id));
+    assert.ok(!ownerPlansAfterDelete.some((plan) => plan.id === deletablePlan.id));
+    assert.equal((await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchA } },
+    })).qty, stockBeforePlanDeleteA.qty, "Deleting an unconfirmed plan does not change branch A stock.");
+    assert.equal((await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchB } },
+    })).qty, stockBeforePlanDeleteB.qty, "Deleting an unconfirmed plan does not change branch B stock.");
+
     const crossBranchConfirm = await fetch(
       `${apiUrl}/api/shopping-plans/receipts/${receiptB.id}/confirm`,
       {
@@ -2982,6 +3042,12 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
       },
     );
     assert.equal(confirmAResponse.status, 200);
+    const blockedDeleteAfterConfirmation = await fetch(`${apiUrl}/api/shopping-plans/${shoppingPlanId}`, {
+      method: "DELETE",
+      headers: adminHeaders,
+    });
+    assert.equal(blockedDeleteAfterConfirmation.status, 409, "A plan cannot be deleted after any branch confirms its receipt.");
+    assert.ok(await prisma.shoppingPlan.findUnique({ where: { id: shoppingPlanId } }), "The plan and remaining branch receipt stay available after deletion is refused.");
     const ownerPlansAfterReceipt = await fetch(`${apiUrl}/api/shopping-plans`, {
       headers: adminHeaders,
     });

@@ -708,7 +708,7 @@ export const ReviseShoppingPlanResponse = zod.object({
 
 
 /**
- * @summary Delete an unpublished draft only
+ * @summary Permanently delete a draft or unconfirmed published plan
  */
 export const DeleteShoppingPlanParams = zod.object({
   "id": zod.coerce.string()

@@ -663,18 +663,51 @@ export function registerShoppingPlanRoutes(
 
   app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), async (req, res) => {
     try {
-      const plan = await prisma.shoppingPlan.findUnique({
-        where: { id: req.params.id },
-        select: { id: true, status: true },
+      const deleted = await prisma.$transaction(async (tx) => {
+        const plan = await tx.shoppingPlan.findUnique({
+          where: { id: req.params.id },
+          select: {
+            id: true,
+            status: true,
+            receipts: { select: { branchId: true, status: true } },
+          },
+        });
+        if (!plan) fail(404, "Rencana belanja tidak ditemukan.");
+        if (plan.status !== "DRAFT" && plan.status !== "PUBLISHED") {
+          fail(409, "Rencana yang sudah selesai tidak dapat dihapus.");
+        }
+        if (plan.receipts.some((receipt) => receipt.status !== "PENDING" && receipt.status !== "SUPERSEDED")) {
+          fail(409, "Rencana tidak dapat dihapus karena sudah ada cabang yang menutup atau mengonfirmasi penerimaan.");
+        }
+
+        const receiptDeletion = await tx.shoppingPlanReceipt.deleteMany({
+          where: {
+            shoppingPlanId: plan.id,
+            status: { in: ["PENDING", "SUPERSEDED"] },
+          },
+        });
+        if (receiptDeletion.count !== plan.receipts.length) {
+          fail(409, "Rencana berubah saat akan dihapus. Muat ulang daftar dan periksa status cabang.");
+        }
+
+        await tx.shoppingPlanRevision.deleteMany({ where: { shoppingPlanId: plan.id } });
+        await tx.shoppingPlan.delete({ where: { id: plan.id } });
+        return { branchIds: [...new Set(plan.receipts.map((receipt) => receipt.branchId))] };
       });
-      if (!plan) return void res.status(404).json({ error: "Rencana belanja tidak ditemukan." });
-      const receiptCount = await prisma.shoppingPlanReceipt.count({ where: { shoppingPlanId: plan.id } });
-      if (receiptCount > 0 || plan.status !== "DRAFT") {
-        return void res.status(409).json({ error: "Rencana yang sudah diterbitkan tidak dapat dihapus agar riwayat tetap utuh." });
+
+      for (const branchId of deleted.branchIds) {
+        emitBranch(branchId, "shoppingPlanUpdated", {
+          shoppingPlanId: req.params.id,
+          branchId,
+          deleted: true,
+        });
       }
-      await prisma.shoppingPlan.delete({ where: { id: plan.id } });
       res.json({ success: true });
     } catch (error) {
+      if (error && typeof error === "object" && "code" in error && (error.code === "P2003" || error.code === "P2034")) {
+        res.status(409).json({ error: "Rencana berubah saat akan dihapus. Muat ulang daftar dan periksa status cabang." });
+        return;
+      }
       sendError(res, error, "Delete Shopping Plan Error");
     }
   });

@@ -2161,7 +2161,7 @@ export const getDeleteShoppingPlanUrl = (id: string,) => {
 }
 
 /**
- * @summary Delete an unpublished draft only
+ * @summary Permanently delete a draft or unconfirmed published plan
  */
 export const deleteShoppingPlan = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlanDeleteResult> => {
 
@@ -2213,7 +2213,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteShoppingPlanMutationVariables = {id: string}
 
     /**
- * @summary Delete an unpublished draft only
+ * @summary Permanently delete a draft or unconfirmed published plan
  */
 export const useDeleteShoppingPlan = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShoppingPlan>>, TError,DeleteShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
