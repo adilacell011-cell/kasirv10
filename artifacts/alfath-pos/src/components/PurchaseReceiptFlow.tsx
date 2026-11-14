@@ -203,15 +203,18 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   const automaticCartDraftItems = useMemo(() => {
     const byProduct = new Map<string, DraftItem>();
     for (const candidate of automaticCartCandidates) {
+      const editableBranchQtys = Object.fromEntries(selectedBranchIds
+        .filter((branchId) => visibleInBranch(candidate.product, branchId))
+        .map((branchId) => [branchId, ""]));
       const item: DraftItem = byProduct.get(candidate.product.id) || {
         productId: candidate.product.id,
         branchQtys: {},
       };
-      item.branchQtys[candidate.branchId] = "";
+      item.branchQtys = { ...item.branchQtys, ...editableBranchQtys };
       byProduct.set(candidate.product.id, item);
     }
     return Array.from(byProduct.values());
-  }, [automaticCartCandidates]);
+  }, [automaticCartCandidates, selectedBranchIds]);
   const filteredDraftItems = useMemo(() => {
     const query = draftSearch.trim().toLocaleLowerCase("id-ID");
     if (!query) return items;
@@ -337,10 +340,11 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setSuggestionsLoading(true);
     try {
       const salesByBranch: Array<readonly [string, Record<string, number>]> = [];
-      const candidateBranchIds = Array.from(new Set(
-        automaticCartCandidates.map((candidate) => candidate.branchId),
-      ));
-      for (const branchId of candidateBranchIds) {
+      const cartProductIds = new Set(automaticCartCandidates.map((candidate) => candidate.product.id));
+      const suggestionBranchIds = selectedBranchIds.filter((branchId) =>
+        categoryProducts.some((product) =>
+          cartProductIds.has(product.id) && visibleInBranch(product, branchId)));
+      for (const branchId of suggestionBranchIds) {
         if (controller.signal.aborted || requestEpoch.current !== epoch) return;
         salesByBranch.push([branchId, await getSalesTotals(branchId, controller.signal)]);
       }
@@ -354,16 +358,12 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           suggestedBranchQtys: {},
         });
       }
-      for (const branchId of candidateBranchIds) {
+      const cartProducts = categoryProducts.filter((product) => cartProductIds.has(product.id));
+      for (const branchId of suggestionBranchIds) {
         const branch = branches.find((entry) => entry.id === branchId);
         if (!branch) continue;
-        const branchCandidateProductIds = new Set(
-          automaticCartCandidates
-            .filter((candidate) => candidate.branchId === branchId)
-            .map((candidate) => candidate.product.id),
-        );
         const results = buildBranchPurchaseSuggestions({
-          products: categoryProducts.filter((product) => branchCandidateProductIds.has(product.id)),
+          products: cartProducts,
           branchId,
           branchName: branch.name,
           salesQty30dByProduct: totalsByBranch.get(branchId) || {},
@@ -527,24 +527,49 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           <div><p className="text-xs font-bold text-[#e3d5b4]">Daftar produk ({items.length})</p><p className="text-[10px] text-slate-400">Tampil {filteredDraftItems.length === 0 ? 0 : (currentDraftPage - 1) * draftPageSize + 1}–{Math.min(currentDraftPage * draftPageSize, filteredDraftItems.length)} dari {filteredDraftItems.length}</p></div>
           <input data-testid="input-filter-purchase-plan-products" value={draftSearch} onChange={(event) => { setDraftSearch(event.target.value); setDraftPage(1); }} placeholder="Cari di daftar ini" className="min-h-10 w-full rounded-lg border border-white/15 bg-[#0b172a] px-3 text-xs text-white placeholder:text-slate-400 sm:w-56"/>
         </div>}
-        {items.length > 0 && paginatedDraftItems.length > 0 && <div className="space-y-2">{paginatedDraftItems.map((item) => {
-          const product = productById.get(item.productId);
-            return <article key={item.productId} data-testid={`row-plan-product-${item.productId}`} className="rounded-xl border border-white/10 bg-[#0d1a2e] p-3">
-              <div className="mb-2 flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{product?.name || "Produk"}</p><p className="text-[10px] text-slate-400">{product?.category || "Tanpa kategori"}</p></div><button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => { setItems((old) => old.filter((entry) => entry.productId !== item.productId)); setDraftPage(1); }} className="grid min-h-9 min-w-9 place-items-center rounded-lg text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={16}/></button></div>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">{Object.keys(item.branchQtys).map((branchId) => {
-                const branch = branches.find((entry) => entry.id === branchId);
-                if (!branch) return null;
-                const suggestedQty = !editingId ? item.suggestedBranchQtys?.[branchId] : undefined;
-                return <label key={branchId} className="min-w-0 rounded-lg border border-white/5 bg-[#14233d] p-2">
-                  <span className="block truncate text-[10px] font-bold text-slate-200" title={branch.name}>{branch.name}</span>
-                  <span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="mt-0.5 block truncate text-[9px] text-slate-400">Stok {stockFor(branchId, item.productId)}{lockedBranchIds.has(branchId) ? " · terkunci" : ""}</span>
-                  {suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="block truncate text-[9px] font-semibold text-[#e3d5b4]">Saran {suggestedQty} pcs</span>}
-                  <span className="mt-1 block text-[9px] uppercase tracking-wide text-[#d4bd8d]">Jumlah beli</span>
-                  <input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={lockedBranchIds.has(branchId)} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="mt-0.5 w-full rounded-md border border-white/15 bg-[#0b172a] px-2 py-1.5 text-center text-sm text-white disabled:opacity-50"/>
-                </label>;
-              })}</div>
-            </article>;
-        })}</div>}
+        {items.length > 0 && paginatedDraftItems.length > 0 && <div className="overflow-x-auto rounded-xl border border-white/10">
+          <table style={{ minWidth: Math.max(430, 112 + selectedBranchIds.length * 76) }} className="w-full table-fixed border-collapse text-left">
+            <thead className="bg-[#0d1a2e]">
+              <tr>
+                <th className="w-28 px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400">Produk</th>
+                {selectedBranchIds.map((branchId) => {
+                  const branch = branches.find((entry) => entry.id === branchId);
+                  if (!branch) return null;
+                  return <th key={branchId} className="w-[76px] px-1 py-2 text-center text-[9px] font-bold text-[#e3d5b4]" title={branch.name}>{branch.name}</th>;
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedDraftItems.map((item) => {
+                const product = productById.get(item.productId);
+                return <tr key={item.productId} data-testid={`row-plan-product-${item.productId}`} className="border-t border-white/10">
+                  <td className="px-2 py-2 align-top">
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="min-w-0 break-words text-[11px] font-semibold leading-tight">{product?.name || "Produk"}</p>
+                      <button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => { setItems((old) => old.filter((entry) => entry.productId !== item.productId)); setDraftPage(1); }} className="grid min-h-7 min-w-7 shrink-0 place-items-center rounded-md text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={14}/></button>
+                    </div>
+                    <p className="mt-0.5 text-[9px] text-slate-400">{product?.category || "Tanpa kategori"}</p>
+                  </td>
+                  {selectedBranchIds.map((branchId) => {
+                    const branch = branches.find((entry) => entry.id === branchId);
+                    if (!branch) return null;
+                    if (product && !visibleInBranch(product, branchId)) {
+                      return <td key={branchId} className="px-1 py-2 text-center text-[9px] text-slate-500">—</td>;
+                    }
+                    const locked = lockedBranchIds.has(branchId);
+                    const suggestedQty = !editingId ? item.suggestedBranchQtys?.[branchId] : undefined;
+                    return <td key={branchId} className="px-1 py-2 align-top text-center">
+                      <input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={locked} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="mx-auto block w-12 rounded-md border border-white/15 bg-[#0b172a] px-1 py-1 text-center text-xs font-bold text-white disabled:opacity-50"/>
+                      <span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="mt-1 block text-[9px] leading-tight text-slate-400">Stok {stockFor(branchId, item.productId)}</span>
+                      {suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="mt-0.5 block text-[9px] font-semibold leading-tight text-[#d4bd8d]">Saran {suggestedQty}</span>}
+                      {locked && <span className="mt-0.5 block text-[8px] leading-tight text-slate-500">Terkunci</span>}
+                    </td>;
+                  })}
+                </tr>;
+              })}
+            </tbody>
+          </table>
+        </div>}
         {items.length > 0 && filteredDraftItems.length === 0 && <div className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Produk tidak ditemukan pada daftar rencana.</div>}
         {items.length > 0 && filteredDraftItems.length > draftPageSize && <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0d1a2e] p-2">
           <button data-testid="button-purchase-draft-previous" disabled={currentDraftPage <= 1} onClick={() => setDraftPage(currentDraftPage - 1)} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200 disabled:opacity-40">Sebelumnya</button>

@@ -309,3 +309,8 @@ For the Audit page specifically, distinguish the navy layers clearly and use res
 Audit product rows should stay compact and horizontal on phones and tablets, with product identity/status above a single strip of system/physical/variance values and actions; retain the detailed table for desktop.
 **Why:** the owner asked for short, wide product cards so large audit lists use less screen space.
 **How to apply:** preserve readable product identity, distinct status, and 44px action targets while reducing card height; do not change audit behavior.
+
+## Owner purchase-plan matrix
+Use one compact product-by-branch matrix for purchase plans: branch names appear once in the header, each editable cell has a small dark quantity input, and current stock plus any recommendation appear as small text beneath it. Do not use white input fields; allow horizontal scrolling on narrow screens.
+**Why:** the owner supplied an Android reference to fit more products and branches without tall cards or bright fields.
+**How to apply:** keep the candidate product source, branch visibility, and quantity behavior unchanged while adjusting the matrix presentation.
