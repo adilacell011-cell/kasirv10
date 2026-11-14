@@ -36,6 +36,8 @@ export const modules: ModuleMap = {
   "./components/mockups/pos-luxe/Premium.tsx": () => import("../components/mockups/pos-luxe/Premium.tsx"),
   "./components/mockups/pos-luxe/SearchTable.tsx": () => import("../components/mockups/pos-luxe/SearchTable.tsx"),
   "./components/mockups/pos-luxe-theme/Theme.tsx": () => import("../components/mockups/pos-luxe-theme/Theme.tsx"),
+  "./components/mockups/purchase-receipt/Current.tsx": () => import("../components/mockups/purchase-receipt/Current.tsx"),
+  "./components/mockups/purchase-receipt/ReceiptNote.tsx": () => import("../components/mockups/purchase-receipt/ReceiptNote.tsx"),
   "./components/mockups/shift-neumorphism/NeuColor.tsx": () => import("../components/mockups/shift-neumorphism/NeuColor.tsx"),
   "./components/mockups/shift-neumorphism/NeuGrey.tsx": () => import("../components/mockups/shift-neumorphism/NeuGrey.tsx")
 };

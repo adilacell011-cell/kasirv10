@@ -11363,3 +11363,43 @@ body:has(.app-shell[data-admin-surface="true"]) > .app-solid.bg-white.border-sla
     color: #fff1d0 !important;
   }
 }
+
+@media print {
+  @page {
+    margin: 10mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-receipt-print-target],
+  [data-receipt-print-target] * {
+    visibility: visible !important;
+  }
+
+  [data-receipt-print-target] {
+    position: fixed !important;
+    inset: 0 auto auto 0 !important;
+    z-index: 2147483647 !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #ece9e1 !important;
+    color: #1d2a38 !important;
+    box-shadow: none !important;
+  }
+
+  [data-receipt-print-actions] {
+    display: none !important;
+  }
+
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

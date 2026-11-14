@@ -18,7 +18,7 @@ import type {
   ShoppingPlanReceiptConfirmationInput,
   ShoppingPlanRevisionInput,
 } from "@workspace/api-client-react";
-import { Check, ChevronDown, ClipboardCheck, Clock3, PackageCheck, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ClipboardCheck, Clock3, FileText, PackageCheck, Plus, Printer, RotateCcw, Save, Share2, Store, Trash2, X } from "lucide-react";
 
 type Product = { id: string; name: string; barcode?: string | null; category?: string };
 type Branch = { id: string; name: string };
@@ -38,6 +38,41 @@ const statusCopy: Record<string, string> = {
 
 function toast(message: string, type: "success" | "error" = "success") {
   window.dispatchEvent(new CustomEvent("app-custom-alert", { detail: { message, type } }));
+}
+
+function buildReceiptShareText(receipt: ShoppingPlanReceipt) {
+  const rows = receipt.items.map((line, index) => {
+    const received = line.actualQty ?? 0;
+    const difference = received - line.plannedQty;
+    const variance = difference > 0 ? `+${difference}` : `${difference}`;
+    return `${index + 1}. ${line.productNameSnapshot} — rencana ${line.plannedQty}, diterima ${received}, selisih ${variance} pcs${line.note ? `; ${line.note}` : ""}`;
+  });
+  return [
+    "NOTA PENERIMAAN BARANG",
+    `Cabang: ${receipt.branchNameSnapshot}`,
+    `Referensi: ${receipt.id.slice(0, 8).toUpperCase()}`,
+    `Tanggal: ${new Date(receipt.confirmedAt || receipt.createdAt).toLocaleString("id-ID")}`,
+    `Diperiksa: ${receipt.receivedByNameSnapshot || "Kasir"}`,
+    "",
+    ...rows,
+  ].join("\n");
+}
+
+async function sharePurchaseReceipt(receipt: ShoppingPlanReceipt) {
+  const text = buildReceiptShareText(receipt);
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "Nota Penerimaan Barang", text });
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      toast("Ringkasan nota disalin untuk dibagikan.");
+    } else {
+      toast("Fitur berbagi tidak tersedia di perangkat ini.", "error");
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return;
+    toast("Nota tidak dapat dibagikan.", "error");
+  }
 }
 
 function ReceiptStatus({ status }: { status: string }) {
@@ -272,12 +307,45 @@ function PurchaseReceiptSlip({ receipt }: { receipt: ShoppingPlanReceipt }) {
   const receivedTotal = confirmed ? receipt.items.reduce((sum, line) => sum + (line.actualQty ?? 0), 0) : null;
   const shortageTotal = confirmed ? receipt.items.reduce((sum, line) => sum + Math.max(line.plannedQty - (line.actualQty ?? 0), 0), 0) : 0;
   const extraTotal = confirmed ? receipt.items.reduce((sum, line) => sum + Math.max((line.actualQty ?? 0) - line.plannedQty, 0), 0) : 0;
-  return <section data-testid={`details-plan-receipt-${receipt.id}`} className="rounded-lg border border-dashed border-[#b89c65]/45 bg-[#0b172a] p-3 text-xs">
-    <header className="flex flex-wrap items-start justify-between gap-2 border-b border-dashed border-white/20 pb-2">
-      <div><p className="font-bold uppercase tracking-wider text-[#d4bd8d]">Nota belanja cabang</p><p className="mt-1 font-semibold text-slate-100">{receipt.branchNameSnapshot}</p><p className="mt-1 text-slate-300">Diperiksa oleh: {receipt.receivedByNameSnapshot || "Belum dikonfirmasi"}</p></div>
-      <div className="text-right"><ReceiptStatus status={receipt.status}/><p className="mt-1 text-slate-400">{confirmed ? new Date(receipt.confirmedAt || "").toLocaleString("id-ID") : statusCopy[receipt.status]}</p></div>
-    </header>
-    <div className="mt-2 divide-y divide-dashed divide-white/15">{receipt.items.map((line) => {
+  const statusLabel = !confirmed
+    ? statusCopy[receipt.status] || receipt.status
+    : shortageTotal > 0 && extraTotal > 0
+      ? "Ada selisih"
+      : shortageTotal > 0
+        ? "Ada kekurangan"
+        : extraTotal > 0
+          ? "Ada lebih"
+          : "Sesuai";
+  const statusStyle = !confirmed
+    ? "border-[#b8a97e] bg-[#e8e1cc] text-[#62532e]"
+    : shortageTotal > 0
+      ? "border-[#c6a39d] bg-[#eadbd7] text-[#79423d]"
+      : extraTotal > 0
+        ? "border-[#c7b68e] bg-[#e9e2cd] text-[#67552c]"
+        : "border-[#aab9a7] bg-[#dfe6dc] text-[#3d5b41]";
+
+  return <section data-testid={`details-plan-receipt-${receipt.id}`} data-receipt-print-target className="overflow-hidden rounded-xl border border-[#d1cbbf] bg-[#ece9e1] text-[#1d2a38] shadow-sm">
+    <div className="px-3 pb-3 pt-4 sm:px-5">
+      <header className="text-center">
+        <p className="flex items-center justify-center gap-2 text-lg font-extrabold"><Store size={20}/> {receipt.branchNameSnapshot}</p>
+        <p className="mt-0.5 text-sm font-medium text-[#4d5964]">Nota Penerimaan Barang</p>
+      </header>
+      <div className="my-3 border-t border-dashed border-[#aaa69b]"/>
+      <div className="grid grid-cols-[4.3rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 text-xs sm:grid-cols-[5rem_minmax(0,1fr)] sm:text-sm">
+        <span className="text-[#59636d]">No. Ref</span><strong className="truncate">{receipt.id.slice(0, 8).toUpperCase()}</strong>
+        <span className="text-[#59636d]">Tanggal</span><strong>{new Date(receipt.confirmedAt || receipt.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</strong>
+        <span className="text-[#59636d]">Diperiksa</span><strong>{receipt.receivedByNameSnapshot || "Belum diperiksa"}</strong>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2 border-y border-dashed border-[#aaa69b] py-2">
+        <span className="text-xs font-semibold text-[#59636d]">Status penerimaan</span>
+        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusStyle}`}>{statusLabel}</span>
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <div className="min-w-[310px]">
+          <div className="grid grid-cols-[1.2rem_minmax(0,1fr)_2.9rem_2.9rem_2.6rem] gap-1 rounded-md bg-[#dfddd5] px-1.5 py-2 text-[9px] font-bold uppercase tracking-wide text-[#384551] sm:grid-cols-[1.7rem_minmax(0,1fr)_3.3rem_3.4rem_3rem] sm:text-[10px]">
+            <span>No.</span><span>Nama produk</span><span className="text-right">Rencana</span><span className="text-right">Terima</span><span className="text-right">Selisih</span>
+          </div>
+          <div className="divide-y divide-[#cfcdc5]">{receipt.items.map((line, index) => {
       const receivedQty = line.actualQty ?? 0;
       const unavailable = confirmed && (line.notAvailable || line.exceptionType === "NOT_AVAILABLE" || receivedQty === 0);
       const shortage = confirmed ? Math.max(line.plannedQty - receivedQty, 0) : 0;
@@ -291,30 +359,35 @@ function PurchaseReceiptSlip({ receipt }: { receipt: ShoppingPlanReceipt }) {
             : extra > 0
               ? `Lebih ${line.differenceQty ?? extra} pcs`
               : "Sesuai";
-      const resultColor = !confirmed ? "text-slate-400" : unavailable || shortage > 0 ? "text-rose-300" : extra > 0 ? "text-amber-200" : "text-emerald-300";
-      return <div key={line.productId} data-testid={`details-receipt-line-${receipt.id}-${line.productId}`} className="py-2">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className={`font-semibold ${unavailable ? "text-slate-400 line-through decoration-rose-300" : "text-slate-100"}`}>{line.productNameSnapshot}</p>
-            {line.productBarcodeSnapshot && <p className="mt-0.5 text-[10px] text-slate-400">{line.productBarcodeSnapshot}</p>}
-            {unavailable && <p className="mt-1 text-[10px] font-semibold text-rose-300">Produk tidak ada dalam kiriman</p>}
-          </div>
-          <span className={`font-bold ${resultColor}`}>{result}</span>
+      const resultColor = !confirmed ? "text-[#66717b]" : unavailable || shortage > 0 ? "text-[#8b4843]" : extra > 0 ? "text-[#77602f]" : "text-[#3c5c45]";
+      return <div key={line.productId} data-testid={`details-receipt-line-${receipt.id}-${line.productId}`} className="grid grid-cols-[1.2rem_minmax(0,1fr)_2.9rem_2.9rem_2.6rem] items-start gap-1 px-1.5 py-2 text-[11px] sm:grid-cols-[1.7rem_minmax(0,1fr)_3.3rem_3.4rem_3rem] sm:text-sm">
+        <span className="text-[#606a72]">{index + 1}.</span>
+        <div className="min-w-0">
+          <p className={`break-words font-semibold ${unavailable ? "text-[#71716c] line-through decoration-[#a76058]" : "text-[#1d2a38]"}`}>{line.productNameSnapshot}</p>
+          {line.productBarcodeSnapshot && <p className="mt-0.5 break-all text-[9px] text-[#707982] sm:text-[10px]">{line.productBarcodeSnapshot}</p>}
+          {unavailable && <p className="mt-1 text-[9px] font-semibold text-[#8b4843] sm:text-[10px]">Produk tidak ada dalam kiriman</p>}
+          {line.note && <p className="mt-1 break-words text-[10px] leading-4 text-[#6f5740]"><span className="font-semibold">Catatan:</span> {line.note}</p>}
+          {!confirmed && <span className={`mt-1 inline-block font-semibold ${resultColor}`}>{result}</span>}
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded bg-[#14233d] px-1 py-1.5"><span className="block text-[10px] text-slate-400">Rencana</span><strong>{line.plannedQty} pcs</strong></div>
-          <div className="rounded bg-[#14233d] px-1 py-1.5"><span className="block text-[10px] text-slate-400">Diterima</span><strong>{confirmed ? `${receivedQty} pcs` : "—"}</strong></div>
-          <div className="rounded bg-[#14233d] px-1 py-1.5"><span className="block text-[10px] text-slate-400">Selisih</span><strong className={resultColor}>{confirmed ? shortage > 0 ? `−${shortage} pcs` : extra > 0 ? `+${extra} pcs` : "Sesuai" : "—"}</strong></div>
-        </div>
-        {line.note && <p className="mt-2 text-slate-300"><span className="font-semibold text-[#d4bd8d]">Keterangan:</span> {line.note}</p>}
+        <strong className="text-right">{line.plannedQty}</strong>
+        <strong className="text-right">{confirmed ? receivedQty : "—"}</strong>
+        <strong className={`text-right ${resultColor}`}>{confirmed ? shortage > 0 ? `−${shortage}` : extra > 0 ? `+${extra}` : "0" : "—"}</strong>
       </div>;
     })}</div>
-    {confirmed && <footer className="mt-2 grid grid-cols-2 gap-2 border-t border-dashed border-white/20 pt-2 sm:grid-cols-4">
-      <div><span className="block text-slate-400">Total rencana</span><strong>{plannedTotal} pcs</strong></div>
-      <div><span className="block text-slate-400">Total diterima</span><strong>{receivedTotal} pcs</strong></div>
-      <div><span className="block text-slate-400">Total kurang</span><strong className={shortageTotal ? "text-rose-300" : ""}>{shortageTotal} pcs</strong></div>
-      <div><span className="block text-slate-400">Total lebih</span><strong className={extraTotal ? "text-amber-200" : ""}>{extraTotal} pcs</strong></div>
-    </footer>}
+        </div>
+      </div>
+      <div className="my-3 border-t border-dashed border-[#aaa69b]"/>
+      <footer className="space-y-1.5 text-sm">
+        <div className="flex justify-between gap-3"><strong>Total rencana</strong><strong>{plannedTotal} pcs</strong></div>
+        <div className="flex justify-between gap-3"><strong>Total diterima</strong><strong>{confirmed ? `${receivedTotal} pcs` : "Belum diterima"}</strong></div>
+        <div className="flex justify-between gap-3"><strong>Total kurang</strong><strong className={shortageTotal ? "text-[#8b4843]" : ""}>{shortageTotal} pcs</strong></div>
+        <div className="flex justify-between gap-3"><strong>Total lebih</strong><strong className={extraTotal ? "text-[#77602f]" : ""}>{extraTotal} pcs</strong></div>
+      </footer>
+      {confirmed && <div data-receipt-print-actions className="mt-4 grid grid-cols-2 gap-2 print:hidden">
+        <button data-testid={`button-print-receipt-${receipt.id}`} onClick={() => window.print()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#bdb6a8] bg-[#e5e2da] px-3 text-xs font-bold text-[#344556] hover:bg-[#dedbd3] sm:text-sm"><Printer size={16}/>Cetak / PDF</button>
+        <button data-testid={`button-share-receipt-${receipt.id}`} onClick={() => void sharePurchaseReceipt(receipt)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#b9aa87] bg-[#e8e1cf] px-3 text-xs font-bold text-[#55472b] hover:bg-[#e0d7c2] sm:text-sm"><Share2 size={16}/>Bagikan</button>
+      </div>}
+    </div>
   </section>;
 }
 
@@ -408,40 +481,69 @@ export function CashierPurchaseReceipts({ confirm }: { confirm: (message: string
       <div className="space-y-2">{receipts.map((receipt) => <div key={receipt.id} data-testid={`card-cashier-receipt-${receipt.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
         <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-bold">{receipt.shoppingPlan?.title || "Rencana pembelian"}</p><p className="mt-0.5 text-xs text-slate-500">Revisi {receipt.revision?.revisionNumber || 1} · {new Date(receipt.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p></div><ReceiptStatus status={receipt.status}/></div>
         {receipt.status === "PENDING" && <button data-testid={`button-open-receipt-${receipt.id}`} onClick={() => start(receipt)} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-800 px-4 text-sm font-bold text-white"><PackageCheck size={17}/>Periksa barang</button>}
-        {receipt.status === "CONFIRMED" && <p className="mt-2 text-xs text-emerald-700">Dikonfirmasi oleh {receipt.receivedByNameSnapshot || "kasir"} · {new Date(receipt.confirmedAt || "").toLocaleString("id-ID")}</p>}
+        {receipt.status === "CONFIRMED" && <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-[#58645d]">Dikonfirmasi oleh {receipt.receivedByNameSnapshot || "kasir"} · {new Date(receipt.confirmedAt || "").toLocaleString("id-ID")}</p>
+          <button data-testid={`button-view-cashier-receipt-${receipt.id}`} onClick={() => setReceiptId(receipt.id)} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#bcb29a] bg-[#e8e4d9] px-3 text-xs font-bold text-[#344556] hover:bg-[#ded9cc]"><FileText size={15}/>Lihat nota</button>
+        </div>}
         {receipt.status === "SUPERSEDED" && <p className="mt-2 text-xs text-rose-700">Nota ini digantikan oleh revisi baru.</p>}
       </div>)}</div>}
-    {current && <div role="dialog" aria-modal="true" aria-labelledby="receipt-dialog-title" data-testid="dialog-confirm-purchase-receipt" className="fixed inset-0 z-[2600] flex items-end justify-center bg-slate-950/60 p-0 sm:items-center sm:p-4">
-      <div className="max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-4 shadow-2xl sm:rounded-2xl">
-        <div className="flex items-start justify-between gap-3"><div><h3 id="receipt-dialog-title" className="text-lg font-extrabold">{current.shoppingPlan?.title || "Penerimaan barang"}</h3><p className="text-xs text-slate-500">{current.branchNameSnapshot} · cocokkan barang dengan nota Owner</p></div><button data-testid="button-close-receipt-dialog" onClick={() => setReceiptId(null)} aria-label="Tutup" className="grid min-h-11 min-w-11 place-items-center rounded-lg text-slate-500"><X size={19}/></button></div>
-        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">Jika semua sesuai, tidak perlu mengubah apa pun: sistem menerima jumlah rencana. Tandai hanya barang yang kurang, tidak ada, atau lebih.</p>
-        <div className="mt-4 space-y-2">{current.items.map((item) => {
-          const check = values[item.productId] || { exceptionType: "", differenceQty: "", note: "" };
-          return <div key={item.productId} data-testid={`row-receipt-item-${item.productId}`} className="rounded-xl border border-slate-200 p-3">
-            <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-bold">{item.productNameSnapshot}</p>{item.productBarcodeSnapshot && <p className="text-xs text-slate-500">{item.productBarcodeSnapshot}</p>}</div><span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">Rencana Owner: {item.plannedQty} pcs</span></div>
-            <label className="mt-3 block text-xs font-semibold text-slate-600">Pemeriksaan barang
-              <select data-testid={`select-receipt-exception-${item.productId}`} aria-label={`Pemeriksaan ${item.productNameSnapshot}`} value={check.exceptionType} onChange={(event) => setExceptionType(item.productId, event.target.value as ReceiptExceptionType | "")} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900">
-                <option value="">Sesuai rencana</option>
-                <option value="SHORTAGE" disabled={item.plannedQty <= 1}>Kurang</option>
-                <option value="NOT_AVAILABLE">Tidak ada</option>
-                <option value="EXTRA">Lebih</option>
-              </select>
-            </label>
-            {check.exceptionType === "SHORTAGE" && <label className="mt-3 block text-xs font-semibold text-slate-600">Kurang berapa pcs?
-              <input data-testid={`input-receipt-difference-${item.productId}`} aria-label={`Jumlah pcs yang kurang ${item.productNameSnapshot}`} type="number" inputMode="numeric" min="1" max={item.plannedQty - 1} step="1" value={check.differenceQty} onChange={(event) => setDifferenceQty(item.productId, event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900"/>
-              <span className="mt-1 block font-normal text-slate-500">Isi selisih yang kurang, bukan jumlah diterima. Jika barang sama sekali tidak ada, pilih “Tidak ada”.</span>
-            </label>}
-            {check.exceptionType === "EXTRA" && <label className="mt-3 block text-xs font-semibold text-slate-600">Lebih berapa pcs?
-              <input data-testid={`input-receipt-difference-${item.productId}`} aria-label={`Jumlah pcs yang lebih ${item.productNameSnapshot}`} type="number" inputMode="numeric" min="1" step="1" value={check.differenceQty} onChange={(event) => setDifferenceQty(item.productId, event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900"/>
-              <span className="mt-1 block font-normal text-slate-500">Isi jumlah tambahan di atas rencana Owner.</span>
-            </label>}
-            {check.exceptionType && <label className="mt-3 block text-xs font-semibold text-slate-600">Keterangan wajib
-              <textarea data-testid={`input-receipt-note-${item.productId}`} aria-label={`Keterangan ${item.productNameSnapshot}`} maxLength={300} value={check.note} onChange={(event) => setNote(item.productId, event.target.value)} placeholder={check.exceptionType === "NOT_AVAILABLE" ? "Contoh: barang tidak ada di kiriman" : "Jelaskan selisih barang"} className="mt-1 min-h-20 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"/>
-            </label>}
-          </div>;
-        })}</div>
-        <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row"><button data-testid="button-cancel-receipt" onClick={() => setReceiptId(null)} className="min-h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-700">Kembali</button><button data-testid="button-confirm-receipt" disabled={confirmReceipt.isPending} onClick={() => void submit()} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 text-sm font-bold text-white disabled:opacity-50"><Check size={17}/>{confirmReceipt.isPending ? "Menyimpan…" : "Konfirmasi seluruh nota"}</button></div>
-        <p className="mt-2 text-center text-xs text-slate-500">Konfirmasi menyimpan stok sesuai rencana dan selisih yang dicatat; kekurangan ditutup dan dilaporkan ke Owner.</p>
+    {current && <div className="fixed inset-0 z-[2600] flex items-end justify-center overflow-hidden bg-[#0b1523]/70 px-2 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="receipt-dialog-title" data-testid="dialog-confirm-purchase-receipt" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem)", overflowY: "hidden" }} className="flex min-h-0 w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-[#c9c2b5] bg-[#e9e6de] text-[#243140] shadow-xl sm:rounded-2xl">
+        <header className="flex shrink-0 items-start justify-between gap-3 bg-[#1a2d43] px-4 py-3 text-slate-100">
+          <div className="flex min-w-0 items-start gap-2.5"><FileText size={20} className="mt-0.5 shrink-0 text-[#d1c29d]"/><div className="min-w-0"><h3 id="receipt-dialog-title" className="font-bold">{current.status === "CONFIRMED" ? "Nota Penerimaan" : "Periksa Nota Penerimaan"}</h3><p className="mt-0.5 truncate text-xs text-slate-300">{current.branchNameSnapshot} · {current.shoppingPlan?.title || "Rencana Owner"}</p></div></div>
+          <button data-testid="button-close-receipt-dialog" onClick={() => setReceiptId(null)} aria-label="Tutup" className="grid min-h-10 min-w-10 shrink-0 place-items-center rounded-lg text-slate-300 hover:bg-white/10"><X size={19}/></button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">
+          {current.status === "CONFIRMED"
+            ? <PurchaseReceiptSlip receipt={current}/>
+            : <>
+              <div className="rounded-lg border border-[#d1c8b4] bg-[#e5e0d4] px-3 py-2 text-xs leading-5 text-[#4c4b43]">
+                Cocokkan dengan barang yang datang. Jika sesuai, biarkan pilihan tetap “Sesuai rencana”. Tandai hanya barang yang kurang, tidak ada, atau lebih.
+              </div>
+              <div className="mt-3 space-y-2">{current.items.map((item, index) => {
+                const check = values[item.productId] || { exceptionType: "", differenceQty: "", note: "" };
+                return <article key={item.productId} data-testid={`row-receipt-item-${item.productId}`} className="rounded-lg border border-[#d0cabc] bg-[#f0eee8] px-3 py-2.5 text-[#273544]">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 gap-2">
+                      <span className="mt-0.5 text-xs text-[#74766f]">{index + 1}.</span>
+                      <div className="min-w-0"><p className="break-words text-sm font-bold leading-5">{item.productNameSnapshot}</p>{item.productBarcodeSnapshot && <p className="mt-0.5 break-all text-[10px] text-[#69737b]">{item.productBarcodeSnapshot}</p>}</div>
+                    </div>
+                    <span className="shrink-0 rounded-md border border-[#d3cebf] bg-[#e6e3db] px-2 py-1 text-[10px] font-bold text-[#45515d] sm:text-xs">Rencana {item.plannedQty} pcs</span>
+                  </div>
+                  <label className="mt-2.5 block text-xs font-bold text-[#49535d]">Pemeriksaan barang
+                    <select data-testid={`select-receipt-exception-${item.productId}`} aria-label={`Pemeriksaan ${item.productNameSnapshot}`} value={check.exceptionType} onChange={(event) => setExceptionType(item.productId, event.target.value as ReceiptExceptionType | "")} className="mt-1 min-h-11 w-full rounded-lg border border-[#c7c2b7] bg-[#e8e5dd] px-3 text-sm text-[#243140] focus:border-[#9d8d68] focus:outline-none focus:ring-2 focus:ring-[#b5a373]/30">
+                      <option value="">Sesuai rencana</option>
+                      <option value="SHORTAGE" disabled={item.plannedQty <= 1}>Kurang</option>
+                      <option value="NOT_AVAILABLE">Tidak ada</option>
+                      <option value="EXTRA">Lebih</option>
+                    </select>
+                  </label>
+                  {check.exceptionType === "SHORTAGE" && <label className="mt-2.5 block text-xs font-bold text-[#49535d]">Berapa pcs yang kurang?
+                    <input data-testid={`input-receipt-difference-${item.productId}`} aria-label={`Jumlah pcs yang kurang ${item.productNameSnapshot}`} type="number" inputMode="numeric" min="1" max={item.plannedQty - 1} step="1" value={check.differenceQty} onChange={(event) => setDifferenceQty(item.productId, event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-[#c7c2b7] bg-[#e8e5dd] px-3 text-sm text-[#243140] focus:border-[#9d8d68] focus:outline-none focus:ring-2 focus:ring-[#b5a373]/30"/>
+                    <span className="mt-1 block font-normal text-[#69737b]">Isi jumlah yang kurang. Jika tidak ada sama sekali, pilih “Tidak ada”.</span>
+                  </label>}
+                  {check.exceptionType === "EXTRA" && <label className="mt-2.5 block text-xs font-bold text-[#49535d]">Berapa pcs yang lebih?
+                    <input data-testid={`input-receipt-difference-${item.productId}`} aria-label={`Jumlah pcs yang lebih ${item.productNameSnapshot}`} type="number" inputMode="numeric" min="1" step="1" value={check.differenceQty} onChange={(event) => setDifferenceQty(item.productId, event.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-[#c7c2b7] bg-[#e8e5dd] px-3 text-sm text-[#243140] focus:border-[#9d8d68] focus:outline-none focus:ring-2 focus:ring-[#b5a373]/30"/>
+                    <span className="mt-1 block font-normal text-[#69737b]">Isi jumlah tambahan di atas rencana Owner.</span>
+                  </label>}
+                  {check.exceptionType && <label className="mt-2.5 block text-xs font-bold text-[#49535d]">Keterangan wajib
+                    <textarea data-testid={`input-receipt-note-${item.productId}`} aria-label={`Keterangan ${item.productNameSnapshot}`} maxLength={300} value={check.note} onChange={(event) => setNote(item.productId, event.target.value)} placeholder={check.exceptionType === "NOT_AVAILABLE" ? "Contoh: produk tidak ada di kiriman" : "Jelaskan selisih barang"} className="mt-1 min-h-16 w-full rounded-lg border border-[#c7c2b7] bg-[#e8e5dd] px-3 py-2 text-sm text-[#243140] placeholder:text-[#858982] focus:border-[#9d8d68] focus:outline-none focus:ring-2 focus:ring-[#b5a373]/30"/>
+                  </label>}
+                </article>;
+              })}</div>
+            </>}
+        </div>
+        <footer className="shrink-0 border-t border-[#c9c2b5] bg-[#e6e3db] px-3 py-3">
+          {current.status === "CONFIRMED"
+            ? <button data-testid="button-cancel-receipt" onClick={() => setReceiptId(null)} className="min-h-11 w-full rounded-lg border border-[#bdb6a8] px-4 text-sm font-bold text-[#344556] hover:bg-[#dedbd3]">Tutup nota</button>
+            : <>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                <button data-testid="button-cancel-receipt" onClick={() => setReceiptId(null)} className="min-h-11 flex-1 rounded-lg border border-[#bdb6a8] px-4 text-sm font-bold text-[#46515b] hover:bg-[#dedbd3]">Kembali</button>
+                <button data-testid="button-confirm-receipt" disabled={confirmReceipt.isPending} onClick={() => void submit()} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[#233b52] px-4 text-sm font-bold text-[#f3f0e8] hover:bg-[#1c3044] disabled:opacity-50"><Check size={17}/>{confirmReceipt.isPending ? "Menyimpan…" : "Konfirmasi nota"}</button>
+              </div>
+              <p className="mt-2 text-center text-[11px] leading-4 text-[#626a6e]">Stok bertambah sesuai rencana dan selisih yang dicatat. Kekurangan ditutup dan dilaporkan ke Owner.</p>
+            </>}
+        </footer>
       </div>
     </div>}
   </section>;

@@ -1,0 +1,28 @@
+:root {
+  color-scheme: light;
+  --canvas-bg: #ffffff;
+  --card-bg: #ffffff;
+  --text-main: #17243a;
+  --text-mute: #68717d;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --champagne: #b69b68;
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas-bg: #23262e;
+  --card-bg: #2a2d35;
+  --text-main: #f8fafc;
+  --text-mute: #94a3b8;
+  --border-color: #243352;
+  --input-bg: #0f1a30;
+  --champagne: #c8ad78;
+}
+
+.purchase-receipt-mockup {
+  min-height: 100dvh;
+  color: #e5e7eb;
+  background: #101d2f;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
