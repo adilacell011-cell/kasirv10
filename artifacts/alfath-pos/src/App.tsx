@@ -4311,7 +4311,14 @@ export default function App() {
           </header>
 
           {/* WORKSPACES */}
-          <main className={`app-workspace flex-1 overflow-hidden flex bg-slate-50/50 relative h-full ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}>
+          <main
+            data-cashier-stock-page={activeMenu === "cashier_stock" && profile?.role === "CASHIER" ? "true" : undefined}
+            className={`app-workspace flex-1 ${
+              activeMenu === "cashier_stock" && profile?.role === "CASHIER"
+                ? "min-h-0 flex flex-col overflow-x-hidden overflow-y-auto pb-20 md:pb-4"
+                : "overflow-hidden flex"
+            } bg-slate-50/50 relative h-full ${activeMenu === "stock_audit" ? "min-w-0" : ""}`}
+          >
             {/* --- 1. ADMIN: PENGATURAN AKSES KARYAWAN --- */}
             {activeMenu === "employees" && profile?.role === "ADMIN" && (
               <div data-ui-screen="employees" className="ui-screen-employees flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
@@ -8048,12 +8055,12 @@ export default function App() {
               <div data-ui-screen="cashier-stock" className="ui-screen-cashier-stock flex-1 flex items-center justify-center bg-slate-50 p-4">
                 <div
                   role="status"
-                  className="w-full max-w-sm rounded-3xl border border-amber-200 bg-white p-6 text-center shadow-xl"
+                  className="w-full max-w-sm rounded-2xl border border-amber-200 bg-white p-5 text-center shadow-sm"
                 >
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
                     <Lock className="h-6 w-6" />
                   </div>
-                  <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">
+                  <h2 className="text-base font-bold text-slate-900">
                     Input stok terkunci
                   </h2>
                   <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">
@@ -8061,7 +8068,7 @@ export default function App() {
                   </p>
                   <button
                     onClick={() => setActiveMenu("shift")}
-                    className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-blue-700"
+                    className="mt-4 min-h-11 w-full rounded-xl bg-slate-800 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-700"
                   >
                     Buka halaman shift
                   </button>
@@ -8070,7 +8077,7 @@ export default function App() {
             )}
 
             {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && shiftOpen && (
-              <div data-ui-screen="cashier-stock" data-stock-workspace className="ui-screen-cashier-stock flex-1 bg-slate-50 flex flex-col lg:flex-row gap-4 p-3 md:p-6 overflow-y-auto lg:overflow-hidden h-full">
+              <div data-ui-screen="cashier-stock" data-stock-workspace className="ui-screen-cashier-stock grid w-full shrink-0 grid-cols-1 items-stretch gap-3 bg-slate-50 p-3 md:h-[min(720px,calc(100dvh-9rem))] md:min-h-[560px] md:grid-cols-[minmax(0,1.2fr)_minmax(270px,.8fr)] md:overflow-hidden md:p-4">
                 {!isCashierStockInputAllowed(profile?.branchId) ? (
                   <div className="flex flex-col items-center justify-center p-8 md:p-12 bg-white rounded-[32px] border border-slate-200 shadow-sm max-w-md mx-auto my-auto text-center space-y-6">
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 shadow-inner">
@@ -8089,13 +8096,13 @@ export default function App() {
                 ) : (
                   <>
                     {/* ── LEFT: product browser ── */}
-                    <div data-cashier-stock-products className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px] lg:min-h-0">
+                    <div data-cashier-stock-products className="flex min-h-[380px] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:h-full md:min-h-0">
                       {/* header */}
                       <div className="px-3 py-2.5 border-b border-slate-100 shrink-0 flex items-center gap-2">
-                        <div className="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
                           <PlusSquare className="w-4 h-4" />
                         </div>
-                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest flex-1">Pilih Produk Stok-In</span>
+                        <span className="text-xs font-bold text-slate-700 flex-1">Pilih produk stok masuk</span>
                         <button
                           onClick={() => {
                             setScannerCallback(() => (code: string) => {
@@ -8105,7 +8112,7 @@ export default function App() {
                             });
                             setShowScanner(true);
                           }}
-                          className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-black text-[9px] uppercase tracking-widest hover:bg-emerald-700 active:scale-95 transition-all outline-none"
+                          className="min-h-11 bg-emerald-600 text-white px-3 rounded-lg flex items-center gap-1.5 font-bold text-xs hover:bg-emerald-700 active:scale-95 transition-all outline-none"
                         >
                           <Camera className="w-3 h-3" /> Scan
                         </button>
@@ -8120,7 +8127,7 @@ export default function App() {
                             placeholder="Cari nama / barcode..."
                             value={transferSearch}
                             onChange={(e) => setTransferSearch(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 py-2 pl-9 pr-3 rounded-lg text-[11px] font-semibold focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all"
+                            className="min-h-11 w-full bg-slate-50 border border-slate-200 py-2 pl-10 pr-3 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all"
                           />
                         </div>
                       </div>
@@ -8128,13 +8135,13 @@ export default function App() {
                       {/* breadcrumb */}
                       {transferDrillPath.length > 0 && !transferSearch && (
                         <div className="bg-slate-50 px-3 py-1.5 flex items-center gap-1.5 shrink-0 border-b border-slate-200">
-                          <button onClick={() => setTransferDrillPath([])} className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-700 transition-colors">Semua</button>
+                          <button onClick={() => setTransferDrillPath([])} className="min-h-10 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors">Semua</button>
                           {transferDrillPath.map((path, idx) => (
                             <React.Fragment key={idx}>
                               <ChevronRight className="w-3 h-3 text-slate-400" />
                               <button
                                 onClick={() => setTransferDrillPath(transferDrillPath.slice(0, idx + 1))}
-                                className={`text-[10px] font-black uppercase tracking-widest max-w-[120px] truncate ${idx === transferDrillPath.length - 1 ? "text-slate-900" : "text-slate-400"}`}
+                                className={`min-h-10 max-w-[120px] truncate text-xs font-bold ${idx === transferDrillPath.length - 1 ? "text-slate-900" : "text-slate-500"}`}
                               >{path}</button>
                             </React.Fragment>
                           ))}
@@ -8169,9 +8176,9 @@ export default function App() {
                               <table className="w-full text-left border-collapse">
                                 <thead>
                                   <tr className="bg-slate-50 border-b border-slate-200 sticky top-0">
-                                    <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
-                                    <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Barcode</th>
-                                    <th className="px-3 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-16">Pilih</th>
+                                    <th className="px-3 py-2.5 text-[11px] font-bold text-slate-600">Produk</th>
+                                    <th className="px-3 py-2.5 text-[11px] font-bold text-slate-600 hidden sm:table-cell">Barcode</th>
+                                    <th className="px-3 py-2.5 text-[11px] font-bold text-slate-600 text-right w-16">Pilih</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -8183,13 +8190,13 @@ export default function App() {
                                         onClick={() => setSelectedTransferProduct(p)}
                                         className={`cursor-pointer border-b border-slate-100 transition-colors ${selected ? "bg-emerald-50" : "hover:bg-slate-50"}`}
                                       >
-                                        <td className="px-3 py-2">
-                                          <p className="text-[9px] text-slate-400 font-bold uppercase">{p.brand || "UMUM"}</p>
-                                          <p className={`text-[11px] font-black uppercase leading-tight ${selected ? "text-emerald-700" : "text-slate-800"}`}>{p.name}</p>
-                                          {p.masterSN && <p className="text-[9px] text-emerald-500 font-mono">SN: {p.masterSN}</p>}
+                                        <td className="px-3 py-2.5">
+                                          <p className="text-[11px] text-slate-500 font-semibold">{p.brand || "UMUM"}</p>
+                                          <p className={`text-sm font-bold leading-5 ${selected ? "text-emerald-700" : "text-slate-800"}`}>{p.name}</p>
+                                          {p.masterSN && <p className="text-[11px] text-emerald-700 font-mono">SN: {p.masterSN}</p>}
                                         </td>
-                                        <td className="px-3 py-2 hidden sm:table-cell">
-                                          <span className="text-[10px] font-mono text-slate-500">{p.barcode || "—"}</span>
+                                        <td className="px-3 py-2.5 hidden sm:table-cell">
+                                          <span className="text-xs font-mono text-slate-500">{p.barcode || "—"}</span>
                                         </td>
                                         <td className="px-3 py-2 text-right">
                                           <div className={`inline-flex items-center justify-center w-6 h-6 rounded-md ${selected ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-400"}`}>
@@ -8200,7 +8207,7 @@ export default function App() {
                                     );
                                   })}
                                   {final.length === 0 && (
-                                    <tr><td colSpan={3} className="py-8 text-center text-[10px] text-slate-400 font-bold uppercase">Tidak ada produk ditemukan</td></tr>
+                                    <tr><td colSpan={3} className="py-8 text-center text-xs text-slate-500 font-semibold">Tidak ada produk ditemukan</td></tr>
                                   )}
                                 </tbody>
                               </table>
@@ -8265,46 +8272,46 @@ export default function App() {
                     </div>
 
                     {/* ── RIGHT: input form ── */}
-                    <div data-cashier-stock-entry className="w-full lg:w-[300px] xl:w-[320px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+                    <div data-cashier-stock-entry className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:h-full md:min-h-0">
                       {/* product info */}
-                      <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 shrink-0">
-                        <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-2">Input Detail Stok</p>
+                      <div className="px-3 py-3 bg-slate-50 border-b border-slate-200 shrink-0 sm:px-4">
+                        <p className="text-xs font-bold text-emerald-700 mb-2">Detail produk</p>
                         {selectedTransferProduct ? (
                           <div className="flex gap-3 items-center">
                             <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
                               <Package className="w-4 h-4 text-emerald-600" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[9px] font-black text-emerald-600 uppercase leading-none mb-0.5">{selectedTransferProduct.brand}</p>
-                              <p className="text-[12px] font-black uppercase leading-tight line-clamp-2 text-slate-900">{selectedTransferProduct.name}</p>
+                              <p className="text-[11px] font-semibold text-emerald-700 leading-none mb-0.5">{selectedTransferProduct.brand}</p>
+                              <p className="text-sm font-bold leading-5 line-clamp-2 text-slate-900">{selectedTransferProduct.name}</p>
                             </div>
                           </div>
                         ) : (
-                          <div className="py-2 flex items-center gap-2 opacity-30">
+                          <div className="py-2 flex items-center gap-2 text-slate-500">
                             <Hand className="w-5 h-5" />
-                            <p className="text-[10px] font-black uppercase tracking-widest">Pilih produk di sebelah kiri</p>
+                            <p className="text-xs font-semibold">Pilih produk dari daftar.</p>
                           </div>
                         )}
                       </div>
 
                       {/* form fields */}
-                      <div className="p-3 space-y-2.5 shrink-0 border-b border-slate-100">
+                      <div className="p-3 space-y-3 shrink-0 border-b border-slate-100 sm:p-4">
                         <div>
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kuantitas Masuk</label>
+                          <label className="text-xs font-semibold text-slate-600 block mb-1">Kuantitas masuk (pcs)</label>
                           <input
                             type="number"
                             id="cs-qty"
                             placeholder="0"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xl font-black text-center focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all placeholder:text-slate-200"
+                            className="min-h-12 w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xl font-bold text-center focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all placeholder:text-slate-300"
                           />
                         </div>
                         <div>
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Keterangan / Supplier</label>
+                          <label className="text-xs font-semibold text-slate-600 block mb-1">Keterangan / supplier</label>
                           <input
                             type="text"
                             id="cs-supplier"
                             placeholder="Contoh: Stok Pusat"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all"
+                            className="min-h-11 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-emerald-100 focus:bg-white focus:border-emerald-400 outline-none transition-all"
                           />
                         </div>
                         <button
@@ -8321,7 +8328,7 @@ export default function App() {
                             supplierInput.value = "";
                             setSelectedTransferProduct(null);
                           }}
-                          className={`w-full py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95 ${
+                          className={`min-h-11 w-full py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-95 ${
                             selectedTransferProduct
                               ? "bg-emerald-600 text-white hover:bg-emerald-700"
                               : "bg-slate-100 text-slate-300 cursor-not-allowed"
@@ -8333,25 +8340,25 @@ export default function App() {
                       </div>
 
                       {/* aktivitas terakhir — tabel compact */}
-                      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 sticky top-0">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Aktivitas Terakhir</span>
+                      <div className="min-h-[190px] flex-1 overflow-y-auto custom-scrollbar md:min-h-0">
+                        <div className="px-3 py-2.5 border-b border-slate-100 bg-slate-50 sticky top-0 sm:px-4">
+                          <span className="text-xs font-bold text-slate-600">Aktivitas terakhir</span>
                         </div>
                         {(() => {
                           const acts = adjustments.filter((a) => a.branchId === profile.branchId).slice(0, 20);
                           if (acts.length === 0) return (
-                            <div className="py-8 flex flex-col items-center opacity-20">
+                            <div className="py-8 flex flex-col items-center text-slate-500">
                               <Activity className="w-6 h-6 mb-1" />
-                              <p className="text-[9px] font-black uppercase tracking-widest">Belum ada riwayat</p>
+                              <p className="text-xs font-semibold">Belum ada riwayat</p>
                             </div>
                           );
                           return (
-                            <table className="w-full text-left border-collapse">
+                            <table className="mobile-cards w-full text-left border-collapse">
                               <thead>
                                 <tr className="border-b border-slate-100">
-                                  <th className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
-                                  <th className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest hidden sm:table-cell">Ket.</th>
-                                  <th className="px-3 py-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right w-12">Qty</th>
+                                  <th className="px-3 py-2 text-[11px] font-bold text-slate-600">Produk</th>
+                                  <th className="px-3 py-2 text-[11px] font-bold text-slate-600">Keterangan</th>
+                                  <th className="px-3 py-2 text-[11px] font-bold text-slate-600 text-right w-16">Qty</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -8361,18 +8368,18 @@ export default function App() {
                                   const prodName = products.find((p) => p.id === a.productId)?.name || "Produk";
                                   const timeStr = new Date(a.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
                                   return (
-                                    <tr key={idx} className={`border-b border-slate-50 ${idx % 2 === 0 ? "" : "bg-slate-50/60"}`}>
-                                      <td className="px-3 py-1.5">
-                                        <p className="text-[10px] font-bold text-slate-800 uppercase leading-tight truncate max-w-[110px]">{prodName}</p>
-                                        <p className="text-[9px] text-slate-400 font-mono">{timeStr}</p>
+                                    <tr key={idx} className={`border-b border-slate-100 ${idx % 2 === 0 ? "" : "bg-slate-50/60"}`}>
+                                      <td data-label="Produk" data-card-title className="px-3 py-2">
+                                        <p className="text-xs font-semibold text-slate-800 leading-4">{prodName}</p>
+                                        <p className="text-[11px] text-slate-500 font-mono">{timeStr}</p>
                                       </td>
-                                      <td className="px-3 py-1.5 hidden sm:table-cell">
-                                        <span className={`text-[9px] font-black uppercase tracking-wide ${isSale ? "text-blue-500" : isPos ? "text-emerald-500" : "text-rose-500"}`}>
+                                      <td data-label="Keterangan" className="px-3 py-2">
+                                        <span className={`text-xs font-semibold ${isSale ? "text-blue-700" : isPos ? "text-emerald-700" : "text-rose-700"}`}>
                                           {isSale ? "Terjual" : a.reason ? a.reason.slice(0, 14) : isPos ? "Masuk" : "Keluar"}
                                         </span>
                                       </td>
-                                      <td className="px-3 py-1.5 text-right">
-                                        <span className={`text-[11px] font-black tabular-nums ${isPos ? "text-emerald-600" : "text-rose-600"}`}>
+                                      <td data-label="Qty" className="px-3 py-2 text-right">
+                                        <span className={`text-sm font-bold tabular-nums ${isPos ? "text-emerald-700" : "text-rose-700"}`}>
                                           {isPos ? "+" : "−"}{a.qty}
                                         </span>
                                       </td>
