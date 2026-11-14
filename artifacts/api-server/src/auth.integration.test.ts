@@ -2390,6 +2390,39 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
     where: { scopeKeyHash: hashIdempotencyScope({ accountId: cashierA.id, branchId: branchAId, key: saleKey }) },
   });
   assert.ok(saleLedgerBeforeArchive);
+  const transferHistoryBeforeArchive = await prisma.stockTransfer.findMany({
+    where: { OR: [{ sourceBranchId: branchAId }, { targetBranchId: branchAId }] },
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
+      batchId: true,
+      productId: true,
+      sourceBranchId: true,
+      targetBranchId: true,
+      kind: true,
+      status: true,
+      dispatchedQty: true,
+      receivedQty: true,
+      returnOfId: true,
+    },
+  });
+  assert.ok(transferHistoryBeforeArchive.some((transfer) => transfer.status === "RECEIVED"));
+  assert.ok(transferHistoryBeforeArchive.some((transfer) => transfer.returnOfId !== null));
+  const transferAdjustmentsBeforeArchive = await prisma.adjustment.findMany({
+    where: {
+      branchId: { in: [branchAId, branchBId] },
+      type: { in: ["TRANSFER_IN", "TRANSFER_OUT", "TRANSFER_RETURN_IN"] },
+    },
+    orderBy: { id: "asc" },
+    select: { id: true, productId: true, branchId: true, qty: true, type: true, reason: true },
+  });
+  assert.ok(transferAdjustmentsBeforeArchive.some((adjustment) => adjustment.type === "TRANSFER_RETURN_IN"));
+  const bonusSummaryBeforeArchiveResponse = await fetch(
+    `${apiUrl}/api/incentives/summary?branchId=${branchAId}`,
+    { headers: { authorization: `Bearer ${adminPayload.token}` } },
+  );
+  assert.equal(bonusSummaryBeforeArchiveResponse.status, 200);
+  const bonusSummaryBeforeArchive = await bonusSummaryBeforeArchiveResponse.json();
   await autoArchiveOldSales(prisma);
   assert.equal(await prisma.sale.count({ where: { createdAt: { lt: new Date(Date.now() - 30 * 86400000) } } }), 0);
   assert.equal(await prisma.saleItem.count({ where: { saleId: createdSale.id } }), 0);
@@ -2433,6 +2466,38 @@ test("login, protected routes, branch isolation, and Socket.IO rooms stay secure
   assert.equal(archivedSummary?.totalProfit, createdSale.totalProfit);
   assert.equal(archivedSummary?.totalCommission, createdSale.totalCommission);
   assert.equal(archivedSummary?.salesCount, 501);
+  const transferHistoryAfterArchive = await prisma.stockTransfer.findMany({
+    where: { OR: [{ sourceBranchId: branchAId }, { targetBranchId: branchAId }] },
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
+      batchId: true,
+      productId: true,
+      sourceBranchId: true,
+      targetBranchId: true,
+      kind: true,
+      status: true,
+      dispatchedQty: true,
+      receivedQty: true,
+      returnOfId: true,
+    },
+  });
+  assert.deepEqual(transferHistoryAfterArchive, transferHistoryBeforeArchive);
+  const transferAdjustmentsAfterArchive = await prisma.adjustment.findMany({
+    where: {
+      branchId: { in: [branchAId, branchBId] },
+      type: { in: ["TRANSFER_IN", "TRANSFER_OUT", "TRANSFER_RETURN_IN"] },
+    },
+    orderBy: { id: "asc" },
+    select: { id: true, productId: true, branchId: true, qty: true, type: true, reason: true },
+  });
+  assert.deepEqual(transferAdjustmentsAfterArchive, transferAdjustmentsBeforeArchive);
+  const bonusSummaryAfterArchiveResponse = await fetch(
+    `${apiUrl}/api/incentives/summary?branchId=${branchAId}`,
+    { headers: { authorization: `Bearer ${adminPayload.token}` } },
+  );
+  assert.equal(bonusSummaryAfterArchiveResponse.status, 200);
+  assert.deepEqual(await bonusSummaryAfterArchiveResponse.json(), bonusSummaryBeforeArchive);
   assert.equal(await prisma.commission.count({
     where: { productId, branchId: branchAId, cashierId: cashierA.id },
   }), commissionsBeforeArchive);
