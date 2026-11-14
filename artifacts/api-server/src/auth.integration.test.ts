@@ -2812,3 +2812,257 @@ test("live branch audit remains correct across successful sales before, during, 
     where: { branchId: auditBranch.id, reason: { contains: audit.id } },
   }), 1, "The confirmed -1 count delta must be recorded once; concurrent sales must not add a duplicate adjustment.");
 });
+
+test("purchase plans publish branch receipts, lock confirmed branches, and credit only actual stock once", async () => {
+  const suffix = crypto.randomUUID();
+  const purchaseBranchA = `purchase-qa-a-${suffix}`;
+  const purchaseBranchB = `purchase-qa-b-${suffix}`;
+  const purchaseCashierA = `purchase-cashier-a-${suffix}`;
+  const purchaseCashierB = `purchase-cashier-b-${suffix}`;
+  const purchasePasswordA = `purchase-test-a-${suffix}`;
+  const purchasePasswordB = `purchase-test-b-${suffix}`;
+  const purchaseProductId = `purchase-product-${suffix}`;
+  let shoppingPlanId = "";
+
+  try {
+    await prisma.branch.createMany({
+      data: [
+        { id: purchaseBranchA, name: `Purchase QA A ${suffix}`, allowEmployeeInput: false },
+        { id: purchaseBranchB, name: `Purchase QA B ${suffix}`, allowEmployeeInput: false },
+      ],
+    });
+    await prisma.user.createMany({
+      data: [
+        {
+          id: purchaseCashierA,
+          username: purchaseCashierA,
+          password: await bcrypt.hash(purchasePasswordA, 4),
+          name: "Purchase QA Cashier A",
+          role: "CASHIER",
+          branchId: purchaseBranchA,
+          status: "Active",
+        },
+        {
+          id: purchaseCashierB,
+          username: purchaseCashierB,
+          password: await bcrypt.hash(purchasePasswordB, 4),
+          name: "Purchase QA Cashier B",
+          role: "CASHIER",
+          branchId: purchaseBranchB,
+          status: "Active",
+        },
+      ],
+    });
+    await prisma.product.create({
+      data: {
+        id: purchaseProductId,
+        name: `Purchase QA Product ${suffix}`,
+        buyingPrice: 1000,
+        sellingPrice: 1500,
+        commissionAmount: 0,
+      },
+    });
+    await prisma.productStock.createMany({
+      data: [
+        { productId: purchaseProductId, branchId: purchaseBranchA, qty: 2 },
+        { productId: purchaseProductId, branchId: purchaseBranchB, qty: 4 },
+      ],
+    });
+
+    const [adminLogin, cashierALogin, cashierBLogin] = await Promise.all([
+      login(admin.username, admin.password),
+      login(purchaseCashierA, purchasePasswordA),
+      login(purchaseCashierB, purchasePasswordB),
+    ]);
+    assert.equal(adminLogin.status, 200);
+    assert.equal(cashierALogin.status, 200);
+    assert.equal(cashierBLogin.status, 200);
+    const adminToken = (await adminLogin.json() as { token: string }).token;
+    const cashierAToken = (await cashierALogin.json() as { token: string }).token;
+    const cashierBToken = (await cashierBLogin.json() as { token: string }).token;
+    const adminHeaders = { authorization: `Bearer ${adminToken}`, "content-type": "application/json" };
+    const cashierAHeaders = { authorization: `Bearer ${cashierAToken}`, "content-type": "application/json" };
+    const cashierBHeaders = { authorization: `Bearer ${cashierBToken}`, "content-type": "application/json" };
+
+    const createResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA ${suffix}`,
+        status: "PUBLISHED",
+        items: [{
+          productId: purchaseProductId,
+          branchQtys: { [purchaseBranchA]: 3, [purchaseBranchB]: 5 },
+        }],
+      }),
+    });
+    assert.equal(createResponse.status, 201);
+    const createdPlan = await createResponse.json() as {
+      id: string;
+      status: string;
+      receipts: Array<{ id: string; branchId: string; status: string }>;
+    };
+    shoppingPlanId = createdPlan.id;
+    assert.equal(createdPlan.status, "PUBLISHED");
+    assert.equal(createdPlan.receipts.length, 2);
+    assert.ok(createdPlan.receipts.every((receipt) => receipt.status === "PENDING"));
+
+    const [receiptsAResponse, receiptsBResponse, cashierPlanListResponse] = await Promise.all([
+      fetch(`${apiUrl}/api/shopping-plans/receipts`, { headers: cashierAHeaders }),
+      fetch(`${apiUrl}/api/shopping-plans/receipts`, { headers: cashierBHeaders }),
+      fetch(`${apiUrl}/api/shopping-plans`, { headers: cashierAHeaders }),
+    ]);
+    assert.equal(receiptsAResponse.status, 200);
+    assert.equal(receiptsBResponse.status, 200);
+    assert.equal(cashierPlanListResponse.status, 403, "Cashiers cannot read the Owner's cross-branch plan list.");
+    const receiptsA = await receiptsAResponse.json() as Array<{ id: string; branchId: string; status: string }>;
+    const receiptsB = await receiptsBResponse.json() as Array<{ id: string; branchId: string; status: string }>;
+    assert.deepEqual(receiptsA.map((receipt) => receipt.branchId), [purchaseBranchA]);
+    assert.deepEqual(receiptsB.map((receipt) => receipt.branchId), [purchaseBranchB]);
+    const receiptA = receiptsA.find((receipt) => receipt.status === "PENDING")!;
+    const receiptB = receiptsB.find((receipt) => receipt.status === "PENDING")!;
+
+    const crossBranchConfirm = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${receiptB.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierAHeaders,
+        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 5 }] }),
+      },
+    );
+    assert.equal(crossBranchConfirm.status, 403, "A cashier cannot confirm another branch's receipt.");
+
+    const blockedDeactivation = await fetch(
+      `${apiUrl}/api/products/${purchaseProductId}/deactivate`,
+      { method: "POST", headers: adminHeaders },
+    );
+    assert.equal(blockedDeactivation.status, 409, "A product with a pending purchase receipt cannot be deactivated.");
+
+    const confirmAResponse = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${receiptA.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierAHeaders,
+        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 1 }] }),
+      },
+    );
+    assert.equal(confirmAResponse.status, 200);
+    const stockAfterA = await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchA } },
+    });
+    assert.equal(stockAfterA.qty, 3, "Only the one piece actually received is added to stock.");
+
+    const repeatedConfirmA = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${receiptA.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierAHeaders,
+        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 1 }] }),
+      },
+    );
+    assert.equal(repeatedConfirmA.status, 409);
+    assert.equal((await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchA } },
+    })).qty, 3, "Repeating a confirmation cannot add stock twice.");
+
+    const changeConfirmedBranch = await fetch(`${apiUrl}/api/shopping-plans/${shoppingPlanId}`, {
+      method: "PATCH",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA ${suffix}`,
+        items: [{
+          productId: purchaseProductId,
+          branchQtys: { [purchaseBranchA]: 4, [purchaseBranchB]: 2 },
+        }],
+      }),
+    });
+    assert.equal(changeConfirmedBranch.status, 409, "The Owner cannot revise quantities for a confirmed branch.");
+
+    const revisePendingBranch = await fetch(`${apiUrl}/api/shopping-plans/${shoppingPlanId}`, {
+      method: "PATCH",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA ${suffix}`,
+        items: [{
+          productId: purchaseProductId,
+          branchQtys: { [purchaseBranchA]: 3, [purchaseBranchB]: 2 },
+        }],
+      }),
+    });
+    assert.equal(revisePendingBranch.status, 200);
+    const revisionResponse = await fetch(`${apiUrl}/api/shopping-plans/${shoppingPlanId}/revisions`, {
+      headers: adminHeaders,
+    });
+    assert.equal(revisionResponse.status, 200);
+    const revisions = await revisionResponse.json() as Array<{ revisionNumber: number }>;
+    assert.deepEqual(revisions.map((revision) => revision.revisionNumber), [2, 1]);
+
+    const revisedReceiptsResponse = await fetch(`${apiUrl}/api/shopping-plans/receipts`, {
+      headers: cashierBHeaders,
+    });
+    const revisedReceipts = await revisedReceiptsResponse.json() as Array<{
+      id: string;
+      branchId: string;
+      status: string;
+      revision?: { revisionNumber: number };
+      items: Array<{ plannedQty: number }>;
+    }>;
+    const revisedReceiptB = revisedReceipts.find((receipt) => receipt.status === "PENDING")!;
+    assert.equal(revisedReceiptB.revision?.revisionNumber, 2);
+    assert.equal(revisedReceiptB.items[0].plannedQty, 2);
+
+    const zeroWithoutMissingMark = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${revisedReceiptB.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierBHeaders,
+        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 0, notAvailable: false }] }),
+      },
+    );
+    assert.equal(zeroWithoutMissingMark.status, 400, "Zero actual stock must be explicitly marked as not available.");
+
+    const confirmBResponse = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${revisedReceiptB.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierBHeaders,
+        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 0, notAvailable: true }] }),
+      },
+    );
+    assert.equal(confirmBResponse.status, 200);
+    assert.equal((await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchB } },
+    })).qty, 4, "Marking a product unavailable does not add any stock.");
+
+    const completedPlan = await prisma.shoppingPlan.findUniqueOrThrow({
+      where: { id: shoppingPlanId },
+      include: {
+        receipts: { where: { status: { not: "SUPERSEDED" } }, orderBy: { createdAt: "desc" } },
+      },
+    });
+    assert.equal(completedPlan.status, "COMPLETED");
+    assert.equal(completedPlan.receipts.length, 2);
+    assert.equal(
+      await prisma.adjustment.count({
+        where: { productId: purchaseProductId, branchId: purchaseBranchA, type: "STOCK_IN" },
+      }),
+      1,
+      "One actual receipt produces one stock-in adjustment.",
+    );
+  } finally {
+    if (shoppingPlanId) {
+      await prisma.shoppingPlanReceipt.deleteMany({ where: { shoppingPlanId } });
+      await prisma.shoppingPlanRevision.deleteMany({ where: { shoppingPlanId } });
+      await prisma.shoppingPlan.delete({ where: { id: shoppingPlanId } }).catch(() => undefined);
+    }
+    await prisma.adjustment.deleteMany({
+      where: { productId: purchaseProductId, branchId: { in: [purchaseBranchA, purchaseBranchB] } },
+    });
+    await prisma.productStock.deleteMany({
+      where: { productId: purchaseProductId, branchId: { in: [purchaseBranchA, purchaseBranchB] } },
+    });
+    await prisma.product.delete({ where: { id: purchaseProductId } }).catch(() => undefined);
+    await prisma.user.deleteMany({ where: { id: { in: [purchaseCashierA, purchaseCashierB] } } });
+    await prisma.branch.deleteMany({ where: { id: { in: [purchaseBranchA, purchaseBranchB] } } });
+  }
+});

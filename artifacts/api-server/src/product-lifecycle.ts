@@ -126,6 +126,20 @@ export function registerProductLifecycleRoutes(
           };
         }
 
+        const pendingReceiptRows = await tx.$queryRaw<Array<{ count: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS count
+          FROM "ShoppingPlanReceipt"
+          WHERE "status" = 'PENDING'
+            AND "items" @> ${JSON.stringify([{ productId }])}::jsonb
+        `);
+        if (pendingReceiptRows[0]?.count > 0n) {
+          return {
+            kind: "conflict",
+            error: "Produk masih tercantum pada penerimaan belanja yang belum dikonfirmasi.",
+            stocks: [],
+          };
+        }
+
         const stocks = await tx.$queryRaw<BranchStockRow[]>(Prisma.sql`
           SELECT ps."branchId", b."name" AS "branchName", ps."qty"
           FROM "ProductStock" ps

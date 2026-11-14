@@ -18,6 +18,7 @@ const STOCK_TRANSFER_SKU_CORRECTION_MIGRATION = "20261112100000_add_transfer_sku
 const STOCK_TRANSFER_BATCH_MIGRATION = "20261112110000_add_stock_transfer_batch_id";
 const STOCK_TRANSFER_RETURN_MIGRATION = "20261112120000_add_stock_transfer_return_reference";
 const PRODUCT_SALES_SUMMARY_MIGRATION = "20261114100000_add_product_sales_summary";
+const SHOPPING_PLAN_RECEIPTS_MIGRATION = "20261114130000_add_shopping_plan_receipts";
 const LEGACY14_MIGRATION = "20261106105000_upgrade_legacy14_sale_idempotency";
 const VERIFIED_LEGACY_BASELINE_MIGRATION = "20261106104000_baseline_verified_legacy_schema";
 const REPLIT_DEV_PRE_RETURN_BASELINE_MIGRATIONS = [
@@ -74,6 +75,13 @@ const PRODUCT_SALES_SUMMARY_INDEXES = [
   { table: "ProductSalesSummaryEvent", columns: ["processedAt", "createdAt", "id"] },
   { table: "ProductSalesSummaryEvent", columns: ["saleDate", "createdAt", "id"] },
 ];
+const SHOPPING_PLAN_RECEIPT_INDEXES = [
+  { table: "ShoppingPlanRevision", columns: ["shoppingPlanId", "revisionNumber"], isUnique: true },
+  { table: "ShoppingPlanRevision", columns: ["shoppingPlanId", "createdAt"] },
+  { table: "ShoppingPlanReceipt", columns: ["revisionId", "branchId"], isUnique: true },
+  { table: "ShoppingPlanReceipt", columns: ["branchId", "status", "createdAt"] },
+  { table: "ShoppingPlanReceipt", columns: ["shoppingPlanId", "branchId", "createdAt"] },
+];
 const LEGACY14_INDEXES = LEGACY_INDEXES.filter(
   (index) => !(index.table === "Sale" && index.columns.join(",") === "createdAt,id")
     && index.table !== "SaleIdempotency",
@@ -90,7 +98,9 @@ const LEGACY14_MODELS = Prisma.dmmf.datamodel.models
     : model);
 const LEGACY_MODELS = Prisma.dmmf.datamodel.models
   .filter((model) => LEGACY_MODEL_NAMES.has(model.name));
-const PRE_PRODUCT_SALES_SUMMARY_MODELS = Prisma.dmmf.datamodel.models
+const PRE_SHOPPING_PLAN_RECEIPT_MODELS = Prisma.dmmf.datamodel.models
+  .filter((model) => model.name !== "ShoppingPlanRevision" && model.name !== "ShoppingPlanReceipt");
+const PRE_PRODUCT_SALES_SUMMARY_MODELS = PRE_SHOPPING_PLAN_RECEIPT_MODELS
   .filter((model) => model.name !== "DailyProductSalesSummary" && model.name !== "ProductSalesSummaryEvent");
 const PRE_TRANSFER_MODELS = PRE_PRODUCT_SALES_SUMMARY_MODELS
   .filter((model) => model.name !== "StockTransfer" && model.name !== "StockTransferSkuCorrection");
@@ -302,7 +312,7 @@ async function main() {
       VERIFIED_LEGACY_BASELINE_MIGRATION, LEGACY14_MIGRATION, BASELINE_MIGRATION,
       AUDIT_MIGRATION, STOCK_TRANSFER_MIGRATION, STOCK_TRANSFER_SKU_CORRECTION_MIGRATION,
       STOCK_TRANSFER_BATCH_MIGRATION, STOCK_TRANSFER_RETURN_MIGRATION,
-      PRODUCT_SALES_SUMMARY_MIGRATION,
+      PRODUCT_SALES_SUMMARY_MIGRATION, SHOPPING_PLAN_RECEIPTS_MIGRATION,
     ]);
     const unknownMigrations = migrationRows.filter(
       (row) => !knownMigrationNames.has(row.migration_name),
@@ -335,6 +345,9 @@ async function main() {
     const productSalesSummaryMigration = migrationRows.find(
       (row) => row.migration_name === PRODUCT_SALES_SUMMARY_MIGRATION,
     );
+    const shoppingPlanReceiptsMigration = migrationRows.find(
+      (row) => row.migration_name === SHOPPING_PLAN_RECEIPTS_MIGRATION,
+    );
 
     if (LEGACY14_MODELS.length !== LEGACY14_MODEL_NAMES.size
         || LEGACY_MODELS.length !== LEGACY_MODEL_NAMES.size) {
@@ -351,15 +364,16 @@ async function main() {
       targetState[0].hasTransferBatchColumn && !targetState[0].hasTransferReturnColumn;
     const isCurrent19 = hasCurrentTransferTables &&
       targetState[0].hasTransferBatchColumn && targetState[0].hasTransferReturnColumn;
-    const isCurrent21 = hasExactTableSet(snapshot, ALL_MODELS);
+    const isCurrent21 = hasExactTableSet(snapshot, PRE_SHOPPING_PLAN_RECEIPT_MODELS);
+    const isCurrent23 = hasExactTableSet(snapshot, ALL_MODELS);
     const isReplitDevelopmentPreReturnBaseline =
       isReplitDevelopmentQaTarget(target, process.env) &&
       isPreReturn19 &&
       !targetState[0].hasMigrationTable &&
       migrationRows.length === 0;
-    if ([isLegacy14, isLegacy15, isCurrent17, isCurrent18, isPreBatch19, isPreReturn19, isCurrent19, isCurrent21]
+    if ([isLegacy14, isLegacy15, isCurrent17, isCurrent18, isPreBatch19, isPreReturn19, isCurrent19, isCurrent21, isCurrent23]
       .filter(Boolean).length !== 1) {
-      throw new Error("Database schema does not match a supported 14-, 15-, 17-, 18-, 19- or 21-table version.");
+      throw new Error("Database schema does not match a supported 14-, 15-, 17-, 18-, 19-, 21- or 23-table version.");
     }
 
     if (isLegacy14) {
@@ -369,7 +383,8 @@ async function main() {
         || (migrationRows.length === 1
           && verifiedLegacyBaseline?.finished_at && !verifiedLegacyBaseline.rolled_back_at);
         if (!valid14History || baseline || additive || legacy14Migration || transferMigration ||
-            skuCorrectionMigration || transferBatchMigration || transferReturnMigration || productSalesSummaryMigration) {
+            skuCorrectionMigration || transferBatchMigration || transferReturnMigration || productSalesSummaryMigration ||
+            shoppingPlanReceiptsMigration) {
         throw new Error("A 14-table database with existing Prisma migration history requires manual inspection.");
       }
       if (targetState[0].hasAuditTable || targetState[0].hasAuditItemTable) {
@@ -382,7 +397,7 @@ async function main() {
       assertExactModelTablesAndColumns(snapshot, LEGACY_MODELS);
       assertCompatibleSchema(snapshot, target, LEGACY_MODELS, LEGACY_INDEXES);
         if (additive || transferMigration || skuCorrectionMigration || transferBatchMigration ||
-            transferReturnMigration || productSalesSummaryMigration) {
+            transferReturnMigration || productSalesSummaryMigration || shoppingPlanReceiptsMigration) {
         throw new Error("Additive schema migration history exists but its tables are absent; refusing to continue.");
       }
       if (!baseline) {
@@ -398,7 +413,7 @@ async function main() {
       assertExactModelTablesAndColumns(snapshot, PRE_TRANSFER_MODELS);
       assertCompatibleSchema(snapshot, target, PRE_TRANSFER_MODELS, [...LEGACY_INDEXES, ...AUDIT_INDEXES]);
       if (!baseline || !additive || transferMigration || skuCorrectionMigration || transferBatchMigration ||
-          transferReturnMigration || productSalesSummaryMigration) {
+          transferReturnMigration || productSalesSummaryMigration || shoppingPlanReceiptsMigration) {
         throw new Error("The 17-table schema has unexpected or incomplete migration history.");
       }
     } else if (isCurrent18) {
@@ -410,7 +425,7 @@ async function main() {
         [...LEGACY_INDEXES, ...AUDIT_INDEXES, ...STOCK_TRANSFER_INDEXES],
       );
       if (!baseline || !additive || !transferMigration || skuCorrectionMigration || transferBatchMigration ||
-          transferReturnMigration || productSalesSummaryMigration) {
+          transferReturnMigration || productSalesSummaryMigration || shoppingPlanReceiptsMigration) {
         throw new Error("The 18-table schema has unexpected or incomplete migration history.");
       }
     } else if (isPreBatch19) {
@@ -422,7 +437,7 @@ async function main() {
         [...LEGACY_INDEXES, ...AUDIT_INDEXES, ...STOCK_TRANSFER_INDEXES, ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES],
       );
       if (!baseline || !additive || !transferMigration || !skuCorrectionMigration || transferBatchMigration ||
-          transferReturnMigration || productSalesSummaryMigration) {
+          transferReturnMigration || productSalesSummaryMigration || shoppingPlanReceiptsMigration) {
         throw new Error("The pre-batch 19-table schema has unexpected or incomplete migration history.");
       }
     } else if (isPreReturn19) {
@@ -442,7 +457,8 @@ async function main() {
       if (isReplitDevelopmentPreReturnBaseline) {
         await assertReplitDevelopmentQaTransferGuards(client);
       } else if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
-                 !transferBatchMigration || transferReturnMigration || productSalesSummaryMigration) {
+                 !transferBatchMigration || transferReturnMigration || productSalesSummaryMigration ||
+                 shoppingPlanReceiptsMigration) {
         throw new Error("The pre-return 19-table schema has unexpected or incomplete migration history.");
       }
     } else if (isCurrent19) {
@@ -461,8 +477,30 @@ async function main() {
         ],
       );
       if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
-          !transferBatchMigration || !transferReturnMigration || productSalesSummaryMigration) {
+          !transferBatchMigration || !transferReturnMigration || productSalesSummaryMigration ||
+          shoppingPlanReceiptsMigration) {
         throw new Error("The return-enabled 19-table schema has unexpected or incomplete migration history.");
+      }
+    } else if (isCurrent21) {
+      assertExactModelTablesAndColumns(snapshot, PRE_SHOPPING_PLAN_RECEIPT_MODELS);
+      assertCompatibleSchema(
+        snapshot,
+        target,
+        PRE_SHOPPING_PLAN_RECEIPT_MODELS,
+        [
+          ...LEGACY_INDEXES,
+          ...AUDIT_INDEXES,
+          ...STOCK_TRANSFER_INDEXES,
+          ...STOCK_TRANSFER_SKU_CORRECTION_INDEXES,
+          ...STOCK_TRANSFER_BATCH_INDEXES,
+          ...STOCK_TRANSFER_RETURN_INDEXES,
+          ...PRODUCT_SALES_SUMMARY_INDEXES,
+        ],
+      );
+      if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
+          !transferBatchMigration || !transferReturnMigration || !productSalesSummaryMigration ||
+          shoppingPlanReceiptsMigration) {
+        throw new Error("The 21-table product-sales-summary schema has unexpected or incomplete migration history.");
       }
     } else {
       assertExactModelTablesAndColumns(snapshot, ALL_MODELS);
@@ -478,11 +516,13 @@ async function main() {
           ...STOCK_TRANSFER_BATCH_INDEXES,
           ...STOCK_TRANSFER_RETURN_INDEXES,
           ...PRODUCT_SALES_SUMMARY_INDEXES,
+          ...SHOPPING_PLAN_RECEIPT_INDEXES,
         ],
       );
       if (!baseline || !additive || !transferMigration || !skuCorrectionMigration ||
-          !transferBatchMigration || !transferReturnMigration || !productSalesSummaryMigration) {
-        throw new Error("The product-sales-summary schema exists without completed approved migration records.");
+          !transferBatchMigration || !transferReturnMigration || !productSalesSummaryMigration ||
+          !shoppingPlanReceiptsMigration) {
+        throw new Error("The shopping-plan receipt schema exists without completed approved migration records.");
       }
     }
 
@@ -503,7 +543,9 @@ async function main() {
               ? "supported 19-table schema; physical-return upgrade is available"
               : isCurrent19
                 ? "supported 19-table schema; product-sales-summary upgrade is available"
-                : "current 21-table product-sales-summary schema";
+                : isCurrent21
+                  ? "supported 21-table schema; shopping-plan receipt upgrade is available"
+                  : "current 23-table shopping-plan receipt schema";
       console.log(
         `Read-only schema preflight passed for ${target.database}: ${schemaVersion}. No changes performed.`,
       );
@@ -595,6 +637,7 @@ async function main() {
         ...STOCK_TRANSFER_BATCH_INDEXES,
         ...STOCK_TRANSFER_RETURN_INDEXES,
         ...PRODUCT_SALES_SUMMARY_INDEXES,
+        ...SHOPPING_PLAN_RECEIPT_INDEXES,
       ],
     );
     console.log("Schema migration and read-only compatibility check completed.");

@@ -561,6 +561,189 @@ paths:
           description: Audit session or product not found.
         "409":
           description: Audit closed, product is not visible in the branch, stock is not zero, or the item cannot be safely excluded.
+  /shopping-plans:
+    get:
+      operationId: getShoppingPlans
+      summary: List purchase plans and branch receipts for Admin
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Purchase plans with revisions and receipt summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShoppingPlan"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+    post:
+      operationId: createShoppingPlan
+      summary: Publish a purchase plan to selected branches
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingPlanInput"
+      responses:
+        "201":
+          description: Purchase plan created and branch receipts published.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingPlan"
+        "400":
+          description: Invalid plan, product, branch, or quantity.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+  /shopping-plans/{id}:
+    patch:
+      operationId: reviseShoppingPlan
+      summary: Create a revision for unconfirmed branch receipts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingPlanRevisionInput"
+      responses:
+        "200":
+          description: Revised plan; confirmed branches remain locked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingPlan"
+        "400":
+          description: Invalid plan, product, branch, or quantity.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+        "404":
+          description: Purchase plan not found.
+        "409":
+          description: Plan completed or a confirmed branch would be changed.
+    delete:
+      operationId: deleteShoppingPlan
+      summary: Delete an unpublished draft only
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Draft deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingPlanDeleteResult"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+        "404":
+          description: Purchase plan not found.
+        "409":
+          description: Published purchase plans and their history cannot be deleted.
+  /shopping-plans/{id}/revisions:
+    get:
+      operationId: getShoppingPlanRevisions
+      summary: List revisions for one purchase plan
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Revision history for the purchase plan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShoppingPlanRevision"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
+  /shopping-plans/receipts:
+    get:
+      operationId: getCashierShoppingPlanReceipts
+      summary: List purchase receipts for the signed-in cashier branch
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Only the signed-in cashier's branch receipts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShoppingPlanReceipt"
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Cashier branch access required.
+  /shopping-plans/receipts/{receiptId}/confirm:
+    post:
+      operationId: confirmShoppingPlanReceipt
+      summary: Confirm actual quantities for one branch receipt
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: receiptId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingPlanReceiptConfirmationInput"
+      responses:
+        "200":
+          description: Receipt confirmed and actual stock added once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingPlanReceipt"
+        "400":
+          description: Every planned product must be checked with a valid actual quantity.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Receipt belongs to another branch.
+        "404":
+          description: Receipt not found.
+        "409":
+          description: Receipt was already confirmed or superseded.
 components:
   securitySchemes:
     bearerAuth:
@@ -1009,4 +1192,204 @@ components:
           type: boolean
         item:
           $ref: "#/components/schemas/StockAuditItem"
+    ShoppingPlanInput:
+      type: object
+      required: [title, items]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED]
+          default: PUBLISHED
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlanItemInput"
+    ShoppingPlanRevisionInput:
+      type: object
+      required: [title, items]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlanItemInput"
+    ShoppingPlanItemInput:
+      type: object
+      required: [productId, branchQtys]
+      properties:
+        productId:
+          type: string
+        branchQtys:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+    ShoppingPlanItem:
+      type: object
+      required: [productId, productNameSnapshot, productBarcodeSnapshot, branchQtys]
+      properties:
+        productId:
+          type: string
+        productNameSnapshot:
+          type: string
+        productBarcodeSnapshot:
+          type: ["string", "null"]
+        branchQtys:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 1
+    ShoppingPlanRevision:
+      type: object
+      required: [id, revisionNumber, title, items, createdAt]
+      properties:
+        id:
+          type: string
+        revisionNumber:
+          type: integer
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlanItem"
+        creatorId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    ShoppingPlanRevisionSummary:
+      type: object
+      required: [id, revisionNumber, title, createdAt]
+      properties:
+        id:
+          type: string
+        revisionNumber:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ShoppingPlanReceiptItem:
+      type: object
+      required: [productId, productNameSnapshot, productBarcodeSnapshot, plannedQty, actualQty, notAvailable]
+      properties:
+        productId:
+          type: string
+        productNameSnapshot:
+          type: string
+        productBarcodeSnapshot:
+          type: ["string", "null"]
+        plannedQty:
+          type: integer
+          minimum: 1
+        actualQty:
+          type: ["integer", "null"]
+          minimum: 0
+        notAvailable:
+          type: boolean
+    ShoppingPlanReceipt:
+      type: object
+      required: [id, shoppingPlanId, revisionId, branchId, branchNameSnapshot, status, items, createdAt]
+      properties:
+        id:
+          type: string
+        shoppingPlanId:
+          type: string
+        revisionId:
+          type: string
+        branchId:
+          type: string
+        branchNameSnapshot:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, SUPERSEDED, NO_ITEMS]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlanReceiptItem"
+        receivedByNameSnapshot:
+          type: ["string", "null"]
+        confirmedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        revision:
+          type: object
+          properties:
+            revisionNumber:
+              type: integer
+        shoppingPlan:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            status:
+              type: string
+              enum: [DRAFT, PUBLISHED, COMPLETED]
+    ShoppingPlan:
+      type: object
+      required: [id, title, items, status, createdAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, COMPLETED]
+        creatorId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        revisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlanRevisionSummary"
+        receipts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlanReceipt"
+    ShoppingPlanReceiptConfirmationInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [productId, actualQty]
+            properties:
+              productId:
+                type: string
+              actualQty:
+                type: integer
+                minimum: 0
+              notAvailable:
+                type: boolean
+    ShoppingPlanDeleteResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
 

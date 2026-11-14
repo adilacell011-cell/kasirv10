@@ -415,4 +415,43 @@ model ShoppingPlan {
   status    String   @default("DRAFT")
   creatorId String?
   createdAt DateTime @default(now())
+
+  revisions ShoppingPlanRevision[]
+  receipts  ShoppingPlanReceipt[]
+}
+
+model ShoppingPlanRevision {
+  id               String   @id @default(uuid())
+  shoppingPlanId   String
+  shoppingPlan     ShoppingPlan @relation(fields: [shoppingPlanId], references: [id], onDelete: Restrict)
+  revisionNumber   Int
+  title            String?
+  items            Json
+  creatorId        String?
+  createdAt        DateTime @default(now())
+  receipts         ShoppingPlanReceipt[]
+
+  @@unique([shoppingPlanId, revisionNumber])
+  @@index([shoppingPlanId, createdAt])
+}
+
+model ShoppingPlanReceipt {
+  id                    String   @id @default(uuid())
+  shoppingPlanId        String
+  shoppingPlan          ShoppingPlan         @relation(fields: [shoppingPlanId], references: [id], onDelete: Restrict)
+  revisionId            String
+  revision              ShoppingPlanRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  branchId              String
+  branchNameSnapshot    String
+  status                String   @default("PENDING") // PENDING, CONFIRMED, SUPERSEDED, NO_ITEMS
+  items                 Json
+  receivedById          String?
+  receivedByNameSnapshot String?
+  confirmedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([revisionId, branchId])
+  @@index([branchId, status, createdAt])
+  @@index([shoppingPlanId, branchId, createdAt])
 }

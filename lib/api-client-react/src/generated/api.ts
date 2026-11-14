@@ -37,6 +37,13 @@ import type {
   ProductDeactivationBlocked,
   ProductLifecycleMutation,
   SearchStockAuditCandidatesParams,
+  ShoppingPlan,
+  ShoppingPlanDeleteResult,
+  ShoppingPlanInput,
+  ShoppingPlanReceipt,
+  ShoppingPlanReceiptConfirmationInput,
+  ShoppingPlanRevision,
+  ShoppingPlanRevisionInput,
   StockAuditCandidatePage,
   StockAuditCountInput,
   StockAuditCountStart,
@@ -1865,5 +1872,648 @@ export const useRevokeStockAuditProductVisibility = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRevokeStockAuditProductVisibilityMutationOptions(options), queryClient);
+    }
+
+export const getGetShoppingPlansUrl = () => {
+
+
+
+
+  return `/api/shopping-plans`
+}
+
+/**
+ * @summary List purchase plans and branch receipts for Admin
+ */
+export const getShoppingPlans = async ( options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlan[]> => {
+
+  return customFetch<ShoppingPlan[]>(getGetShoppingPlansUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShoppingPlansQueryKey = () => {
+    return [
+    `/api/shopping-plans`
+    ] as const;
+    }
+
+
+export const getGetShoppingPlansQueryOptions = <TData = Awaited<ReturnType<typeof getShoppingPlans>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlans>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShoppingPlansQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShoppingPlans>>> = ({ signal }) => getShoppingPlans({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlans>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetShoppingPlansQueryResult = NonNullable<Awaited<ReturnType<typeof getShoppingPlans>>>
+export type GetShoppingPlansQueryError = ErrorType<void>
+
+
+export function useGetShoppingPlans<TData = Awaited<ReturnType<typeof getShoppingPlans>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlans>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShoppingPlans>>,
+          TError,
+          Awaited<ReturnType<typeof getShoppingPlans>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetShoppingPlans<TData = Awaited<ReturnType<typeof getShoppingPlans>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlans>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShoppingPlans>>,
+          TError,
+          Awaited<ReturnType<typeof getShoppingPlans>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetShoppingPlans<TData = Awaited<ReturnType<typeof getShoppingPlans>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlans>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List purchase plans and branch receipts for Admin
+ */
+
+export function useGetShoppingPlans<TData = Awaited<ReturnType<typeof getShoppingPlans>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlans>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetShoppingPlansQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateShoppingPlanUrl = () => {
+
+
+
+
+  return `/api/shopping-plans`
+}
+
+/**
+ * @summary Publish a purchase plan to selected branches
+ */
+export const createShoppingPlan = async (shoppingPlanInput: ShoppingPlanInput, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlan> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ShoppingPlan>(getCreateShoppingPlanUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(shoppingPlanInput)
+  }
+);}
+
+
+
+
+
+export const getCreateShoppingPlanMutationKey = () => ['createShoppingPlan'] as const;
+
+export const getCreateShoppingPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShoppingPlan>>, TError,CreateShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createShoppingPlan>>, TError,CreateShoppingPlanMutationVariables, TContext> => {
+
+const mutationKey = getCreateShoppingPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createShoppingPlan>>, CreateShoppingPlanMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createShoppingPlan(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateShoppingPlanMutationResult = NonNullable<Awaited<ReturnType<typeof createShoppingPlan>>>
+    export type CreateShoppingPlanMutationBody = BodyType<ShoppingPlanInput>
+    export type CreateShoppingPlanMutationError = ErrorType<void>
+    export type CreateShoppingPlanMutationVariables = {data: BodyType<ShoppingPlanInput>}
+
+    /**
+ * @summary Publish a purchase plan to selected branches
+ */
+export const useCreateShoppingPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShoppingPlan>>, TError,CreateShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createShoppingPlan>>,
+        TError,
+        CreateShoppingPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateShoppingPlanMutationOptions(options), queryClient);
+    }
+
+export const getReviseShoppingPlanUrl = (id: string,) => {
+
+
+
+
+  return `/api/shopping-plans/${id}`
+}
+
+/**
+ * @summary Create a revision for unconfirmed branch receipts
+ */
+export const reviseShoppingPlan = async (id: string,
+    shoppingPlanRevisionInput: ShoppingPlanRevisionInput, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlan> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ShoppingPlan>(getReviseShoppingPlanUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(shoppingPlanRevisionInput)
+  }
+);}
+
+
+
+
+
+export const getReviseShoppingPlanMutationKey = () => ['reviseShoppingPlan'] as const;
+
+export const getReviseShoppingPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviseShoppingPlan>>, TError,ReviseShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviseShoppingPlan>>, TError,ReviseShoppingPlanMutationVariables, TContext> => {
+
+const mutationKey = getReviseShoppingPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviseShoppingPlan>>, ReviseShoppingPlanMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviseShoppingPlan(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviseShoppingPlanMutationResult = NonNullable<Awaited<ReturnType<typeof reviseShoppingPlan>>>
+    export type ReviseShoppingPlanMutationBody = BodyType<ShoppingPlanRevisionInput>
+    export type ReviseShoppingPlanMutationError = ErrorType<void>
+    export type ReviseShoppingPlanMutationVariables = {id: string;data: BodyType<ShoppingPlanRevisionInput>}
+
+    /**
+ * @summary Create a revision for unconfirmed branch receipts
+ */
+export const useReviseShoppingPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviseShoppingPlan>>, TError,ReviseShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reviseShoppingPlan>>,
+        TError,
+        ReviseShoppingPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviseShoppingPlanMutationOptions(options), queryClient);
+    }
+
+export const getDeleteShoppingPlanUrl = (id: string,) => {
+
+
+
+
+  return `/api/shopping-plans/${id}`
+}
+
+/**
+ * @summary Delete an unpublished draft only
+ */
+export const deleteShoppingPlan = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlanDeleteResult> => {
+
+  return customFetch<ShoppingPlanDeleteResult>(getDeleteShoppingPlanUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteShoppingPlanMutationKey = () => ['deleteShoppingPlan'] as const;
+
+export const getDeleteShoppingPlanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShoppingPlan>>, TError,DeleteShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteShoppingPlan>>, TError,DeleteShoppingPlanMutationVariables, TContext> => {
+
+const mutationKey = getDeleteShoppingPlanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteShoppingPlan>>, DeleteShoppingPlanMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteShoppingPlan(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteShoppingPlanMutationResult = NonNullable<Awaited<ReturnType<typeof deleteShoppingPlan>>>
+
+    export type DeleteShoppingPlanMutationError = ErrorType<void>
+    export type DeleteShoppingPlanMutationVariables = {id: string}
+
+    /**
+ * @summary Delete an unpublished draft only
+ */
+export const useDeleteShoppingPlan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShoppingPlan>>, TError,DeleteShoppingPlanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteShoppingPlan>>,
+        TError,
+        DeleteShoppingPlanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteShoppingPlanMutationOptions(options), queryClient);
+    }
+
+export const getGetShoppingPlanRevisionsUrl = (id: string,) => {
+
+
+
+
+  return `/api/shopping-plans/${id}/revisions`
+}
+
+/**
+ * @summary List revisions for one purchase plan
+ */
+export const getShoppingPlanRevisions = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlanRevision[]> => {
+
+  return customFetch<ShoppingPlanRevision[]>(getGetShoppingPlanRevisionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShoppingPlanRevisionsQueryKey = (id: string,) => {
+    return [
+    `/api/shopping-plans/${id}/revisions`
+    ] as const;
+    }
+
+
+export const getGetShoppingPlanRevisionsQueryOptions = <TData = Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShoppingPlanRevisionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShoppingPlanRevisions>>> = ({ signal }) => getShoppingPlanRevisions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetShoppingPlanRevisionsQueryResult = NonNullable<Awaited<ReturnType<typeof getShoppingPlanRevisions>>>
+export type GetShoppingPlanRevisionsQueryError = ErrorType<void>
+
+
+export function useGetShoppingPlanRevisions<TData = Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShoppingPlanRevisions>>,
+          TError,
+          Awaited<ReturnType<typeof getShoppingPlanRevisions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetShoppingPlanRevisions<TData = Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShoppingPlanRevisions>>,
+          TError,
+          Awaited<ReturnType<typeof getShoppingPlanRevisions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetShoppingPlanRevisions<TData = Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List revisions for one purchase plan
+ */
+
+export function useGetShoppingPlanRevisions<TData = Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanRevisions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetShoppingPlanRevisionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCashierShoppingPlanReceiptsUrl = () => {
+
+
+
+
+  return `/api/shopping-plans/receipts`
+}
+
+/**
+ * @summary List purchase receipts for the signed-in cashier branch
+ */
+export const getCashierShoppingPlanReceipts = async ( options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlanReceipt[]> => {
+
+  return customFetch<ShoppingPlanReceipt[]>(getGetCashierShoppingPlanReceiptsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCashierShoppingPlanReceiptsQueryKey = () => {
+    return [
+    `/api/shopping-plans/receipts`
+    ] as const;
+    }
+
+
+export const getGetCashierShoppingPlanReceiptsQueryOptions = <TData = Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError = ErrorType<void>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCashierShoppingPlanReceiptsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>> = ({ signal }) => getCashierShoppingPlanReceipts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCashierShoppingPlanReceiptsQueryResult = NonNullable<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>>
+export type GetCashierShoppingPlanReceiptsQueryError = ErrorType<void>
+
+
+export function useGetCashierShoppingPlanReceipts<TData = Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError = ErrorType<void>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>,
+          TError,
+          Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCashierShoppingPlanReceipts<TData = Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>,
+          TError,
+          Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCashierShoppingPlanReceipts<TData = Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List purchase receipts for the signed-in cashier branch
+ */
+
+export function useGetCashierShoppingPlanReceipts<TData = Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError = ErrorType<void>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCashierShoppingPlanReceipts>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCashierShoppingPlanReceiptsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getConfirmShoppingPlanReceiptUrl = (receiptId: string,) => {
+
+
+
+
+  return `/api/shopping-plans/receipts/${receiptId}/confirm`
+}
+
+/**
+ * @summary Confirm actual quantities for one branch receipt
+ */
+export const confirmShoppingPlanReceipt = async (receiptId: string,
+    shoppingPlanReceiptConfirmationInput: ShoppingPlanReceiptConfirmationInput, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlanReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ShoppingPlanReceipt>(getConfirmShoppingPlanReceiptUrl(receiptId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(shoppingPlanReceiptConfirmationInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmShoppingPlanReceiptMutationKey = () => ['confirmShoppingPlanReceipt'] as const;
+
+export const getConfirmShoppingPlanReceiptMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmShoppingPlanReceipt>>, TError,ConfirmShoppingPlanReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmShoppingPlanReceipt>>, TError,ConfirmShoppingPlanReceiptMutationVariables, TContext> => {
+
+const mutationKey = getConfirmShoppingPlanReceiptMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmShoppingPlanReceipt>>, ConfirmShoppingPlanReceiptMutationVariables> = (props) => {
+          const {receiptId,data} = props ?? {};
+
+          return  confirmShoppingPlanReceipt(receiptId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmShoppingPlanReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof confirmShoppingPlanReceipt>>>
+    export type ConfirmShoppingPlanReceiptMutationBody = BodyType<ShoppingPlanReceiptConfirmationInput>
+    export type ConfirmShoppingPlanReceiptMutationError = ErrorType<void>
+    export type ConfirmShoppingPlanReceiptMutationVariables = {receiptId: string;data: BodyType<ShoppingPlanReceiptConfirmationInput>}
+
+    /**
+ * @summary Confirm actual quantities for one branch receipt
+ */
+export const useConfirmShoppingPlanReceipt = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmShoppingPlanReceipt>>, TError,ConfirmShoppingPlanReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof confirmShoppingPlanReceipt>>,
+        TError,
+        ConfirmShoppingPlanReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmShoppingPlanReceiptMutationOptions(options), queryClient);
     }
 

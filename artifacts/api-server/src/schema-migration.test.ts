@@ -377,7 +377,8 @@ test("stock-transfer migration is guarded, additive, and retains transfer histor
   assert.match(sql, /StockTransfer_productId_createdAt_idx/);
   assert.match(main, /STOCK_TRANSFER_MIGRATION/);
   assert.match(main, /STOCK_TRANSFER_SKU_CORRECTION_MIGRATION/);
-  assert.match(main, /const PRE_PRODUCT_SALES_SUMMARY_MODELS = Prisma\.dmmf\.datamodel\.models/);
+  assert.match(main, /const PRE_SHOPPING_PLAN_RECEIPT_MODELS = Prisma\.dmmf\.datamodel\.models/);
+  assert.match(main, /const PRE_PRODUCT_SALES_SUMMARY_MODELS = PRE_SHOPPING_PLAN_RECEIPT_MODELS/);
   assert.match(main, /const PRE_TRANSFER_MODELS = PRE_PRODUCT_SALES_SUMMARY_MODELS/);
   assert.match(main, /isCurrent17/);
   assert.match(main, /isCurrent18/);
@@ -470,6 +471,29 @@ test("product-sales-summary migration is guarded, additive, and follows the exac
   assert.match(main, /PRODUCT_SALES_SUMMARY_INDEXES/);
   assert.match(main, /isCurrent21/);
   assert.match(main, /product-sales-summary upgrade is available/);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
+});
+
+test("shopping-plan receipt migration is guarded and adds only the two receipt tables", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261114130000_add_shopping_plan_receipts/migration.sql", import.meta.url),
+    "utf8",
+  );
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
+  assert.match(sql, /current_database\(\)\s*<>\s*'heliumdb'/);
+  assert.match(sql, /exact approved 21-table schema/i);
+  assert.match(sql, /CREATE TABLE "public"\."ShoppingPlanRevision"/);
+  assert.match(sql, /CREATE TABLE "public"\."ShoppingPlanReceipt"/);
+  assert.match(sql, /ShoppingPlanRevision_shoppingPlanId_revisionNumber_key/);
+  assert.match(sql, /ShoppingPlanReceipt_revisionId_branchId_key/);
+  assert.match(sql, /ShoppingPlanReceipt_status_check/);
+  assert.match(sql, /ON DELETE RESTRICT ON UPDATE CASCADE/);
+  assert.match(main, /SHOPPING_PLAN_RECEIPTS_MIGRATION/);
+  assert.match(main, /SHOPPING_PLAN_RECEIPT_INDEXES/);
+  assert.match(main, /isCurrent23/);
   assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });

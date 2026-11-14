@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { OpnameStockInput } from "./components/OpnameStockInput";
 import BranchStockAuditPage from "./components/BranchStockAuditPage";
@@ -88,6 +89,7 @@ import {
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
 import { OperatorBadge } from "./components/OperatorLogo";
+import { CashierPurchaseReceipts, PurchasePlanAdmin } from "./components/PurchaseReceiptFlow";
 import {
   MdSpaceDashboard,
   MdInsights,
@@ -635,6 +637,7 @@ function buildShiftReadQueryParams(
 }
 
 export default function App() {
+  const queryClient = useQueryClient();
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("theme");
     return saved === "dark" || (!saved && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -1349,8 +1352,9 @@ export default function App() {
     });
   }, [branches, hiddenShoppingBranchIds]);
   const shoppingPlanEligibleProducts = useMemo(
-    () => products.filter((product) => visibleShoppingBranchesForProduct(product).length > 0),
-    [products, visibleShoppingBranchesForProduct],
+    () => products.filter((product) =>
+      branches.some((branch) => isProductVisibleInBranch(product?.visibleBranchIds, branch.id))),
+    [products, branches],
   );
 
   const toggleBranchShoppingHidden = (branchId: string) => {
@@ -1890,6 +1894,13 @@ export default function App() {
   const fullSyncEnabled = Boolean(profile && profile.role !== "PENDING" && !authLoading && !usesOwnerSync);
   const syncKey = `${readScope}:${fullSyncEnabled}`;
   const syncToken = localStorage.getItem("token");
+  const queryToken = useRef(syncToken);
+  useEffect(() => {
+    if (queryToken.current !== syncToken) {
+      queryToken.current = syncToken;
+      queryClient.clear();
+    }
+  }, [syncToken, queryClient]);
   useEffect(() => {
     if (!syncToken || profile?.role !== "ADMIN") {
       setInactiveProducts([]);
@@ -2024,6 +2035,9 @@ export default function App() {
     socket.on("stockUpdated", refresh.schedule);
     socket.on("stockTransferUpdated", () => {
       setStockTransferRefreshTick((tick) => tick + 1);
+    });
+    socket.on("shoppingPlanUpdated", () => {
+      window.dispatchEvent(new Event("shopping-plan-updated"));
     });
     socket.on("commissionsUpdated", refresh.schedule);
     socket.on(
@@ -2228,41 +2242,6 @@ export default function App() {
     refreshTick,
     syncToken,
   ]);
-
-  useEffect(() => {
-    if (!syncToken || profile?.role !== "ADMIN" || activeMenu !== "shopping_list") {
-      setShoppingPlans([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    const epoch = readEpoch.current;
-    setShoppingPlans([]);
-    const context = liveSyncKey.current;
-    const current = () =>
-      !controller.signal.aborted &&
-      readEpoch.current === epoch &&
-      liveSyncKey.current === context &&
-      localStorage.getItem("token") === syncToken;
-
-    api.getShoppingPlans(controller.signal).then((plans) => {
-      if (!current()) return;
-      if (!Array.isArray(plans)) {
-        setDataLoadFailed(true);
-        return;
-      }
-      setShoppingPlans(plans);
-    }).catch((error) => {
-      if (!current()) return;
-      if (isSessionError(error)) expireReadSession();
-      else {
-        console.error("Shopping plans read failed:", error);
-        setDataLoadFailed(true);
-      }
-    });
-
-    return () => controller.abort();
-  }, [activeMenu, profile?.branchId, profile?.role, syncToken]);
 
   useEffect(() => {
     if (
@@ -6393,6 +6372,13 @@ export default function App() {
 
             {/* --- 5. ADMIN: DAFTAR BELANJA (LOW STOCK) --- */}
             {activeMenu === "shopping_list" && profile?.role === "ADMIN" && (
+              <PurchasePlanAdmin
+                products={shoppingPlanEligibleProducts}
+                branches={branches}
+                confirm={triggerConfirm}
+              />
+            )}
+            {false && activeMenu === "shopping_list" && profile?.role === "ADMIN" && (
               <div data-ui-screen="shopping-list" className="ui-screen-shopping-list flex-1 p-4 md:p-8 overflow-y-auto w-full bg-slate-50 content-fade">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 text-left">
                   <div>
@@ -8050,6 +8036,10 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+            )}
+
+            {activeMenu === "cashier_stock" && profile?.role === "CASHIER" && (
+              <CashierPurchaseReceipts confirm={triggerConfirm} />
             )}
 
             {/* --- 5. CASHIER: POS AREA --- */}

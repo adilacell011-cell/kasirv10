@@ -21,6 +21,7 @@ import { registerBranchReadRoutes } from "./read-routes";
 import { registerStockAuditRoutes } from "./stock-audit";
 import { registerStockTransferRoutes } from "./stock-transfers";
 import { registerStockTransferReturnRoutes } from "./stock-transfer-returns";
+import { registerShoppingPlanRoutes } from "./shopping-plans";
 import {
   isProductVisibleInBranch,
   lockProductStatus,
@@ -1858,46 +1859,7 @@ app.post("/api/adjustments/cleanup", authenticateToken, async (req, res) => {
   }
 });
 
-// --- SHOPPING PLANS (stored locally; replaces the old Firestore "shoppingPlans" collection) ---
-app.get("/api/shopping-plans", authenticateToken, async (req, res) => {
-  try {
-    const plans = await prisma.shoppingPlan.findMany({ orderBy: { createdAt: "desc" } });
-    res.json(plans);
-  } catch (error: any) {
-    console.error("Get Shopping Plans Error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post("/api/shopping-plans", authenticateToken, requireRole("ADMIN"), async (req: any, res) => {
-  try {
-    const { title, items, status } = req.body;
-    // Security: creatorId is always taken from the authenticated token, never from
-    // the client body, to prevent identity spoofing.
-    const plan = await prisma.shoppingPlan.create({
-      data: {
-        title: title || null,
-        items: items ?? [],
-        status: status || "DRAFT",
-        creatorId: req.user?.userId || null,
-      },
-    });
-    res.json(plan);
-  } catch (error: any) {
-    console.error("Create Shopping Plan Error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), async (req, res) => {
-  try {
-    await prisma.shoppingPlan.delete({ where: { id: req.params.id } });
-    res.json({ success: true });
-  } catch (error: any) {
-    console.error("Delete Shopping Plan Error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+registerShoppingPlanRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
 
 registerBranchReadRoutes(app, prisma, authenticateToken, getLogicalShiftDate);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);

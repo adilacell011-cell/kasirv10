@@ -380,6 +380,166 @@ export interface StockAuditExceptionResponse {
   item: StockAuditItem;
 }
 
+export type ShoppingPlanInputStatus = typeof ShoppingPlanInputStatus[keyof typeof ShoppingPlanInputStatus];
+
+
+export const ShoppingPlanInputStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+} as const;
+
+export type ShoppingPlanItemInputBranchQtys = {[key: string]: number};
+
+export interface ShoppingPlanItemInput {
+  productId: string;
+  branchQtys: ShoppingPlanItemInputBranchQtys;
+}
+
+export interface ShoppingPlanInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  status?: ShoppingPlanInputStatus;
+  items: ShoppingPlanItemInput[];
+}
+
+export interface ShoppingPlanRevisionInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  items: ShoppingPlanItemInput[];
+}
+
+export type ShoppingPlanItemBranchQtys = {[key: string]: number};
+
+export interface ShoppingPlanItem {
+  productId: string;
+  productNameSnapshot: string;
+  /** @nullable */
+  productBarcodeSnapshot: string | null;
+  branchQtys: ShoppingPlanItemBranchQtys;
+}
+
+export interface ShoppingPlanRevision {
+  id: string;
+  revisionNumber: number;
+  title: string;
+  items: ShoppingPlanItem[];
+  /** @nullable */
+  creatorId?: string | null;
+  createdAt: string;
+}
+
+export interface ShoppingPlanRevisionSummary {
+  id: string;
+  revisionNumber: number;
+  title: string;
+  createdAt: string;
+}
+
+export interface ShoppingPlanReceiptItem {
+  productId: string;
+  productNameSnapshot: string;
+  /** @nullable */
+  productBarcodeSnapshot: string | null;
+  /** @minimum 1 */
+  plannedQty: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  actualQty: number | null;
+  notAvailable: boolean;
+}
+
+export type ShoppingPlanReceiptStatus = typeof ShoppingPlanReceiptStatus[keyof typeof ShoppingPlanReceiptStatus];
+
+
+export const ShoppingPlanReceiptStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  SUPERSEDED: 'SUPERSEDED',
+  NO_ITEMS: 'NO_ITEMS',
+} as const;
+
+export type ShoppingPlanReceiptRevision = {
+  revisionNumber?: number;
+};
+
+export type ShoppingPlanReceiptShoppingPlanStatus = typeof ShoppingPlanReceiptShoppingPlanStatus[keyof typeof ShoppingPlanReceiptShoppingPlanStatus];
+
+
+export const ShoppingPlanReceiptShoppingPlanStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export type ShoppingPlanReceiptShoppingPlan = {
+  id?: string;
+  title?: string;
+  status?: ShoppingPlanReceiptShoppingPlanStatus;
+};
+
+export interface ShoppingPlanReceipt {
+  id: string;
+  shoppingPlanId: string;
+  revisionId: string;
+  branchId: string;
+  branchNameSnapshot: string;
+  status: ShoppingPlanReceiptStatus;
+  items: ShoppingPlanReceiptItem[];
+  /** @nullable */
+  receivedByNameSnapshot?: string | null;
+  /** @nullable */
+  confirmedAt?: string | null;
+  createdAt: string;
+  revision?: ShoppingPlanReceiptRevision;
+  shoppingPlan?: ShoppingPlanReceiptShoppingPlan;
+}
+
+export type ShoppingPlanItemsItem = { [key: string]: unknown };
+
+export type ShoppingPlanStatus = typeof ShoppingPlanStatus[keyof typeof ShoppingPlanStatus];
+
+
+export const ShoppingPlanStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export interface ShoppingPlan {
+  id: string;
+  title: string;
+  items: ShoppingPlanItemsItem[];
+  status: ShoppingPlanStatus;
+  /** @nullable */
+  creatorId?: string | null;
+  createdAt: string;
+  revisions?: ShoppingPlanRevisionSummary[];
+  receipts?: ShoppingPlanReceipt[];
+}
+
+export type ShoppingPlanReceiptConfirmationInputItemsItem = {
+  productId: string;
+  /** @minimum 0 */
+  actualQty: number;
+  notAvailable?: boolean;
+};
+
+export interface ShoppingPlanReceiptConfirmationInput {
+  items: ShoppingPlanReceiptConfirmationInputItemsItem[];
+}
+
+export interface ShoppingPlanDeleteResult {
+  success: boolean;
+}
+
 export type GetOwnerDashboardParams = {
 /**
  * Omit for all branches.

@@ -504,3 +504,320 @@ export const RevokeStockAuditProductVisibilityResponse = zod.object({
 })
 
 
+/**
+ * @summary List purchase plans and branch receipts for Admin
+ */
+
+export const getShoppingPlansResponseReceiptsItemItemsItemActualQtyMin = 0;
+
+
+
+export const GetShoppingPlansResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "items": zod.array(zod.record(zod.string(), zod.unknown())),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']),
+  "creatorId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revisions": zod.array(zod.object({
+  "id": zod.string(),
+  "revisionNumber": zod.number().int(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional(),
+  "receipts": zod.array(zod.object({
+  "id": zod.string(),
+  "shoppingPlanId": zod.string(),
+  "revisionId": zod.string(),
+  "branchId": zod.string(),
+  "branchNameSnapshot": zod.string(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'SUPERSEDED', 'NO_ITEMS']),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "plannedQty": zod.number().int().min(1),
+  "actualQty": zod.number().int().min(getShoppingPlansResponseReceiptsItemItemsItemActualQtyMin).nullable(),
+  "notAvailable": zod.boolean()
+})),
+  "receivedByNameSnapshot": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revision": zod.object({
+  "revisionNumber": zod.number().int().optional()
+}).optional(),
+  "shoppingPlan": zod.object({
+  "id": zod.string().optional(),
+  "title": zod.string().optional(),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']).optional()
+}).optional()
+})).optional()
+})
+export const GetShoppingPlansResponse = zod.array(GetShoppingPlansResponseItem)
+
+
+/**
+ * @summary Publish a purchase plan to selected branches
+ */
+export const createShoppingPlanBodyTitleMax = 120;
+
+export const createShoppingPlanBodyStatusDefault = `PUBLISHED`;
+export const createShoppingPlanBodyItemsItemBranchQtysMinOne = 0;
+
+
+
+export const CreateShoppingPlanBody = zod.object({
+  "title": zod.string().min(1).max(createShoppingPlanBodyTitleMax),
+  "status": zod.enum(['DRAFT', 'PUBLISHED']).default(createShoppingPlanBodyStatusDefault),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "branchQtys": zod.record(zod.string(), zod.number().int().min(createShoppingPlanBodyItemsItemBranchQtysMinOne))
+}))
+})
+
+
+export const createShoppingPlanResponseReceiptsItemItemsItemActualQtyMin = 0;
+
+
+
+export const CreateShoppingPlanResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "items": zod.array(zod.record(zod.string(), zod.unknown())),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']),
+  "creatorId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revisions": zod.array(zod.object({
+  "id": zod.string(),
+  "revisionNumber": zod.number().int(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional(),
+  "receipts": zod.array(zod.object({
+  "id": zod.string(),
+  "shoppingPlanId": zod.string(),
+  "revisionId": zod.string(),
+  "branchId": zod.string(),
+  "branchNameSnapshot": zod.string(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'SUPERSEDED', 'NO_ITEMS']),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "plannedQty": zod.number().int().min(1),
+  "actualQty": zod.number().int().min(createShoppingPlanResponseReceiptsItemItemsItemActualQtyMin).nullable(),
+  "notAvailable": zod.boolean()
+})),
+  "receivedByNameSnapshot": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revision": zod.object({
+  "revisionNumber": zod.number().int().optional()
+}).optional(),
+  "shoppingPlan": zod.object({
+  "id": zod.string().optional(),
+  "title": zod.string().optional(),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']).optional()
+}).optional()
+})).optional()
+})
+
+
+/**
+ * @summary Create a revision for unconfirmed branch receipts
+ */
+export const ReviseShoppingPlanParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const reviseShoppingPlanBodyTitleMax = 120;
+
+export const reviseShoppingPlanBodyItemsItemBranchQtysMinOne = 0;
+
+
+
+export const ReviseShoppingPlanBody = zod.object({
+  "title": zod.string().min(1).max(reviseShoppingPlanBodyTitleMax),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "branchQtys": zod.record(zod.string(), zod.number().int().min(reviseShoppingPlanBodyItemsItemBranchQtysMinOne))
+}))
+})
+
+
+export const reviseShoppingPlanResponseReceiptsItemItemsItemActualQtyMin = 0;
+
+
+
+export const ReviseShoppingPlanResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "items": zod.array(zod.record(zod.string(), zod.unknown())),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']),
+  "creatorId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revisions": zod.array(zod.object({
+  "id": zod.string(),
+  "revisionNumber": zod.number().int(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional(),
+  "receipts": zod.array(zod.object({
+  "id": zod.string(),
+  "shoppingPlanId": zod.string(),
+  "revisionId": zod.string(),
+  "branchId": zod.string(),
+  "branchNameSnapshot": zod.string(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'SUPERSEDED', 'NO_ITEMS']),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "plannedQty": zod.number().int().min(1),
+  "actualQty": zod.number().int().min(reviseShoppingPlanResponseReceiptsItemItemsItemActualQtyMin).nullable(),
+  "notAvailable": zod.boolean()
+})),
+  "receivedByNameSnapshot": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revision": zod.object({
+  "revisionNumber": zod.number().int().optional()
+}).optional(),
+  "shoppingPlan": zod.object({
+  "id": zod.string().optional(),
+  "title": zod.string().optional(),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']).optional()
+}).optional()
+})).optional()
+})
+
+
+/**
+ * @summary Delete an unpublished draft only
+ */
+export const DeleteShoppingPlanParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteShoppingPlanResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary List revisions for one purchase plan
+ */
+export const GetShoppingPlanRevisionsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const GetShoppingPlanRevisionsResponseItem = zod.object({
+  "id": zod.string(),
+  "revisionNumber": zod.number().int(),
+  "title": zod.string(),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "branchQtys": zod.record(zod.string(), zod.number().int().min(1))
+})),
+  "creatorId": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const GetShoppingPlanRevisionsResponse = zod.array(GetShoppingPlanRevisionsResponseItem)
+
+
+/**
+ * @summary List purchase receipts for the signed-in cashier branch
+ */
+
+export const getCashierShoppingPlanReceiptsResponseItemsItemActualQtyMin = 0;
+
+
+
+export const GetCashierShoppingPlanReceiptsResponseItem = zod.object({
+  "id": zod.string(),
+  "shoppingPlanId": zod.string(),
+  "revisionId": zod.string(),
+  "branchId": zod.string(),
+  "branchNameSnapshot": zod.string(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'SUPERSEDED', 'NO_ITEMS']),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "plannedQty": zod.number().int().min(1),
+  "actualQty": zod.number().int().min(getCashierShoppingPlanReceiptsResponseItemsItemActualQtyMin).nullable(),
+  "notAvailable": zod.boolean()
+})),
+  "receivedByNameSnapshot": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revision": zod.object({
+  "revisionNumber": zod.number().int().optional()
+}).optional(),
+  "shoppingPlan": zod.object({
+  "id": zod.string().optional(),
+  "title": zod.string().optional(),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']).optional()
+}).optional()
+})
+export const GetCashierShoppingPlanReceiptsResponse = zod.array(GetCashierShoppingPlanReceiptsResponseItem)
+
+
+/**
+ * @summary Confirm actual quantities for one branch receipt
+ */
+export const ConfirmShoppingPlanReceiptParams = zod.object({
+  "receiptId": zod.coerce.string()
+})
+
+export const confirmShoppingPlanReceiptBodyItemsItemActualQtyMin = 0;
+
+
+
+export const ConfirmShoppingPlanReceiptBody = zod.object({
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "actualQty": zod.number().int().min(confirmShoppingPlanReceiptBodyItemsItemActualQtyMin),
+  "notAvailable": zod.boolean().optional()
+}))
+})
+
+
+export const confirmShoppingPlanReceiptResponseItemsItemActualQtyMin = 0;
+
+
+
+export const ConfirmShoppingPlanReceiptResponse = zod.object({
+  "id": zod.string(),
+  "shoppingPlanId": zod.string(),
+  "revisionId": zod.string(),
+  "branchId": zod.string(),
+  "branchNameSnapshot": zod.string(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'SUPERSEDED', 'NO_ITEMS']),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "plannedQty": zod.number().int().min(1),
+  "actualQty": zod.number().int().min(confirmShoppingPlanReceiptResponseItemsItemActualQtyMin).nullable(),
+  "notAvailable": zod.boolean()
+})),
+  "receivedByNameSnapshot": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revision": zod.object({
+  "revisionNumber": zod.number().int().optional()
+}).optional(),
+  "shoppingPlan": zod.object({
+  "id": zod.string().optional(),
+  "title": zod.string().optional(),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']).optional()
+}).optional()
+})
+
+
