@@ -3707,7 +3707,7 @@ export default function App() {
       case "branch_stocks":
         return "Laporan Stok per Cabang";
       case "shopping_list":
-        return "Daftar Belanja (Low Stock)";
+        return "Pengadaan Stok";
       case "incentive":
         return "Bonus & Insentif Karyawan";
       default:
@@ -3899,7 +3899,7 @@ export default function App() {
   }
 
   const generateWhatsAppMessage = (items: any[]) => {
-    let message = `*Rencana Belanja Alfath Pulsa*\n`;
+    let message = `*Daftar Pengadaan Stok Alfath Pulsa*\n`;
     message += `_Tanggal: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}_\n\n`;
 
     const branchGroups: {
@@ -4188,11 +4188,11 @@ export default function App() {
               {profile?.role === "ADMIN" && (
                 <button
                   onClick={() => setActiveMenu("shopping_list")}
-                  aria-label="Daftar Belanja"
+                  aria-label="Pengadaan Stok"
                   className={`flex items-center gap-2 rounded-xl py-1.5 font-black text-[9px] uppercase tracking-widest transition-all ${activeMenu === "stock_audit" ? "px-2 sm:px-3" : "px-3"} ${activeMenu === "shopping_list" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span data-topbar-shopping-label className={activeMenu === "stock_audit" ? "hidden sm:inline" : ""}>Daftar Belanja</span>
+                  <span data-topbar-shopping-label className={activeMenu === "stock_audit" ? "hidden sm:inline" : ""}>Pengadaan Stok</span>
                   {shopListAlertCount > 0 ? (
                     <span className="w-4 h-4 bg-red-500 text-white flex items-center justify-center rounded-full text-[8px] animate-pulse shadow-[0_0_10px_2px_rgba(239,68,68,0.7)]">
                       {shopListAlertCount}
@@ -5306,7 +5306,7 @@ export default function App() {
                                 <button
                                   onClick={() => toggleBranchShoppingHidden(b.id)}
                                   className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tight transition-all ${!hiddenShoppingBranchIds.includes(b.id) ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-rose-50 text-rose-600 border border-rose-100"}`}
-                                  title={!hiddenShoppingBranchIds.includes(b.id) ? "Tampil di Daftar Belanja" : "Disembunyikan dari Daftar Belanja"}
+                              title={!hiddenShoppingBranchIds.includes(b.id) ? "Tampil di Pengadaan Stok" : "Disembunyikan dari Pengadaan Stok"}
                                 >
                                   {!hiddenShoppingBranchIds.includes(b.id) ? "Belanja ✓" : "Belanja ✗"}
                                 </button>
@@ -6329,7 +6329,7 @@ export default function App() {
               </div>
             )}
 
-            {/* --- 5. ADMIN: DAFTAR BELANJA (LOW STOCK) --- */}
+            {/* --- 5. ADMIN: PENGADAAN STOK --- */}
             {activeMenu === "shopping_list" && profile?.role === "ADMIN" && (
               <PurchasePlanAdmin
                 products={shoppingPlanEligibleProducts}
@@ -6356,11 +6356,11 @@ export default function App() {
                         <ShoppingCart className="w-5 h-5" />
                       </div>
                       <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
-                        Daftar Belanja
+                        Pengadaan Stok
                       </h2>
                     </div>
                     <p className="text-slate-500 font-medium text-left">
-                      Restok inventori atau buat rencana belanja per cabang.
+                      Atur jumlah pengadaan per cabang dan pantau penerimaannya.
                     </p>
                   </div>
 
@@ -6383,7 +6383,7 @@ export default function App() {
                             .map((p) => ({ productId: p.id, branchQtys: {} }));
                           setPlanDraftItems(itemsToDraft);
                           setPlanDraftTitle(
-                            `Belanja ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}${shoppingListCategory ? " - " + shoppingListCategory : ""}`,
+                            `Pengadaan ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}${shoppingListCategory ? " - " + shoppingListCategory : ""}`,
                           );
                         }
                       }}
@@ -6395,7 +6395,7 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <PlusSquare className="w-4 h-4" /> Buat Rencana Baru
+                          <PlusSquare className="w-4 h-4" /> Buat Pengadaan
                         </>
                       )}
                     </button>
@@ -6411,7 +6411,7 @@ export default function App() {
                         <div>
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-amber-500" />
-                            Saran Belanja Berbasis Penjualan
+                            Saran Pengadaan Stok Berbasis Penjualan
                           </h3>
                           <p className="text-[10px] text-slate-500 font-medium mt-1">
                             Memakai ringkasan penjualan 30 hari, stok cabang, dan batas minimum.
@@ -6480,7 +6480,7 @@ export default function App() {
                         </div>
                       ) : !purchaseSuggestionBranch ? (
                         <div className="px-4 py-8 text-center text-xs font-bold text-slate-400">
-                          Tidak ada cabang yang diaktifkan untuk daftar belanja.
+                          Tidak ada cabang yang diaktifkan untuk Pengadaan Stok.
                         </div>
                       ) : purchaseSuggestions.length === 0 ? (
                         <div
@@ -6553,7 +6553,7 @@ export default function App() {
                                   },
                                 })));
                                 setPlanDraftTitle(
-                                  `Belanja ${purchaseSuggestionBranch.name} · Saran 30 Hari`,
+                                  `Pengadaan ${purchaseSuggestionBranch.name} · Saran 30 Hari`,
                                 );
                                 setIsCreatingPlan(true);
                               }}
@@ -6726,7 +6726,7 @@ export default function App() {
                                       }}
                                       className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-wider hover:bg-blue-600 hover:text-white transition-all whitespace-nowrap"
                                     >
-                                      + Rencana
+                                      + Pengadaan
                                     </button>
                                   </td>
                                 </tr>
@@ -6863,7 +6863,7 @@ export default function App() {
                         <div className="col-span-full py-16 bg-slate-50 rounded-2xl md:rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 text-center">
                           <PackagePlus className="w-12 h-12 text-slate-300" />
                           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest text-center">
-                            Belum ada riwayat rencana belanja
+                            Belum ada riwayat Pengadaan Stok
                           </p>
                         </div>
                       )}
@@ -6877,7 +6877,7 @@ export default function App() {
                         <input
                           value={planDraftTitle}
                           onChange={(e) => setPlanDraftTitle(e.target.value)}
-                          placeholder="Judul Rencana Belanja..."
+                          placeholder="Judul Pengadaan..."
                           className="text-lg md:text-2xl font-black text-slate-900 tracking-tight outline-none w-full bg-transparent border-b-2 border-transparent focus:border-blue-500/30 pb-1 text-left"
                         />
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 text-left">
@@ -6917,7 +6917,7 @@ export default function App() {
                                 );
                                 alert(
                                   exists
-                                    ? "Produk tidak tersedia di cabang yang aktif untuk daftar belanja."
+                                    ? "Produk tidak tersedia di cabang yang aktif untuk Pengadaan Stok."
                                     : "Produk tidak ditemukan!",
                                 );
                               }
@@ -7094,7 +7094,7 @@ export default function App() {
                         <button
                           onClick={() => {
                             if (planDraftItems.length === 0)
-                              return alert("Daftar belanja kosong!");
+                              return alert("Daftar Pengadaan Stok kosong!");
                             const msg = generateWhatsAppMessage(planDraftItems);
                             window.open(
                               `https://wa.me/?text=${encodeURIComponent(msg)}`,

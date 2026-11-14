@@ -56,7 +56,7 @@ export function buildPurchasePlanWhatsAppMessage(
     ? "Tanggal tidak tersedia"
     : createdAt.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
-  let message = `*Rencana Belanja Alfath Pulsa*\n*${plan.title}*\n_Tanggal: ${dateText}_\n\n`;
+  let message = `*Daftar Pengadaan Stok Alfath Pulsa*\n*${plan.title}*\n_Tanggal: ${dateText}_\n\n`;
   let totalQty = 0;
 
   for (const [branchId, items] of sortedBranches) {
@@ -74,7 +74,7 @@ export function buildPurchasePlanWhatsAppMessage(
   }
 
   if (sortedBranches.length === 0) {
-    message += "_Belum ada jumlah belanja yang terisi._\n\n";
+    message += "_Belum ada jumlah pengadaan yang terisi._\n\n";
   }
 
   message += `*➤ TOTAL KESELURUHAN: ${totalQty} pcs*\n\n_Mohon segera diproses, terima kasih._`;

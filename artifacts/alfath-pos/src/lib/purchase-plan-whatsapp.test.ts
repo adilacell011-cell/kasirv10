@@ -16,7 +16,7 @@ test("formats saved plan quantities by branch and skips empty quantities", () =>
     ],
   });
 
-  assert.match(message, /Rencana Belanja Alfath Pulsa/);
+  assert.match(message, /Daftar Pengadaan Stok Alfath Pulsa/);
   assert.match(message, /Belanja Voucher 14 Nov/);
   assert.match(message, /\*📍 Alfath 2\*/);
   assert.match(message, /Voucher 2 GB: 5 pcs/);

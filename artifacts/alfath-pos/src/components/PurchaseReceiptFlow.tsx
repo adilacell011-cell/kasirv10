@@ -259,7 +259,7 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     requestRef.current = null;
     requestEpoch.current += 1;
     setEditingId(null);
-    setTitle(`Belanja ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`);
+    setTitle(`Pengadaan ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`);
     setItems([]);
     setDraftSearch("");
     setDraftPage(1);
@@ -415,8 +415,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     }
     const isRevision = Boolean(editingId);
     if (!(await confirm(isRevision
-      ? "Terbitkan revisi rencana? Cabang yang belum mengonfirmasi akan menerima pemberitahuan."
-      : "Terbitkan rencana belanja sekarang? Nota cabang akan langsung tersedia untuk kasir."))) return;
+      ? "Terbitkan revisi pengadaan? Cabang yang belum mengonfirmasi akan menerima pemberitahuan."
+      : "Terbitkan pengadaan sekarang? Nota penerimaan cabang akan langsung tersedia untuk kasir."))) return;
     try {
       if (editingId) {
         const data: ShoppingPlanRevisionInput = { title: title.trim(), items: prepared };
@@ -427,10 +427,10 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       }
       await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() });
-      toast(isRevision ? "Revisi rencana diterbitkan." : "Rencana diterbitkan. Nota cabang siap diterima.");
+      toast(isRevision ? "Revisi pengadaan diterbitkan." : "Pengadaan diterbitkan. Nota penerimaan cabang siap diperiksa.");
       reset();
     } catch (error) {
-      toast(error instanceof Error ? error.message : "Rencana gagal disimpan.", "error");
+      toast(error instanceof Error ? error.message : "Pengadaan gagal disimpan.", "error");
     }
   };
   const beginRevision = (plan: ShoppingPlan) => {
@@ -460,8 +460,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     }));
   };
 
-  if (plansQuery.isLoading) return <div className="mx-3 my-4 rounded-2xl border border-white/10 bg-[#14233d] p-5 text-sm text-slate-200 animate-pulse">Memuat rencana pembelian…</div>;
-  if (plansQuery.isError) return <div className="mx-3 my-4 rounded-2xl border border-rose-400/30 bg-[#14233d] p-5 text-sm text-rose-200"><p>Rencana belum dapat dimuat.</p><button data-testid="button-retry-purchase-plans" onClick={() => void plansQuery.refetch()} className="mt-3 min-h-11 rounded-xl border border-rose-300/30 px-4 font-bold">Coba lagi</button></div>;
+  if (plansQuery.isLoading) return <div className="mx-3 my-4 rounded-2xl border border-white/10 bg-[#14233d] p-5 text-sm text-slate-200 animate-pulse">Memuat pengadaan…</div>;
+  if (plansQuery.isError) return <div className="mx-3 my-4 rounded-2xl border border-rose-400/30 bg-[#14233d] p-5 text-sm text-rose-200"><p>Data pengadaan belum dapat dimuat.</p><button data-testid="button-retry-purchase-plans" onClick={() => void plansQuery.refetch()} className="mt-3 min-h-11 rounded-xl border border-rose-300/30 px-4 font-bold">Coba lagi</button></div>;
 
   return <section data-testid="page-purchase-plans" className="h-full min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] bg-[#0b172a] p-3 text-slate-100 md:p-5">
     <style>{`
@@ -500,13 +500,13 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     `}</style>
       <div className="mx-auto max-w-6xl space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#b89c65]/35 bg-[#14233d] p-4">
-        <div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#d4bd8d]">Belanja lintas cabang</p><h1 className="mt-1 text-xl font-extrabold">Rencana pembelian</h1><p className="mt-1 text-xs text-slate-300">Terbitkan sekali; setiap kasir menerima nota sesuai cabangnya.</p></div>
-        {!editingId && <button data-testid="button-new-purchase-plan" onClick={startNew} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-4 text-sm font-bold text-[#17233a]"><Plus size={17}/> Rencana baru</button>}
+        <div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#d4bd8d]">Pengadaan lintas cabang</p><h1 className="mt-1 text-xl font-extrabold">Pengadaan Stok</h1><p className="mt-1 text-xs text-slate-300">Atur jumlah per cabang, lalu pantau penerimaannya.</p></div>
+        {!editingId && <button data-testid="button-new-purchase-plan" onClick={startNew} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-4 text-sm font-bold text-[#17233a]"><Plus size={17}/> Buat Pengadaan</button>}
       </header>
 
       {(title || editingId) ? <div className="space-y-3 rounded-2xl border border-[#b89c65]/35 bg-[#14233d] p-3 md:p-4">
-        <div className="flex items-center justify-between gap-2"><h2 className="font-bold">{editingId ? "Revisi rencana" : "Rencana baru"}</h2><button data-testid="button-cancel-plan-edit" onClick={reset} className="grid min-h-11 min-w-11 place-items-center rounded-xl border border-white/15 text-slate-300" aria-label="Batal"><X size={18}/></button></div>
-        <input data-testid="input-purchase-plan-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Judul rencana" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
+        <div className="flex items-center justify-between gap-2"><h2 className="font-bold">{editingId ? "Revisi Pengadaan" : "Pengadaan Baru"}</h2><button data-testid="button-cancel-plan-edit" onClick={reset} className="grid min-h-11 min-w-11 place-items-center rounded-xl border border-white/15 text-slate-300" aria-label="Batal"><X size={18}/></button></div>
+        <input data-testid="input-purchase-plan-title" value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Judul pengadaan" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
         {!editingId && <div className="grid gap-3 rounded-xl border border-white/10 bg-[#0d1a2e] p-3 md:grid-cols-[minmax(0,1fr)_13rem]">
           <div className="space-y-3">
             <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">1 · Kategori produk</p>
@@ -600,12 +600,12 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       </div> : null}
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold text-[#e3d5b4]">Riwayat rencana</h2><span className="text-xs text-slate-400">{plans.length} rencana</span></div>
-        {plans.length === 0 ? <div data-testid="empty-purchase-plans" className="rounded-2xl border border-dashed border-white/20 bg-[#14233d] p-6 text-center text-sm text-slate-300">Belum ada rencana. Buat rencana untuk membagikan daftar penerimaan ke cabang.</div> :
+        <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold text-[#e3d5b4]">Riwayat Pengadaan</h2><span className="text-xs text-slate-400">{plans.length} pengadaan</span></div>
+        {plans.length === 0 ? <div data-testid="empty-purchase-plans" className="rounded-2xl border border-dashed border-white/20 bg-[#14233d] p-6 text-center text-sm text-slate-300">Belum ada pengadaan. Buat pengadaan untuk menerbitkan nota penerimaan ke cabang.</div> :
           plans.map((plan) => <PlanCard key={plan.id} plan={plan} branches={branches} onRevise={() => beginRevision(plan)} onDelete={async () => {
-            if (!(await confirm("Hapus rencana ini secara permanen? Nota yang belum dikonfirmasi akan hilang dari daftar kasir semua cabang. Riwayat rencana dan revisinya ikut dihapus. Stok tidak berubah."))) return;
-            try { await deletePlan.mutateAsync({ id: plan.id }); await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() }); await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() }); toast("Rencana dihapus."); }
-            catch (error) { toast(getPurchasePlanErrorMessage(error, "Rencana gagal dihapus."), "error"); }
+            if (!(await confirm("Hapus pengadaan ini secara permanen? Nota penerimaan yang belum dikonfirmasi akan hilang dari daftar kasir semua cabang. Riwayat pengadaan dan revisinya ikut dihapus. Stok tidak berubah."))) return;
+            try { await deletePlan.mutateAsync({ id: plan.id }); await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() }); await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() }); toast("Pengadaan dihapus."); }
+            catch (error) { toast(getPurchasePlanErrorMessage(error, "Pengadaan gagal dihapus."), "error"); }
           }} />)}
       </div>
     </div>
@@ -630,7 +630,7 @@ function PlanCard({ plan, branches, onRevise, onDelete }: {
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
       }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-200 hover:bg-emerald-400/20"><Share2 size={15}/>WhatsApp</button>
       <button data-testid={`button-plan-revisions-${plan.id}`} onClick={() => setRevisionsOpen((open) => !open)} aria-expanded={revisionsOpen} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-slate-200"><Clock3 size={15}/>Riwayat revisi<ChevronDown size={14} className={revisionsOpen ? "rotate-180" : ""}/></button>
-      {canRevise && <button data-testid={`button-revise-plan-${plan.id}`} onClick={onRevise} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a]"><RotateCcw size={15}/>Revisi cabang belum menerima</button>}
+      {canRevise && <button data-testid={`button-revise-plan-${plan.id}`} onClick={onRevise} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a]"><RotateCcw size={15}/>Revisi pengadaan</button>}
       {canDelete && <button data-testid={`button-delete-plan-${plan.id}`} onClick={onDelete} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-300/30 px-3 text-xs font-semibold text-rose-200"><Trash2 size={15}/>Hapus permanen</button>}
     </div>
     <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
@@ -852,15 +852,15 @@ export function CashierPurchaseReceipts({ confirm }: { confirm: (message: string
   return <section data-testid="cashier-purchase-receipts" className="mx-auto my-3 w-full max-w-6xl flex-none rounded-2xl border border-slate-200 bg-white p-3 text-slate-800 shadow-sm sm:my-4 sm:p-4">
     <header className="mb-3 flex items-center gap-3">
       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f4ecd9] text-[#7b6334]"><ClipboardCheck size={20}/></div>
-      <div className="min-w-0"><h2 className="text-base font-extrabold">Penerimaan belanja</h2><p className="text-xs text-slate-500">Nota dari Owner untuk cabang ini.</p></div>
+      <div className="min-w-0"><h2 className="text-base font-extrabold">Penerimaan Pengadaan</h2><p className="text-xs text-slate-500">Daftar pengadaan dari Owner untuk cabang ini.</p></div>
     </header>
     {receiptsQuery.isLoading ? <div data-testid="status-receipts-loading" className="animate-pulse rounded-xl bg-slate-100 p-4 text-sm text-slate-500">Memuat nota cabang…</div> :
       receiptsQuery.isError ? <div data-testid="status-receipts-error" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">Nota belum dapat dimuat.<button data-testid="button-retry-receipts" onClick={() => void receiptsQuery.refetch()} className="ml-3 min-h-11 rounded-lg px-3 font-bold">Coba lagi</button></div> :
-      receipts.length === 0 ? <div data-testid="empty-purchase-receipts" className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">Belum ada nota pembelian untuk cabang ini.</div> :
+      receipts.length === 0 ? <div data-testid="empty-purchase-receipts" className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">Belum ada pengadaan untuk cabang ini.</div> :
       <div className="space-y-2.5">{receipts.map((receipt) => <div key={receipt.id} data-testid={`card-cashier-receipt-${receipt.id}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-3.5">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="break-words text-sm font-bold leading-5 text-slate-900">{receipt.shoppingPlan?.title || "Rencana pembelian"}</p>
+            <p className="break-words text-sm font-bold leading-5 text-slate-900">{receipt.shoppingPlan?.title || "Pengadaan Stok"}</p>
             <p className="mt-1 text-xs text-slate-600">Revisi {receipt.revision?.revisionNumber || 1}</p>
             <p className="mt-0.5 text-xs text-slate-500">{new Date(receipt.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p>
           </div>
@@ -876,7 +876,7 @@ export function CashierPurchaseReceipts({ confirm }: { confirm: (message: string
     {current && <div className="fixed inset-0 z-[2600] flex items-end justify-center overflow-hidden bg-[#0b1523]/70 px-2 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:p-4">
       <div role="dialog" aria-modal="true" aria-labelledby="receipt-dialog-title" data-testid="dialog-confirm-purchase-receipt" style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 1rem)", overflowY: "hidden" }} className="flex min-h-0 w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-[#c9c2b5] bg-[#e9e6de] text-[#243140] shadow-xl sm:rounded-2xl">
         <header className="flex shrink-0 items-start justify-between gap-3 bg-[#1a2d43] px-4 py-3 text-slate-100">
-          <div className="flex min-w-0 items-start gap-2.5"><FileText size={20} className="mt-0.5 shrink-0 text-[#d1c29d]"/><div className="min-w-0"><h3 id="receipt-dialog-title" className="font-bold">{current.status === "CONFIRMED" ? "Nota Penerimaan" : "Periksa Nota Penerimaan"}</h3><p className="mt-0.5 truncate text-xs text-slate-300">{current.branchNameSnapshot} · {current.shoppingPlan?.title || "Rencana Owner"}</p></div></div>
+          <div className="flex min-w-0 items-start gap-2.5"><FileText size={20} className="mt-0.5 shrink-0 text-[#d1c29d]"/><div className="min-w-0"><h3 id="receipt-dialog-title" className="font-bold">{current.status === "CONFIRMED" ? "Nota Penerimaan" : "Periksa Nota Penerimaan"}</h3><p className="mt-0.5 truncate text-xs text-slate-300">{current.branchNameSnapshot} · {current.shoppingPlan?.title || "Pengadaan Owner"}</p></div></div>
           <button data-testid="button-close-receipt-dialog" onClick={() => setReceiptId(null)} aria-label="Tutup" className="grid min-h-10 min-w-10 shrink-0 place-items-center rounded-lg text-slate-300 hover:bg-white/10"><X size={19}/></button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">

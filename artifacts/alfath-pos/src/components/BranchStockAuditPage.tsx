@@ -1885,7 +1885,7 @@ export default function BranchStockAuditPage({ branches, role, userId, api }: Pr
               </div>
             </div>
             <p className="mt-3 text-xs leading-5 text-[#697c77]">
-              Produk <strong className="text-[#31504b]">{visibilityRevokeItem.productName}</strong> akan keluar dari antrean hitung cabang ini dan tidak lagi masuk alert belanja cabang ini. Izin cabang lain dan rencana belanja lama tidak diubah.
+              Produk <strong className="text-[#31504b]">{visibilityRevokeItem.productName}</strong> akan keluar dari antrean hitung cabang ini dan tidak lagi masuk peringatan stok Pengadaan Stok cabang ini. Izin cabang lain dan pengadaan yang sudah tersimpan tidak diubah.
             </p>
             <div className="mt-2.5 rounded-xl border border-[#e2d5aa] bg-[#faf4df] px-3 py-2 text-[11px] leading-4.5 text-[#745f23]">
               Stok sistem yang terlihat sekarang: <strong>{visibilityRevokeItem.systemQty} pcs</strong>. Server akan memeriksa ulang; pencabutan hanya berhasil jika stok terbaru tepat 0 dan tidak ada hitungan fisik positif.
