@@ -7,6 +7,9 @@ description: Owner's planned policy for cashier stock intake, branch transfers, 
 
 - Cashiers may manually add positive stock to their own branch only when both the global master and that branch's input permission are enabled. Use the existing persisted branch permission for independent locks; when locked, the UI and API both reject cashier intake. Cashiers must not adjust another branch's stock or perform stock-out/opname through this permission.
 - Keep Owner-set purchase quantities per product and branch as the source of truth. Branch-specific sales history may suggest quantities, but Owner reviews and decides the final amounts.
+- After a plan is saved, provide an explicit WhatsApp share action that groups its saved quantities by branch and includes branch and overall totals; open a message draft for Owner review and never send automatically.
+  **Why:** The Owner shares purchase information with branches or suppliers through WhatsApp and must control the recipient and final send.
+  **How to apply:** Build the message from the saved plan snapshots and positive branch quantities, then use the existing WhatsApp link pattern from the saved-plan history.
 - Target coverage days are optional. If blank, keep automatic low-stock basket products for the selected categories and branches visible with current stock and empty manual quantity fields; hide only suggested quantities. If set to a positive whole number, show editable recommendations for those basket products.
   **Why:** The Owner clarified that omitting days should hide suggested buy quantities, not hide the eligible product list.
   **How to apply:** Skip sales-summary requests when blank; populate the selected branches' automatic low-stock basket and current stock instead. When positive whole days are entered, calculate suggestions for the selected basket products, keeping all final quantities Owner-editable.

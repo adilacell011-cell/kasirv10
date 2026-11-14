@@ -24,6 +24,7 @@ import {
   buildBranchShoppingBasketCandidates,
 } from "../lib/branch-purchase-suggestions";
 import { isProductVisibleInBranch } from "../lib/product-visibility";
+import { buildPurchasePlanWhatsAppMessage } from "../lib/purchase-plan-whatsapp";
 
 type Product = { id: string; name: string; barcode?: string | null; category?: string | null; minStock?: number | string | null; visibleBranchIds?: string | null };
 type Branch = { id: string; name: string };
@@ -601,7 +602,7 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold text-[#e3d5b4]">Riwayat rencana</h2><span className="text-xs text-slate-400">{plans.length} rencana</span></div>
         {plans.length === 0 ? <div data-testid="empty-purchase-plans" className="rounded-2xl border border-dashed border-white/20 bg-[#14233d] p-6 text-center text-sm text-slate-300">Belum ada rencana. Buat rencana untuk membagikan daftar penerimaan ke cabang.</div> :
-          plans.map((plan) => <PlanCard key={plan.id} plan={plan} onRevise={() => beginRevision(plan)} onDelete={async () => {
+          plans.map((plan) => <PlanCard key={plan.id} plan={plan} branches={branches} onRevise={() => beginRevision(plan)} onDelete={async () => {
             if (!(await confirm("Hapus rencana ini secara permanen? Nota yang belum dikonfirmasi akan hilang dari daftar kasir semua cabang. Riwayat rencana dan revisinya ikut dihapus. Stok tidak berubah."))) return;
             try { await deletePlan.mutateAsync({ id: plan.id }); await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() }); await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() }); toast("Rencana dihapus."); }
             catch (error) { toast(getPurchasePlanErrorMessage(error, "Rencana gagal dihapus."), "error"); }
@@ -611,8 +612,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   </section>;
 }
 
-function PlanCard({ plan, onRevise, onDelete }: {
-  plan: ShoppingPlan; onRevise: () => void; onDelete: () => void;
+function PlanCard({ plan, branches, onRevise, onDelete }: {
+  plan: ShoppingPlan; branches: Branch[]; onRevise: () => void; onDelete: () => void;
 }) {
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
   const [revisionsOpen, setRevisionsOpen] = useState(false);
@@ -624,6 +625,10 @@ function PlanCard({ plan, onRevise, onDelete }: {
   return <article data-testid={`card-purchase-plan-${plan.id}`} className="rounded-2xl border border-[#b89c65]/25 bg-[#14233d] p-3 md:p-4">
     <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="font-bold">{plan.title}</h3><p className="mt-1 text-xs text-slate-400">{new Date(plan.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p></div><ReceiptStatus status={plan.status}/></div>
     <div className="mt-3 flex flex-wrap gap-2">
+      <button data-testid={`button-share-plan-whatsapp-${plan.id}`} onClick={() => {
+        const message = buildPurchasePlanWhatsAppMessage(plan, branches);
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+      }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-200 hover:bg-emerald-400/20"><Share2 size={15}/>WhatsApp</button>
       <button data-testid={`button-plan-revisions-${plan.id}`} onClick={() => setRevisionsOpen((open) => !open)} aria-expanded={revisionsOpen} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-slate-200"><Clock3 size={15}/>Riwayat revisi<ChevronDown size={14} className={revisionsOpen ? "rotate-180" : ""}/></button>
       {canRevise && <button data-testid={`button-revise-plan-${plan.id}`} onClick={onRevise} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a]"><RotateCcw size={15}/>Revisi cabang belum menerima</button>}
       {canDelete && <button data-testid={`button-delete-plan-${plan.id}`} onClick={onDelete} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-300/30 px-3 text-xs font-semibold text-rose-200"><Trash2 size={15}/>Hapus permanen</button>}
