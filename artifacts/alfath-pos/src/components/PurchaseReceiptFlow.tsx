@@ -467,18 +467,38 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
 
   return <section data-testid="page-purchase-plans" className="h-full min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] bg-[#0b172a] p-3 text-slate-100 md:p-5">
     <style>{`
-      [data-testid="page-purchase-plans"] input:not([type="checkbox"]) {
-        background-color: #0b172a !important;
-        color: #f1f5f9 !important;
-        -webkit-text-fill-color: #f1f5f9 !important;
-        border-color: rgba(255,255,255,.18) !important;
-        -webkit-box-shadow: inset 0 0 0 1000px #0b172a !important;
+      #root .app-shell[data-admin-surface="true"] [data-testid="page-purchase-plans"] input:not([type="checkbox"]):not([type="radio"]) {
+        border-color: rgba(164,190,216,.42) !important;
+        background-color: #091a30 !important;
+        background-image: none !important;
+        color: #f2f5f8 !important;
+        -webkit-text-fill-color: #f2f5f8 !important;
+        caret-color: #e3c77f !important;
+        color-scheme: dark;
+        -webkit-box-shadow: inset 0 0 0 1000px #091a30, inset 0 1px 3px rgba(0,6,16,.28) !important;
+        box-shadow: inset 0 0 0 1000px #091a30, inset 0 1px 3px rgba(0,6,16,.28) !important;
       }
-      [data-testid="page-purchase-plans"] input:not([type="checkbox"]):focus {
-        border-color: #c7ad79 !important;
-        -webkit-box-shadow: inset 0 0 0 1000px #0b172a, 0 0 0 2px rgba(199,173,121,.24) !important;
+      #root .app-shell[data-admin-surface="true"] [data-testid="page-purchase-plans"] input:not([type="checkbox"]):not([type="radio"]):is(:focus, :focus-visible) {
+        border-color: #e3c77f !important;
+        background-color: #0d233d !important;
+        -webkit-text-fill-color: #f5f7fa !important;
+        -webkit-box-shadow: inset 0 0 0 1000px #0d233d, 0 0 0 3px rgba(227,199,127,.22) !important;
+        box-shadow: inset 0 0 0 1000px #0d233d, 0 0 0 3px rgba(227,199,127,.22) !important;
       }
-      [data-testid="page-purchase-plans"] input::placeholder { color: #94a3b8 !important; -webkit-text-fill-color: #94a3b8 !important; }
+      #root .app-shell[data-admin-surface="true"] [data-testid="page-purchase-plans"] input::placeholder {
+        color: #aebdcd !important;
+        -webkit-text-fill-color: #aebdcd !important;
+        opacity: 1 !important;
+      }
+      #root .app-shell[data-admin-surface="true"] [data-testid="page-purchase-plans"] input:not([type="checkbox"]):not([type="radio"]):-webkit-autofill,
+      #root .app-shell[data-admin-surface="true"] [data-testid="page-purchase-plans"] input:not([type="checkbox"]):not([type="radio"]):-webkit-autofill:hover {
+        -webkit-text-fill-color: #f2f5f8 !important;
+        -webkit-box-shadow: inset 0 0 0 1000px #091a30, inset 0 1px 3px rgba(0,6,16,.28) !important;
+      }
+      #root .app-shell[data-admin-surface="true"] [data-testid="page-purchase-plans"] input:not([type="checkbox"]):not([type="radio"]):-webkit-autofill:focus {
+        -webkit-text-fill-color: #f5f7fa !important;
+        -webkit-box-shadow: inset 0 0 0 1000px #0d233d, 0 0 0 3px rgba(227,199,127,.22) !important;
+      }
     `}</style>
       <div className="mx-auto max-w-6xl space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#b89c65]/35 bg-[#14233d] p-4">
@@ -528,14 +548,14 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           <input data-testid="input-filter-purchase-plan-products" value={draftSearch} onChange={(event) => { setDraftSearch(event.target.value); setDraftPage(1); }} placeholder="Cari di daftar ini" className="min-h-10 w-full rounded-lg border border-white/15 bg-[#0b172a] px-3 text-xs text-white placeholder:text-slate-400 sm:w-56"/>
         </div>}
         {items.length > 0 && paginatedDraftItems.length > 0 && <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table style={{ minWidth: Math.max(430, 112 + selectedBranchIds.length * 76) }} className="w-full table-fixed border-collapse text-left">
+          <table style={{ width: Math.max(360, 96 + selectedBranchIds.length * 64), minWidth: Math.max(360, 96 + selectedBranchIds.length * 64) }} className="table-fixed border-collapse text-left">
             <thead className="bg-[#0d1a2e]">
               <tr>
-                <th className="w-28 px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400">Produk</th>
+                <th className="w-24 px-1.5 py-1.5 text-[9px] font-bold uppercase tracking-wide text-slate-400">Produk</th>
                 {selectedBranchIds.map((branchId) => {
                   const branch = branches.find((entry) => entry.id === branchId);
                   if (!branch) return null;
-                  return <th key={branchId} className="w-[76px] px-1 py-2 text-center text-[9px] font-bold text-[#e3d5b4]" title={branch.name}>{branch.name}</th>;
+                  return <th key={branchId} className="w-16 px-0.5 py-1.5 text-center text-[10px] font-bold leading-tight text-[#e3d5b4]" title={branch.name}>{branch.name}</th>;
                 })}
               </tr>
             </thead>
@@ -543,25 +563,25 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
               {paginatedDraftItems.map((item) => {
                 const product = productById.get(item.productId);
                 return <tr key={item.productId} data-testid={`row-plan-product-${item.productId}`} className="border-t border-white/10">
-                  <td className="px-2 py-2 align-top">
+                  <td className="px-1.5 py-1.5 align-top">
                     <div className="flex items-start justify-between gap-1">
-                      <p className="min-w-0 break-words text-[11px] font-semibold leading-tight">{product?.name || "Produk"}</p>
-                      <button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => { setItems((old) => old.filter((entry) => entry.productId !== item.productId)); setDraftPage(1); }} className="grid min-h-7 min-w-7 shrink-0 place-items-center rounded-md text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={14}/></button>
+                      <p className="min-w-0 break-words text-[10px] font-semibold leading-tight">{product?.name || "Produk"}</p>
+                      <button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => { setItems((old) => old.filter((entry) => entry.productId !== item.productId)); setDraftPage(1); }} className="grid min-h-6 min-w-6 shrink-0 place-items-center rounded-md text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={13}/></button>
                     </div>
-                    <p className="mt-0.5 text-[9px] text-slate-400">{product?.category || "Tanpa kategori"}</p>
+                    <p className="mt-0.5 text-[9px] leading-tight text-slate-400">{product?.category || "Tanpa kategori"}</p>
                   </td>
                   {selectedBranchIds.map((branchId) => {
                     const branch = branches.find((entry) => entry.id === branchId);
                     if (!branch) return null;
                     if (product && !visibleInBranch(product, branchId)) {
-                      return <td key={branchId} className="px-1 py-2 text-center text-[9px] text-slate-500">—</td>;
+                      return <td key={branchId} className="border-l border-white/5 px-0.5 py-1.5 text-center text-[9px] text-slate-500">—</td>;
                     }
                     const locked = lockedBranchIds.has(branchId);
                     const suggestedQty = !editingId ? item.suggestedBranchQtys?.[branchId] : undefined;
-                    return <td key={branchId} className="px-1 py-2 align-top text-center">
-                      <input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={locked} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="mx-auto block w-12 rounded-md border border-white/15 bg-[#0b172a] px-1 py-1 text-center text-xs font-bold text-white disabled:opacity-50"/>
-                      <span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="mt-1 block text-[9px] leading-tight text-slate-400">Stok {stockFor(branchId, item.productId)}</span>
-                      {suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="mt-0.5 block text-[9px] font-semibold leading-tight text-[#d4bd8d]">Saran {suggestedQty}</span>}
+                    return <td key={branchId} className="border-l border-white/5 px-0.5 py-1.5 align-top text-center">
+                      <input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={locked} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="mx-auto block h-8 w-10 rounded-md border border-white/15 bg-[#091a30] px-0.5 py-0.5 text-center text-[11px] font-bold text-white disabled:opacity-50"/>
+                      <span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="mt-0.5 block text-[10px] leading-tight text-slate-300">Stok {stockFor(branchId, item.productId)}</span>
+                      {suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="mt-0.5 block text-[10px] font-semibold leading-tight text-[#e4cb8e]">Saran {suggestedQty}</span>}
                       {locked && <span className="mt-0.5 block text-[8px] leading-tight text-slate-500">Terkunci</span>}
                     </td>;
                   })}

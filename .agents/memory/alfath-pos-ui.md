@@ -313,4 +313,4 @@ Audit product rows should stay compact and horizontal on phones and tablets, wit
 ## Owner purchase-plan matrix
 Use one compact product-by-branch matrix for purchase plans: branch names appear once in the header, each editable cell has a small dark quantity input, and current stock plus any recommendation appear as small text beneath it. Do not use white input fields; allow horizontal scrolling on narrow screens.
 **Why:** the owner supplied an Android reference to fit more products and branches without tall cards or bright fields.
-**How to apply:** keep the candidate product source, branch visibility, and quantity behavior unchanged while adjusting the matrix presentation.
+**How to apply:** keep the candidate product source, branch visibility, and quantity behavior unchanged while using tight branch spacing and readable stock/suggestion text. Scope input styling strongly enough to override app-wide Admin input rules and Android's white autofill/native fill.
