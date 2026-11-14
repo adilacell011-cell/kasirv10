@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRightLeft, Check, Plus, Search, Send, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ArrowRightLeft, Check, ChevronDown, Plus, Search, Send, Trash2, X } from "lucide-react";
 import { isProductVisibleInBranch } from "../lib/product-visibility";
 import { api } from "../services/api";
 
@@ -46,8 +47,19 @@ export default function StockTransferBatchComposer({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [branchPickerOpen, setBranchPickerOpen] = useState(false);
+  const [branchPickerPosition, setBranchPickerPosition] = useState<{
+    left: number;
+    width: number;
+    top?: number;
+    bottom?: number;
+    maxHeight: number;
+  } | null>(null);
+  const branchPickerTriggerRef = useRef<HTMLButtonElement>(null);
+  const branchPickerPanelRef = useRef<HTMLDivElement>(null);
 
   const targetBranch = branches.find((branch) => branch.id === targetBranchId);
+  const targetBranches = branches.filter((branch) => branch.id !== sourceBranchId);
   const selectedProducts = selectedIds
     .map((id) => products.find((product) => product.id === id))
     .filter((product): product is Product => Boolean(product));
@@ -91,6 +103,67 @@ export default function StockTransferBatchComposer({
     const qty = Number(quantities[product.id] || 0);
     return sum + (Number.isSafeInteger(qty) && qty > 0 ? qty : 0);
   }, 0);
+
+  const placeBranchPicker = () => {
+    const rect = branchPickerTriggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const width = Math.max(rect.width, 170);
+    let left = rect.left;
+    if (left + width > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - width - 8);
+    }
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const opensAbove = spaceBelow < 240 && spaceAbove > spaceBelow;
+    const availableSpace = opensAbove ? spaceAbove : spaceBelow;
+    setBranchPickerPosition({
+      left,
+      width,
+      top: opensAbove ? undefined : rect.bottom + 6,
+      bottom: opensAbove ? window.innerHeight - rect.top + 6 : undefined,
+      maxHeight: Math.max(120, Math.min(256, availableSpace - 16)),
+    });
+  };
+
+  const chooseTargetBranch = (branchId: string) => {
+    setTargetBranchId(branchId);
+    setSelectedIds([]);
+    setQuantities({});
+    setSearch("");
+    setManualCategory("Semua");
+    setManualPickerMessage("");
+    setError("");
+    setBranchPickerOpen(false);
+  };
+
+  const toggleBranchPicker = () => {
+    if (!shiftOpen || busy) return;
+    if (!branchPickerOpen) placeBranchPicker();
+    setBranchPickerOpen((open) => !open);
+  };
+
+  useEffect(() => {
+    if (!branchPickerOpen) return;
+    const closeIfOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (branchPickerTriggerRef.current?.contains(target) || branchPickerPanelRef.current?.contains(target)) return;
+      setBranchPickerOpen(false);
+    };
+    const closeOnViewportChange = () => setBranchPickerOpen(false);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setBranchPickerOpen(false);
+    };
+    document.addEventListener("mousedown", closeIfOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    window.addEventListener("resize", closeOnViewportChange);
+    return () => {
+      document.removeEventListener("mousedown", closeIfOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+      window.removeEventListener("resize", closeOnViewportChange);
+    };
+  }, [branchPickerOpen]);
 
   useEffect(() => {
     if (!manualPickerOpen) return;
@@ -182,26 +255,70 @@ export default function StockTransferBatchComposer({
 
       <label className="mb-2 block text-[10px] font-bold text-slate-600 dark:text-slate-300">
         Cabang tujuan
-        <select
+        <button
+          ref={branchPickerTriggerRef}
+          type="button"
           aria-label="Cabang tujuan kiriman"
-          value={targetBranchId}
-          onChange={(event) => {
-            setTargetBranchId(event.target.value);
-            setSelectedIds([]);
-            setQuantities({});
-            setSearch("");
-            setManualCategory("Semua");
-            setManualPickerMessage("");
-            setError("");
-          }}
+          aria-haspopup="listbox"
+          aria-expanded={branchPickerOpen}
+          aria-controls="stock-transfer-target-branch-options"
+          onClick={toggleBranchPicker}
           disabled={!shiftOpen || busy}
-          className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          className="app-select-trigger mt-1 flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 text-left text-xs font-bold text-slate-800 outline-none focus:border-amber-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
-          <option value="">Pilih cabang tujuan</option>
-          {branches.filter((branch) => branch.id !== sourceBranchId).map((branch) => (
-            <option key={branch.id} value={branch.id}>{branch.name}</option>
-          ))}
-        </select>
+          <span className={`truncate ${targetBranch ? "" : "opacity-60"}`}>
+            {targetBranch?.name || "Pilih cabang tujuan"}
+          </span>
+          <ChevronDown className={`h-4 w-4 shrink-0 opacity-60 transition-transform ${branchPickerOpen ? "rotate-180" : ""}`} />
+        </button>
+        {branchPickerOpen && branchPickerPosition && createPortal(
+          <div
+            ref={branchPickerPanelRef}
+            id="stock-transfer-target-branch-options"
+            role="listbox"
+            aria-label="Daftar cabang tujuan"
+            style={{
+              position: "fixed",
+              left: branchPickerPosition.left,
+              width: branchPickerPosition.width,
+              top: branchPickerPosition.top,
+              bottom: branchPickerPosition.bottom,
+              zIndex: 9500,
+            }}
+            className="app-solid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150 dark:border-slate-700"
+          >
+            <div
+              className="custom-scrollbar overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800"
+              style={{ maxHeight: branchPickerPosition.maxHeight }}
+            >
+              {targetBranches.length ? targetBranches.map((branch, index) => {
+                const selected = branch.id === targetBranchId;
+                return (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => chooseTargetBranch(branch.id)}
+                    className={`flex min-h-11 w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-xs font-semibold transition-colors ${
+                      selected
+                        ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+                        : `${index % 2 === 1 ? "bg-slate-50/60" : "bg-white"} text-slate-700 hover:bg-slate-100 dark:text-slate-200`
+                    }`}
+                  >
+                    <span className="truncate">{branch.name}</span>
+                    {selected && <Check className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />}
+                  </button>
+                );
+              }) : (
+                <p className="px-4 py-4 text-center text-[10px] font-semibold text-slate-500">
+                  Tidak ada cabang tujuan tersedia.
+                </p>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
       </label>
 
       <div className="relative">
