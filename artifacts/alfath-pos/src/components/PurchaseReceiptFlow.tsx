@@ -207,6 +207,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     (currentDraftPage - 1) * draftPageSize,
     currentDraftPage * draftPageSize,
   );
+  const hasPurchaseQty = items.some((item) =>
+    Object.values(item.branchQtys).some((value) => value.trim() !== ""));
   const reset = () => {
     requestRef.current?.controller.abort();
     requestRef.current = null;
@@ -276,6 +278,16 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       return;
     }
     if (validDays === null) {
+      const manualDrafts = categoryProducts
+        .filter((product) => selectedBranchIds.some((branchId) => visibleInBranch(product, branchId)))
+        .map((product) => ({
+          productId: product.id,
+          branchQtys: Object.fromEntries(selectedBranchIds
+            .filter((branchId) => visibleInBranch(product, branchId))
+            .map((branchId) => [branchId, ""])),
+        }));
+      setItems(manualDrafts);
+      setDraftPage(1);
       setCriteriaConfirmed(true);
       return;
     }
@@ -454,8 +466,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
         {suggestionError && !editingId && <p data-testid="status-purchase-suggestions-error" className="rounded-lg border border-rose-300/20 bg-rose-400/10 p-3 text-xs text-rose-200">{suggestionError}</p>}
         {suggestionsLoading && !editingId && <div data-testid="status-purchase-suggestions-loading" className="animate-pulse rounded-xl border border-white/10 bg-[#0d1a2e] p-4 text-xs text-slate-300">Menghitung saran tiap cabang…</div>}
         {criteriaConfirmed && !editingId && validDays !== null && <div data-testid="status-purchase-suggestions-ready" className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">Saran siap ditinjau. Ubah jumlah sesuai kebutuhan sebelum diterbitkan.</div>}
-        {criteriaConfirmed && !editingId && validDays === null && <div data-testid="status-purchase-no-target" className="rounded-lg border border-[#c7ad79]/20 bg-[#c7ad79]/10 px-3 py-2 text-xs text-[#eee0c1]">Target hari kosong. Saran belanja tidak ditampilkan; Owner dapat menambahkan produk secara manual.</div>}
-        {(editingId || criteriaConfirmed) && <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tambahkan produk manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
+        {criteriaConfirmed && !editingId && validDays === null && <div data-testid="status-purchase-no-target" className="rounded-lg border border-[#c7ad79]/20 bg-[#c7ad79]/10 px-3 py-2 text-xs text-[#eee0c1]">Target hari kosong. Daftar produk dan stok tetap tampil; isi jumlah beli secara manual. Angka rekomendasi tidak ditampilkan.</div>}
+        {(editingId || (criteriaConfirmed && validDays !== null)) && <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tambahkan produk manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
           {search && <div className="mt-1 max-h-40 overflow-y-auto rounded-xl border border-white/15 bg-[#0b172a]">{visibleProducts.slice(0, 25).map((product) => <button key={product.id} data-testid={`button-add-purchase-product-${product.id}`} onClick={() => addProduct(product)} className="flex min-h-11 w-full items-center justify-between border-b border-white/10 px-3 text-left text-sm hover:bg-white/5"><span>{product.name}</span><Plus size={16}/></button>)}
             {visibleProducts.length === 0 && <p className="p-3 text-sm text-slate-400">Produk tidak ditemukan.</p>}</div>}
         </div>}
@@ -487,9 +499,10 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           <span className="text-[11px] text-slate-300">Halaman {currentDraftPage} / {draftPageCount}</span>
           <button data-testid="button-purchase-draft-next" disabled={currentDraftPage >= draftPageCount} onClick={() => setDraftPage(currentDraftPage + 1)} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200 disabled:opacity-40">Berikutnya</button>
         </div>}
+        {items.length === 0 && criteriaConfirmed && validDays === null && <div data-testid="empty-purchase-manual-products" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada produk yang terlihat pada kategori dan cabang terpilih.</div>}
         {items.length === 0 && criteriaConfirmed && validDays !== null && <div data-testid="empty-purchase-suggestions" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada kekurangan untuk kategori, cabang, dan target yang dipilih. Produk dapat ditambahkan secara manual.</div>}
         <p className="text-xs text-slate-400">Jumlah akhir positif yang terisi saja akan dikirim ke cabang terkait. Produk yang tidak terlihat di cabang tidak memiliki kolom jumlah.</p>
-        <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending || (!editingId && items.length === 0)} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
+        <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending || (!editingId && !hasPurchaseQty)} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
       </div> : null}
 
       <div className="space-y-3">
