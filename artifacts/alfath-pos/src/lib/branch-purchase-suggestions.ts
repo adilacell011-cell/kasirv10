@@ -94,3 +94,27 @@ export function buildBranchPurchaseSuggestions(input: {
     left.product.name.localeCompare(right.product.name, "id", { numeric: true }),
   );
 }
+
+export function buildBranchBasketPurchaseSuggestions(input: {
+  candidates: readonly BranchShoppingBasketCandidate[];
+  branchId: string;
+  branchName: string;
+  salesQty30dByProduct: Readonly<Record<string, number>>;
+  stockForProduct: (productId: string) => number;
+  targetDays?: number | null;
+}): BranchPurchaseSuggestion[] {
+  const branchProducts = Array.from(new Map(
+    input.candidates
+      .filter((candidate) => candidate.branchId === input.branchId)
+      .map((candidate) => [candidate.product.id, candidate.product] as const),
+  ).values());
+
+  return buildBranchPurchaseSuggestions({
+    products: branchProducts,
+    branchId: input.branchId,
+    branchName: input.branchName,
+    salesQty30dByProduct: input.salesQty30dByProduct,
+    stockForProduct: input.stockForProduct,
+    targetDays: input.targetDays,
+  });
+}

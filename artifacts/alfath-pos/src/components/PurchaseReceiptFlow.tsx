@@ -20,6 +20,7 @@ import type {
 } from "@workspace/api-client-react";
 import { Check, ChevronDown, ClipboardCheck, Clock3, FileText, PackageCheck, Plus, Printer, RotateCcw, Save, Share2, Store, Trash2, X, WandSparkles } from "lucide-react";
 import {
+  buildBranchBasketPurchaseSuggestions,
   buildBranchPurchaseSuggestions,
   buildBranchShoppingBasketCandidates,
 } from "../lib/branch-purchase-suggestions";
@@ -340,10 +341,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setSuggestionsLoading(true);
     try {
       const salesByBranch: Array<readonly [string, Record<string, number>]> = [];
-      const cartProductIds = new Set(automaticCartCandidates.map((candidate) => candidate.product.id));
       const suggestionBranchIds = selectedBranchIds.filter((branchId) =>
-        categoryProducts.some((product) =>
-          cartProductIds.has(product.id) && visibleInBranch(product, branchId)));
+        automaticCartCandidates.some((candidate) => candidate.branchId === branchId));
       for (const branchId of suggestionBranchIds) {
         if (controller.signal.aborted || requestEpoch.current !== epoch) return;
         salesByBranch.push([branchId, await getSalesTotals(branchId, controller.signal)]);
@@ -358,12 +357,11 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
           suggestedBranchQtys: {},
         });
       }
-      const cartProducts = categoryProducts.filter((product) => cartProductIds.has(product.id));
       for (const branchId of suggestionBranchIds) {
         const branch = branches.find((entry) => entry.id === branchId);
         if (!branch) continue;
-        const results = buildBranchPurchaseSuggestions({
-          products: cartProducts,
+        const results = buildBranchBasketPurchaseSuggestions({
+          candidates: automaticCartCandidates,
           branchId,
           branchName: branch.name,
           salesQty30dByProduct: totalsByBranch.get(branchId) || {},

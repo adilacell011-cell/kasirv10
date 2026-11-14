@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildBranchBasketPurchaseSuggestions,
   buildBranchPurchaseSuggestions,
   buildBranchShoppingBasketCandidates,
 } from "./branch-purchase-suggestions";
@@ -42,6 +43,39 @@ test("automatic shopping basket includes stock at or below minimum for visible b
       ["below", "branch-a", 2, 5],
     ],
   );
+});
+
+test("purchase recommendations stay in the branch where a product entered the basket", () => {
+  const candidates = buildBranchShoppingBasketCandidates({
+    products: [
+      { id: "shared", name: "Voucher 2 GB", minStock: 5, visibleBranchIds: "*" },
+    ],
+    branchIds: ["branch-a", "branch-b"],
+    stockForProduct: (branchId) => branchId === "branch-a" ? 4 : 20,
+  });
+
+  assert.deepEqual(candidates.map((candidate) => candidate.branchId), ["branch-a"]);
+  assert.deepEqual(
+    buildBranchBasketPurchaseSuggestions({
+      candidates,
+      branchId: "branch-b",
+      branchName: "Cabang B",
+      salesQty30dByProduct: { shared: 60 },
+      stockForProduct: () => 20,
+      targetDays: 30,
+    }),
+    [],
+  );
+
+  const [suggestion] = buildBranchBasketPurchaseSuggestions({
+    candidates,
+    branchId: "branch-a",
+    branchName: "Cabang A",
+    salesQty30dByProduct: { shared: 60 },
+    stockForProduct: () => 4,
+    targetDays: 30,
+  });
+  assert.equal(suggestion.suggestedQty, 56);
 });
 
 test("purchase suggestion tops up to the existing minimum when no coverage target is selected", () => {
