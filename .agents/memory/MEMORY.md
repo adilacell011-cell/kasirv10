@@ -25,7 +25,7 @@
 - [Temporary PostgreSQL test lifecycle](temporary-postgres-tests.md) — isolate database tests; Replit Docker may reject `exec` health checks, while one-off Compose clients work.
 - [Transaction idempotency ledger](transaction-idempotency-ledger.md) — retain retry protection and minimal transaction summaries after Sale archival; no TTL without Owner policy.
 - [Staging Owner bootstrap](staging-owner-bootstrap.md) — keep the legacy two-account seed intact; use a separate guarded operation for a branchless first Owner.
-- [GitHub Actions via Replit proxy](github-actions-proxy.md) — if `gh workflow run` fails parsing the proxy version, authenticated `gh api` dispatch may still work; verify ref and SHA.
+- [GitHub Actions via Replit proxy](github-actions-proxy.md) — Git push access is separate from Actions API access; verify ready auth and run status before dispatch or retry.
 - [Prisma migration baseline for legacy schemas](prisma-legacy-migration-baseline.md) — legacy `db push` databases need an explicit applied baseline before additive `migrate deploy`; keep the upgrade manual and target-guarded.
 - [Product deactivation policy](product-deactivation-policy.md) — global deactivation is reversible, allowed only when stock is zero across every branch; branch-only removal uses visibility settings.
 - [Orval Zod codegen runtime](orval-zod-runtime.md) — Orval 8.x Zod generation needs `Map.groupBy`; Node 20.20 lacks it, so use a compatible runtime or temporary polyfill.
