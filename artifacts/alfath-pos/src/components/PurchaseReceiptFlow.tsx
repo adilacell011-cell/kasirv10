@@ -121,6 +121,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   const [title, setTitle] = useState("");
   const [items, setItems] = useState<DraftItem[]>([]);
   const [search, setSearch] = useState("");
+  const [draftSearch, setDraftSearch] = useState("");
+  const [draftPage, setDraftPage] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [targetDays, setTargetDays] = useState("");
@@ -149,6 +151,7 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     .map((product) => product.category?.trim())
     .filter((category): category is string => Boolean(category)))).sort((a, b) =>
     a.localeCompare(b, "id", { numeric: true })), [products, shoppingBranches]);
+  const productById = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const validDays = Number.isSafeInteger(Number(targetDays.trim())) && Number(targetDays.trim()) > 0
     ? Number(targetDays.trim())
     : null;
@@ -168,6 +171,7 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setSuggestionError("");
     setCriteriaConfirmed(false);
     setItems([]);
+    setDraftPage(1);
   };
   const toggleCategory = (category: string) => {
     invalidateSuggestions();
@@ -186,6 +190,23 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   const visibleProducts = useMemo(() => categoryProducts.filter((product) =>
     `${product.name} ${product.barcode || ""}`.toLowerCase().includes(search.toLowerCase()) &&
     selectedBranchIds.some((branchId) => visibleInBranch(product, branchId))), [categoryProducts, search, selectedBranchIds]);
+  const filteredDraftItems = useMemo(() => {
+    const query = draftSearch.trim().toLocaleLowerCase("id-ID");
+    if (!query) return items;
+    return items.filter((item) => {
+      const product = productById.get(item.productId);
+      return `${product?.name || ""} ${product?.barcode || ""} ${product?.category || ""}`
+        .toLocaleLowerCase("id-ID")
+        .includes(query);
+    });
+  }, [draftSearch, items, productById]);
+  const draftPageSize = 10;
+  const draftPageCount = Math.max(1, Math.ceil(filteredDraftItems.length / draftPageSize));
+  const currentDraftPage = Math.min(draftPage, draftPageCount);
+  const paginatedDraftItems = filteredDraftItems.slice(
+    (currentDraftPage - 1) * draftPageSize,
+    currentDraftPage * draftPageSize,
+  );
   const reset = () => {
     requestRef.current?.controller.abort();
     requestRef.current = null;
@@ -194,6 +215,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setTitle("");
     setItems([]);
     setSearch("");
+    setDraftSearch("");
+    setDraftPage(1);
     setSelectedCategories([]);
     setSelectedBranchIds([]);
     setTargetDays("");
@@ -208,6 +231,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setEditingId(null);
     setTitle(`Belanja ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`);
     setItems([]);
+    setDraftSearch("");
+    setDraftPage(1);
     setSelectedCategories([]);
     setSelectedBranchIds([]);
     setTargetDays("");
@@ -231,25 +256,34 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       .map((branchId) => [branchId, ""]));
     setItems((old) => [...old, { productId: product.id, branchQtys }]);
     setSearch("");
+    setDraftSearch("");
+    setDraftPage(1);
   };
   const loadSuggestions = async () => {
     if (!title.trim()) setTitle(`Belanja ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`);
-    if (!validDays || selectedBranchIds.length === 0 || selectedCategories.length === 0) {
-      setSuggestionError(!validDays
-        ? "Masukkan target hari berupa bilangan bulat lebih dari nol."
-        : selectedCategories.length === 0
-          ? "Pilih minimal satu kategori produk."
-          : "Pilih minimal satu cabang.");
-      return;
-    }
     requestRef.current?.controller.abort();
-    const controller = new AbortController();
+    requestRef.current = null;
     const epoch = ++requestEpoch.current;
-    requestRef.current = { controller, epoch };
-    setSuggestionsLoading(true);
+    setSuggestionsLoading(false);
     setSuggestionError("");
     setCriteriaConfirmed(false);
+    if (selectedCategories.length === 0 || selectedBranchIds.length === 0 || (targetDays.trim() !== "" && validDays === null)) {
+      setSuggestionError(selectedCategories.length === 0
+        ? "Pilih minimal satu kategori produk."
+        : selectedBranchIds.length === 0
+          ? "Pilih minimal satu cabang."
+          : "Isi target dengan bilangan hari bulat positif, atau kosongkan untuk tanpa saran.");
+      return;
+    }
+    if (validDays === null) {
+      setCriteriaConfirmed(true);
+      return;
+    }
     setItems([]);
+    setDraftPage(1);
+    const controller = new AbortController();
+    requestRef.current = { controller, epoch };
+    setSuggestionsLoading(true);
     try {
       const salesByBranch: Array<readonly [string, Record<string, number>]> = [];
       for (const branchId of selectedBranchIds) {
@@ -347,6 +381,8 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
     setTitle(plan.title);
     setSelectedCategories([]);
     setTargetDays("");
+    setDraftSearch("");
+    setDraftPage(1);
     setCriteriaConfirmed(false);
     setSuggestionsLoading(false);
     setSuggestionError("");
@@ -399,7 +435,7 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
                 {categories.length === 0 && <p className="text-xs text-slate-400">Belum ada kategori produk.</p>}
               </div>
             </div>
-            <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">2 · Target persediaan cukup</span>
+            <label className="block"><span className="mb-1 block text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">2 · Target persediaan cukup <span className="font-normal normal-case tracking-normal text-slate-400">(opsional)</span></span>
               <div className="flex items-center gap-2"><input data-testid="input-purchase-target-days" type="number" min="1" step="1" inputMode="numeric" value={targetDays} onChange={(event) => { invalidateSuggestions(); setTargetDays(event.target.value); }} placeholder="Contoh: 3" className="w-28 rounded-lg border border-white/15 bg-[#0b172a] px-3 text-sm text-white"/><span className="text-xs text-slate-300">hari</span></div>
             </label>
             <div><p className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-[#d4bd8d]">3 · Cabang yang ikut</p>
@@ -411,35 +447,49 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
             </div>
           </div>
           <div className="flex flex-col justify-end gap-3">
-            <button data-testid="button-confirm-purchase-criteria" disabled={suggestionsLoading || shoppingBranches.length === 0 || categories.length === 0} onClick={() => void loadSuggestions()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a] disabled:opacity-50"><WandSparkles size={15}/>{suggestionsLoading ? "Menghitung saran…" : "Tampilkan saran"}</button>
-            <p className="text-[11px] text-slate-400">Saran hanya muncul setelah target hari dan pilihan dikonfirmasi.</p>
+            <button data-testid="button-confirm-purchase-criteria" disabled={suggestionsLoading || shoppingBranches.length === 0 || categories.length === 0} onClick={() => void loadSuggestions()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a] disabled:opacity-50"><WandSparkles size={15}/>{suggestionsLoading ? "Menghitung saran…" : validDays === null && targetDays.trim() === "" ? "Terapkan pilihan" : "Tampilkan saran"}</button>
+            <p className="text-[11px] text-slate-400">Target hari boleh dikosongkan. Tanpa target, saran tidak dihitung dan produk bisa ditambahkan manual.</p>
           </div>
         </div>}
         {suggestionError && !editingId && <p data-testid="status-purchase-suggestions-error" className="rounded-lg border border-rose-300/20 bg-rose-400/10 p-3 text-xs text-rose-200">{suggestionError}</p>}
         {suggestionsLoading && !editingId && <div data-testid="status-purchase-suggestions-loading" className="animate-pulse rounded-xl border border-white/10 bg-[#0d1a2e] p-4 text-xs text-slate-300">Menghitung saran tiap cabang…</div>}
-        {criteriaConfirmed && !editingId && <div data-testid="status-purchase-suggestions-ready" className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">Saran siap ditinjau. Ubah jumlah sesuai kebutuhan sebelum diterbitkan.</div>}
-        <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tambahkan produk manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
+        {criteriaConfirmed && !editingId && validDays !== null && <div data-testid="status-purchase-suggestions-ready" className="rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-100">Saran siap ditinjau. Ubah jumlah sesuai kebutuhan sebelum diterbitkan.</div>}
+        {criteriaConfirmed && !editingId && validDays === null && <div data-testid="status-purchase-no-target" className="rounded-lg border border-[#c7ad79]/20 bg-[#c7ad79]/10 px-3 py-2 text-xs text-[#eee0c1]">Target hari kosong. Saran belanja tidak ditampilkan; Owner dapat menambahkan produk secara manual.</div>}
+        {(editingId || criteriaConfirmed) && <div className="relative"><input data-testid="input-purchase-product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tambahkan produk manual" className="w-full rounded-xl border border-white/15 bg-[#0b172a] px-3 text-sm text-white placeholder:text-slate-400"/>
           {search && <div className="mt-1 max-h-40 overflow-y-auto rounded-xl border border-white/15 bg-[#0b172a]">{visibleProducts.slice(0, 25).map((product) => <button key={product.id} data-testid={`button-add-purchase-product-${product.id}`} onClick={() => addProduct(product)} className="flex min-h-11 w-full items-center justify-between border-b border-white/10 px-3 text-left text-sm hover:bg-white/5"><span>{product.name}</span><Plus size={16}/></button>)}
             {visibleProducts.length === 0 && <p className="p-3 text-sm text-slate-400">Produk tidak ditemukan.</p>}</div>}
-        </div>
-        {items.length > 0 && <div className="space-y-2">{items.map((item) => {
-          const product = products.find((entry) => entry.id === item.productId);
+        </div>}
+        {items.length > 0 && <div className="flex flex-wrap items-center justify-between gap-2">
+          <div><p className="text-xs font-bold text-[#e3d5b4]">Daftar produk ({items.length})</p><p className="text-[10px] text-slate-400">Tampil {filteredDraftItems.length === 0 ? 0 : (currentDraftPage - 1) * draftPageSize + 1}–{Math.min(currentDraftPage * draftPageSize, filteredDraftItems.length)} dari {filteredDraftItems.length}</p></div>
+          <input data-testid="input-filter-purchase-plan-products" value={draftSearch} onChange={(event) => { setDraftSearch(event.target.value); setDraftPage(1); }} placeholder="Cari di daftar ini" className="min-h-10 w-full rounded-lg border border-white/15 bg-[#0b172a] px-3 text-xs text-white placeholder:text-slate-400 sm:w-56"/>
+        </div>}
+        {items.length > 0 && paginatedDraftItems.length > 0 && <div className="space-y-2">{paginatedDraftItems.map((item) => {
+          const product = productById.get(item.productId);
             return <article key={item.productId} data-testid={`row-plan-product-${item.productId}`} className="rounded-xl border border-white/10 bg-[#0d1a2e] p-3">
-              <div className="mb-2 flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{product?.name || "Produk"}</p><p className="text-[10px] text-slate-400">{product?.category || "Tanpa kategori"}</p></div><button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => setItems((old) => old.filter((entry) => entry.productId !== item.productId))} className="grid min-h-9 min-w-9 place-items-center rounded-lg text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={16}/></button></div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">{Object.keys(item.branchQtys).map((branchId) => {
+              <div className="mb-2 flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-semibold">{product?.name || "Produk"}</p><p className="text-[10px] text-slate-400">{product?.category || "Tanpa kategori"}</p></div><button data-testid={`button-remove-plan-product-${item.productId}`} onClick={() => { setItems((old) => old.filter((entry) => entry.productId !== item.productId)); setDraftPage(1); }} className="grid min-h-9 min-w-9 place-items-center rounded-lg text-rose-300" aria-label={`Hapus ${product?.name || "produk"}`}><X size={16}/></button></div>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">{Object.keys(item.branchQtys).map((branchId) => {
                 const branch = branches.find((entry) => entry.id === branchId);
                 if (!branch) return null;
                 const suggestedQty = !editingId ? item.suggestedBranchQtys?.[branchId] : undefined;
-                return <label key={branchId} className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-[#14233d] px-3 py-2">
-                  <span className="min-w-0"><span className="block truncate text-[11px] font-semibold text-slate-200">{branch.name}</span><span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="text-[10px] text-slate-400">Stok saat ini: {stockFor(branchId, item.productId)}{lockedBranchIds.has(branchId) ? " · terkunci" : ""}</span>{suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="block text-[10px] font-semibold text-[#e3d5b4]">Saran: {suggestedQty} pcs</span>}</span>
-                  <span className="flex shrink-0 items-center gap-2"><span className="text-[9px] uppercase tracking-wide text-[#d4bd8d]">Beli</span><input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={lockedBranchIds.has(branchId)} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="w-20 rounded-lg border border-white/15 bg-[#0b172a] px-2 text-center text-sm text-white disabled:opacity-50"/></span>
+                return <label key={branchId} className="min-w-0 rounded-lg border border-white/5 bg-[#14233d] p-2">
+                  <span className="block truncate text-[10px] font-bold text-slate-200" title={branch.name}>{branch.name}</span>
+                  <span data-testid={`text-plan-current-stock-${item.productId}-${branchId}`} className="mt-0.5 block truncate text-[9px] text-slate-400">Stok {stockFor(branchId, item.productId)}{lockedBranchIds.has(branchId) ? " · terkunci" : ""}</span>
+                  {suggestedQty !== undefined && <span data-testid={`text-plan-suggested-qty-${item.productId}-${branchId}`} className="block truncate text-[9px] font-semibold text-[#e3d5b4]">Saran {suggestedQty} pcs</span>}
+                  <span className="mt-1 block text-[9px] uppercase tracking-wide text-[#d4bd8d]">Jumlah beli</span>
+                  <input data-testid={`input-plan-qty-${item.productId}-${branchId}`} aria-label={`${product?.name || "Produk"} jumlah ${branch.name}`} type="number" min="1" step="1" inputMode="numeric" disabled={lockedBranchIds.has(branchId)} value={item.branchQtys[branchId] || ""} onChange={(event) => setQty(item.productId, branchId, event.target.value)} className="mt-0.5 w-full rounded-md border border-white/15 bg-[#0b172a] px-2 py-1.5 text-center text-sm text-white disabled:opacity-50"/>
                 </label>;
               })}</div>
             </article>;
         })}</div>}
-        {items.length === 0 && criteriaConfirmed && <div data-testid="empty-purchase-suggestions" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada kekurangan untuk kategori, cabang, dan target yang dipilih. Produk dapat ditambahkan secara manual.</div>}
+        {items.length > 0 && filteredDraftItems.length === 0 && <div className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Produk tidak ditemukan pada daftar rencana.</div>}
+        {items.length > 0 && filteredDraftItems.length > draftPageSize && <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0d1a2e] p-2">
+          <button data-testid="button-purchase-draft-previous" disabled={currentDraftPage <= 1} onClick={() => setDraftPage(currentDraftPage - 1)} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200 disabled:opacity-40">Sebelumnya</button>
+          <span className="text-[11px] text-slate-300">Halaman {currentDraftPage} / {draftPageCount}</span>
+          <button data-testid="button-purchase-draft-next" disabled={currentDraftPage >= draftPageCount} onClick={() => setDraftPage(currentDraftPage + 1)} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200 disabled:opacity-40">Berikutnya</button>
+        </div>}
+        {items.length === 0 && criteriaConfirmed && validDays !== null && <div data-testid="empty-purchase-suggestions" className="rounded-xl border border-dashed border-white/15 p-4 text-center text-xs text-slate-400">Tidak ada kekurangan untuk kategori, cabang, dan target yang dipilih. Produk dapat ditambahkan secara manual.</div>}
         <p className="text-xs text-slate-400">Jumlah akhir positif yang terisi saja akan dikirim ke cabang terkait. Produk yang tidak terlihat di cabang tidak memiliki kolom jumlah.</p>
-        <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending || (!editingId && !criteriaConfirmed && items.length === 0)} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
+        <button data-testid="button-publish-purchase-plan" disabled={createPlan.isPending || revisePlan.isPending || (!editingId && items.length === 0)} onClick={() => void savePlan()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c7ad79] px-4 font-bold text-[#17233a] disabled:opacity-50"><Save size={17}/>{createPlan.isPending || revisePlan.isPending ? "Menerbitkan…" : "Simpan & terbitkan"}</button>
       </div> : null}
 
       <div className="space-y-3">
