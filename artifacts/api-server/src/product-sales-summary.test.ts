@@ -36,7 +36,7 @@ test("summary lines reject invalid quantities and missing product IDs", () => {
   assert.throws(() => buildProductSalesSummaryLines([{ productId: "x", qty: 1.5 }]), /tidak valid/);
 });
 
-test("product-demand endpoint is mounted behind authentication and the Owner role", () => {
+test("product-demand endpoints are mounted behind authentication and the Owner role", () => {
   const routes: Array<{ path: string; handlers: RequestHandler[] }> = [];
   const roleChecks: string[][] = [];
   const authenticate = (() => undefined) as RequestHandler;
@@ -55,11 +55,15 @@ test("product-demand endpoint is mounted behind authentication and the Owner rol
     },
   );
 
-  assert.equal(routes.length, 1);
-  assert.equal(routes[0].path, "/api/product-sales-summary");
-  assert.equal(routes[0].handlers[0], authenticate);
-  assert.equal(routes[0].handlers[1], roleGuard);
-  assert.deepEqual(roleChecks, [["ADMIN"]]);
+  assert.deepEqual(routes.map((route) => route.path), [
+    "/api/product-sales-summary",
+    "/api/product-sales-summary/totals",
+  ]);
+  for (const route of routes) {
+    assert.equal(route.handlers[0], authenticate);
+    assert.equal(route.handlers[1], roleGuard);
+  }
+  assert.deepEqual(roleChecks, [["ADMIN"], ["ADMIN"]]);
 });
 
 test("product-demand endpoint bounds filters and pages by branch and product", async () => {
@@ -114,4 +118,60 @@ test("product-demand endpoint bounds filters and pages by branch and product", a
   await handler({ query: { days: "31" } }, invalidPage);
   assert.equal(invalidPage.statusCode, 400);
   assert.equal(calls.length, callCount, "invalid windows must not query the database");
+});
+
+test("branch sales totals aggregate the 30-day summary and page by product", async () => {
+  const routes: Array<{ path: string; handlers: RequestHandler[] }> = [];
+  const calls: Array<Record<string, any>> = [];
+  let results = [
+    { productId: "product-a", _sum: { qty: 3 } },
+    { productId: "product-b", _sum: { qty: 8 } },
+  ];
+  const app = {
+    get: (path: string, ...handlers: RequestHandler[]) => routes.push({ path, handlers }),
+  } as unknown as Express;
+  const prisma = {
+    dailyProductSalesSummary: {
+      groupBy: async (args: Record<string, any>) => {
+        calls.push(args);
+        return results;
+      },
+    },
+  } as unknown as PrismaClient;
+  registerProductSalesSummaryRoutes(app, prisma, (() => undefined) as RequestHandler, () => (() => undefined) as RequestHandler);
+  const handler = routes.find((route) => route.path.endsWith("/totals"))?.handlers.at(-1) as unknown as (
+    req: { query: Record<string, unknown> },
+    res: { statusCode: number; body?: any; status(code: number): any; json(body: any): any },
+  ) => Promise<void>;
+  const response = () => ({
+    statusCode: 200,
+    body: undefined as any,
+    status(code: number) { this.statusCode = code; return this; },
+    json(body: any) { this.body = body; return this; },
+  });
+
+  const firstPage = response();
+  await handler({ query: { branchId: "branch-a", limit: "1" } }, firstPage);
+  assert.equal(firstPage.statusCode, 200);
+  assert.deepEqual(firstPage.body.items, [{ productId: "product-a", soldQty30d: 3 }]);
+  assert.equal(firstPage.body.days, 30);
+  assert.equal(firstPage.body.hasMore, true);
+  assert.equal(calls[0].where.branchId, "branch-a");
+  assert.deepEqual(calls[0].by, ["productId"]);
+  assert.equal(calls[0].take, 2);
+
+  results = [{ productId: "product-b", _sum: { qty: 8 } }];
+  const secondPage = response();
+  await handler({
+    query: { branchId: "branch-a", limit: "1", cursor: firstPage.body.nextCursor },
+  }, secondPage);
+  assert.deepEqual(calls[1].where.productId, { gt: "product-a" });
+  assert.equal(secondPage.body.hasMore, false);
+  assert.equal(secondPage.body.nextCursor, null);
+
+  const invalidPage = response();
+  const callCount = calls.length;
+  await handler({ query: { limit: "501" } }, invalidPage);
+  assert.equal(invalidPage.statusCode, 400);
+  assert.equal(calls.length, callCount, "invalid branch filters must not query the database");
 });

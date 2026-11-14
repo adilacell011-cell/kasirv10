@@ -78,6 +78,7 @@ import {
 } from "./services/sales-read-scope";
 import { isShiftOverdue } from "./services/shift-time";
 import { buildProductSuggestions } from "./lib/product-suggestions";
+import { buildBranchPurchaseSuggestions } from "./lib/branch-purchase-suggestions";
 import {
   excludedBranchIds,
   explicitVisibleBranchIds,
@@ -452,6 +453,7 @@ function CustomSelect({
   buttonClassName = "",
   keepTriggerBg = false,
   disabled = false,
+  testId,
 }: {
   value?: string;
   defaultValue?: string;
@@ -463,6 +465,7 @@ function CustomSelect({
   buttonClassName?: string;
   keepTriggerBg?: boolean;
   disabled?: boolean;
+  testId?: string;
 }) {
   const isControlled = value !== undefined;
   const [internal, setInternal] = useState(defaultValue ?? "");
@@ -546,6 +549,7 @@ function CustomSelect({
       )}
       <button
         ref={btnRef}
+        data-testid={testId}
         type="button"
         disabled={disabled}
         onClick={toggle}
@@ -1309,6 +1313,11 @@ export default function App() {
     useState<any>(null);
   const [shoppingListBranch, setShoppingListBranch] = useState("");
   const [shoppingListCategory, setShoppingListCategory] = useState("");
+  const [purchaseSuggestionBranchId, setPurchaseSuggestionBranchId] = useState("");
+  const [purchaseSuggestionTargetDays, setPurchaseSuggestionTargetDays] = useState("");
+  const [purchaseSuggestionSalesQty, setPurchaseSuggestionSalesQty] = useState<Record<string, number>>({});
+  const [purchaseSuggestionLoading, setPurchaseSuggestionLoading] = useState(false);
+  const [purchaseSuggestionError, setPurchaseSuggestionError] = useState("");
   const [hiddenShoppingBranchIds, setHiddenShoppingBranchIds] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem("hiddenShoppingBranchIds");
@@ -1317,6 +1326,22 @@ export default function App() {
       return [];
     }
   });
+  const purchaseSuggestionBranches = useMemo(
+    () => branches
+      .filter((branch) => !hiddenShoppingBranchIds.includes(branch.id))
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, "id", { numeric: true })),
+    [branches, hiddenShoppingBranchIds],
+  );
+  useEffect(() => {
+    if (purchaseSuggestionBranches.length === 0) {
+      if (purchaseSuggestionBranchId) setPurchaseSuggestionBranchId("");
+      return;
+    }
+    if (!purchaseSuggestionBranches.some((branch) => branch.id === purchaseSuggestionBranchId)) {
+      setPurchaseSuggestionBranchId(purchaseSuggestionBranches[0].id);
+    }
+  }, [purchaseSuggestionBranches, purchaseSuggestionBranchId]);
   const visibleShoppingBranchesForProduct = useCallback((product: any) => {
     return branches.filter((branch) => {
       if (hiddenShoppingBranchIds.includes(branch.id)) return false;
@@ -2239,6 +2264,54 @@ export default function App() {
     return () => controller.abort();
   }, [activeMenu, profile?.branchId, profile?.role, syncToken]);
 
+  useEffect(() => {
+    if (
+      !syncToken ||
+      profile?.role !== "ADMIN" ||
+      activeMenu !== "shopping_list" ||
+      !purchaseSuggestionBranchId
+    ) {
+      setPurchaseSuggestionSalesQty({});
+      setPurchaseSuggestionError("");
+      setPurchaseSuggestionLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const epoch = readEpoch.current;
+    const context = liveSyncKey.current;
+    const current = () =>
+      !controller.signal.aborted &&
+      readEpoch.current === epoch &&
+      liveSyncKey.current === context &&
+      localStorage.getItem("token") === syncToken;
+
+    setPurchaseSuggestionSalesQty({});
+    setPurchaseSuggestionError("");
+    setPurchaseSuggestionLoading(true);
+    api.getBranchProductSalesTotals(purchaseSuggestionBranchId, controller.signal).then((totals) => {
+      if (!current()) return;
+      setPurchaseSuggestionSalesQty(totals);
+    }).catch((error) => {
+      if (!current()) return;
+      if (isSessionError(error)) expireReadSession();
+      else setPurchaseSuggestionError(
+        error instanceof ReadError
+          ? error.message
+          : "Gagal memuat ringkasan penjualan 30 hari.",
+      );
+    }).finally(() => {
+      if (current()) setPurchaseSuggestionLoading(false);
+    });
+
+    return () => controller.abort();
+  }, [
+    activeMenu,
+    profile?.role,
+    purchaseSuggestionBranchId,
+    syncToken,
+  ]);
+
   useEffect(() => { fullRefreshRef.current(); }, [refreshTick]);
 
   const salesSyncKey = JSON.stringify([
@@ -2836,6 +2909,36 @@ export default function App() {
     );
     return s ? s.qty : 0;
   };
+
+  const purchaseSuggestionBranch = purchaseSuggestionBranches.find(
+    (branch) => branch.id === purchaseSuggestionBranchId,
+  );
+  const parsedPurchaseSuggestionDays = Number(purchaseSuggestionTargetDays.trim());
+  const validPurchaseSuggestionDays = Number.isSafeInteger(parsedPurchaseSuggestionDays) &&
+    parsedPurchaseSuggestionDays > 0
+    ? parsedPurchaseSuggestionDays
+    : null;
+  const purchaseSuggestionDaysInvalid = purchaseSuggestionTargetDays.trim() !== "" &&
+    validPurchaseSuggestionDays === null;
+  const purchaseSuggestions = useMemo(() => {
+    if (!purchaseSuggestionBranch || purchaseSuggestionDaysInvalid) return [];
+    return buildBranchPurchaseSuggestions({
+      products,
+      branchId: purchaseSuggestionBranch.id,
+      branchName: purchaseSuggestionBranch.name,
+      salesQty30dByProduct: purchaseSuggestionSalesQty,
+      stockForProduct: (productId) => getBranchStock(purchaseSuggestionBranch.id, productId),
+      targetDays: validPurchaseSuggestionDays,
+    });
+  }, [
+    products,
+    purchaseSuggestionBranch?.id,
+    purchaseSuggestionBranch?.name,
+    purchaseSuggestionSalesQty,
+    stocks,
+    validPurchaseSuggestionDays,
+    purchaseSuggestionDaysInvalid,
+  ]);
 
   const getProductBranchStock = (branchId: string, product: any) => {
     if (productLifecycleTab === "INACTIVE") {
@@ -6345,6 +6448,169 @@ export default function App() {
                 </div>
                 {!isCreatingPlan ? (
                   <div className="space-y-8">
+                    <section
+                      data-ui-panel="sales-based-purchase-suggestions"
+                      className="bg-white border border-slate-200 rounded-[32px] overflow-hidden text-left shadow-sm"
+                    >
+                      <div className="p-4 md:p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+                        <div>
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-amber-500" />
+                            Saran Belanja Berbasis Penjualan
+                          </h3>
+                          <p className="text-[10px] text-slate-500 font-medium mt-1">
+                            Memakai ringkasan penjualan 30 hari, stok cabang, dan batas minimum.
+                            Saran hanya mengisi draft untuk ditinjau Owner.
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                          <label className="flex flex-col gap-1 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                            Cabang
+                            <CustomSelect
+                              value={purchaseSuggestionBranchId}
+                              onChange={setPurchaseSuggestionBranchId}
+                              testId="select-purchase-suggestion-branch"
+                              options={purchaseSuggestionBranches.length > 0
+                                ? purchaseSuggestionBranches.map((branch) => ({
+                                    value: branch.id,
+                                    label: branch.name,
+                                  }))
+                                : [{ value: "", label: "Tidak ada cabang" }]}
+                              buttonClassName="min-w-40 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                            Target hari persediaan · opsional
+                            <input
+                              data-testid="input-purchase-target-days"
+                              type="number"
+                              min="1"
+                              step="1"
+                              inputMode="numeric"
+                              value={purchaseSuggestionTargetDays}
+                              onChange={(event) => setPurchaseSuggestionTargetDays(event.target.value)}
+                              placeholder="Belum ditentukan"
+                              className="w-40 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[11px] font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100"
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="px-4 md:px-6 py-3 bg-slate-50/70 border-b border-slate-100">
+                        <p
+                          data-testid="text-purchase-suggestion-formula"
+                          className={`text-[10px] font-medium ${purchaseSuggestionDaysInvalid ? "text-rose-600" : "text-slate-500"}`}
+                        >
+                          {purchaseSuggestionDaysInvalid
+                            ? "Masukkan target hari sebagai bilangan bulat lebih dari nol."
+                            : validPurchaseSuggestionDays
+                              ? `Rumus: stok tujuan = nilai terbesar antara stok minimum dan perkiraan penjualan ${validPurchaseSuggestionDays} hari. Tidak ada stok pengaman tambahan; pilihan hari ini tidak disimpan.`
+                              : "Target hari belum dipilih. Untuk sementara saran hanya menutup kekurangan sampai batas minimum; laju penjualan ditampilkan sebagai konteks. Pilihan hari tidak disimpan."}
+                        </p>
+                      </div>
+
+                      {purchaseSuggestionLoading ? (
+                        <div
+                          data-testid="status-purchase-suggestions-loading"
+                          className="px-4 py-8 text-center text-xs font-bold text-slate-400"
+                        >
+                          Memuat ringkasan penjualan 30 hari…
+                        </div>
+                      ) : purchaseSuggestionError ? (
+                        <div
+                          data-testid="status-purchase-suggestions-error"
+                          className="px-4 py-8 text-center text-xs font-bold text-rose-600"
+                        >
+                          {purchaseSuggestionError}
+                        </div>
+                      ) : !purchaseSuggestionBranch ? (
+                        <div className="px-4 py-8 text-center text-xs font-bold text-slate-400">
+                          Tidak ada cabang yang diaktifkan untuk daftar belanja.
+                        </div>
+                      ) : purchaseSuggestions.length === 0 ? (
+                        <div
+                          data-testid="status-purchase-suggestions-empty"
+                          className="px-4 py-8 text-center text-xs font-bold text-slate-400"
+                        >
+                          Tidak ada kekurangan stok menurut batas dan target yang dipilih. Produk
+                          yang tidak ditampilkan di cabang ini tidak masuk saran.
+                        </div>
+                      ) : (
+                        <>
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[650px] text-left border-collapse">
+                              <thead>
+                                <tr className="bg-white border-b border-slate-100">
+                                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
+                                  <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Terjual 30 hari<br />Rata-rata/hari</th>
+                                  <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Stok / Min</th>
+                                  <th className="px-4 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Saran Qty</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {purchaseSuggestions.map((suggestion) => (
+                                  <tr
+                                    key={`${suggestion.branchId}-${suggestion.product.id}`}
+                                    data-testid={`row-purchase-suggestion-${suggestion.product.id}`}
+                                    className="hover:bg-slate-50/70 transition-colors"
+                                  >
+                                    <td className="px-4 py-3">
+                                      <p className="font-bold text-xs text-slate-800">{suggestion.product.name}</p>
+                                      <p className="text-[9px] text-slate-400 mt-0.5">
+                                        {suggestion.product.category || "Tanpa kategori"} · {suggestion.branchName}
+                                      </p>
+                                    </td>
+                                    <td className="px-3 py-3 text-center">
+                                      <p className="font-mono text-xs font-black text-slate-700">{suggestion.soldQty30d}</p>
+                                      <p className="font-mono text-[9px] text-slate-400">
+                                        {suggestion.averageDailySales.toFixed(2)} / hari
+                                      </p>
+                                    </td>
+                                    <td className="px-3 py-3 text-center font-mono text-xs">
+                                      <span className={suggestion.currentStock === 0 ? "text-rose-600 font-black" : "text-slate-700 font-bold"}>
+                                        {suggestion.currentStock}
+                                      </span>
+                                      <span className="text-slate-300"> / </span>
+                                      <span className="text-slate-500">{suggestion.minimumStock}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                      <span className="inline-flex min-w-12 justify-center px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 font-mono font-black text-sm">
+                                        {suggestion.suggestedQty}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="p-4 md:px-6 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <p className="text-[10px] text-slate-500">
+                              {purchaseSuggestions.length} produk perlu ditinjau. Jumlah masih bisa diubah sebelum draft disimpan.
+                            </p>
+                            <button
+                              data-testid="button-review-purchase-suggestions"
+                              onClick={() => {
+                                if (!purchaseSuggestionBranch) return;
+                                setPlanDraftItems(purchaseSuggestions.map((suggestion) => ({
+                                  productId: suggestion.product.id,
+                                  branchQtys: {
+                                    [suggestion.branchId]: String(suggestion.suggestedQty),
+                                  },
+                                })));
+                                setPlanDraftTitle(
+                                  `Belanja ${purchaseSuggestionBranch.name} · Saran 30 Hari`,
+                                );
+                                setIsCreatingPlan(true);
+                              }}
+                              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                            >
+                              Tinjau saran di draft
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </section>
+
                     {/* LOW STOCK ALERTS SECTION */}
                     <div data-ui-panel="low-stock-alerts" className="bg-white rounded-[32px] overflow-hidden text-left">
                       <div className="p-4 md:p-6 border-b border-slate-100 bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -6495,8 +6761,9 @@ export default function App() {
                                           {
                                             productId: a.product.id,
                                             branchQtys: {
-                                              [a.branch.id]: (
-                                                a.product.minStock * 2
+                                              [a.branch.id]: Math.max(
+                                                0,
+                                                Number(a.product.minStock || 0) - a.qty,
                                               ).toString(),
                                             },
                                           },
@@ -6788,7 +7055,6 @@ export default function App() {
                                 {/* Branch inputs row */}
                                 <div className="flex flex-wrap gap-2">
                                   {visibleBranches.map((b) => {
-                                    const isSafe = getBranchStock(b.id, item.productId) > (p?.minStock || 0);
                                     const currentStock = getBranchStock(b.id, item.productId);
                                     return (
                                       <div key={b.id} className="flex flex-col items-center gap-0.5">
@@ -6796,7 +7062,8 @@ export default function App() {
                                         <input
                                           type="number"
                                           inputMode="numeric"
-                                          disabled={isSafe}
+                                          min="0"
+                                          step="1"
                                           value={item.branchQtys[b.id] || ""}
                                           onChange={(e) => {
                                             const newItems = [...planDraftItems];
@@ -6807,14 +7074,12 @@ export default function App() {
                                             setPlanDraftItems(newItems);
                                           }}
                                           placeholder="0"
-                                          title={isSafe ? `Stok aman: ${currentStock} (Min: ${p?.minStock || 0})` : `Sisa stok: ${currentStock} (Min: ${p?.minStock || 0})`}
-                                          className={`w-14 border rounded-xl px-1 py-1.5 text-center font-mono font-black text-sm outline-none focus:ring-2 transition-all ${isSafe ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed" : "bg-white border-slate-300 text-slate-700 focus:ring-blue-300 focus:border-blue-400"}`}
+                                          title={`Saran untuk ditinjau Owner. Stok saat ini: ${currentStock} (Min: ${p?.minStock || 0})`}
+                                          className="w-14 border border-slate-300 bg-white text-slate-700 rounded-xl px-1 py-1.5 text-center font-mono font-black text-sm outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition-all"
                                         />
-                                        {!isSafe && (
-                                          <span className={`text-[7.5px] font-bold leading-none ${currentStock === 0 ? "text-red-400" : "text-amber-400"}`}>
-                                            stok:{currentStock}
-                                          </span>
-                                        )}
+                                        <span className={`text-[7.5px] font-bold leading-none ${currentStock === 0 ? "text-red-400" : "text-amber-500"}`}>
+                                          stok:{currentStock}
+                                        </span>
                                       </div>
                                     );
                                   })}

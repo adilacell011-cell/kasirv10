@@ -634,6 +634,40 @@ export const api = {
     return readJson("/shopping-plans", signal);
   },
 
+  async getBranchProductSalesTotals(branchId: string, signal?: AbortSignal): Promise<Record<string, number>> {
+    if (!branchId.trim()) throw new ReadError("invalid-response");
+    const totals: Record<string, number> = {};
+    const seenCursors = new Set<string>();
+    let cursor: string | null = null;
+
+    for (let pageNumber = 0; pageNumber < 100; pageNumber += 1) {
+      const query = new URLSearchParams({ branchId, limit: "500" });
+      if (cursor) query.set("cursor", cursor);
+      const page = await readJson(`/product-sales-summary/totals?${query.toString()}`, signal);
+      if (!page || page.branchId !== branchId || page.days !== 30 ||
+          !Array.isArray(page.items) || typeof page.hasMore !== "boolean") {
+        throw new ReadError("invalid-response");
+      }
+
+      for (const item of page.items) {
+        if (!item || typeof item.productId !== "string" || !item.productId ||
+            !Number.isSafeInteger(item.soldQty30d) || item.soldQty30d < 0) {
+          throw new ReadError("invalid-response");
+        }
+        totals[item.productId] = item.soldQty30d;
+      }
+
+      if (!page.hasMore) return totals;
+      if (typeof page.nextCursor !== "string" || !page.nextCursor || seenCursors.has(page.nextCursor)) {
+        throw new ReadError("invalid-response");
+      }
+      seenCursors.add(page.nextCursor);
+      cursor = page.nextCursor;
+    }
+
+    throw new ReadError("invalid-response");
+  },
+
   async createShoppingPlan(data: any) {
     const res = await fetch(`${BASE_URL}/shopping-plans`, {
       method: "POST",

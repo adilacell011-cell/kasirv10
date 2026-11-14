@@ -7,6 +7,7 @@ export const PRODUCT_SALES_SUMMARY_INTERVAL_MS = 30_000;
 const SUMMARY_ADVISORY_LOCK_CLASS = 180043211;
 const SUMMARY_ADVISORY_LOCK_ID = 2;
 const MAX_SUMMARY_PAGE_SIZE = 500;
+const MAX_PRODUCT_TOTALS_PAGE_SIZE = 500;
 
 export type ProductSalesSummaryKind = "SALE" | "REFUND";
 export type ProductSalesSummaryLine = { productId: string; qty: number };
@@ -442,6 +443,56 @@ export function registerProductSalesSummaryRoutes(
       res.json({ days, startDate: start, endDate: today, items, hasMore, nextCursor });
     } catch {
       res.status(500).json({ error: "Gagal mengambil ringkasan penjualan produk." });
+    }
+  });
+
+  app.get("/api/product-sales-summary/totals", authenticate, requireRole("ADMIN"), async (req, res) => {
+    const branchIdValue = req.query.branchId;
+    const branchId = typeof branchIdValue === "string" ? branchIdValue.trim() : "";
+    const limitValue = req.query.limit;
+    const limit = limitValue === undefined ? MAX_PRODUCT_TOTALS_PAGE_SIZE : Number(limitValue);
+    const cursorValue = req.query.cursor;
+    const cursor = cursorValue === undefined ? null : cursorValue;
+
+    if (!branchId || branchId.length > 128 ||
+        !Number.isInteger(limit) || limit < 1 || limit > MAX_PRODUCT_TOTALS_PAGE_SIZE ||
+        (cursor !== null && (typeof cursor !== "string" || !cursor.trim() || cursor.length > 128))) {
+      res.status(400).json({ error: "Filter total penjualan cabang tidak valid." });
+      return;
+    }
+
+    try {
+      const now = new Date();
+      const today = getLogicalShiftDate(now);
+      const start = getProductSalesSummaryWindowStart(now, 30);
+      const rows = await prisma.dailyProductSalesSummary.groupBy({
+        by: ["productId"],
+        where: {
+          branchId,
+          saleDate: { gte: start, lte: today },
+          ...(typeof cursor === "string" ? { productId: { gt: cursor } } : {}),
+        },
+        orderBy: { productId: "asc" },
+        take: limit + 1,
+        _sum: { qty: true },
+      });
+      const hasMore = rows.length > limit;
+      const items = rows.slice(0, limit).map((row) => ({
+        productId: row.productId,
+        soldQty30d: Number(row._sum.qty ?? 0),
+      }));
+      const last = items.at(-1);
+      res.json({
+        branchId,
+        days: 30,
+        startDate: start,
+        endDate: today,
+        items,
+        hasMore,
+        nextCursor: hasMore && last ? last.productId : null,
+      });
+    } catch {
+      res.status(500).json({ error: "Gagal mengambil total penjualan 30 hari." });
     }
   });
 }
