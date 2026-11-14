@@ -21,7 +21,6 @@ import type {
 import { Check, ChevronDown, ClipboardCheck, Clock3, FileText, PackageCheck, Plus, Printer, RotateCcw, Save, Share2, Store, Trash2, X, WandSparkles } from "lucide-react";
 import {
   buildBranchBasketPurchaseSuggestions,
-  buildBranchPurchaseSuggestions,
   buildBranchShoppingBasketCandidates,
 } from "../lib/branch-purchase-suggestions";
 import { isProductVisibleInBranch } from "../lib/product-visibility";
