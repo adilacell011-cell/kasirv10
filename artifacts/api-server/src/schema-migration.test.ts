@@ -377,7 +377,8 @@ test("stock-transfer migration is guarded, additive, and retains transfer histor
   assert.match(sql, /StockTransfer_productId_createdAt_idx/);
   assert.match(main, /STOCK_TRANSFER_MIGRATION/);
   assert.match(main, /STOCK_TRANSFER_SKU_CORRECTION_MIGRATION/);
-  assert.match(main, /const PRE_TRANSFER_MODELS = Prisma\.dmmf\.datamodel\.models\s*\.filter\(\(model\) => model\.name !== "StockTransfer" && model\.name !== "StockTransferSkuCorrection"\)/);
+  assert.match(main, /const PRE_PRODUCT_SALES_SUMMARY_MODELS = Prisma\.dmmf\.datamodel\.models/);
+  assert.match(main, /const PRE_TRANSFER_MODELS = PRE_PRODUCT_SALES_SUMMARY_MODELS/);
   assert.match(main, /isCurrent17/);
   assert.match(main, /isCurrent18/);
   assert.match(main, /isCurrent19/);
@@ -447,6 +448,28 @@ test("physical-return migration adds a guarded self-reference to the exact trans
   assert.match(main, /PRE_RETURN_MODELS/);
   assert.match(main, /hasTransferReturnColumn/);
   assert.match(main, /STOCK_TRANSFER_RETURN_INDEXES/);
+  assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
+  assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
+});
+
+test("product-sales-summary migration is guarded, additive, and follows the exact 19-table schema", () => {
+  const sql = fs.readFileSync(
+    new URL("../prisma/migrations/20261114100000_add_product_sales_summary/migration.sql", import.meta.url),
+    "utf8",
+  );
+  const main = fs.readFileSync(new URL("./schema-migration-main.ts", import.meta.url), "utf8");
+  assert.match(sql, /current_database\(\).*staging.*qa.*test/is);
+  assert.match(sql, /current_database\(\)\s*<>\s*'kasirv10_migrasi'/);
+  assert.match(sql, /current_database\(\)\s*<>\s*'heliumdb'/);
+  assert.match(sql, /exact approved 19-table schema/i);
+  assert.match(sql, /DailyProductSalesSummary/);
+  assert.match(sql, /ProductSalesSummaryEvent/);
+  assert.match(sql, /UNIQUE \("saleId", "kind"\)/);
+  assert.match(sql, /CHECK \("qty" >= 0\)/);
+  assert.match(main, /PRODUCT_SALES_SUMMARY_MIGRATION/);
+  assert.match(main, /PRODUCT_SALES_SUMMARY_INDEXES/);
+  assert.match(main, /isCurrent21/);
+  assert.match(main, /product-sales-summary upgrade is available/);
   assert.doesNotMatch(sql, /^\s*(DROP|TRUNCATE|DELETE|UPDATE)\b/im);
   assert.match(sql.trim(), /^BEGIN;[\s\S]*COMMIT;$/);
 });

@@ -33,6 +33,11 @@ import { validateDatabaseTarget } from "./database-target";
 import { createReadiness, inspectDatabase, prepareDatabase } from "./database-readiness";
 import { getLogicalShiftDate } from "./business-date";
 import { startApiMemoryDiagnostics } from "./memory-diagnostics";
+import {
+  enqueueProductSalesSummaryEvent,
+  registerProductSalesSummaryRoutes,
+  startProductSalesSummaryWorker,
+} from "./product-sales-summary";
 import { parseShiftReadRange } from "./shift-read-range";
 import {
   buildSaleReadQuery,
@@ -863,6 +868,14 @@ app.post("/api/transactions", authenticateToken, requireRole("ADMIN", "CASHIER")
           completedAt: sale.createdAt,
           resultSnapshot: createSaleIdempotencySnapshot(sale),
         },
+      });
+
+      await enqueueProductSalesSummaryEvent(tx, {
+        saleId: sale.id,
+        branchId: actualBranchId,
+        saleDate: getLogicalShiftDate(sale.createdAt),
+        kind: "SALE",
+        items: sale.items.map((item) => ({ productId: item.productId, qty: item.qty })),
       });
 
       return { sale, replay: false };
@@ -1708,6 +1721,16 @@ app.post("/api/transactions/:id/refund", authenticateToken, requireRole("CASHIER
       if (claimed.count !== 1) throw new ShiftConflict("Transaksi sudah diproses refund. Muat ulang data.");
       const updatedSale = await tx.sale.findUniqueOrThrow({ where: { id: sale.id } });
 
+      if (sale.status === "success") {
+        await enqueueProductSalesSummaryEvent(tx, {
+          saleId: sale.id,
+          branchId: sale.branchId,
+          saleDate: getLogicalShiftDate(sale.createdAt),
+          kind: "REFUND",
+          items: sale.items.map((item) => ({ productId: item.productId, qty: item.qty })),
+        });
+      }
+
       // 2. Restore Stock
       for (const item of sale.items) {
         await tx.productStock.upsert({
@@ -1878,6 +1901,7 @@ app.delete("/api/shopping-plans/:id", authenticateToken, requireRole("ADMIN"), a
 
 registerBranchReadRoutes(app, prisma, authenticateToken, getLogicalShiftDate);
 registerOwnerDashboardRoutes(app, prisma, authenticateToken, requireRole("ADMIN"), getLogicalShiftDate);
+registerProductSalesSummaryRoutes(app, prisma, authenticateToken, requireRole);
 registerStockAuditRoutes(app, prisma, authenticateToken, requireRole, emitBranch);
 registerProductLifecycleRoutes(
   app,
@@ -1912,7 +1936,8 @@ async function startServer() {
     httpServer.listen(PORT, "0.0.0.0", () => {
       httpServer.removeListener("error", reject);
       startApiMemoryDiagnostics();
-      console.log(`Server running on http://localhost:${PORT}; database and schema ready; automatic maintenance disabled.`);
+        startProductSalesSummaryWorker(prisma);
+        console.log(`Server running on http://localhost:${PORT}; database and schema ready; product-sales summary worker active; automatic archive disabled.`);
       resolve();
     });
   }));

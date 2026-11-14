@@ -3,7 +3,10 @@
 ## Startup normal
 
 Urutan: validasi lingkungan/target → koneksi → SELECT metadata kompatibilitas →
-listen. Tidak ada DDL, seed, backfill, pengarsipan maupun timer arsip.
+listen. Tidak ada DDL, seed, backfill, atau pengarsipan saat startup. Setelah
+API siap, worker ringkasan permintaan produk memproses paling banyak 100 event
+per batch setiap 30 detik; worker ini hanya menyentuh tabel ringkasan khusus
+dan tidak menjalankan arsip transaksi.
 `/api/health` dan `/api/healthz` memeriksa database dan schema. Semua request
 `/api` lainnya melewati pemeriksaan yang sama; gagal berarti HTTP 503 sebelum
 handler bisnis dijalankan. Pemeriksaan yang bersamaan berbagi satu probe,
@@ -128,7 +131,8 @@ operasi, lingkungan, host, port, nama database dan schema.
 
 Format (placeholder, bukan instruksi untuk langsung menjalankan):
 
-    pnpm --filter @workspace/api-server run db:admin <bootstrap-owner|seed|backfill|archive> \
+    pnpm --filter @workspace/api-server run db:admin \
+      <bootstrap-owner|seed|backfill|backfill-product-sales-summary|archive> \
       --execute --acknowledge-legacy-risks \
       --approve=<operasi>:<lingkungan>:<host>:<port>/<database>/<schema>
 
@@ -166,6 +170,14 @@ Perilaku lama yang dipertahankan:
 - `backfill`: menjumlahkan transaksi sukses tersimpan per cabang/hari WIB 06:00,
   lalu menetapkan nilai ringkasan. Masih berisiko menimpa rekap yang sudah
   mencakup arsip bila sumber tidak lengkap. Perlu audit rekonsiliasi terpisah.
+- `backfill-product-sales-summary`: memasukkan event penjualan sukses dari
+  jendela 30 hari terakhir ke antrean ringkasan produk. Unik per transaksi dan
+  jenis event; pemrosesan ringkasan berlangsung bertahap oleh worker API.
+  Tidak mengubah `DailyIncomeSummary`, `Commission`, stok, atau rincian transaksi.
+- Event penjualan dan refund baru dicatat di transaksi yang sama dengan Sale
+  masing-masing. Worker menerapkan perubahan secara idempotent; refund
+  mengurangi kuantitas pada tanggal penjualan asal. Ringkasan dan event turunan
+  yang tanggal bisnisnya lebih lama dari jendela 30 hari dihapus bertahap.
 - `archive`: ambang 30 hari, rumus, pelepasan relasi komisi/voucher dan
   penghapusan SaleItem/Sale tetap sama. Ini operasi destruktif yang kini hanya
   tersedia secara manual. Belum dijamin aman terhadap transaksi/refund aktif

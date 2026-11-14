@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { assertOwnerBootstrapTarget, type DatabaseTarget } from "./database-target";
 import { getLogicalShiftDate } from "./business-date";
 import { createSaleIdempotencySnapshot } from "./idempotency";
+import { backfillRecentProductSalesSummaryEvents } from "./product-sales-summary";
 
 // Legacy business operations, deliberately not imported by the API entrypoint.
 // No formula, retention threshold or record-selection rule is changed here.
@@ -300,4 +301,12 @@ export async function backfillDailySummaries(prisma: PrismaClient | Prisma.Trans
     });
   }
   console.log(`DailyIncomeSummary: ${Object.keys(grouped).length} entries synchronized.`);
+}
+
+export async function backfillProductSalesSummary(
+  prisma: PrismaClient | Prisma.TransactionClient,
+  now = new Date(),
+) {
+  const inserted = await backfillRecentProductSalesSummaryEvents(prisma as Prisma.TransactionClient, now);
+  console.log(`Product sales summary: ${inserted} recent sale events queued for bounded background processing.`);
 }

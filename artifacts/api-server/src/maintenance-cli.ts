@@ -2,7 +2,13 @@ import { PrismaClient } from "@prisma/client";
 import { assertOwnerBootstrapTarget, validateDatabaseTarget, type DatabaseTarget } from "./database-target";
 import { inspectDatabase } from "./database-readiness";
 
-const operations = ["bootstrap-owner", "seed", "backfill", "archive"] as const;
+const operations = [
+  "bootstrap-owner",
+  "seed",
+  "backfill",
+  "backfill-product-sales-summary",
+  "archive",
+] as const;
 type Operation = typeof operations[number];
 
 export function approveMaintenance(
@@ -37,12 +43,14 @@ export async function runMaintenance(args = process.argv.slice(2)) {
       const {
         autoArchiveOldSales,
         backfillDailySummaries,
+        backfillProductSalesSummary,
         bootstrapOwner,
         syncCredentials,
       } = await import("./maintenance-operations");
       if (operation === "bootstrap-owner") await bootstrapOwner(tx, target);
       if (operation === "seed") await syncCredentials(tx);
       if (operation === "backfill") await backfillDailySummaries(tx);
+      if (operation === "backfill-product-sales-summary") await backfillProductSalesSummary(tx);
       if (operation === "archive") await autoArchiveOldSales(prisma, tx);
     }, { timeout: 600_000, maxWait: 5000 });
   } finally { await prisma.$disconnect(); }

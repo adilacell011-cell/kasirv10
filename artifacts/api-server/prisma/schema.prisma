@@ -169,6 +169,36 @@ model SaleItem {
   sn        String?
 }
 
+// Rolling product-demand data is separate from financial summaries and raw
+// sale history. Summary events are an outbox so cashiers only enqueue a small
+// record inside the existing sale/refund transaction.
+model DailyProductSalesSummary {
+  id        String   @id @default(uuid())
+  branchId  String
+  productId String
+  saleDate  String
+  qty       Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, productId, saleDate], map: "DailyProductSalesSummary_branchId_productId_saleDate_key")
+  @@index([saleDate, branchId, productId], map: "DailyProductSalesSummary_saleDate_branchId_productId_idx")
+}
+
+model ProductSalesSummaryEvent {
+  id          String    @id @default(uuid())
+  saleId      String
+  branchId    String
+  saleDate    String
+  kind        String // SALE or REFUND
+  lines       Json
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([saleId, kind], map: "ProductSalesSummaryEvent_saleId_kind_key")
+  @@index([processedAt, createdAt, id], map: "ProductSalesSummaryEvent_processedAt_createdAt_id_idx")
+  @@index([saleDate, createdAt, id], map: "ProductSalesSummaryEvent_saleDate_createdAt_id_idx")
+}
+
 model Commission {
   id          String    @id @default(uuid())
   sale        Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
