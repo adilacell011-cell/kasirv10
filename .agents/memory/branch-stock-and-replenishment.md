@@ -13,6 +13,9 @@ description: Owner's planned policy for cashier stock intake, branch transfers, 
 - Use “Pengadaan Stok” for the Owner module, “Buat Pengadaan” for its main action, “Riwayat Pengadaan” for history, and “Penerimaan Pengadaan” for the cashier view. Keep `ShoppingPlan` identifiers and API routes unchanged.
   **Why:** The Owner approved these clearer, more professional labels for the existing purchase-and-receipt workflow.
   **How to apply:** Change user-facing copy only; do not rename persisted data, API routes, or internal identifiers.
+- Keep Owner purchase history collapsed to one compact summary per purchase plan, with branch completion and shortage/extra totals visible; show each branch receipt and its full note only when expanded.
+  **Why:** The Owner wants a shorter, cleaner history without losing visibility into missing or extra stock.
+  **How to apply:** Prioritize compact mobile rows/cards; keep branch-level status, differences, and the full receipt accessible on demand.
 - Target coverage days are optional. If blank, keep automatic low-stock basket products for the selected categories and branches visible with current stock and empty manual quantity fields; hide only suggested quantities. If set to a positive whole number, show editable recommendations for those basket products.
   **Why:** The Owner clarified that omitting days should hide suggested buy quantities, not hide the eligible product list.
   **How to apply:** Skip sales-summary requests when blank; populate the selected branches' automatic low-stock basket and current stock instead. When positive whole days are entered, calculate suggestions for the selected basket products, keeping all final quantities Owner-editable.

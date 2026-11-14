@@ -615,65 +615,96 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
 function PlanCard({ plan, branches, onRevise, onDelete }: {
   plan: ShoppingPlan; branches: Branch[]; onRevise: () => void; onDelete: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
   const [revisionsOpen, setRevisionsOpen] = useState(false);
   const revisions = useGetShoppingPlanRevisions(plan.id, { query: { enabled: revisionsOpen, queryKey: getGetShoppingPlanRevisionsQueryKey(plan.id) } });
   const receipts = (plan.receipts || []).filter((receipt) => receipt.status !== "SUPERSEDED");
+  const confirmedReceipts = receipts.filter((receipt) => receipt.status === "CONFIRMED");
+  const pendingReceipts = receipts.filter((receipt) => receipt.status === "PENDING");
+  const totalShortage = confirmedReceipts.reduce((sum, receipt) => sum + receipt.items.reduce((itemSum, item) => itemSum + Math.max(item.plannedQty - (item.actualQty ?? 0), 0), 0), 0);
+  const totalExtra = confirmedReceipts.reduce((sum, receipt) => sum + receipt.items.reduce((itemSum, item) => itemSum + Math.max((item.actualQty ?? 0) - item.plannedQty, 0), 0), 0);
   const canRevise = plan.status === "PUBLISHED" && receipts.some((receipt) => receipt.status === "PENDING");
   const canDelete = (plan.status === "DRAFT" && receipts.length === 0)
     || (plan.status === "PUBLISHED" && receipts.length > 0 && receipts.every((receipt) => receipt.status === "PENDING"));
   return <article data-testid={`card-purchase-plan-${plan.id}`} className="rounded-2xl border border-[#b89c65]/25 bg-[#14233d] p-3 md:p-4">
-    <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="font-bold">{plan.title}</h3><p className="mt-1 text-xs text-slate-400">{new Date(plan.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p></div><ReceiptStatus status={plan.status}/></div>
-    <div className="mt-3 flex flex-wrap gap-2">
-      <button data-testid={`button-share-plan-whatsapp-${plan.id}`} onClick={() => {
-        const message = buildPurchasePlanWhatsAppMessage(plan, branches);
-        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-      }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-200 hover:bg-emerald-400/20"><Share2 size={15}/>WhatsApp</button>
-      <button data-testid={`button-plan-revisions-${plan.id}`} onClick={() => setRevisionsOpen((open) => !open)} aria-expanded={revisionsOpen} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-slate-200"><Clock3 size={15}/>Riwayat revisi<ChevronDown size={14} className={revisionsOpen ? "rotate-180" : ""}/></button>
-      {canRevise && <button data-testid={`button-revise-plan-${plan.id}`} onClick={onRevise} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a]"><RotateCcw size={15}/>Revisi pengadaan</button>}
-      {canDelete && <button data-testid={`button-delete-plan-${plan.id}`} onClick={onDelete} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-300/30 px-3 text-xs font-semibold text-rose-200"><Trash2 size={15}/>Hapus permanen</button>}
-    </div>
-    <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
-      <table className="w-full min-w-[350px] text-left text-[11px] sm:min-w-[560px] sm:text-xs">
-        <thead className="bg-[#0a1425] text-[10px] uppercase tracking-wide text-[#d4bd8d]">
-          <tr><th className="px-2 py-2 sm:px-3">Cabang</th><th className="whitespace-nowrap px-2 py-2 sm:px-3">Tanggal</th><th className="px-2 py-2 sm:px-3">Hasil</th><th className="px-2 py-2 text-right sm:px-3">Nota</th></tr>
-        </thead>
-        <tbody className="divide-y divide-white/10">
-          {receipts.length === 0
-            ? <tr><td colSpan={4} className="px-3 py-4 text-center text-slate-400">Belum ada penerimaan cabang.</td></tr>
-            : receipts.map((receipt) => {
-              const confirmed = receipt.status === "CONFIRMED";
-              const plannedTotal = receipt.items.reduce((sum, line) => sum + line.plannedQty, 0);
-              const receivedTotal = confirmed ? receipt.items.reduce((sum, line) => sum + (line.actualQty ?? 0), 0) : null;
-              const shortageTotal = confirmed ? receipt.items.reduce((sum, line) => sum + Math.max(line.plannedQty - (line.actualQty ?? 0), 0), 0) : 0;
-              const extraTotal = confirmed ? receipt.items.reduce((sum, line) => sum + Math.max((line.actualQty ?? 0) - line.plannedQty, 0), 0) : 0;
-              const result = !confirmed
-                ? statusCopy[receipt.status]
-                : shortageTotal > 0 && extraTotal > 0
-                  ? `Kurang ${shortageTotal} · lebih ${extraTotal} pcs`
-                  : shortageTotal > 0
-                    ? `Kurang ${shortageTotal} pcs`
-                    : extraTotal > 0
-                      ? `Lebih ${extraTotal} pcs`
-                      : "Sesuai";
-              const resultColor = !confirmed ? "text-slate-300" : shortageTotal > 0 ? "text-rose-300" : extraTotal > 0 ? "text-amber-200" : "text-emerald-300";
-              const expanded = expandedReceiptId === receipt.id;
-              return <Fragment key={`${receipt.id}-${receipt.revisionId}`}>
-                <tr data-testid={`row-purchase-history-${receipt.id}`} className="bg-[#14233d] hover:bg-[#192b48]">
-                  <td title={receipt.branchNameSnapshot} className="max-w-[105px] truncate px-2 py-2 font-semibold text-slate-100 sm:max-w-none sm:px-3">{receipt.branchNameSnapshot}</td>
-                  <td title={new Date(receipt.confirmedAt || receipt.createdAt).toLocaleDateString("id-ID")} className="whitespace-nowrap px-2 py-2 text-slate-300 sm:px-3">{new Date(receipt.confirmedAt || receipt.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "2-digit" })}</td>
-                  <td className={`px-2 py-2 font-semibold sm:px-3 ${resultColor}`}><span>{result}</span><span className="mt-0.5 block text-[10px] font-normal text-slate-400">{receipt.items.length} produk · {confirmed ? `${receivedTotal} diterima` : `${plannedTotal} rencana`}</span></td>
-                  <td className="px-2 py-2 text-right sm:px-3"><button data-testid={`button-toggle-purchase-receipt-${receipt.id}`} aria-expanded={expanded} onClick={() => setExpandedReceiptId(expanded ? null : receipt.id)} className="min-h-9 rounded-lg border border-[#b89c65]/35 px-2 font-semibold text-[#e3d5b4] hover:bg-[#b89c65]/10 sm:px-3">{expanded ? "Tutup" : "Nota"}</button></td>
-                </tr>
-                {expanded && <tr data-testid={`row-purchase-receipt-detail-${receipt.id}`}><td colSpan={4} className="bg-[#0d1a2e] p-2 sm:p-3"><PurchaseReceiptSlip receipt={receipt}/></td></tr>}
-              </Fragment>;
-            })}
-        </tbody>
-      </table>
-    </div>
-    {revisionsOpen && <div className="mt-2 rounded-xl border border-white/10 bg-[#0d1a2e] p-3">
-      {revisions.isLoading ? <p className="text-xs text-slate-400">Memuat riwayat revisi…</p> : revisions.isError ? <button onClick={() => void revisions.refetch()} className="min-h-11 text-xs text-rose-200">Gagal memuat. Coba lagi.</button> : <div className="space-y-1">{(revisions.data || []).map((revision) => <p key={revision.id} data-testid={`text-plan-revision-${revision.id}`} className="text-xs text-slate-300">Revisi {revision.revisionNumber} · {revision.title} · {new Date(revision.createdAt).toLocaleDateString("id-ID")}</p>)}</div>}
-    </div>}
+    <button
+      type="button"
+      data-testid={`button-toggle-purchase-plan-${plan.id}`}
+      aria-expanded={detailsOpen}
+      aria-label={`${detailsOpen ? "Tutup" : "Buka"} rincian ${plan.title}`}
+      onClick={() => setDetailsOpen((open) => !open)}
+      className="w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4bd8d]"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 data-testid={`text-purchase-plan-title-${plan.id}`} className="truncate font-bold text-slate-100">{plan.title}</h3>
+          <p className="mt-1 text-xs text-slate-400">{new Date(plan.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ReceiptStatus status={plan.status}/>
+          <ChevronDown size={17} className={`text-[#d4bd8d] transition-transform ${detailsOpen ? "rotate-180" : ""}`}/>
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="rounded-full bg-[#0a1425] px-2.5 py-1 font-semibold text-slate-200">{receipts.length} cabang</span>
+        {receipts.length > 0
+          ? <span className="text-slate-300">{confirmedReceipts.length} selesai{pendingReceipts.length > 0 ? ` · ${pendingReceipts.length} menunggu` : ""}</span>
+          : <span className="text-slate-400">Belum ada penerimaan cabang</span>}
+        {totalShortage > 0 && <span data-testid={`text-purchase-plan-shortage-${plan.id}`} className="rounded-full bg-rose-400/10 px-2 py-1 font-semibold text-rose-200">Kurang {totalShortage} pcs</span>}
+        {totalExtra > 0 && <span data-testid={`text-purchase-plan-extra-${plan.id}`} className="rounded-full bg-amber-300/10 px-2 py-1 font-semibold text-amber-100">Lebih {totalExtra} pcs</span>}
+      </div>
+    </button>
+    {detailsOpen && <>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button data-testid={`button-share-plan-whatsapp-${plan.id}`} onClick={() => {
+          const message = buildPurchasePlanWhatsAppMessage(plan, branches);
+          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+        }} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-200 hover:bg-emerald-400/20"><Share2 size={15}/>WhatsApp</button>
+        <button data-testid={`button-plan-revisions-${plan.id}`} onClick={() => setRevisionsOpen((open) => !open)} aria-expanded={revisionsOpen} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-slate-200"><Clock3 size={15}/>Riwayat revisi<ChevronDown size={14} className={revisionsOpen ? "rotate-180" : ""}/></button>
+        {canRevise && <button data-testid={`button-revise-plan-${plan.id}`} onClick={onRevise} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a]"><RotateCcw size={15}/>Revisi pengadaan</button>}
+        {canDelete && <button data-testid={`button-delete-plan-${plan.id}`} onClick={onDelete} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-rose-300/30 px-3 text-xs font-semibold text-rose-200"><Trash2 size={15}/>Hapus permanen</button>}
+      </div>
+      <div className="mt-3 space-y-2">
+        {receipts.length === 0
+          ? <div data-testid={`empty-purchase-receipts-${plan.id}`} className="rounded-xl border border-dashed border-white/15 bg-[#0d1a2e] px-3 py-4 text-center text-xs text-slate-400">Belum ada penerimaan cabang.</div>
+          : receipts.map((receipt) => {
+            const confirmed = receipt.status === "CONFIRMED";
+            const plannedTotal = receipt.items.reduce((sum, line) => sum + line.plannedQty, 0);
+            const receivedTotal = confirmed ? receipt.items.reduce((sum, line) => sum + (line.actualQty ?? 0), 0) : null;
+            const shortageTotal = confirmed ? receipt.items.reduce((sum, line) => sum + Math.max(line.plannedQty - (line.actualQty ?? 0), 0), 0) : 0;
+            const extraTotal = confirmed ? receipt.items.reduce((sum, line) => sum + Math.max((line.actualQty ?? 0) - line.plannedQty, 0), 0) : 0;
+            const result = !confirmed
+              ? statusCopy[receipt.status]
+              : shortageTotal > 0 && extraTotal > 0
+                ? `Kurang ${shortageTotal} · lebih ${extraTotal} pcs`
+                : shortageTotal > 0
+                  ? `Kurang ${shortageTotal} pcs`
+                  : extraTotal > 0
+                    ? `Lebih ${extraTotal} pcs`
+                    : "Sesuai";
+            const resultColor = !confirmed ? "text-slate-300" : shortageTotal > 0 ? "text-rose-300" : extraTotal > 0 ? "text-amber-200" : "text-emerald-300";
+            const expanded = expandedReceiptId === receipt.id;
+            return <article key={`${receipt.id}-${receipt.revisionId}`} data-testid={`row-purchase-history-${receipt.id}`} className="rounded-xl border border-white/10 bg-[#0d1a2e] p-2.5 sm:p-3">
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                    <h4 title={receipt.branchNameSnapshot} className="max-w-full truncate text-xs font-bold text-slate-100">{receipt.branchNameSnapshot}</h4>
+                    <span title={new Date(receipt.confirmedAt || receipt.createdAt).toLocaleDateString("id-ID")} className="shrink-0 text-[10px] text-slate-400">{new Date(receipt.confirmedAt || receipt.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "2-digit" })}</span>
+                  </div>
+                  <p className={`mt-1 text-xs font-semibold ${resultColor}`}>{result}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400">{receipt.items.length} produk · {confirmed ? `${receivedTotal} diterima` : `${plannedTotal} direncanakan`}</p>
+                </div>
+                <button data-testid={`button-toggle-purchase-receipt-${receipt.id}`} aria-expanded={expanded} onClick={() => setExpandedReceiptId(expanded ? null : receipt.id)} className="min-h-9 shrink-0 rounded-lg border border-[#b89c65]/35 px-2.5 text-xs font-semibold text-[#e3d5b4] hover:bg-[#b89c65]/10">{expanded ? "Tutup" : "Nota"}</button>
+              </div>
+              {expanded && <div data-testid={`row-purchase-receipt-detail-${receipt.id}`} className="mt-2 border-t border-white/10 pt-2"><PurchaseReceiptSlip receipt={receipt}/></div>}
+            </article>;
+          })}
+      </div>
+      {revisionsOpen && <div className="mt-2 rounded-xl border border-white/10 bg-[#0d1a2e] p-3">
+        {revisions.isLoading ? <p className="text-xs text-slate-400">Memuat riwayat revisi…</p> : revisions.isError ? <button data-testid={`button-retry-plan-revisions-${plan.id}`} onClick={() => void revisions.refetch()} className="min-h-11 text-xs text-rose-200">Gagal memuat. Coba lagi.</button> : <div className="space-y-1">{(revisions.data || []).map((revision) => <p key={revision.id} data-testid={`text-plan-revision-${revision.id}`} className="text-xs text-slate-300">Revisi {revision.revisionNumber} · {revision.title} · {new Date(revision.createdAt).toLocaleDateString("id-ID")}</p>)}</div>}
+      </div>}
+    </>}
   </article>;
 }
 
