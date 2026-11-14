@@ -100,6 +100,14 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
+    proxy: {
+      "/qa-api": {
+        target: "http://127.0.0.1:22026",
+        changeOrigin: true,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/qa-api/, ""),
+      },
+    },
     fs: {
       strict: true,
     },

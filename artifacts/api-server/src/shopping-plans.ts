@@ -30,6 +30,9 @@ type ReceiptItem = {
   plannedQty: number;
   actualQty: number | null;
   notAvailable: boolean;
+  exceptionType?: "SHORTAGE" | "NOT_AVAILABLE" | "EXTRA";
+  differenceQty?: number;
+  note?: string;
 };
 
 type NormalizedPlanItem = {
@@ -78,10 +81,10 @@ function normalizePlanItemInputs(input: unknown): Array<{ productId: string; bra
       if (!branchId) fail(400, "Cabang tidak valid.");
       if (rawQty === "" || rawQty === null || rawQty === undefined) continue;
       const qty = typeof rawQty === "number" ? rawQty : Number(rawQty);
-      if (!Number.isSafeInteger(qty) || qty < 0) {
-        fail(400, "Jumlah belanja harus bilangan bulat nol atau lebih.");
+      if (!Number.isSafeInteger(qty) || qty < 1) {
+        fail(400, "Jumlah belanja harus minimal 1 pcs. Kosongkan jika tidak dibeli di cabang ini.");
       }
-      if (qty > 0) branchQtys[branchId] = qty;
+      branchQtys[branchId] = qty;
     }
     if (Object.keys(branchQtys).length > 0) result.push({ productId, branchQtys });
   }
@@ -169,6 +172,15 @@ function readReceiptItems(value: Prisma.JsonValue): ReceiptItem[] {
       plannedQty: item.plannedQty,
       actualQty: Number.isSafeInteger(item.actualQty) ? item.actualQty : null,
       notAvailable: item.notAvailable === true,
+      ...(item.exceptionType === "SHORTAGE" || item.exceptionType === "NOT_AVAILABLE" || item.exceptionType === "EXTRA"
+        ? { exceptionType: item.exceptionType }
+        : {}),
+      ...(Number.isSafeInteger(item.differenceQty) && item.differenceQty > 0
+        ? { differenceQty: item.differenceQty }
+        : {}),
+      ...(typeof item.note === "string" && item.note.trim()
+        ? { note: item.note.trim().slice(0, 300) }
+        : {}),
     }];
   });
 }
@@ -224,6 +236,7 @@ export function registerShoppingPlanRoutes(
             orderBy: { createdAt: "desc" },
             select: {
               id: true,
+              shoppingPlanId: true,
               revisionId: true,
               branchId: true,
               branchNameSnapshot: true,
@@ -501,6 +514,12 @@ export function registerShoppingPlanRoutes(
     async (req: any, res) => {
       const branchId = req.user?.branchId;
       if (!branchId) return void res.status(403).json({ error: "Akun kasir belum terhubung ke cabang." });
+      if (Array.isArray(req.body?.items) && req.body.items.some((item: unknown) =>
+        item && typeof item === "object" && ("actualQty" in item || "notAvailable" in item))) {
+        return void res.status(400).json({
+          error: "Format penerimaan lama tidak didukung. Muat ulang aplikasi Kasir lalu periksa kembali barang.",
+        });
+      }
       const parsedBody = ConfirmShoppingPlanReceiptBody.safeParse(req.body);
       if (!parsedBody.success) {
         return void res.status(400).json({ error: parsedBody.error.message });
@@ -522,12 +541,12 @@ export function registerShoppingPlanRoutes(
           const expectedItems = readReceiptItems(receipt.items);
           const submittedItems = parsedBody.data.items;
           if (!Array.isArray(submittedItems) || submittedItems.length !== expectedItems.length) {
-            fail(400, "Isi jumlah aktual untuk setiap produk sebelum mengonfirmasi.");
+            fail(400, "Periksa dan kirim pilihan untuk setiap produk.");
           }
-          const submittedByProduct = new Map<string, any>();
+          const submittedByProduct = new Map<string, (typeof submittedItems)[number]>();
           for (const item of submittedItems) {
             if (!item || typeof item.productId !== "string" || submittedByProduct.has(item.productId)) {
-              fail(400, "Daftar jumlah aktual tidak valid.");
+              fail(400, "Daftar produk penerimaan tidak valid.");
             }
             submittedByProduct.set(item.productId, item);
           }
@@ -535,22 +554,47 @@ export function registerShoppingPlanRoutes(
             fail(400, "Semua produk dalam daftar harus diperiksa.");
           }
 
-          const confirmedItems = expectedItems.map((item) => {
+          const confirmedItems: ReceiptItem[] = expectedItems.map((item): ReceiptItem => {
             const submitted = submittedByProduct.get(item.productId);
-            const actualQty = typeof submitted.actualQty === "number"
-              ? submitted.actualQty
-              : Number(submitted.actualQty);
-            const notAvailable = submitted.notAvailable === true;
-            if (!Number.isSafeInteger(actualQty) || actualQty < 0) {
-              fail(400, "Jumlah aktual harus bilangan bulat nol atau lebih.");
+            if (!submitted) fail(400, "Semua produk dalam daftar harus diperiksa.");
+
+            const exceptionType = submitted.exceptionType;
+            if (!exceptionType) {
+              if (submitted.differenceQty !== undefined || submitted.note !== undefined) {
+                fail(400, "Pilih jenis selisih sebelum mengisi jumlah atau keterangan.");
+              }
+              return { ...item, actualQty: item.plannedQty, notAvailable: false };
             }
-            if (notAvailable && actualQty !== 0) {
-              fail(400, "Produk yang ditandai tidak ada harus memiliki jumlah aktual nol.");
+
+            const note = typeof submitted.note === "string" ? submitted.note.trim() : "";
+            if (!note) fail(400, "Keterangan wajib diisi untuk produk yang kurang, tidak ada, atau lebih.");
+
+            let actualQty = item.plannedQty;
+            let differenceQty = 0;
+            let notAvailable = false;
+            if (exceptionType === "SHORTAGE") {
+              const shortQty = submitted.differenceQty;
+              if (typeof shortQty !== "number" || !Number.isSafeInteger(shortQty) || shortQty < 1 || shortQty >= item.plannedQty) {
+                fail(400, "Masukkan jumlah yang kurang. Jika barang tidak ada sama sekali, pilih “Tidak ada”.");
+              }
+              differenceQty = shortQty;
+              actualQty = item.plannedQty - shortQty;
+            } else if (exceptionType === "NOT_AVAILABLE") {
+              if (submitted.differenceQty !== undefined) {
+                fail(400, "Untuk produk yang tidak ada, jumlah selisih dihitung otomatis.");
+              }
+              notAvailable = true;
+              actualQty = 0;
+              differenceQty = item.plannedQty;
+            } else {
+              const extraQty = submitted.differenceQty;
+              if (typeof extraQty !== "number" || !Number.isSafeInteger(extraQty) || extraQty < 1 || !Number.isSafeInteger(item.plannedQty + extraQty)) {
+                fail(400, "Masukkan jumlah pcs tambahan yang valid.");
+              }
+              differenceQty = extraQty;
+              actualQty = item.plannedQty + extraQty;
             }
-            if (actualQty === 0 && !notAvailable) {
-              fail(400, "Tandai produk tidak ada jika jumlah aktualnya nol.");
-            }
-            return { ...item, actualQty, notAvailable };
+            return { ...item, actualQty, notAvailable, exceptionType, differenceQty, note };
           });
 
           const reserved = await tx.shoppingPlanReceipt.updateMany({

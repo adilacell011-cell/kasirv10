@@ -90,6 +90,7 @@ import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { useOwnerDashboard } from "./hooks/useOwnerDashboard";
 import { OperatorBadge } from "./components/OperatorLogo";
 import { CashierPurchaseReceipts, PurchasePlanAdmin } from "./components/PurchaseReceiptFlow";
+import { isQaPreview } from "./qa-preview";
 import {
   MdSpaceDashboard,
   MdInsights,
@@ -2023,7 +2024,11 @@ export default function App() {
 
     // Single consolidated socket connection per session.
     // All real-time events trigger a full loadData() refresh from the DB.
-    const socket = io({ auth: { token: syncToken }, autoConnect: false });
+    const socket = io({
+      auth: { token: syncToken },
+      autoConnect: false,
+      path: isQaPreview ? "/qa-api/socket.io" : "/socket.io",
+    });
     const refreshProductData = () => {
       refresh.schedule();
       setInactiveProductsRefresh((version) => version + 1);
@@ -3778,7 +3783,6 @@ export default function App() {
         id: "cashier_stock",
         icon: MdAddBox,
         label: "Stok",
-        locked: !isCashierStockInputAllowed(profile?.branchId) || !shiftOpen,
       });
     } else if (profile?.role === "AUDIT") {
       items.push({ id: "audit", icon: MdFactCheck, label: "Opname" });
@@ -4107,13 +4111,9 @@ export default function App() {
                 />
                 <MenuItem
                   icon={MdAddBox}
-                  label="Input Stok Cabang"
+                  label="Stok & Penerimaan"
                   active={activeMenu === "cashier_stock"}
                   onClick={() => setActiveMenu("cashier_stock")}
-                  locked={
-                    !isCashierStockInputAllowed(profile?.branchId) ||
-                    !shiftOpen
-                  }
                 />
               </>
             )}

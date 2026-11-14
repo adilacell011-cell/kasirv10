@@ -441,6 +441,15 @@ export interface ShoppingPlanRevisionSummary {
   createdAt: string;
 }
 
+export type ShoppingPlanReceiptItemExceptionType = typeof ShoppingPlanReceiptItemExceptionType[keyof typeof ShoppingPlanReceiptItemExceptionType];
+
+
+export const ShoppingPlanReceiptItemExceptionType = {
+  SHORTAGE: 'SHORTAGE',
+  NOT_AVAILABLE: 'NOT_AVAILABLE',
+  EXTRA: 'EXTRA',
+} as const;
+
 export interface ShoppingPlanReceiptItem {
   productId: string;
   productNameSnapshot: string;
@@ -454,6 +463,14 @@ export interface ShoppingPlanReceiptItem {
      */
   actualQty: number | null;
   notAvailable: boolean;
+  exceptionType?: ShoppingPlanReceiptItemExceptionType;
+  /** @minimum 1 */
+  differenceQty?: number;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  note?: string;
 }
 
 export type ShoppingPlanReceiptStatus = typeof ShoppingPlanReceiptStatus[keyof typeof ShoppingPlanReceiptStatus];
@@ -525,11 +542,25 @@ export interface ShoppingPlan {
   receipts?: ShoppingPlanReceipt[];
 }
 
+export type ShoppingPlanReceiptConfirmationInputItemsItemExceptionType = typeof ShoppingPlanReceiptConfirmationInputItemsItemExceptionType[keyof typeof ShoppingPlanReceiptConfirmationInputItemsItemExceptionType];
+
+
+export const ShoppingPlanReceiptConfirmationInputItemsItemExceptionType = {
+  SHORTAGE: 'SHORTAGE',
+  NOT_AVAILABLE: 'NOT_AVAILABLE',
+  EXTRA: 'EXTRA',
+} as const;
+
 export type ShoppingPlanReceiptConfirmationInputItemsItem = {
   productId: string;
-  /** @minimum 0 */
-  actualQty: number;
-  notAvailable?: boolean;
+  exceptionType?: ShoppingPlanReceiptConfirmationInputItemsItemExceptionType;
+  /** @minimum 1 */
+  differenceQty?: number;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  note?: string;
 };
 
 export interface ShoppingPlanReceiptConfirmationInput {

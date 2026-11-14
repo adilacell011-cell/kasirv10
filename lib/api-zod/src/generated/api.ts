@@ -511,6 +511,9 @@ export const RevokeStockAuditProductVisibilityResponse = zod.object({
 export const getShoppingPlansResponseReceiptsItemItemsItemActualQtyMin = 0;
 
 
+export const getShoppingPlansResponseReceiptsItemItemsItemNoteMax = 300;
+
+
 
 export const GetShoppingPlansResponseItem = zod.object({
   "id": zod.string(),
@@ -538,7 +541,10 @@ export const GetShoppingPlansResponseItem = zod.object({
   "productBarcodeSnapshot": zod.string().nullable(),
   "plannedQty": zod.number().int().min(1),
   "actualQty": zod.number().int().min(getShoppingPlansResponseReceiptsItemItemsItemActualQtyMin).nullable(),
-  "notAvailable": zod.boolean()
+  "notAvailable": zod.boolean(),
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(getShoppingPlansResponseReceiptsItemItemsItemNoteMax).optional()
 })),
   "receivedByNameSnapshot": zod.string().nullish(),
   "confirmedAt": zod.coerce.date().nullish(),
@@ -562,8 +568,6 @@ export const GetShoppingPlansResponse = zod.array(GetShoppingPlansResponseItem)
 export const createShoppingPlanBodyTitleMax = 120;
 
 export const createShoppingPlanBodyStatusDefault = `PUBLISHED`;
-export const createShoppingPlanBodyItemsItemBranchQtysMinOne = 0;
-
 
 
 export const CreateShoppingPlanBody = zod.object({
@@ -571,12 +575,15 @@ export const CreateShoppingPlanBody = zod.object({
   "status": zod.enum(['DRAFT', 'PUBLISHED']).default(createShoppingPlanBodyStatusDefault),
   "items": zod.array(zod.object({
   "productId": zod.string(),
-  "branchQtys": zod.record(zod.string(), zod.number().int().min(createShoppingPlanBodyItemsItemBranchQtysMinOne))
+  "branchQtys": zod.record(zod.string(), zod.number().int().min(1))
 }))
 })
 
 
 export const createShoppingPlanResponseReceiptsItemItemsItemActualQtyMin = 0;
+
+
+export const createShoppingPlanResponseReceiptsItemItemsItemNoteMax = 300;
 
 
 
@@ -606,7 +613,10 @@ export const CreateShoppingPlanResponse = zod.object({
   "productBarcodeSnapshot": zod.string().nullable(),
   "plannedQty": zod.number().int().min(1),
   "actualQty": zod.number().int().min(createShoppingPlanResponseReceiptsItemItemsItemActualQtyMin).nullable(),
-  "notAvailable": zod.boolean()
+  "notAvailable": zod.boolean(),
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(createShoppingPlanResponseReceiptsItemItemsItemNoteMax).optional()
 })),
   "receivedByNameSnapshot": zod.string().nullish(),
   "confirmedAt": zod.coerce.date().nullish(),
@@ -632,7 +642,6 @@ export const ReviseShoppingPlanParams = zod.object({
 
 export const reviseShoppingPlanBodyTitleMax = 120;
 
-export const reviseShoppingPlanBodyItemsItemBranchQtysMinOne = 0;
 
 
 
@@ -640,12 +649,15 @@ export const ReviseShoppingPlanBody = zod.object({
   "title": zod.string().min(1).max(reviseShoppingPlanBodyTitleMax),
   "items": zod.array(zod.object({
   "productId": zod.string(),
-  "branchQtys": zod.record(zod.string(), zod.number().int().min(reviseShoppingPlanBodyItemsItemBranchQtysMinOne))
+  "branchQtys": zod.record(zod.string(), zod.number().int().min(1))
 }))
 })
 
 
 export const reviseShoppingPlanResponseReceiptsItemItemsItemActualQtyMin = 0;
+
+
+export const reviseShoppingPlanResponseReceiptsItemItemsItemNoteMax = 300;
 
 
 
@@ -675,7 +687,10 @@ export const ReviseShoppingPlanResponse = zod.object({
   "productBarcodeSnapshot": zod.string().nullable(),
   "plannedQty": zod.number().int().min(1),
   "actualQty": zod.number().int().min(reviseShoppingPlanResponseReceiptsItemItemsItemActualQtyMin).nullable(),
-  "notAvailable": zod.boolean()
+  "notAvailable": zod.boolean(),
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(reviseShoppingPlanResponseReceiptsItemItemsItemNoteMax).optional()
 })),
   "receivedByNameSnapshot": zod.string().nullish(),
   "confirmedAt": zod.coerce.date().nullish(),
@@ -737,6 +752,9 @@ export const GetShoppingPlanRevisionsResponse = zod.array(GetShoppingPlanRevisio
 export const getCashierShoppingPlanReceiptsResponseItemsItemActualQtyMin = 0;
 
 
+export const getCashierShoppingPlanReceiptsResponseItemsItemNoteMax = 300;
+
+
 
 export const GetCashierShoppingPlanReceiptsResponseItem = zod.object({
   "id": zod.string(),
@@ -751,7 +769,10 @@ export const GetCashierShoppingPlanReceiptsResponseItem = zod.object({
   "productBarcodeSnapshot": zod.string().nullable(),
   "plannedQty": zod.number().int().min(1),
   "actualQty": zod.number().int().min(getCashierShoppingPlanReceiptsResponseItemsItemActualQtyMin).nullable(),
-  "notAvailable": zod.boolean()
+  "notAvailable": zod.boolean(),
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(getCashierShoppingPlanReceiptsResponseItemsItemNoteMax).optional()
 })),
   "receivedByNameSnapshot": zod.string().nullish(),
   "confirmedAt": zod.coerce.date().nullish(),
@@ -775,20 +796,25 @@ export const ConfirmShoppingPlanReceiptParams = zod.object({
   "receiptId": zod.coerce.string()
 })
 
-export const confirmShoppingPlanReceiptBodyItemsItemActualQtyMin = 0;
+
+export const confirmShoppingPlanReceiptBodyItemsItemNoteMax = 300;
 
 
 
 export const ConfirmShoppingPlanReceiptBody = zod.object({
   "items": zod.array(zod.object({
   "productId": zod.string(),
-  "actualQty": zod.number().int().min(confirmShoppingPlanReceiptBodyItemsItemActualQtyMin),
-  "notAvailable": zod.boolean().optional()
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(confirmShoppingPlanReceiptBodyItemsItemNoteMax).optional()
 }))
 })
 
 
 export const confirmShoppingPlanReceiptResponseItemsItemActualQtyMin = 0;
+
+
+export const confirmShoppingPlanReceiptResponseItemsItemNoteMax = 300;
 
 
 
@@ -805,7 +831,10 @@ export const ConfirmShoppingPlanReceiptResponse = zod.object({
   "productBarcodeSnapshot": zod.string().nullable(),
   "plannedQty": zod.number().int().min(1),
   "actualQty": zod.number().int().min(confirmShoppingPlanReceiptResponseItemsItemActualQtyMin).nullable(),
-  "notAvailable": zod.boolean()
+  "notAvailable": zod.boolean(),
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(confirmShoppingPlanReceiptResponseItemsItemNoteMax).optional()
 })),
   "receivedByNameSnapshot": zod.string().nullish(),
   "confirmedAt": zod.coerce.date().nullish(),

@@ -5,10 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ShoppingPlanReceiptConfirmationInputItemsItemExceptionType } from './shoppingPlanReceiptConfirmationInputItemsItemExceptionType';
 
 export type ShoppingPlanReceiptConfirmationInputItemsItem = {
   productId: string;
-  /** @minimum 0 */
-  actualQty: number;
-  notAvailable?: boolean;
+  exceptionType?: ShoppingPlanReceiptConfirmationInputItemsItemExceptionType;
+  /** @minimum 1 */
+  differenceQty?: number;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  note?: string;
 };

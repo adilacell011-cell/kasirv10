@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ShoppingPlanReceiptItemExceptionType } from './shoppingPlanReceiptItemExceptionType';
 
 export interface ShoppingPlanReceiptItem {
   productId: string;
@@ -19,4 +20,12 @@ export interface ShoppingPlanReceiptItem {
      */
   actualQty: number | null;
   notAvailable: boolean;
+  exceptionType?: ShoppingPlanReceiptItemExceptionType;
+  /** @minimum 1 */
+  differenceQty?: number;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  note?: string;
 }

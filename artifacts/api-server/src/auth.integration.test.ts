@@ -2823,6 +2823,7 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
   const purchasePasswordB = `purchase-test-b-${suffix}`;
   const purchaseProductId = `purchase-product-${suffix}`;
   let shoppingPlanId = "";
+  const shoppingPlanIds: string[] = [];
 
   try {
     await prisma.branch.createMany({
@@ -2884,6 +2885,17 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
     const cashierAHeaders = { authorization: `Bearer ${cashierAToken}`, "content-type": "application/json" };
     const cashierBHeaders = { authorization: `Bearer ${cashierBToken}`, "content-type": "application/json" };
 
+    const zeroQtyPlan = await fetch(`${apiUrl}/api/shopping-plans`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA zero ${suffix}`,
+        status: "PUBLISHED",
+        items: [{ productId: purchaseProductId, branchQtys: { [purchaseBranchA]: 0 } }],
+      }),
+    });
+    assert.equal(zeroQtyPlan.status, 400, "An explicit zero quantity is rejected; blank is the no-purchase state.");
+
     const createResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
       method: "POST",
       headers: adminHeaders,
@@ -2903,6 +2915,7 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
       receipts: Array<{ id: string; branchId: string; status: string }>;
     };
     shoppingPlanId = createdPlan.id;
+    shoppingPlanIds.push(shoppingPlanId);
     assert.equal(createdPlan.status, "PUBLISHED");
     assert.equal(createdPlan.receipts.length, 2);
     assert.ok(createdPlan.receipts.every((receipt) => receipt.status === "PENDING"));
@@ -2927,7 +2940,7 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
       {
         method: "POST",
         headers: cashierAHeaders,
-        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 5 }] }),
+        body: JSON.stringify({ items: [{ productId: purchaseProductId }] }),
       },
     );
     assert.equal(crossBranchConfirm.status, 403, "A cashier cannot confirm another branch's receipt.");
@@ -2938,7 +2951,7 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
     );
     assert.equal(blockedDeactivation.status, 409, "A product with a pending purchase receipt cannot be deactivated.");
 
-    const confirmAResponse = await fetch(
+    const legacyConfirmAResponse = await fetch(
       `${apiUrl}/api/shopping-plans/receipts/${receiptA.id}/confirm`,
       {
         method: "POST",
@@ -2946,7 +2959,59 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
         body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 1 }] }),
       },
     );
+    assert.equal(legacyConfirmAResponse.status, 400, "A stale cashier screen cannot submit an actual quantity that the new flow would ignore.");
+
+    const shortageWithoutReason = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${receiptA.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierAHeaders,
+        body: JSON.stringify({ items: [{ productId: purchaseProductId, exceptionType: "SHORTAGE", differenceQty: 2 }] }),
+      },
+    );
+    assert.equal(shortageWithoutReason.status, 400, "A shortage must include a reason.");
+
+    const confirmAResponse = await fetch(
+      `${apiUrl}/api/shopping-plans/receipts/${receiptA.id}/confirm`,
+      {
+        method: "POST",
+        headers: cashierAHeaders,
+        body: JSON.stringify({
+          items: [{ productId: purchaseProductId, exceptionType: "SHORTAGE", differenceQty: 2, note: "Pemasok mengirim kurang 2 pcs." }],
+        }),
+      },
+    );
     assert.equal(confirmAResponse.status, 200);
+    const ownerPlansAfterReceipt = await fetch(`${apiUrl}/api/shopping-plans`, {
+      headers: adminHeaders,
+    });
+    assert.equal(ownerPlansAfterReceipt.status, 200, "Owner can reload plans after a cashier confirms a receipt.");
+    const ownerPlans = await ownerPlansAfterReceipt.json() as Array<{
+      id: string;
+      receipts: Array<{
+        shoppingPlanId: string;
+        branchId: string;
+        status: string;
+        items: Array<{
+          plannedQty: number;
+          actualQty: number | null;
+          notAvailable: boolean;
+          exceptionType?: string;
+          differenceQty?: number;
+          note?: string;
+        }>;
+      }>;
+    }>;
+    const ownerPlan = ownerPlans.find((plan) => plan.id === shoppingPlanId)!;
+    const ownerReceiptA = ownerPlan.receipts.find((receipt) => receipt.branchId === purchaseBranchA)!;
+    assert.equal(ownerReceiptA.shoppingPlanId, shoppingPlanId);
+    assert.equal(ownerReceiptA.status, "CONFIRMED");
+    assert.equal(ownerReceiptA.items[0].plannedQty, 3);
+    assert.equal(ownerReceiptA.items[0].actualQty, 1);
+    assert.equal(ownerReceiptA.items[0].notAvailable, false);
+    assert.equal(ownerReceiptA.items[0].exceptionType, "SHORTAGE");
+    assert.equal(ownerReceiptA.items[0].differenceQty, 2);
+    assert.equal(ownerReceiptA.items[0].note, "Pemasok mengirim kurang 2 pcs.");
     const stockAfterA = await prisma.productStock.findUniqueOrThrow({
       where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchA } },
     });
@@ -2957,7 +3022,9 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
       {
         method: "POST",
         headers: cashierAHeaders,
-        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 1 }] }),
+        body: JSON.stringify({
+          items: [{ productId: purchaseProductId, exceptionType: "SHORTAGE", differenceQty: 2, note: "Pemasok mengirim kurang 2 pcs." }],
+        }),
       },
     );
     assert.equal(repeatedConfirmA.status, 409);
@@ -3011,25 +3078,37 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
     assert.equal(revisedReceiptB.revision?.revisionNumber, 2);
     assert.equal(revisedReceiptB.items[0].plannedQty, 2);
 
-    const zeroWithoutMissingMark = await fetch(
+    const invalidFullShortage = await fetch(
       `${apiUrl}/api/shopping-plans/receipts/${revisedReceiptB.id}/confirm`,
       {
         method: "POST",
         headers: cashierBHeaders,
-        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 0, notAvailable: false }] }),
+        body: JSON.stringify({
+          items: [{ productId: purchaseProductId, exceptionType: "SHORTAGE", differenceQty: 2, note: "Tidak ada satu pun." }],
+        }),
       },
     );
-    assert.equal(zeroWithoutMissingMark.status, 400, "Zero actual stock must be explicitly marked as not available.");
+    assert.equal(invalidFullShortage.status, 400, "A full-line shortage must use the explicit unavailable choice.");
 
     const confirmBResponse = await fetch(
       `${apiUrl}/api/shopping-plans/receipts/${revisedReceiptB.id}/confirm`,
       {
         method: "POST",
         headers: cashierBHeaders,
-        body: JSON.stringify({ items: [{ productId: purchaseProductId, actualQty: 0, notAvailable: true }] }),
+        body: JSON.stringify({
+          items: [{ productId: purchaseProductId, exceptionType: "NOT_AVAILABLE", note: "Produk tidak ada dalam kiriman." }],
+        }),
       },
     );
     assert.equal(confirmBResponse.status, 200);
+    const unavailableResult = await confirmBResponse.json() as {
+      items: Array<{ plannedQty: number; actualQty: number | null; notAvailable: boolean; differenceQty?: number; note?: string }>;
+    };
+    assert.equal(unavailableResult.items[0].plannedQty, 2);
+    assert.equal(unavailableResult.items[0].actualQty, 0);
+    assert.equal(unavailableResult.items[0].notAvailable, true);
+    assert.equal(unavailableResult.items[0].differenceQty, 2);
+    assert.equal(unavailableResult.items[0].note, "Produk tidak ada dalam kiriman.");
     assert.equal((await prisma.productStock.findUniqueOrThrow({
       where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchB } },
     })).qty, 4, "Marking a product unavailable does not add any stock.");
@@ -3049,11 +3128,72 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
       1,
       "One actual receipt produces one stock-in adjustment.",
     );
+
+    const defaultPlanResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA default ${suffix}`,
+        status: "PUBLISHED",
+        items: [{ productId: purchaseProductId, branchQtys: { [purchaseBranchA]: 2 } }],
+      }),
+    });
+    assert.equal(defaultPlanResponse.status, 201);
+    const defaultPlan = await defaultPlanResponse.json() as { id: string; receipts: Array<{ id: string; branchId: string }> };
+    shoppingPlanIds.push(defaultPlan.id);
+    const defaultReceipt = defaultPlan.receipts.find((receipt) => receipt.branchId === purchaseBranchA)!;
+    const defaultConfirmResponse = await fetch(`${apiUrl}/api/shopping-plans/receipts/${defaultReceipt.id}/confirm`, {
+      method: "POST",
+      headers: cashierAHeaders,
+      body: JSON.stringify({ items: [{ productId: purchaseProductId }] }),
+    });
+    assert.equal(defaultConfirmResponse.status, 200, "No exception means the cashier confirms the Owner's planned quantity.");
+    const defaultResult = await defaultConfirmResponse.json() as {
+      items: Array<{ plannedQty: number; actualQty: number | null; exceptionType?: string }>;
+    };
+    assert.equal(defaultResult.items[0].plannedQty, 2);
+    assert.equal(defaultResult.items[0].actualQty, 2);
+    assert.equal(defaultResult.items[0].exceptionType, undefined);
+    assert.equal((await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchA } },
+    })).qty, 5);
+
+    const extraPlanResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        title: `Purchase QA extra ${suffix}`,
+        status: "PUBLISHED",
+        items: [{ productId: purchaseProductId, branchQtys: { [purchaseBranchB]: 2 } }],
+      }),
+    });
+    assert.equal(extraPlanResponse.status, 201);
+    const extraPlan = await extraPlanResponse.json() as { id: string; receipts: Array<{ id: string; branchId: string }> };
+    shoppingPlanIds.push(extraPlan.id);
+    const extraReceipt = extraPlan.receipts.find((receipt) => receipt.branchId === purchaseBranchB)!;
+    const extraConfirmResponse = await fetch(`${apiUrl}/api/shopping-plans/receipts/${extraReceipt.id}/confirm`, {
+      method: "POST",
+      headers: cashierBHeaders,
+      body: JSON.stringify({
+        items: [{ productId: purchaseProductId, exceptionType: "EXTRA", differenceQty: 3, note: "Pemasok menambah 3 pcs." }],
+      }),
+    });
+    assert.equal(extraConfirmResponse.status, 200);
+    const extraResult = await extraConfirmResponse.json() as {
+      items: Array<{ plannedQty: number; actualQty: number | null; differenceQty?: number; note?: string }>;
+    };
+    assert.equal(extraResult.items[0].plannedQty, 2);
+    assert.equal(extraResult.items[0].actualQty, 5);
+    assert.equal(extraResult.items[0].differenceQty, 3);
+    assert.equal(extraResult.items[0].note, "Pemasok menambah 3 pcs.");
+    assert.equal((await prisma.productStock.findUniqueOrThrow({
+      where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchB } },
+    })).qty, 9);
   } finally {
-    if (shoppingPlanId) {
-      await prisma.shoppingPlanReceipt.deleteMany({ where: { shoppingPlanId } });
-      await prisma.shoppingPlanRevision.deleteMany({ where: { shoppingPlanId } });
-      await prisma.shoppingPlan.delete({ where: { id: shoppingPlanId } }).catch(() => undefined);
+    for (const planId of shoppingPlanIds) {
+      await prisma.shoppingPlanReceipt.deleteMany({ where: { shoppingPlanId: planId } });
+      await prisma.shoppingPlanRevision.deleteMany({ where: { shoppingPlanId: planId } });
+      await prisma.shoppingPlan.delete({ where: { id: planId } }).catch(() => undefined);
     }
     await prisma.adjustment.deleteMany({
       where: { productId: purchaseProductId, branchId: { in: [purchaseBranchA, purchaseBranchB] } },

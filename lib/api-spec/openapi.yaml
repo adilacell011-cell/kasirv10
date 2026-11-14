@@ -1230,7 +1230,7 @@ components:
           type: object
           additionalProperties:
             type: integer
-            minimum: 0
+            minimum: 1
     ShoppingPlanItem:
       type: object
       required: [productId, productNameSnapshot, productBarcodeSnapshot, branchQtys]
@@ -1296,6 +1296,16 @@ components:
           minimum: 0
         notAvailable:
           type: boolean
+        exceptionType:
+          type: string
+          enum: [SHORTAGE, NOT_AVAILABLE, EXTRA]
+        differenceQty:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+          minLength: 1
+          maxLength: 300
     ShoppingPlanReceipt:
       type: object
       required: [id, shoppingPlanId, revisionId, branchId, branchNameSnapshot, status, items, createdAt]
@@ -1377,15 +1387,21 @@ components:
           type: array
           items:
             type: object
-            required: [productId, actualQty]
+            required: [productId]
+            additionalProperties: false
             properties:
               productId:
                 type: string
-              actualQty:
+              exceptionType:
+                type: string
+                enum: [SHORTAGE, NOT_AVAILABLE, EXTRA]
+              differenceQty:
                 type: integer
-                minimum: 0
-              notAvailable:
-                type: boolean
+                minimum: 1
+              note:
+                type: string
+                minLength: 1
+                maxLength: 300
     ShoppingPlanDeleteResult:
       type: object
       required: [success]
