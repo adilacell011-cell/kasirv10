@@ -184,7 +184,7 @@ test("shift/refund regression on isolated PostgreSQL over HTTP", {
     assert.equal(zeroClosed.reportedIncome, 0);
     assert.equal(zeroClosed.difference, 0);
   });
-  await t.test("cashier stock transfer requires an active shift and changes neither branch when locked", async () => {
+  await t.test("cashier transfer requires an open shift and waits for recipient receipt", async () => {
     const f = await fixture("transfer-shift-guard");
     const target = await ok("/branches", owner, "POST", { name: `${tag}-transfer-target` });
     const productId = await product(f);
@@ -204,12 +204,16 @@ test("shift/refund regression on isolated PostgreSQL over HTTP", {
     assert.deepEqual(await getStocks(), { source: 10, target: 0 });
 
     const shift = await ok("/shifts", f.token, "POST", open(f));
-    assert.equal((await request("/stocks/transfer", f.token, "POST", transfer)).status, 200);
-    assert.deepEqual(await getStocks(), { source: 9, target: 1 });
+    const sent = await request("/stocks/transfer", f.token, "POST", transfer);
+    assert.equal(sent.status, 201);
+    const transferRecord = await sent.json() as { status: string; dispatchedQty: number };
+    assert.equal(transferRecord.status, "IN_TRANSIT");
+    assert.equal(transferRecord.dispatchedQty, 1);
+    assert.deepEqual(await getStocks(), { source: 9, target: 0 });
 
     await close(f, shift.id);
     assert.equal((await request("/stocks/transfer", f.token, "POST", transfer)).status, 409);
-    assert.deepEqual(await getStocks(), { source: 9, target: 1 });
+    assert.deepEqual(await getStocks(), { source: 9, target: 0 });
   });
   await t.test("cashier stock intake requires an active shift and does not write when locked", async () => {
     const f = await fixture("stock-intake-shift-guard");
