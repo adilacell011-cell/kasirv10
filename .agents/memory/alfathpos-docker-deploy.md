@@ -25,9 +25,9 @@ Setup lets the owner `git clone` + `docker compose up -d --build` on a local ser
   **Why:** the upgrade includes columns, indexes, relations, and migration history as well as new tables; partial manual SQL can leave the app schema inconsistent, while one candidate avoids rebuilding between the check and migration.
   **How to apply:** run its exact-target `--check` first; only after the result is reviewed, a verified backup exists, and the Owner gives separate approval, run the explicit migration with that same image. Never migrate during app startup.
 
-- **API image is single-stage and keeps the WHOLE monorepo + node_modules intact.**
-  **Why:** pnpm uses symlinks into a virtual store (`node_modules/.pnpm`). esbuild externalizes `@prisma/client`, so `dist/index.mjs` must resolve it at runtime via the api package's symlinked `node_modules`. Copying only `dist` into a slim runtime stage would break Prisma resolution. Multi-stage `pnpm deploy` flattening is more fragile and was avoided since Docker can't be tested in the Replit env.
-  **How to apply:** keep `COPY . .` + `pnpm install` in the same image you run from; don't "optimize" into a copy-only runtime stage without testing Prisma resolution.
+- **A slim API runtime image must retain Prisma Client, the Prisma CLI, guarded migration files, and the established API package path.**
+  **Why:** esbuild externalizes Prisma Client, and the guarded one-off schema migration resolves the Prisma CLI at runtime. Copying only the bundled server can pass a build but fail at startup or during an approved migration.
+  **How to apply:** use an explicit runtime-file allowlist and production dependencies; include the generated client, Prisma CLI, schema, migrations, and entrypoint. Build and exercise schema initialization plus `/api/healthz` against an isolated temporary database before using an image elsewhere. Check whether Docker is available in the current workspace instead of assuming it is; when Docker `exec` is unavailable, use one-off Compose clients and host HTTP checks. Never run image QA against a production database.
 
 - **Keep empty-database initialization separate from the existing-schema staging migration.**
   **Why:** first-install databases and the Owner's legacy 14/15-table staging database require different guarded paths; the staging upgrade must preserve existing tables/data and only add Audit Stok tables.

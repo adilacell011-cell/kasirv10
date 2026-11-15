@@ -394,6 +394,9 @@ importers:
       pino-pretty:
         specifier: ^13.2.0
         version: 13.2.0
+      prisma:
+        specifier: ^5.22.0
+        version: 5.22.0
       socket.io:
         specifier: ^4.8.4
         version: 4.8.4
@@ -419,9 +422,6 @@ importers:
       esbuild:
         specifier: 0.27.3
         version: 0.27.3
-      prisma:
-        specifier: ^5.22.0
-        version: 5.22.0
       socket.io-client:
         specifier: ^4.8.4
         version: 4.8.4

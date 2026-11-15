@@ -1,14 +1,13 @@
-# API server (Express + Prisma + Socket.IO) for AlfathPOS.
-# Built from the repository root as the Docker build context:
-#   docker build -f artifacts/api-server/Dockerfile .
-FROM node:20-bookworm-slim
+# Build the API in the full workspace, then package only runtime files and
+# production dependencies into the final image.
+FROM node:20-bookworm-slim AS build
 
 # BuildKit supplies TARGETARCH for each requested platform. Fail early if QEMU
 # or the builder is executing dependencies for the host instead of the target.
 ARG TARGETARCH
 RUN node -e "const expected = process.env.TARGETARCH === 'amd64' ? 'x64' : process.env.TARGETARCH; if (process.arch !== expected) throw new Error('Node architecture does not match target: ' + process.arch + ' != ' + process.env.TARGETARCH)"
 
-# Prisma needs openssl at runtime.
+# Prisma needs OpenSSL in both the build and runtime stages.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -16,19 +15,35 @@ RUN apt-get update \
 # Use the same pnpm version as the workspace.
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
-WORKDIR /app
+WORKDIR /workspace
 
-# Copy the whole monorepo (node_modules are excluded via .dockerignore) and install.
+# Install from the root workspace so frozen-lockfile resolution stays identical
+# to the tested source tree.
 COPY . .
-# The lockfile contains the optional native packages for both supported targets;
-# pnpm selects the current target's package while keeping resolution reproducible.
 RUN pnpm install --frozen-lockfile
 
 # Bundle the server and generate the Prisma client.
 RUN pnpm --filter @workspace/api-server run build \
   && pnpm --filter @workspace/api-server exec prisma generate
 
-RUN chmod +x /app/artifacts/api-server/docker-entrypoint.sh
+# The Prisma CLI remains a production dependency because the guarded, one-off
+# migration command is run from this same image. pnpm deploy uses the API
+# package's "files" allowlist and installs only production dependencies.
+RUN pnpm --config.inject-workspace-packages=true \
+    --filter @workspace/api-server deploy --prod /runtime/api-server \
+  && chmod +x /runtime/api-server/docker-entrypoint.sh
+
+FROM node:20-bookworm-slim AS runtime
+
+ARG TARGETARCH
+RUN node -e "const expected = process.env.TARGETARCH === 'amd64' ? 'x64' : process.env.TARGETARCH; if (process.arch !== expected) throw new Error('Node architecture does not match target: ' + process.arch + ' != ' + process.env.TARGETARCH)"
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/artifacts/api-server
+COPY --from=build /runtime/api-server/ ./
 
 EXPOSE 8080
-ENTRYPOINT ["/app/artifacts/api-server/docker-entrypoint.sh"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
