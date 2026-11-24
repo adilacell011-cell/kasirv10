@@ -561,6 +561,33 @@ paths:
           description: Audit session or product not found.
         "409":
           description: Audit closed, product is not visible in the branch, stock is not zero, or the item cannot be safely excluded.
+  /shopping-plans/page:
+    get:
+      operationId: getShoppingPlanPage
+      summary: List a bounded page of purchase plans for Admin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+      responses:
+        "200":
+          description: A bounded purchase-history page and its next cursor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingPlanPage"
+        "400":
+          description: Invalid page cursor.
+        "401":
+          description: Sign-in required.
+        "403":
+          description: Admin access required.
   /shopping-plans:
     get:
       operationId: getShoppingPlans
@@ -1379,6 +1406,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ShoppingPlanReceipt"
+    ShoppingPlanPage:
+      type: object
+      required: [items, hasMore, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingPlan"
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: ["string", "null"]
     ShoppingPlanReceiptConfirmationInput:
       type: object
       required: [items]

@@ -542,6 +542,13 @@ export interface ShoppingPlan {
   receipts?: ShoppingPlanReceipt[];
 }
 
+export interface ShoppingPlanPage {
+  items: ShoppingPlan[];
+  hasMore: boolean;
+  /** @nullable */
+  nextCursor: string | null;
+}
+
 export type ShoppingPlanReceiptConfirmationInputItemsItemExceptionType = typeof ShoppingPlanReceiptConfirmationInputItemsItemExceptionType[keyof typeof ShoppingPlanReceiptConfirmationInputItemsItemExceptionType];
 
 
@@ -641,5 +648,13 @@ auditId: string;
  * @maxLength 100
  */
 search: string;
+};
+
+export type GetShoppingPlanPageParams = {
+/**
+ * @minLength 1
+ * @maxLength 512
+ */
+cursor?: string;
 };
 

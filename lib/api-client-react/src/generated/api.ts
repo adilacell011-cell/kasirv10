@@ -30,6 +30,7 @@ import type {
   GetOwnerDashboardDetails200,
   GetOwnerDashboardDetailsParams,
   GetOwnerDashboardParams,
+  GetShoppingPlanPageParams,
   GetStockAuditCurrentParams,
   GetStockAuditItemsParams,
   HealthStatus,
@@ -40,6 +41,7 @@ import type {
   ShoppingPlan,
   ShoppingPlanDeleteResult,
   ShoppingPlanInput,
+  ShoppingPlanPage,
   ShoppingPlanReceipt,
   ShoppingPlanReceiptConfirmationInput,
   ShoppingPlanRevision,
@@ -1873,6 +1875,114 @@ export const useRevokeStockAuditProductVisibility = <TError = ErrorType<void>,
       > => {
       return useMutation(getRevokeStockAuditProductVisibilityMutationOptions(options), queryClient);
     }
+
+export const getGetShoppingPlanPageUrl = (params?: GetShoppingPlanPageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/shopping-plans/page?${stringifiedParams}` : `/api/shopping-plans/page`
+}
+
+/**
+ * @summary List a bounded page of purchase plans for Admin
+ */
+export const getShoppingPlanPage = async (params?: GetShoppingPlanPageParams, options?: Parameters<typeof customFetch>[1]): Promise<ShoppingPlanPage> => {
+
+  return customFetch<ShoppingPlanPage>(getGetShoppingPlanPageUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShoppingPlanPageQueryKey = (params?: GetShoppingPlanPageParams,) => {
+    return [
+    `/api/shopping-plans/page`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetShoppingPlanPageQueryOptions = <TData = Awaited<ReturnType<typeof getShoppingPlanPage>>, TError = ErrorType<void>>(params?: GetShoppingPlanPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanPage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShoppingPlanPageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShoppingPlanPage>>> = ({ signal }) => getShoppingPlanPage(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanPage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetShoppingPlanPageQueryResult = NonNullable<Awaited<ReturnType<typeof getShoppingPlanPage>>>
+export type GetShoppingPlanPageQueryError = ErrorType<void>
+
+
+export function useGetShoppingPlanPage<TData = Awaited<ReturnType<typeof getShoppingPlanPage>>, TError = ErrorType<void>>(
+ params: undefined |  GetShoppingPlanPageParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanPage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShoppingPlanPage>>,
+          TError,
+          Awaited<ReturnType<typeof getShoppingPlanPage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetShoppingPlanPage<TData = Awaited<ReturnType<typeof getShoppingPlanPage>>, TError = ErrorType<void>>(
+ params?: GetShoppingPlanPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanPage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getShoppingPlanPage>>,
+          TError,
+          Awaited<ReturnType<typeof getShoppingPlanPage>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetShoppingPlanPage<TData = Awaited<ReturnType<typeof getShoppingPlanPage>>, TError = ErrorType<void>>(
+ params?: GetShoppingPlanPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanPage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List a bounded page of purchase plans for Admin
+ */
+
+export function useGetShoppingPlanPage<TData = Awaited<ReturnType<typeof getShoppingPlanPage>>, TError = ErrorType<void>>(
+ params?: GetShoppingPlanPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getShoppingPlanPage>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetShoppingPlanPageQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetShoppingPlansUrl = () => {
 

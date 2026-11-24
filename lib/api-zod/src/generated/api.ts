@@ -505,6 +505,75 @@ export const RevokeStockAuditProductVisibilityResponse = zod.object({
 
 
 /**
+ * @summary List a bounded page of purchase plans for Admin
+ */
+export const getShoppingPlanPageQueryCursorMax = 512;
+
+
+
+export const GetShoppingPlanPageQueryParams = zod.object({
+  "cursor": zod.coerce.string().min(1).max(getShoppingPlanPageQueryCursorMax).optional()
+})
+
+
+export const getShoppingPlanPageResponseItemsItemReceiptsItemItemsItemActualQtyMin = 0;
+
+
+export const getShoppingPlanPageResponseItemsItemReceiptsItemItemsItemNoteMax = 300;
+
+
+
+export const GetShoppingPlanPageResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "items": zod.array(zod.record(zod.string(), zod.unknown())),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']),
+  "creatorId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revisions": zod.array(zod.object({
+  "id": zod.string(),
+  "revisionNumber": zod.number().int(),
+  "title": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional(),
+  "receipts": zod.array(zod.object({
+  "id": zod.string(),
+  "shoppingPlanId": zod.string(),
+  "revisionId": zod.string(),
+  "branchId": zod.string(),
+  "branchNameSnapshot": zod.string(),
+  "status": zod.enum(['PENDING', 'CONFIRMED', 'SUPERSEDED', 'NO_ITEMS']),
+  "items": zod.array(zod.object({
+  "productId": zod.string(),
+  "productNameSnapshot": zod.string(),
+  "productBarcodeSnapshot": zod.string().nullable(),
+  "plannedQty": zod.number().int().min(1),
+  "actualQty": zod.number().int().min(getShoppingPlanPageResponseItemsItemReceiptsItemItemsItemActualQtyMin).nullable(),
+  "notAvailable": zod.boolean(),
+  "exceptionType": zod.enum(['SHORTAGE', 'NOT_AVAILABLE', 'EXTRA']).optional(),
+  "differenceQty": zod.number().int().min(1).optional(),
+  "note": zod.string().min(1).max(getShoppingPlanPageResponseItemsItemReceiptsItemItemsItemNoteMax).optional()
+})),
+  "receivedByNameSnapshot": zod.string().nullish(),
+  "confirmedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "revision": zod.object({
+  "revisionNumber": zod.number().int().optional()
+}).optional(),
+  "shoppingPlan": zod.object({
+  "id": zod.string().optional(),
+  "title": zod.string().optional(),
+  "status": zod.enum(['DRAFT', 'PUBLISHED', 'COMPLETED']).optional()
+}).optional()
+})).optional()
+})),
+  "hasMore": zod.boolean(),
+  "nextCursor": zod.string().nullable()
+})
+
+
+/**
  * @summary List purchase plans and branch receipts for Admin
  */
 

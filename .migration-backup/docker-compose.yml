@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build: .
@@ -8,13 +6,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Koneksi Database Supabase Cloud Anda (Ganti dengan connection string dari Supabase)
-      # Supabase memberikan dua string: satu untuk Transaction Pooler (DATABASE_URL) dan satu untuk Session/Direct (DIRECT_URL)
-      - DATABASE_URL=postgresql://postgres:[PASSWORD_SUPABASE]@db.[REF_SUPABASE].supabase.co:6543/postgres?sslmode=require&pgbouncer=true
-      - DIRECT_URL=postgresql://postgres:[PASSWORD_SUPABASE]@db.[REF_SUPABASE].supabase.co:5432/postgres?sslmode=require
-      
-      # JWT Secret Key (Kunci keamanan token login Kasir - buat acak untuk keamanan)
-      - JWT_SECRET=alfath-kasir-stb-secretkey-2026
-      
+      # Connection strings and signing secret are supplied through .env.
+      - "DATABASE_URL=${DATABASE_URL:?Set DATABASE_URL in .env}"
+      - "DIRECT_URL=${DIRECT_URL:?Set DIRECT_URL in .env}"
+      - "JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env}"
       # Mode Environment
       - NODE_ENV=production

@@ -2,14 +2,14 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetCashierShoppingPlanReceiptsQueryKey,
-  getGetShoppingPlansQueryKey,
+  getGetShoppingPlanPageQueryKey,
   getGetShoppingPlanRevisionsQueryKey,
   useConfirmShoppingPlanReceipt,
   useCreateShoppingPlan,
   useDeleteShoppingPlan,
   useGetCashierShoppingPlanReceipts,
   useGetShoppingPlanRevisions,
-  useGetShoppingPlans,
+  useGetShoppingPlanPage,
   useReviseShoppingPlan,
 } from "@workspace/api-client-react";
 import type {
@@ -117,7 +117,11 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
   getSalesTotals: (branchId: string, signal: AbortSignal) => Promise<Record<string, number>>;
 }) {
   const queryClient = useQueryClient();
-  const plansQuery = useGetShoppingPlans();
+  const [historyCursors, setHistoryCursors] = useState<Array<string | null>>([null]);
+  const [historyPageIndex, setHistoryPageIndex] = useState(0);
+  const historyCursor = historyCursors[historyPageIndex] ?? null;
+  const historyParams = historyCursor ? { cursor: historyCursor } : undefined;
+  const plansQuery = useGetShoppingPlanPage(historyParams);
   const createPlan = useCreateShoppingPlan();
   const revisePlan = useReviseShoppingPlan();
   const deletePlan = useDeleteShoppingPlan();
@@ -138,13 +142,28 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
 
   useEffect(() => {
     const refresh = () => {
-      void queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() });
+      setHistoryCursors([null]);
+      setHistoryPageIndex(0);
+      void queryClient.invalidateQueries({ queryKey: getGetShoppingPlanPageQueryKey() });
     };
     window.addEventListener("shopping-plan-updated", refresh);
     return () => window.removeEventListener("shopping-plan-updated", refresh);
   }, [queryClient]);
 
-  const plans = (plansQuery.data || []) as ShoppingPlan[];
+  const plans = (plansQuery.data?.items || []) as ShoppingPlan[];
+  const returnToLatestHistory = () => {
+    setHistoryCursors([null]);
+    setHistoryPageIndex(0);
+  };
+  const loadOlderHistory = () => {
+    const nextCursor = plansQuery.data?.nextCursor;
+    if (!plansQuery.data?.hasMore || !nextCursor) return;
+    setHistoryCursors((current) => [
+      ...current.slice(0, historyPageIndex + 1),
+      nextCursor,
+    ]);
+    setHistoryPageIndex((current) => current + 1);
+  };
   const lockedBranchIds = useMemo(() => new Set(
     plans.find((plan) => plan.id === editingId)?.receipts
       ?.filter((receipt) => receipt.status === "CONFIRMED")
@@ -424,8 +443,9 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
         await queryClient.invalidateQueries({ queryKey: getGetShoppingPlanRevisionsQueryKey(editingId) });
       } else {
         await createPlan.mutateAsync({ data: { title: title.trim(), status: "PUBLISHED", items: prepared } });
+        returnToLatestHistory();
       }
-      await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetShoppingPlanPageQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() });
       toast(isRevision ? "Revisi pengadaan diterbitkan." : "Pengadaan diterbitkan. Nota penerimaan cabang siap diperiksa.");
       reset();
@@ -600,13 +620,23 @@ export function PurchasePlanAdmin({ products, branches, shoppingBranches, confir
       </div> : null}
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold text-[#e3d5b4]">Riwayat Pengadaan</h2><span className="text-xs text-slate-400">{plans.length} pengadaan</span></div>
-        {plans.length === 0 ? <div data-testid="empty-purchase-plans" className="rounded-2xl border border-dashed border-white/20 bg-[#14233d] p-6 text-center text-sm text-slate-300">Belum ada pengadaan. Buat pengadaan untuk menerbitkan nota penerimaan ke cabang.</div> :
+        <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold text-[#e3d5b4]">Riwayat Pengadaan</h2><span className="text-xs text-slate-400">{plans.length} pengadaan ditampilkan</span></div>
+        {plansQuery.isLoading && <div data-testid="loading-purchase-plans" className="rounded-xl border border-white/10 bg-[#14233d] p-4 text-center text-xs text-slate-400">Memuat riwayat terbaru…</div>}
+        {plansQuery.isError && <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-300/20 bg-rose-400/5 p-2">
+          <button data-testid="button-retry-purchase-plans" onClick={() => void queryClient.invalidateQueries({ queryKey: getGetShoppingPlanPageQueryKey(historyParams) })} className="min-h-10 flex-1 px-2 text-left text-xs text-rose-200">Riwayat gagal dimuat. Ketuk untuk mencoba lagi.</button>
+          {historyPageIndex > 0 && <button data-testid="button-purchase-history-recover" onClick={() => setHistoryPageIndex((current) => Math.max(0, current - 1))} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200">Kembali</button>}
+        </div>}
+        {!plansQuery.isLoading && !plansQuery.isError && plans.length === 0 ? <div data-testid="empty-purchase-plans" className="rounded-2xl border border-dashed border-white/20 bg-[#14233d] p-6 text-center text-sm text-slate-300">Belum ada pengadaan. Buat pengadaan untuk menerbitkan nota penerimaan ke cabang.</div> :
           plans.map((plan) => <PlanCard key={plan.id} plan={plan} branches={branches} onRevise={() => beginRevision(plan)} onDelete={async () => {
             if (!(await confirm("Hapus pengadaan ini secara permanen? Nota penerimaan yang belum dikonfirmasi akan hilang dari daftar kasir semua cabang. Riwayat pengadaan dan revisinya ikut dihapus. Stok tidak berubah."))) return;
-            try { await deletePlan.mutateAsync({ id: plan.id }); await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() }); await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() }); toast("Pengadaan dihapus."); }
+            try { await deletePlan.mutateAsync({ id: plan.id }); returnToLatestHistory(); await queryClient.invalidateQueries({ queryKey: getGetShoppingPlanPageQueryKey() }); await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() }); toast("Pengadaan dihapus."); }
             catch (error) { toast(getPurchasePlanErrorMessage(error, "Pengadaan gagal dihapus."), "error"); }
           }} />)}
+        {plansQuery.data && (historyPageIndex > 0 || plansQuery.data.hasMore) && <div data-testid="purchase-history-pagination" className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#0d1a2e] p-2">
+          <button data-testid="button-purchase-history-newer" disabled={historyPageIndex === 0 || plansQuery.isFetching || Boolean(editingId)} onClick={() => setHistoryPageIndex((current) => Math.max(0, current - 1))} className="min-h-10 rounded-lg border border-white/10 px-3 text-xs font-semibold text-slate-200 disabled:opacity-40">Lebih baru</button>
+          <span className="text-[11px] text-slate-400">Halaman {historyPageIndex + 1} · maksimal 20</span>
+          <button data-testid="button-purchase-history-older" disabled={!plansQuery.data.hasMore || plansQuery.isFetching || Boolean(editingId)} onClick={loadOlderHistory} className="min-h-10 rounded-lg bg-[#c7ad79] px-3 text-xs font-bold text-[#17233a] disabled:opacity-40">{plansQuery.isFetching ? "Memuat…" : "Lebih lama"}</button>
+        </div>}
       </div>
     </div>
   </section>;
@@ -872,7 +902,7 @@ export function CashierPurchaseReceipts({ confirm }: { confirm: (message: string
     try {
       await confirmReceipt.mutateAsync({ receiptId: current.id, data: input });
       await queryClient.invalidateQueries({ queryKey: getGetCashierShoppingPlanReceiptsQueryKey() });
-      await queryClient.invalidateQueries({ queryKey: getGetShoppingPlansQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetShoppingPlanPageQueryKey() });
       toast("Penerimaan dikonfirmasi dan stok cabang diperbarui.");
       setReceiptId(null);
     } catch (error) {

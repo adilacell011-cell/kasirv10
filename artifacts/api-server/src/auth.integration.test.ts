@@ -2822,6 +2822,7 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
   const purchasePasswordA = `purchase-test-a-${suffix}`;
   const purchasePasswordB = `purchase-test-b-${suffix}`;
   const purchaseProductId = `purchase-product-${suffix}`;
+  const paginationStressTitlePrefix = `Purchase QA history stress ${suffix}`;
   let shoppingPlanId = "";
   const shoppingPlanIds: string[] = [];
 
@@ -3255,7 +3256,98 @@ test("purchase plans publish branch receipts, lock confirmed branches, and credi
     assert.equal((await prisma.productStock.findUniqueOrThrow({
       where: { productId_branchId: { productId: purchaseProductId, branchId: purchaseBranchB } },
     })).qty, 9);
+
+    for (let index = 0; index < 22; index += 1) {
+      const pagePlanResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
+        method: "POST",
+        headers: adminHeaders,
+        body: JSON.stringify({
+          title: `Purchase QA pagination ${index} ${suffix}`,
+          status: "PUBLISHED",
+          items: [{ productId: purchaseProductId, branchQtys: { [purchaseBranchA]: 1 } }],
+        }),
+      });
+      assert.equal(pagePlanResponse.status, 201);
+      shoppingPlanIds.push((await pagePlanResponse.json() as { id: string }).id);
+    }
+
+    const cashierPageResponse = await fetch(`${apiUrl}/api/shopping-plans/page`, {
+      headers: cashierAHeaders,
+    });
+    assert.equal(cashierPageResponse.status, 403, "Cashiers cannot read the Owner's cross-branch purchase history.");
+
+    const firstPageResponse = await fetch(`${apiUrl}/api/shopping-plans/page`, {
+      headers: adminHeaders,
+    });
+    assert.equal(firstPageResponse.status, 200);
+    const firstPage = await firstPageResponse.json() as {
+      items: Array<{ id: string }>;
+      hasMore: boolean;
+      nextCursor: string | null;
+    };
+    assert.equal(firstPage.items.length, 20);
+    assert.equal(firstPage.hasMore, true);
+    assert.ok(firstPage.nextCursor);
+
+    const secondPageResponse = await fetch(
+      `${apiUrl}/api/shopping-plans/page?cursor=${encodeURIComponent(firstPage.nextCursor!)}`,
+      { headers: adminHeaders },
+    );
+    assert.equal(secondPageResponse.status, 200);
+    const secondPage = await secondPageResponse.json() as {
+      items: Array<{ id: string }>;
+      hasMore: boolean;
+      nextCursor: string | null;
+    };
+    assert.equal(secondPage.hasMore, false);
+    assert.equal(secondPage.nextCursor, null);
+    assert.equal(firstPage.items.length + secondPage.items.length, 25);
+    assert.equal(
+      new Set([...firstPage.items, ...secondPage.items].map((plan) => plan.id)).size,
+      25,
+      "Keyset pages must not duplicate plans.",
+    );
+
+    const invalidCursorResponse = await fetch(
+      `${apiUrl}/api/shopping-plans/page?cursor=${encodeURIComponent("not-a-cursor")}`,
+      { headers: adminHeaders },
+    );
+    assert.equal(invalidCursorResponse.status, 400);
+
+    const boundedLegacyResponse = await fetch(`${apiUrl}/api/shopping-plans`, {
+      headers: adminHeaders,
+    });
+    assert.equal(boundedLegacyResponse.status, 200);
+    assert.equal((await boundedLegacyResponse.json() as Array<unknown>).length, 20);
+
+    await prisma.shoppingPlan.createMany({
+      data: Array.from({ length: 1000 }, (_, index) => ({
+        title: `${paginationStressTitlePrefix} ${index}`,
+        items: [],
+        status: "DRAFT",
+      })),
+    });
+    const stressPageSamplesMs: number[] = [];
+    for (let sample = 0; sample < 5; sample += 1) {
+      const startedAt = performance.now();
+      const stressPageResponse = await fetch(`${apiUrl}/api/shopping-plans/page`, {
+        headers: adminHeaders,
+      });
+      stressPageSamplesMs.push(performance.now() - startedAt);
+      assert.equal(stressPageResponse.status, 200);
+      const stressPage = await stressPageResponse.json() as {
+        items: Array<{ id: string }>;
+        hasMore: boolean;
+      };
+      assert.equal(stressPage.items.length, 20, "A large history must still return one bounded page.");
+      assert.equal(stressPage.hasMore, true);
+    }
+    stressPageSamplesMs.sort((a, b) => a - b);
+    console.log(`PURCHASE_HISTORY_1000_ROWS_MEDIAN_MS=${stressPageSamplesMs[2].toFixed(1)}`);
   } finally {
+    await prisma.shoppingPlan.deleteMany({
+      where: { title: { startsWith: paginationStressTitlePrefix } },
+    });
     for (const planId of shoppingPlanIds) {
       await prisma.shoppingPlanReceipt.deleteMany({ where: { shoppingPlanId: planId } });
       await prisma.shoppingPlanRevision.deleteMany({ where: { shoppingPlanId: planId } });

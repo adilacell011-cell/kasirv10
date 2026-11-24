@@ -6,6 +6,7 @@ import {
   CreateShoppingPlanBody,
   CreateShoppingPlanResponse,
   GetCashierShoppingPlanReceiptsResponse,
+  GetShoppingPlanPageResponse,
   GetShoppingPlanRevisionsResponse,
   GetShoppingPlansResponse,
   ReviseShoppingPlanBody,
@@ -14,6 +15,11 @@ import {
 import { logger } from "./lib/logger";
 import { isProductVisibleInBranch } from "./product-lifecycle";
 import { applyStockDelta } from "./stock-adjustment";
+import {
+  decodeShoppingPlanCursor,
+  encodeShoppingPlanCursor,
+  SHOPPING_PLAN_PAGE_SIZE,
+} from "./shopping-plan-pagination";
 
 type AuthUser = {
   userId: string;
@@ -222,14 +228,73 @@ export function registerShoppingPlanRoutes(
   requireRole: (...roles: string[]) => any,
   emitBranch: (branchId: string | null | undefined, event: string, payload: any) => void,
 ) {
-  app.get("/api/shopping-plans", authenticateToken, requireRole("ADMIN"), async (_req, res) => {
+  app.get("/api/shopping-plans/page", authenticateToken, requireRole("ADMIN"), async (req, res) => {
+    let cursor;
+    try {
+      cursor = decodeShoppingPlanCursor(req.query.cursor);
+    } catch {
+      return void res.status(400).json({ error: "Kursor riwayat pengadaan tidak valid." });
+    }
+
     try {
       const plans = await prisma.shoppingPlan.findMany({
-        orderBy: { createdAt: "desc" },
+        where: cursor
+          ? {
+              OR: [
+                { createdAt: { lt: cursor.createdAt } },
+                { createdAt: cursor.createdAt, id: { lt: cursor.id } },
+              ],
+            }
+          : undefined,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: SHOPPING_PLAN_PAGE_SIZE + 1,
         include: {
           revisions: {
             select: { id: true, revisionNumber: true, title: true, createdAt: true },
             orderBy: { revisionNumber: "desc" },
+            take: 1,
+          },
+          receipts: {
+            where: { status: { not: "SUPERSEDED" } },
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              shoppingPlanId: true,
+              revisionId: true,
+              branchId: true,
+              branchNameSnapshot: true,
+              status: true,
+              items: true,
+              receivedByNameSnapshot: true,
+              confirmedAt: true,
+              createdAt: true,
+              revision: { select: { revisionNumber: true } },
+            },
+          },
+        },
+      });
+      const hasMore = plans.length > SHOPPING_PLAN_PAGE_SIZE;
+      const items = plans.slice(0, SHOPPING_PLAN_PAGE_SIZE);
+      const last = items.at(-1);
+      const nextCursor = hasMore && last
+        ? encodeShoppingPlanCursor({ id: last.id, createdAt: last.createdAt })
+        : null;
+      res.json(responsePayload(GetShoppingPlanPageResponse, { items, hasMore, nextCursor }));
+    } catch (error) {
+      sendError(res, error, "Get Shopping Plan Page Error");
+    }
+  });
+
+  app.get("/api/shopping-plans", authenticateToken, requireRole("ADMIN"), async (_req, res) => {
+    try {
+      const plans = await prisma.shoppingPlan.findMany({
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: SHOPPING_PLAN_PAGE_SIZE,
+        include: {
+          revisions: {
+            select: { id: true, revisionNumber: true, title: true, createdAt: true },
+            orderBy: { revisionNumber: "desc" },
+            take: 1,
           },
           receipts: {
             where: { status: { not: "SUPERSEDED" } },
