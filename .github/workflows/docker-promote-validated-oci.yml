@@ -15,7 +15,7 @@ on:
         description: Type the full candidate SHA to confirm publication
         required: true
         type: string
-        default: 13c54b1125d8e62fd60688217089b7f67abd38e2
+        default: 55ceceb56526070aee66b21286cb83f4e551eb9a
       resume_temp_run_id:
         description: Prior promotion run ID when resuming its temporary tag
         required: false
@@ -26,21 +26,22 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-validated-oci-13c54b1125d8e62fd60688217089b7f67abd38e2
+  group: publish-validated-oci-55ceceb56526070aee66b21286cb83f4e551eb9a
   cancel-in-progress: false
 
 jobs:
   publish:
     if: >-
       github.repository == 'adilacell011-cell/kasirv10' &&
-      github.ref == 'refs/heads/validate/multiplatform-arm64'
+      github.ref == 'refs/heads/candidate/stock-audit-final'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      CANDIDATE_SHA: 13c54b1125d8e62fd60688217089b7f67abd38e2
-      VALIDATION_RUN_ID: "41989913895"
+      CANDIDATE_SHA: 55ceceb56526070aee66b21286cb83f4e551eb9a
+      VALIDATION_RUN_ID: "45351704224"
+      VALIDATION_RUN_ATTEMPT: "1"
       OCI_REF: candidate
-      IMAGE_TAG: sha-13c54b1125d8e62fd60688217089b7f67abd38e2
+      IMAGE_TAG: candidate-55ceceb56526070aee66b21286cb83f4e551eb9a-run-45351704224-attempt-1
       PROMOTION_MODE: ${{ inputs.mode }}
       RESUME_TEMP_RUN_ID: ${{ inputs.resume_temp_run_id }}
 
@@ -52,18 +53,19 @@ jobs:
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = "adilacell011-cell/kasirv10"
-          test "$GITHUB_REF" = "refs/heads/validate/multiplatform-arm64"
+          test "$GITHUB_REF" = "refs/heads/candidate/stock-audit-final"
           test "$CONFIRM_SOURCE_SHA" = "$CANDIDATE_SHA"
 
           run_metadata="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${VALIDATION_RUN_ID}" \
-            --jq '[.head_sha, .head_branch, .head_repository.full_name, .conclusion, .path, .event] | @tsv')"
-          IFS=$'\t' read -r source_sha source_branch source_repository conclusion workflow_path event <<< "$run_metadata"
+            --jq '[.head_sha, .head_branch, .head_repository.full_name, .conclusion, .path, .event, .run_attempt] | @tsv')"
+          IFS=$'\t' read -r source_sha source_branch source_repository conclusion workflow_path event run_attempt <<< "$run_metadata"
           test "$source_sha" = "$CANDIDATE_SHA"
-          test "$source_branch" = "validate/multiplatform-arm64"
+          test "$source_branch" = "candidate/stock-audit-final"
           test "$source_repository" = "adilacell011-cell/kasirv10"
           test "$conclusion" = "success"
           test "$workflow_path" = ".github/workflows/docker-validate-multiplatform.yml"
-          test "$event" = "push"
+          test "$event" = "workflow_dispatch"
+          test "$run_attempt" = "$VALIDATION_RUN_ATTEMPT"
           echo "Pinned validation run and candidate SHA verified."
 
       - name: Select temporary tag run ID
@@ -92,10 +94,11 @@ jobs:
         run: |
           set -euo pipefail
           run_metadata="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RESUME_TEMP_RUN_ID}" \
-            --jq '[.id, .head_branch, .head_repository.full_name, .path, .event] | @tsv')"
-          IFS=$'\t' read -r prior_run_id prior_branch prior_repository prior_path prior_event <<< "$run_metadata"
+            --jq '[.id, .head_sha, .head_branch, .head_repository.full_name, .path, .event] | @tsv')"
+          IFS=$'\t' read -r prior_run_id prior_sha prior_branch prior_repository prior_path prior_event <<< "$run_metadata"
           test "$prior_run_id" = "$RESUME_TEMP_RUN_ID"
-          test "$prior_branch" = "validate/multiplatform-arm64"
+          test "$prior_sha" = "$CANDIDATE_SHA"
+          test "$prior_branch" = "candidate/stock-audit-final"
           test "$prior_repository" = "adilacell011-cell/kasirv10"
           test "$prior_path" = ".github/workflows/docker-promote-validated-oci.yml"
           test "$prior_event" = "workflow_dispatch"
@@ -104,19 +107,19 @@ jobs:
       - name: Download validated API OCI artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasirv10-api-oci-13c54b1125d8e62fd60688217089b7f67abd38e2
+          name: kasirv10-api-oci-55ceceb56526070aee66b21286cb83f4e551eb9a
           path: ${{ runner.temp }}/kasirv10-api
           repository: adilacell011-cell/kasirv10
-          run-id: 41989913895
+          run-id: 45351704224
           github-token: ${{ github.token }}
 
       - name: Download validated Web OCI artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasirv10-web-oci-13c54b1125d8e62fd60688217089b7f67abd38e2
+          name: kasirv10-web-oci-55ceceb56526070aee66b21286cb83f4e551eb9a
           path: ${{ runner.temp }}/kasirv10-web
           repository: adilacell011-cell/kasirv10
-          run-id: 41989913895
+          run-id: 45351704224
           github-token: ${{ github.token }}
 
       - name: Verify both OCI artifacts and prepare tagged copies without rebuilding
